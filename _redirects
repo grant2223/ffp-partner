@@ -1,7 +1,8 @@
 # FFP Partner — partner.findfitpeople.com
 # The dashboard guard (ffp-provider-auth.js) sends unauthenticated visitors to /login.
-# Serve the partner login there, and fall everything else back to the dashboard shell.
-# ORDER MATTERS: /login must come BEFORE the catch-all.
+# Serve the partner login + signup as clean paths, and fall everything else back to the dashboard shell.
+# ORDER MATTERS: named routes must come BEFORE the catch-all.
 
-/login    /login.html    200
-/*        /index.html    200
+/login     /login.html     200
+/signup    /signup.html    200
+/*         /index.html     200
