@@ -1,4 +1,11 @@
-/* FFP Provider Auth Gate — v5 (PROVIDER-ROW LOOKUP)
+/* FFP Provider Auth Gate — v6 (STANDALONE-ORIGIN SAFE)
+   v6 (2026-07-02): Wrong-role redirects now point at absolute ffppassport.com
+       URLs instead of same-origin '/ffp-*-dashboard.html' paths. The provider
+       dashboard now runs on its own origin (partner.findfitpeople.com) where
+       those paths don't exist and, under the SPA '/*'→index.html fallback,
+       would loop forever. No-session still bounces to '/login' (relative) —
+       which on partner.* is the new self-contained partner login.html, and on
+       ffppassport.com is the Passport login. Correct on both origins.
    v5 (2026-05-29): v4 was setting FFP_PROVIDER.id = member.id which the
        provider profile loader then used as the providers row PK in
        .from('providers').eq('id', member.id) — returning 0 rows because
@@ -55,13 +62,19 @@
     return;
   }
 
-  // ─── Wrong role → bounce to whichever dashboard matches their role ───
+  // ─── Wrong role → send them to their proper ORIGIN (not a same-origin path) ───
+  // v6 (2026-07-02): the provider dashboard now lives on its own origin
+  // (partner.findfitpeople.com). Members/admins belong on ffppassport.com, and a
+  // same-origin path like '/ffp-member-dashboard.html' doesn't exist here — with the
+  // SPA '/*' fallback it would serve index.html, re-run this guard, and loop forever.
+  // Absolute ffppassport.com URLs are correct on BOTH origins (on ffppassport.com they
+  // resolve locally; on partner.* they cross back to Passport where the session lives).
   if (member.role !== 'provider') {
-    console.warn('[FFP Provider Auth v4] role="' + member.role + '" is not provider — redirecting');
-    if (member.role === 'admin') {
-      location.href = '/ffp-admin-dashboard.html';
+    console.warn('[FFP Provider Auth v6] role="' + member.role + '" is not provider — sending to ffppassport.com');
+    if (member.role === 'admin' || member.role === 'super_admin' || member.role === 'super') {
+      location.href = 'https://ffppassport.com/login#admin';
     } else {
-      location.href = '/ffp-member-dashboard.html';
+      location.href = 'https://ffppassport.com/';
     }
     return;
   }
