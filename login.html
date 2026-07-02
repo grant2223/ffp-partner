@@ -1,0 +1,352 @@
+<!--
+═══════════════════════════════════════════════════════════════════════
+  FFP PARTNER — login.html v1 (2026-07-02)
+  Self-contained sign-in for partner.findfitpeople.com.
+
+  WHY THIS FILE EXISTS: the partner dashboard's page guard
+  (ffp-provider-auth.js) redirects to /login when there's no signed-in
+  session. On ffppassport.com that /login was the Passport login. On the
+  standalone partner origin there was none → the "Page not found" 404.
+
+  This is the SAME login as ffppassport.com/login.html — identical head,
+  styles, splash, and auth mechanics (native Supabase OTP → the shared
+  backend /api/auth/exchange → app-JWT stored via FFPAuth) — but stripped
+  to the PARTNER portal only (no member/professional picker, no signup /
+  plan screens, which belong on Passport / findfitpeople.com). Design and
+  auth are COPIED, not reinvented (CLAUDE.md rule).
+
+  On success it redirects to "/" (the partner dashboard = index.html on
+  this origin). Sessions are per-origin, so the code lands here on
+  partner.findfitpeople.com and the dashboard guard reads it directly.
+═══════════════════════════════════════════════════════════════════════
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>FFP Partner · Sign In</title>
+<link rel="icon" href="/assets/icons/ffp-favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/assets/icons/ffp-apple-touch-180.png">
+<meta name="theme-color" content="#edf0f2">
+<!-- Supabase SDK loaded FIRST so window.supabase exists when ffp-api-integration.js runs -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/ffp-api-integration.js?v=12"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+*::-webkit-scrollbar{display:none;width:0;height:0;}
+*{-ms-overflow-style:none;scrollbar-width:none;}
+html,body{min-height:100%;font-family:'Montserrat',sans-serif;background:#edf0f2 !important;color:#102230;}
+.page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px 100px;background:#edf0f2;}
+.logo{text-align:center;margin-bottom:16px;}
+.logo img{width:min(120px,42%);height:auto;display:block;margin:0 auto;}
+.wrap{width:100%;max-width:400px;}
+.screen{display:none;}
+.screen.active{display:block;}
+.field{margin-bottom:16px;}
+.field-label{font-size:10px;font-weight:800;color:#7c93a3;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;}
+.field-input{width:100%;background:#fff;border:1.5px solid #dde7ee;border-radius:12px;padding:14px 16px;font-size:16px;font-weight:600;color:#102230;font-family:'Montserrat',sans-serif;outline:none;transition:border-color .15s,box-shadow .15s;}
+.field-input:focus{border-color:#1980AD;box-shadow:0 0 0 3px rgba(25,128,173,.12);}
+.field-input::placeholder{color:#9fb3c0;font-weight:600;}
+.code-wrap{display:block;margin:0 auto 8px;max-width:320px;width:100%;}
+.code-digit{width:100%;height:62px;min-width:0;padding:0 0 0 14px;background:#fff;border:1.5px solid #dde7ee;border-radius:12px;font-size:30px;font-weight:900;letter-spacing:14px;color:#102230;text-align:center;font-family:'Montserrat',sans-serif;outline:none;transition:border-color .15s,box-shadow .15s;}
+.code-digit::placeholder{color:#c2d2dd;letter-spacing:14px;}
+.code-digit:focus{border-color:#1980AD;box-shadow:0 0 0 3px rgba(25,128,173,.12);}
+.btn-primary{display:block;width:100%;padding:16px;border-radius:14px;font-size:15px;font-weight:800;border:none;cursor:pointer;font-family:'Montserrat',sans-serif;color:#fff;background:#1980AD;transition:background .15s,transform .05s;text-align:center;box-shadow:0 6px 16px rgba(25,128,173,.25);}
+.btn-primary:hover{background:#156a8f;}
+.btn-primary:active{transform:translateY(1px);}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed;box-shadow:none;}
+.btn-back{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#7c93a3;background:none;border:none;cursor:pointer;font-family:'Montserrat',sans-serif;padding:0;margin-bottom:24px;}
+.btn-back:hover{color:#1980AD;}
+.screen-title{font-size:26px;font-weight:900;margin-bottom:6px;color:#102230;}
+.screen-sub{font-size:13px;color:#637c8d;margin-bottom:24px;line-height:1.6;}
+.screen-badge{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.screen-badge svg{flex-shrink:0;}
+.screen-badge-label{font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;}
+.divider{border:none;border-top:1px solid #e3ebf1;margin:24px 0;}
+.link-row{text-align:center;font-size:13px;color:#637c8d;font-weight:600;}
+.link-row a{color:#1980AD;text-decoration:none;font-weight:800;cursor:pointer;}
+.resend-row{text-align:center;margin-top:16px;font-size:12px;color:#7c93a3;}
+.resend-row a{color:#1980AD;text-decoration:none;font-weight:700;cursor:pointer;}
+.resend-timer{color:#9fb3c0;font-weight:600;margin-left:6px;}
+.resend-link.is-disabled{opacity:.45;pointer-events:none;cursor:default;}
+.error-msg{color:#ef4444;font-size:12px;font-weight:700;margin-top:8px;text-align:center;min-height:18px;}
+@media (max-width:360px){.code-wrap{max-width:280px;} .code-digit{height:52px;}}
+</style>
+</head>
+<body>
+<!-- Launch splash — branded loading screen, hidden by ffpHideSplash() when we're not auto-redirecting. -->
+<div id="ffp-splash" style="position:fixed;inset:0;z-index:2147483600;background:#edf0f2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;transition:opacity .35s ease;">
+  <img src="assets/ffp-logo.png?v=2" alt="FFP" width="150" style="display:block;height:auto;" onerror="this.style.display='none'">
+  <div style="width:30px;height:30px;border:3px solid rgba(25,128,173,0.18);border-top-color:#1980AD;border-radius:50%;animation:ffpsplinspin .8s linear infinite;"></div>
+  <div style="font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#7c93a3;">Loading</div>
+</div>
+<style>@keyframes ffpsplinspin{to{transform:rotate(360deg)}}</style>
+<script>
+  window.ffpHideSplash = function () {
+    var s = document.getElementById('ffp-splash'); if (!s) return;
+    s.style.opacity = '0';
+    setTimeout(function () { if (s && s.parentNode) s.parentNode.removeChild(s); }, 400);
+  };
+  setTimeout(function () { if (window.ffpHideSplash) window.ffpHideSplash(); }, 6000);
+</script>
+<div class="page">
+<div class="logo">
+<img src="assets/ffp-logo.png?v=2" alt="FFP">
+</div>
+<div class="wrap">
+<!-- SCREEN 1: SIGN IN (email) -->
+<div class="screen active" id="screen-signin-email">
+<div class="screen-badge" id="signin-badge"></div>
+<div class="screen-title">Partner Sign In</div>
+<div class="screen-sub" id="signin-email-sub">Enter your email address to receive your 6-digit code.</div>
+<div class="field">
+<div class="field-label">Email Address</div>
+<input class="field-input" type="email" id="signin-email" placeholder="you@email.com" autocomplete="email" enterkeyhint="go" onkeydown="if(event.key==='Enter'){event.preventDefault();requestCode('signin');}">
+</div>
+<button class="btn-primary" id="signin-email-btn" onclick="requestCode('signin')">Get My Code</button>
+<div class="error-msg" id="signin-email-err"></div>
+</div>
+<!-- SCREEN 2: ENTER CODE (sign in) -->
+<div class="screen" id="screen-signin-code">
+<button class="btn-back" onclick="goTo('screen-signin-email')">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
+Back
+</button>
+<div class="screen-badge" id="signin-code-badge"></div>
+<div class="screen-title">Enter Your Code</div>
+<div class="screen-sub" id="signin-code-sub">Enter the 6-digit code we just sent to <strong id="signin-code-email"></strong>.</div>
+<div class="code-wrap" id="signin-code-wrap">
+<input class="code-digit" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" aria-label="6-digit code" placeholder="••••••" enterkeyhint="go" onkeydown="if(event.key==='Enter'){event.preventDefault();verifyCode('signin');}">
+</div>
+<label id="keep-signed-in-row" style="display:flex;align-items:center;gap:9px;margin:4px 2px 14px;font-size:13px;color:#637c8d;cursor:pointer;user-select:none;">
+  <input type="checkbox" id="keep-signed-in" checked style="width:17px;height:17px;accent-color:#1980AD;cursor:pointer;flex-shrink:0;">
+  <span>Keep me signed in on this device</span>
+</label>
+<button class="btn-primary" id="signin-code-btn" onclick="verifyCode('signin')">Sign In</button>
+<div class="error-msg" id="signin-code-err"></div>
+<div class="resend-row">Didn&rsquo;t get it? <a id="signin-resend-link" class="resend-link" onclick="resendCode('signin')">Resend code</a><span id="signin-resend-timer" class="resend-timer"></span></div>
+<div class="resend-row"><a onclick="goTo('screen-signin-email')">Use a different email</a></div>
+</div>
+</div>
+</div>
+<script>
+// PARTNER portal, always. This login only signs partners in.
+var selectedPortal = 'provider';
+// HYBRID native auth: native Supabase OTP → /api/auth/exchange → app-JWT (sub=members.id).
+// Identical to ffppassport.com/login.html — same stored session, same backend.
+var FFP_NATIVE_AUTH = true;
+var FFP_EXCHANGE_URL = 'https://ffp-passport-backend.vercel.app/api/auth/exchange';
+function ffpUseNative(flow){ return FFP_NATIVE_AUTH && flow === 'signin' && window.supabase && window.supabase.auth; }
+
+// On success, land on the partner dashboard (index.html at the root of this origin).
+// The dashboard guard (ffp-provider-auth.js) reads the stored member and grants access.
+// A non-provider who somehow signs in here is sent to Passport by the dashboard guard.
+function handleAuthRedirect(response) {
+  if (!response || !response.member) return;
+  window.location.href = '/';
+}
+
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
+  var el = document.getElementById(screenId);
+  if (el) el.classList.add('active');
+  window.scrollTo(0, 0);
+}
+function setBadge(elId) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#1980AD" stroke-width="2" width="18" height="18"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' +
+    '<span class="screen-badge-label" style="color:#1980AD;">Partner Sign In</span>';
+}
+function showError(elId, msg) {
+  var el = document.getElementById(elId);
+  if (el) el.textContent = msg || '';
+}
+function setBusy(btnId, busy, normalLabel) {
+  var b = document.getElementById(btnId);
+  if (!b) return;
+  b.disabled = !!busy;
+  if (busy) { b.dataset.label = b.textContent; b.textContent = 'Please wait…'; }
+  else { b.textContent = normalLabel || b.dataset.label || b.textContent; }
+}
+// ── Resend code with a 60s cooldown (in place — never bounce back to the email screen) ──
+var _resendTimers = {};
+function startResendCooldown(flow, secs) {
+  secs = secs || 60;
+  var link = document.getElementById(flow + '-resend-link');
+  var timerEl = document.getElementById(flow + '-resend-timer');
+  if (!link) return;
+  if (_resendTimers[flow]) clearInterval(_resendTimers[flow]);
+  var remaining = secs;
+  link.classList.add('is-disabled');
+  var tick = function () {
+    if (remaining <= 0) {
+      clearInterval(_resendTimers[flow]); _resendTimers[flow] = null;
+      link.classList.remove('is-disabled');
+      if (timerEl) timerEl.textContent = '';
+      return;
+    }
+    if (timerEl) timerEl.textContent = '· available in ' + remaining + 's';
+    remaining--;
+  };
+  tick();
+  _resendTimers[flow] = setInterval(tick, 1000);
+}
+async function resendCode(flow) {
+  var link = document.getElementById(flow + '-resend-link');
+  if (link && link.classList.contains('is-disabled')) return;
+  var emailEl = document.getElementById(flow + '-email');
+  var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
+  var timerEl = document.getElementById(flow + '-resend-timer');
+  if (!email || !email.includes('@')) { goTo('screen-signin-email'); return; }
+  if (timerEl) timerEl.textContent = '· sending…';
+  try {
+    if (ffpUseNative(flow)) {
+      var rr = await window.supabase.auth.signInWithOtp({ email: email, options: { shouldCreateUser: false } });
+      if (rr && rr.error) { if (timerEl) timerEl.textContent = '· ' + (rr.error.message || 'could not send'); return; }
+      if (timerEl) timerEl.textContent = '· new code sent';
+      startResendCooldown(flow, 60);
+      return;
+    }
+    var res = await FFPApi.requestCode(email, null, flow);
+    if (res && res.error) { if (timerEl) timerEl.textContent = '· ' + res.error; return; }
+    if (timerEl) timerEl.textContent = '· new code sent';
+    startResendCooldown(flow, 60);
+  } catch (e) {
+    if (timerEl) timerEl.textContent = '· network error — try again';
+  }
+}
+async function requestCode(flow) {
+  var emailEl = document.getElementById('signin-email');
+  var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
+  if (!email || !email.includes('@')) {
+    if (emailEl) { emailEl.style.borderColor = '#ef4444'; emailEl.focus(); }
+    return;
+  }
+  if (emailEl) emailEl.style.borderColor = '';
+  showError('signin-email-err', '');
+  setBusy('signin-email-btn', true);
+  try {
+    if (ffpUseNative(flow)) {
+      // Preflight: only a KNOWN member gets a code, and the backend ensures their (pre-confirmed)
+      // auth user exists. Never create an account on sign-in → no orphan auth users, no dead
+      // Supabase "confirm signup" email.
+      var prep = await fetch('https://ffp-passport-backend.vercel.app/api/auth/prepare-signin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) }).then(function (r) { return r.json(); }).catch(function () { return null; });
+      if (!prep) { showError('signin-email-err', 'Network error — please try again.'); return; }
+      if (!prep.exists) { showError('signin-email-err', 'No partner account found for that email. Contact FFP to get set up.'); return; }
+      var nr = await window.supabase.auth.signInWithOtp({ email: email, options: { shouldCreateUser: false } });
+      if (nr && nr.error) { showError('signin-email-err', 'Could not send your code. Please try again.'); return; }
+      var ceN = document.getElementById('signin-code-email'); if (ceN) ceN.textContent = email;
+      goTo('screen-signin-code');
+      startResendCooldown('signin', 60);
+      return;
+    }
+    var res = await FFPApi.requestCode(email, null, flow);
+    if (res && res.error) { showError('signin-email-err', res.error); return; }
+    if (res && res.exists === false) {
+      showError('signin-email-err', 'We couldn’t find a partner account for that email. Contact FFP to get set up.');
+      if (emailEl) { emailEl.style.borderColor = '#ef4444'; emailEl.focus(); }
+      return;
+    }
+    var ce1 = document.getElementById('signin-code-email');
+    if (ce1) ce1.textContent = email;
+    goTo('screen-signin-code');
+    startResendCooldown('signin', 60);
+  } catch (e) {
+    showError('signin-email-err', 'Network error. Please try again.');
+  } finally {
+    setBusy('signin-email-btn', false);
+  }
+}
+async function verifyCode(flow) {
+  var digits = document.querySelectorAll('#screen-signin-code .code-digit');
+  var code = '';
+  digits.forEach(function (d) { code += d.value; });
+  if (code.length < 6) {
+    digits.forEach(function (d) { d.style.borderColor = '#ef4444'; });
+    setTimeout(function () { digits.forEach(function (d) { d.style.borderColor = ''; }); }, 800);
+    return;
+  }
+  var emailEl = document.getElementById('signin-email');
+  var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
+  showError('signin-code-err', '');
+  setBusy('signin-code-btn', true);
+  try {
+    var keepEl = document.getElementById('keep-signed-in');
+    if (window.FFPAuth && FFPAuth.setPersist) FFPAuth.setPersist(keepEl ? !!keepEl.checked : true);
+  } catch (e) {}
+  try {
+    if (ffpUseNative(flow)) {
+      var nv = await window.supabase.auth.verifyOtp({ email: email, token: code, type: 'email' });
+      if (!nv || nv.error || !(nv.data && nv.data.session)) {
+        showError('signin-code-err', 'That code didn’t work. Check it and try again — or request a new code below.');
+        digits.forEach(function (d) { d.style.borderColor = '#ef4444'; });
+        setTimeout(function () { digits.forEach(function (d) { d.style.borderColor = ''; }); }, 800);
+        var _c0 = digits[0]; if (_c0) { _c0.value = ''; _c0.focus(); }
+        return;
+      }
+      var _ex = await fetch(FFP_EXCHANGE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ access_token: nv.data.session.access_token, allow_create: false }) });
+      var _b = await _ex.json().catch(function () { return {}; });
+      if (_ex.status === 404 || (_b && _b.error === 'no_account')) {
+        showError('signin-code-err', 'We couldn’t find a partner account for that email. Contact FFP to get set up.');
+        return;
+      }
+      if (!_ex.ok || !_b.jwt) { showError('signin-code-err', 'Sign in failed. Please try again.'); return; }
+      if (_b.member) FFPAuth.setMember(_b.member);
+      if (_b.refresh) FFPAuth.setRefresh(_b.refresh);
+      FFPAuth.setJwt(_b.jwt);
+      if (FFPAuth.applySupabaseSession) { try { await FFPAuth.applySupabaseSession(); } catch (e) {} }
+      handleAuthRedirect(_b);
+      return;
+    }
+    var res = await FFPApi.verifyCode(email, code, flow);
+    if (res && res.error) {
+      showError('signin-code-err', 'That code didn’t work. Check it and try again — or request a new code below.');
+      digits.forEach(function (d) { d.style.borderColor = '#ef4444'; });
+      setTimeout(function () { digits.forEach(function (d) { d.style.borderColor = ''; }); }, 800);
+      var _ci = digits[0]; if (_ci) { _ci.value = ''; _ci.focus(); }
+      return;
+    }
+    handleAuthRedirect(res);
+  } catch (e) {
+    showError('signin-code-err', 'Verification failed. Please try again.');
+  } finally {
+    setBusy('signin-code-btn', false);
+  }
+}
+document.addEventListener('DOMContentLoaded', function () {
+  setBadge('signin-badge');
+  setBadge('signin-code-badge');
+  try {
+    var _qs = new URLSearchParams(window.location.search);
+    var _skip = _qs.get('switch') === '1' || window.location.hash === '#switch';
+    // Already signed in with a LIVE session → straight into the dashboard (no login flash).
+    var _existing = (window.FFPAuth && FFPAuth.getMember && FFPAuth.getMember()) || null;
+    var _hasSession = !!(window.FFPAuth && (
+      (FFPAuth.getJwt && FFPAuth.getJwt()) ||
+      (FFPAuth.getRefresh && FFPAuth.getRefresh()) ||
+      (FFPAuth.getToken && FFPAuth.getToken())
+    ));
+    if (_existing && _existing.id && _hasSession && !_skip) {
+      window.location.href = '/';
+      return;
+    }
+    // Provider self-signup verify landing: ?verified=1&email= → prefill + friendly prompt.
+    if (_qs.get('verified') === '1') {
+      var em = (_qs.get('email') || '').trim();
+      var inp = document.getElementById('signin-email');
+      if (inp && em) inp.value = em;
+      var sub = document.getElementById('signin-email-sub');
+      if (sub) sub.innerHTML = '<span style="color:#1980AD;font-weight:700;">Email confirmed.</span> Tap below and we&rsquo;ll send your 6-digit code.';
+    } else if (_qs.get('verify') === 'expired' || _qs.get('verify') === 'error') {
+      var sub2 = document.getElementById('signin-email-sub');
+      if (sub2) sub2.innerHTML = 'That confirmation link has expired. Enter your email and we&rsquo;ll send you a fresh 6-digit code.';
+    }
+  } catch (e) {}
+  if (window.ffpHideSplash) window.ffpHideSplash();
+});
+</script>
+</body>
+</html>
