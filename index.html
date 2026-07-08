@@ -280,7 +280,7 @@
 })();
 </script>
 <script src="ffp-provider-events-loader.js?v=19"></script>
-<script src="ffp-provider-experiences-loader.js?v=18"></script>
+<!-- Experiences loader is lazy-loaded on demand via _provLoaderSrc['experiences'] (ensureProviderLoader) — was double-loaded here, removed -->
 <script src="ffp-provider-challenges-loader.js?v=2"></script>
 <!-- v29 (2026-06-03): Taxonomy audit fixes — "Provider type" (pf-type) reads the unified provider_type
      taxonomy via FFP_TAX.providerTypes (shared with admin rankings; business_structure concept dropped);
@@ -2838,8 +2838,8 @@ a { color: var(--ffp-blue); text-decoration: none; }
         <div class="listing-grid" id="events-grid"></div>
       </section>
 
-      <!-- ════════ EXPERIENCES ════════ -->
-      <section class="panel" id="panel-experiences">
+      <!-- ════════ TRIPS (multi-day — the trips table; rendered inline) ════════ -->
+      <section class="panel" id="panel-trips">
         <div class="ph-row">
           <div>
             <div class="ph">Trips</div>
@@ -2863,8 +2863,8 @@ a { color: var(--ffp-blue); text-decoration: none; }
         <div class="listing-grid" id="exp-grid"></div>
       </section>
 
-      <!-- ════════ TOURS (one-off activities — the classes table) ════════ -->
-      <section class="panel" id="panel-classes">
+      <!-- ════════ EXPERIENCES (one-off activities — the experiences table; lazy loader) ════════ -->
+      <section class="panel" id="panel-experiences">
         <div class="ph-row">
           <div>
             <div class="ph">Experiences</div>
@@ -3241,9 +3241,9 @@ const NAV = [
   { id: 'staff',       icon: 'badge',           label: 'Staff',               section: 'business' },
   { id: 'billing',     icon: 'receipt_long',    label: 'Payments & Invoices', section: 'business' },
   // ── Engagement (member-facing listings) ──
-  { id: 'classes',     icon: 'tour',            label: 'Experiences', section: 'engagement' },
+  { id: 'experiences', icon: 'tour',            label: 'Experiences', section: 'engagement' },
   { id: 'events',      icon: 'event',           label: 'Events',      section: 'engagement' },
-  { id: 'experiences', icon: 'flight',          label: 'Trips',       section: 'engagement' },
+  { id: 'trips',       icon: 'flight',          label: 'Trips',       section: 'engagement' },
   { id: 'quests',      icon: 'flag',            label: 'Quests',      section: 'engagement' },
   // Deals + Challenges parked — hidden from nav until built (panels remain in code).
   // ── Account ──
@@ -3326,9 +3326,9 @@ function renderNav() {
         badge = '<span class="ni-lock-pill">Soon</span>';
       } else if (item.id === 'events') {
         badge = '<span class="ni-badge dim">' + events.length + '</span>';
-      } else if (item.id === 'experiences') {
+      } else if (item.id === 'trips') {
         badge = '<span class="ni-badge dim">' + experiences.length + '</span>';
-      } else if (item.id === 'classes') {
+      } else if (item.id === 'experiences') {
         badge = '<span class="ni-badge dim">' + (Array.isArray(window.classesList) ? window.classesList.length : 0) + '</span>';
       } else if (item.id === 'challenges') {
         badge = '<span class="ni-badge dim">' + challenges.length + '</span>';
@@ -3371,7 +3371,7 @@ function toggleNavSection(sec) {
 
 // v12: load a panel's data loader the first time that panel is opened.
 // Overview/identity loaders stay eager; only clearly panel-scoped ones defer.
-var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=23', 'members': 'ffp-provider-members-loader.js?v=10', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'classes': 'ffp-provider-classes-loader.js?v=23', 'appointments': 'ffp-provider-appointments-loader.js?v=14' };
+var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=23', 'members': 'ffp-provider-members-loader.js?v=10', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=14' };
 var _provLoaded = {};
 function ensureProviderLoader(id) {
   var src = _provLoaderSrc[id];
@@ -3531,8 +3531,8 @@ function showPanel(id) {
   if (id === 'reviews') renderReviews();
   if (id === 'profile') loadProfile();
   if (id === 'events') renderEvents();
-  if (id === 'experiences') renderExperiences();
-  if (id === 'classes' && typeof renderClasses === 'function') renderClasses();
+  if (id === 'trips') renderExperiences();
+  if (id === 'experiences' && typeof renderClasses === 'function') renderClasses();
   if (id === 'challenges') { renderChallenges(); if (window.FFPQuestCheckins) FFPQuestCheckins.reload(); }
   if (id === 'quests' && window.FFPQuestCheckins) FFPQuestCheckins.reload();
   if (id === 'checkins') { renderCheckIns(); if (window.FFPQuestCheckins) FFPQuestCheckins.reload(); }
@@ -4026,7 +4026,7 @@ function renderProfileCompletion() {
 
 // ── "Listings hidden until profile complete" notification ──
 // Shows a warning banner at the top of each listing panel whenever the profile is missing an essential.
-const LISTING_GATE_PANELS = ['events', 'experiences', 'classes', 'challenges', 'deals'];
+const LISTING_GATE_PANELS = ['events', 'trips', 'experiences', 'challenges', 'deals'];
 function _ensureGateCss() {
   if (document.getElementById('listing-gate-css')) return;
   const st = document.createElement('style');
@@ -6020,11 +6020,11 @@ function openConfirm(title, body, onConfirm) {
   document.getElementById('confirm-yes').onclick = () => { closeModal(); onConfirm(); };
 }
 
-// The Tours loader is the ONE listing loader that's lazy-loaded. showPanel('classes') only *starts* fetching
+// The Experiences loader is the ONE listing loader that's lazy-loaded. showPanel('experiences') only *starts* fetching
 // that script (async), so calling openClassModal() on the very next line silently no-ops the first time — this
 // was the "create does nothing / never saves" bug. Load it, then open the modal once openClassModal is registered.
 function openCreateClass() {
-  showPanel('classes');   // the "Tours" tab (panel id stays 'classes' = the classes table)
+  showPanel('experiences');   // the Experiences tab (panel id 'experiences' = the experiences table)
   var tries = 0;
   (function waitForLoader() {
     if (typeof window.openClassModal === 'function') { window.openClassModal(); return; }
