@@ -48,7 +48,7 @@
   async function fetchClasses() {
     if (!provId()) return [];
     var res = await sb().from('experiences')
-      .select('id, provider_id, title, description, category, activity, venue, city, country, duration_min, capacity, price_aed, hero_image_url, gallery, schedule_rule, booking_questions, status, booking_source, highlights, what_included, what_not_included, meeting_point, meeting_lat, meeting_lng, what_to_bring, not_allowed, know_before, languages, min_age, difficulty, fitness_level, wheelchair_accessible, accessibility_notes, free_cancellation_hours, cancellation_policy, distance_km, featured, pay_requirement, created_at')
+      .select('id, provider_id, title, description, category, activity, venue, city, country, duration_min, capacity, price_aed, hero_image_url, gallery, schedule_rule, booking_questions, status, booking_source, highlights, what_included, what_not_included, meeting_point, meeting_lat, meeting_lng, what_to_bring, not_allowed, know_before, languages, min_age, difficulty, fitness_level, wheelchair_accessible, accessibility_notes, free_cancellation_hours, cancellation_policy, distance_km, featured, pay_requirement, review_note, created_at')
       .eq('provider_id', provId())
       .order('created_at', { ascending: false });
     if (res.error) { console.error('[FFP Classes] fetch', res.error); toast('Could not load experiences', 'error'); return []; }
@@ -107,7 +107,10 @@
       '</div>' +
       '<div class="lc-actions">' +
         '<button class="btn btn-sec btn-sm" title="Edit" onclick="openClassModal(\'' + c.id + '\')"><span class="ms">edit</span></button>' +
+        ((st === 'draft' || st === 'changes_requested') ? '<button class="btn btn-pri btn-sm" title="Publish to the booking platform" onclick="publishClass(\'' + c.id + '\')"><span class="ms">publish</span> Publish</button>' : '') +
+        (st === 'live' ? '<button class="btn btn-ghost btn-sm" title="Unpublish (back to draft)" onclick="unpublishClass(\'' + c.id + '\')"><span class="ms">visibility_off</span></button>' : '') +
         (st === 'pending' ? '<span class="lc-review-note" style="font-size:12px;color:var(--ffp-warn);align-self:center;"><span class="ms" style="font-size:15px;vertical-align:-2px;">schedule</span> Pending admin review</span>' : '') +
+        (st === 'changes_requested' ? '<span class="lc-review-note" style="font-size:12px;color:var(--ffp-warn);align-self:center;"><span class="ms" style="font-size:15px;vertical-align:-2px;">edit_note</span> ' + esc(c.review_note || 'Changes requested') + '</span>' : '') +
         (typeof window.featureBtn === 'function' ? window.featureBtn('class', c.id, c.featured) : '') +
         '<button class="btn btn-sec btn-sm" title="Bookings &amp; guest details" onclick="openClassBookings(\'' + c.id + '\')"><span class="ms">groups</span></button>' +
         '<button class="btn btn-ghost btn-sm" title="Duplicate" onclick="duplicateListing(\'class\',\'' + c.id + '\')"><span class="ms">content_copy</span></button>' +
@@ -221,7 +224,7 @@
       '<button class="btn btn-ghost" id="cl-cancel" onclick="closeModal()">Cancel</button>' +
       '<button class="btn btn-ghost" id="cl-back" style="display:none;" onclick="clBack()"><span class="ms">chevron_left</span> Back</button>' +
       '<button class="btn btn-pri" id="cl-next" onclick="clNext()">Next <span class="ms" style="font-size:16px;vertical-align:-3px;">chevron_right</span></button>' +
-      '<button class="btn btn-pri" id="cl-save" style="display:none;" onclick="saveClass(\'' + (c ? c.id : '') + '\')">' + (c ? 'Save changes' : 'Submit for review') + '</button>';
+      '<button class="btn btn-pri" id="cl-save" style="display:none;" onclick="saveClass(\'' + (c ? c.id : '') + '\')">' + (c ? 'Save changes' : 'Save draft') + '</button>';
 
     if (typeof window.openModalShell === 'function') window.openModalShell('full', (c ? 'Edit experience' : 'New experience'), body, foot);
     setTimeout(function () { if (window.FFPSelect) { var m = document.getElementById('modal'); if (m) window.FFPSelect.enhance(m); } }, 40);
@@ -370,10 +373,10 @@
           } });
         } catch (e3) { console.warn('[FFP Tours] schedule', e3); }
       }
-      // Tours require admin approval — a NEW tour is submitted for review (status 'pending').
-      if (!id) { try { await sb().rpc('provider_set_listing_status', { p_kind: 'class', p_provider: provId(), p_id: res.data, p_status: 'pending' }); } catch (e5) { console.warn('[FFP Tours] submit', e5); } }
+      // New listings stay as DRAFT — the partner perfects the details, then taps Publish
+      // (gate: Business/Engagement verification + Stripe if the listing is paid). No auto-submit.
       if (typeof window.closeModal === 'function') window.closeModal();
-      toast(id ? 'Saved' : 'Submitted — pending admin review (you’ll go live once approved)', 'success');
+      toast(id ? 'Saved' : 'Saved as draft — tap Publish when you’re ready to go live', 'success');
       await refresh();
     } catch (er) { console.error('[FFP Tours] save', er); toast(er.message || 'Save failed', 'error'); }
   }
@@ -384,6 +387,27 @@
       if (res.error) throw res.error;
       await refresh();
     } catch (er) { console.error('[FFP Tours] status', er); toast('Could not update status', 'error'); }
+  }
+
+  // PUBLISH — runs the gate (Business/Engagement verification + Stripe-if-paid). Verified → live; else → pending review.
+  async function publishClass(id) {
+    try {
+      var res = await sb().rpc('provider_listing_submit', { p_provider: provId(), p_kind: 'class', p_id: id });
+      if (res.error) throw res.error;
+      var d = res.data || {};
+      if (d.state === 'blocked') { toast(d.message || 'Connect Stripe to publish a paid listing.', 'error'); return; }
+      toast(d.message || (d.state === 'published' ? 'Published — now live' : 'Submitted for review'), 'success');
+      await refresh();
+    } catch (er) { console.error('[FFP Tours] publish', er); toast(er.message || 'Could not publish', 'error'); }
+  }
+  // UNPUBLISH — take a live listing back to draft (off the booking platform).
+  async function unpublishClass(id) {
+    try {
+      var res = await sb().rpc('provider_listing_unpublish', { p_provider: provId(), p_kind: 'class', p_id: id });
+      if (res.error) throw res.error;
+      toast('Moved to draft', 'success');
+      await refresh();
+    } catch (er) { console.error('[FFP Tours] unpublish', er); toast('Could not unpublish', 'error'); }
   }
 
   function confirmDeleteClass(id) {
@@ -615,6 +639,8 @@
   };
   window.openClassModal = openClassModal;
   window.saveClass = saveClass;
+  window.publishClass = publishClass;
+  window.unpublishClass = unpublishClass;
   window.setClassStatus = setClassStatus;
   window.confirmDeleteClass = confirmDeleteClass;
   window.FFPReload = window.FFPReload || {};
