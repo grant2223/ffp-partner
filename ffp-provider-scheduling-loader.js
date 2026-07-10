@@ -125,27 +125,37 @@ function renderTimetable() {
     sessions.forEach(function (s) { var d = new Date(s.start_at); var dow = (d.getDay() + 6) % 7; byDay[dow].push(s); });
     byDay.forEach(function (arr) { arr.sort(function (a, b) { var da = new Date(a.start_at), db = new Date(b.start_at); return (da.getHours() * 60 + da.getMinutes()) - (db.getHours() * 60 + db.getMinutes()); }); });
     var tzName = (window.FFPTime && window.FFPTime.tz) ? window.FFPTime.tz() : ((window.FFP_PROVIDER && window.FFP_PROVIDER.timezone) || 'Asia/Dubai');
-    var html = '<div class="psub" style="margin:0 0 8px;font-size:11px;"><span class="ms" style="font-size:13px;vertical-align:-2px;">schedule</span> Times shown in ' + escHtml(tzName.replace(/_/g, ' ')) + '</div>';
-    html += '<div style="display:grid;grid-template-columns:repeat(7,minmax(118px,1fr));gap:8px;overflow-x:auto;padding-bottom:6px;">';
-    days.forEach(function (day, i) {
-      html += '<div style="min-width:118px;">' +
-        '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);font-size:12px;margin-bottom:6px;text-align:center;text-transform:uppercase;letter-spacing:.04em;">' + day.slice(0, 3) + '</div>';
-      if (!byDay[i].length) html += '<div class="psub" style="text-align:center;font-size:11px;opacity:.45;margin-top:4px;">—</div>';
-      byDay[i].forEach(function (s) {
-        var d = new Date(s.start_at); var t = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        var present = _schedAttCounts[s.id] || 0;
-        var cap = (s.capacity != null && s.capacity !== '') ? s.capacity : null;
-        var badge = '<span style="float:right;font-size:11px;font-weight:800;color:' + (cap && present >= cap ? '#ff7a7a' : '#6fc6ef') + ';">' + present + (cap != null ? '/' + cap : '') + '</span>';
-        html += '<div onclick="openOccurrence(\'' + s.id + '\')" title="' + present + (cap != null ? ' of ' + cap : '') + ' attending" style="cursor:pointer;background:var(--ffp-bg-2,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-left:3px solid #1980AD;border-radius:8px;padding:7px 8px;margin-bottom:6px;">' +
-          '<div style="font-weight:700;font-size:12px;color:var(--ffp-text,#eaf2f8);">' + escHtml(t) + badge + '</div>' +
-          '<div style="font-size:12px;font-weight:700;color:#1a1a1a;line-height:1.25;">' + escHtml(s.title) + '</div>' +
-          (s.recurrence === 'once' ? '<div style="margin:2px 0 0;font-size:10px;font-weight:800;color:var(--ffp-warn);">one-off · ' + escHtml(new Date(s.start_at).toLocaleDateString([], { day: 'numeric', month: 'short' })) + '</div>' : '') +
-          (s.coach ? '<div class="psub" style="margin:2px 0 0;font-size:11px;">' + escHtml(s.coach) + '</div>' : '') +
-        '</div>';
+    var cardHtml = function (s) {
+      var d = new Date(s.start_at); var t = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      var present = _schedAttCounts[s.id] || 0;
+      var cap = (s.capacity != null && s.capacity !== '') ? s.capacity : null;
+      var badge = '<span style="float:right;font-size:11px;font-weight:800;color:' + (cap && present >= cap ? '#ff7a7a' : '#6fc6ef') + ';">' + present + (cap != null ? '/' + cap : '') + '</span>';
+      return '<div onclick="openOccurrence(\'' + s.id + '\')" title="' + present + (cap != null ? ' of ' + cap : '') + ' attending" style="cursor:pointer;background:var(--ffp-bg-2,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-left:3px solid #1980AD;border-radius:8px;padding:7px 8px;margin-bottom:6px;">' +
+        '<div style="font-weight:700;font-size:12px;color:var(--ffp-text,#eaf2f8);">' + escHtml(t) + badge + '</div>' +
+        '<div style="font-size:12px;font-weight:700;color:#1a1a1a;line-height:1.25;">' + escHtml(s.title) + '</div>' +
+        (s.recurrence === 'once' ? '<div style="margin:2px 0 0;font-size:10px;font-weight:800;color:var(--ffp-warn);">one-off · ' + escHtml(new Date(s.start_at).toLocaleDateString([], { day: 'numeric', month: 'short' })) + '</div>' : '') +
+        (s.coach ? '<div class="psub" style="margin:2px 0 0;font-size:11px;">' + escHtml(s.coach) + '</div>' : '') +
+      '</div>';
+    };
+    // Split into Morning (AM) + Afternoon/Evening (PM); each day column scrolls if long.
+    var gridHtml = function (label, isAM) {
+      var g = '<div style="font-weight:800;font-size:12px;color:var(--ffp-text,#eaf2f8);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 8px;opacity:.9;">' + label + '</div>';
+      g += '<div style="display:grid;grid-template-columns:repeat(7,minmax(118px,1fr));gap:8px;overflow-x:auto;padding-bottom:6px;">';
+      days.forEach(function (day, i) {
+        var items = byDay[i].filter(function (s) { var h = new Date(s.start_at).getHours(); return isAM ? h < 12 : h >= 12; });
+        g += '<div style="min-width:118px;">' +
+          '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);font-size:12px;margin-bottom:6px;text-align:center;text-transform:uppercase;letter-spacing:.04em;">' + day.slice(0, 3) + '</div>' +
+          '<div style="max-height:360px;overflow-y:auto;scrollbar-width:none;">';
+        if (!items.length) g += '<div class="psub" style="text-align:center;font-size:11px;opacity:.45;margin-top:4px;">—</div>';
+        items.forEach(function (s) { g += cardHtml(s); });
+        g += '</div></div>';
       });
-      html += '</div>';
-    });
-    html += '</div>';
+      g += '</div>';
+      return g;
+    };
+    var html = '<div class="psub" style="margin:0 0 8px;font-size:11px;"><span class="ms" style="font-size:13px;vertical-align:-2px;">schedule</span> Times shown in ' + escHtml(tzName.replace(/_/g, ' ')) + '</div>';
+    html += gridHtml('Morning · AM', true);
+    html += gridHtml('Afternoon &amp; evening · PM', false);
     host.innerHTML = html;
   };
   if (!pid) { go(); return; }
@@ -330,11 +340,22 @@ function _tplAddSlotRow(dow, time, coach) {
     '<select class="select tpl-slot-day" style="flex:1.1;"><option value="">Day…</option>' + dayOpts + '</select>' +
     '<input class="input tpl-slot-time" type="time" value="' + escHtml(time || '') + '" style="flex:1;color-scheme:light;">' +
     '<select class="select tpl-slot-coach" style="flex:1.3;">' + _coachOpts(coach) + '</select>' +
+    '<button type="button" class="btn btn-ghost btn-sm" title="Duplicate this time" onclick="_tplDupSlotRow(this)"><span class="ms">content_copy</span></button>' +
     '<button type="button" class="btn btn-ghost btn-sm" title="Remove" onclick="this.closest(\'.tpl-slot-row\').remove()"><span class="ms">close</span></button>';
   wrap.appendChild(row);
   if (coach) { var cs = row.querySelector('.tpl-slot-coach'); if (cs) cs.value = coach; }
   if (window.FFPSelect) { try { window.FFPSelect.enhance(row); } catch (e) {} }
 }
+
+// Duplicate a weekly-schedule row (copies day/time/coach into a new row you can tweak).
+function _tplDupSlotRow(btn) {
+  var row = btn && btn.closest('.tpl-slot-row'); if (!row) return;
+  var dow = (row.querySelector('.tpl-slot-day') || {}).value || '';
+  var tm = (row.querySelector('.tpl-slot-time') || {}).value || '';
+  var co = (row.querySelector('.tpl-slot-coach') || {}).value || '';
+  _tplAddSlotRow(dow, tm, co);
+}
+window._tplDupSlotRow = _tplDupSlotRow;
 
 async function saveTemplate(id) {
   var g = function (i) { var el = document.getElementById('tpl-' + i); return el ? (el.value || '').trim() : ''; };
