@@ -422,9 +422,9 @@ function _apRenderDay(host, day) {
   var HH = _AP_HH, halfH = HH / 2, rangeStart = 0, halfRows = 48;
   var colW = 'repeat(' + coaches.length + ',150px)';
   var minW = 56 + coaches.length * 150;
-  var html = '<div style="overflow-x:auto;"><div style="min-width:' + minW + 'px;">';
-  // coach header
-  html += '<div style="display:grid;grid-template-columns:54px ' + colW + ';"><div></div>';
+  var html = '<div id="ap-day-scroll" style="overflow:auto;max-height:62vh;-webkit-overflow-scrolling:touch;"><div style="min-width:' + minW + 'px;">';
+  // coach header (sticky so it stays while the day scrolls)
+  html += '<div style="display:grid;grid-template-columns:54px ' + colW + ';position:sticky;top:0;z-index:5;background:var(--ffp-bg-2,#fff);"><div></div>';
   coaches.forEach(function (c) {
     html += '<div style="text-align:center;padding:9px 4px;border-left:2px solid var(--ffp-border-mid,#ccd9da);background:var(--ffp-bg-3,#eef1f3);font-weight:800;font-size:12px;color:var(--ffp-text,#0e2531);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + apEsc(c.full_name || 'Coach') + '</div>';
   });
@@ -467,6 +467,7 @@ function _apRenderDay(host, day) {
     '<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:13px;height:13px;border-radius:3px;background:' + AP_BLOCK.bg + ';"></span>Blocked</span>' +
     '<span style="opacity:.8;">· tap an available (yellow) slot to book</span></div>';
   host.innerHTML = html;
+  var _sc = document.getElementById('ap-day-scroll'); if (_sc) _sc.scrollTop = 6 * _AP_HH; // open on the morning, not midnight
 }
 function apDayColClick(ev, el, coachId, dateStr, startH) {
   var rect = el.getBoundingClientRect();
