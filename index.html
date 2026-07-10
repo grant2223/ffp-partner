@@ -3375,7 +3375,7 @@ function toggleNavSection(sec) {
 
 // v12: load a panel's data loader the first time that panel is opened.
 // Overview/identity loaders stay eager; only clearly panel-scoped ones defer.
-var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=24', 'members': 'ffp-provider-members-loader.js?v=10', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15' };
+var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=25', 'members': 'ffp-provider-members-loader.js?v=10', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15' };
 var _provLoaded = {};
 function ensureProviderLoader(id) {
   var src = _provLoaderSrc[id];
