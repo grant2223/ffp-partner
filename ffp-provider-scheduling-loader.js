@@ -130,7 +130,7 @@ function renderTimetable() {
       var present = _schedAttCounts[s.id] || 0;
       var cap = (s.capacity != null && s.capacity !== '') ? s.capacity : null;
       var badge = '<span style="float:right;font-size:11px;font-weight:800;color:' + (cap && present >= cap ? '#ff7a7a' : '#6fc6ef') + ';">' + present + (cap != null ? '/' + cap : '') + '</span>';
-      return '<div onclick="openOccurrence(\'' + s.id + '\')" title="' + present + (cap != null ? ' of ' + cap : '') + ' attending" style="cursor:pointer;background:var(--ffp-bg-2,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-left:3px solid #1980AD;border-radius:8px;padding:7px 8px;margin-bottom:6px;">' +
+      return '<div onclick="openOccurrence(\'' + s.id + '\')" title="' + present + (cap != null ? ' of ' + cap : '') + ' attending" style="cursor:pointer;background:var(--ffp-bg-3,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-left:3px solid #1980AD;border-radius:8px;padding:7px 8px;margin-bottom:6px;">' +
         '<div style="font-weight:700;font-size:12px;color:var(--ffp-text,#eaf2f8);">' + escHtml(t) + badge + '</div>' +
         '<div style="font-size:12px;font-weight:700;color:#1a1a1a;line-height:1.25;">' + escHtml(s.title) + '</div>' +
         (s.recurrence === 'once' ? '<div style="margin:2px 0 0;font-size:10px;font-weight:800;color:var(--ffp-warn);">one-off · ' + escHtml(new Date(s.start_at).toLocaleDateString([], { day: 'numeric', month: 'short' })) + '</div>' : '') +
