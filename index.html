@@ -1247,30 +1247,29 @@ a { color: var(--ffp-blue); text-decoration: none; }
   overflow-y: auto;
 }
 .modal-backdrop.open { display: flex; }
+/* FULL-SCREEN MODALS (all sizes) — edge-to-edge, big back + close, scrollable body. */
 .modal {
-  width: 100%;
-  max-width: 720px;
+  position: fixed; inset: 0;
+  width: 100vw; max-width: none; height: 100vh; height: 100dvh;
   background: var(--ffp-bg-2);
-  border: 1px solid var(--ffp-border-mid);
-  border-radius: var(--r-xl);
-  overflow: hidden;
-  box-shadow: var(--shadow-pop);
-  margin: auto;
+  border: none; border-radius: 0;
+  overflow: hidden; margin: 0;
+  display: flex; flex-direction: column;
 }
-.modal.lg { max-width: 880px; }
-.modal.sm { max-width: 460px; }
-.modal.full { max-width: 1180px; width: calc(100vw - 40px); }
-.modal.full .modal-body { max-height: calc(100vh - 190px); }
-@media (max-width: 600px) { .modal.full { width: calc(100vw - 16px); } }
+.modal.lg, .modal.sm, .modal.full { max-width: none; width: 100vw; }
+.modal.full .modal-body { max-height: none; }
 .modal-head {
-  padding: 20px 26px;
+  padding: 12px 18px;
   border-bottom: 1px solid var(--ffp-border);
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px;
+  flex: 0 0 auto;
+  position: sticky; top: 0; background: var(--ffp-bg-2); z-index: 3;
+  padding-top: max(12px, env(safe-area-inset-top));
 }
-.modal-title { font-size: 17px; font-weight: 800; letter-spacing: -.2px; }
+.modal-title { font-size: 18px; font-weight: 800; letter-spacing: -.2px; }
 .modal-close {
-  width: 34px; height: 34px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   background: var(--ffp-bg-3);
   color: var(--ffp-text-muted);
@@ -1280,17 +1279,22 @@ a { color: var(--ffp-blue); text-decoration: none; }
   border: 1px solid transparent;
 }
 .modal-close:hover { color: var(--ffp-text); border-color: var(--ffp-border-mid); }
-.modal-close .ms { font-size: 18px; }
+.modal-close .ms { font-size: 24px; }
 .modal-body {
   padding: 22px 26px;
-  max-height: calc(100vh - 240px);
+  flex: 1 1 auto;
+  max-height: none;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
+.modal-body-inner { max-width: 860px; margin: 0 auto; }
 .modal-foot {
-  padding: 16px 26px;
+  padding: 14px 22px;
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
   border-top: 1px solid var(--ffp-border);
   display: flex; justify-content: flex-end; gap: 10px;
   background: var(--ffp-bg-3);
+  flex: 0 0 auto; position: sticky; bottom: 0;
 }
 .modal-foot .btn { min-width: 100px; }
 .modal-foot .left { margin-right: auto; }
@@ -3371,7 +3375,7 @@ function toggleNavSection(sec) {
 
 // v12: load a panel's data loader the first time that panel is opened.
 // Overview/identity loaders stay eager; only clearly panel-scoped ones defer.
-var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=23', 'members': 'ffp-provider-members-loader.js?v=10', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=14' };
+var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=24', 'members': 'ffp-provider-members-loader.js?v=10', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15' };
 var _provLoaded = {};
 function ensureProviderLoader(id) {
   var src = _provLoaderSrc[id];
@@ -5589,10 +5593,13 @@ function openModalShell(size, title, bodyHtml, footHtml) {
   modal.className = 'modal' + (size ? ' ' + size : '');
   modal.innerHTML =
     '<div class="modal-head">' +
-      '<div class="modal-title">' + title + '</div>' +
-      '<button class="modal-close" onclick="closeModal()"><span class="ms">close</span></button>' +
+      '<div style="display:flex;align-items:center;gap:10px;min-width:0;">' +
+        '<button class="modal-close" onclick="closeModal()" aria-label="Back"><span class="ms">arrow_back</span></button>' +
+        '<div class="modal-title">' + title + '</div>' +
+      '</div>' +
+      '<button class="modal-close" onclick="closeModal()" aria-label="Close"><span class="ms">close</span></button>' +
     '</div>' +
-    '<div class="modal-body">' + bodyHtml + '</div>' +
+    '<div class="modal-body"><div class="modal-body-inner">' + bodyHtml + '</div></div>' +
     (footHtml ? '<div class="modal-foot">' + footHtml + '</div>' : '');
   back.classList.add('open');
 }
