@@ -309,7 +309,7 @@
 
     var provRes = await window.supabase
       .from('providers')
-      .select('id, business_name, letter_mark, category, provider_type, country, city, area, address, contact_email, contact_phone, website, instagram, about, logo_url, hero_photo_url, status, activities, latitude, longitude, maps_url, passport_discount_pct, timezone, currency')
+      .select('id, business_name, letter_mark, category, provider_type, country, city, area, address, contact_email, contact_phone, website, instagram, about, logo_url, hero_photo_url, tour_video_url, status, activities, latitude, longitude, maps_url, passport_discount_pct, timezone, currency')
       .eq('id', id).single();
     if (provRes.error) throw provRes.error;
 
@@ -338,6 +338,7 @@
       verified:      p.status === 'approved',
       logo_url:      p.logo_url || null,
       hero_url:      p.hero_photo_url || null,
+      tour_video_url: p.tour_video_url || '',
       activities:    Array.isArray(p.activities) ? p.activities : [],
       latitude:      (p.latitude  != null) ? Number(p.latitude)  : null,
       longitude:     (p.longitude != null) ? Number(p.longitude) : null,
@@ -434,6 +435,7 @@
           about:          about || null,
           logo_url:       logoUrl,
           hero_photo_url: heroUrl,
+          tour_video_url: (function () { var e = document.getElementById('pf-tour-video'); return e ? e.value.trim() : ''; })(),
           activities:     _provExtras.activities || [],
           latitude:       (_provExtras.lat != null) ? _provExtras.lat : null,
           longitude:      (_provExtras.lng != null) ? _provExtras.lng : null,
