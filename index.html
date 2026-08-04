@@ -2500,6 +2500,10 @@ a { color: var(--ffp-blue); text-decoration: none; }
                 <div class="uploader-hint">JPG or PNG · 16:9 · position &amp; crop to fit the banner</div>
               </div>
             </div>
+            <div class="field full">
+              <div class="label">Tour video <span class="label-hint">— optional; a short facility tour shown on your public profile. Paste a YouTube, Vimeo or MP4 link.</span></div>
+              <input class="input" id="pf-tour-video" type="url" placeholder="https://youtu.be/… or https://vimeo.com/… or https://…/tour.mp4">
+            </div>
           </div>
         </div>
 
@@ -2612,6 +2616,13 @@ a { color: var(--ffp-blue); text-decoration: none; }
             off-peak offers and more. We're finishing this off; you'll see it here when it's ready.
           </p>
         </div>
+      </section>
+
+      <section class="panel" id="panel-offers">
+        <div class="ph">Offers</div>
+        <div class="psub">Buy-1-Get-1-Free perks for FFP members — shown to Ambassadors and redeemed at your venue QR.</div>
+        <div style="margin:14px 0;"><button onclick="ffpOffers.add()" style="padding:10px 16px;border:none;background:var(--ffp-blue,#1980AD);color:#fff;border-radius:10px;font-weight:800;cursor:pointer;"><span class="ms" style="font-size:16px;vertical-align:-3px;">add</span> Add offer</button></div>
+        <div id="partner-offers-list"></div>
       </section>
 
       <!-- ════════════════════════════════════════════════════════════════
@@ -3249,6 +3260,7 @@ const NAV = [
   { id: 'events',      icon: 'event',           label: 'Events',      section: 'engagement' },
   { id: 'trips',       icon: 'flight',          label: 'Trips',       section: 'engagement' },
   { id: 'quests',      icon: 'flag',            label: 'Quests',      section: 'engagement' },
+  { id: 'offers',      icon: 'local_offer',     label: 'Offers',      section: 'engagement' },
   // Deals + Challenges parked — hidden from nav until built (panels remain in code).
   // ── Account ──
   { id: 'profile',     icon: 'storefront',      label: 'Profile',     section: 'account' },
@@ -3375,7 +3387,7 @@ function toggleNavSection(sec) {
 
 // v12: load a panel's data loader the first time that panel is opened.
 // Overview/identity loaders stay eager; only clearly panel-scoped ones defer.
-var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=25', 'members': 'ffp-provider-members-loader.js?v=10', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15' };
+var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=25', 'members': 'ffp-provider-members-loader.js?v=10', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15', 'offers': 'ffp-provider-offers-loader.js?v=1' };
 var _provLoaded = {};
 function ensureProviderLoader(id) {
   var src = _provLoaderSrc[id];
@@ -3539,6 +3551,7 @@ function showPanel(id) {
   if (id === 'experiences' && typeof renderClasses === 'function') renderClasses();
   if (id === 'challenges') { renderChallenges(); if (window.FFPQuestCheckins) FFPQuestCheckins.reload(); }
   if (id === 'quests' && window.FFPQuestCheckins) FFPQuestCheckins.reload();
+  if (id === 'offers') _callWhenReady('ffpRenderOffers');
   if (id === 'checkins') { renderCheckIns(); if (window.FFPQuestCheckins) FFPQuestCheckins.reload(); }
   if (id === 'analytics') renderAnalytics();
   if (id === 'scheduling' && typeof renderScheduling === 'function') renderScheduling();
@@ -3866,6 +3879,7 @@ function loadProfile() {
   setPhoneValue(providerProfile.phone || '');
   document.getElementById('pf-website').value = providerProfile.website || '';
   document.getElementById('pf-about').value = providerProfile.about || '';
+  var _tvEl = document.getElementById('pf-tour-video'); if (_tvEl) _tvEl.value = providerProfile.tour_video_url || '';
   var _pdEl = document.getElementById('pf-passport-discount'); if (_pdEl) _pdEl.value = (providerProfile.passport_discount_pct != null ? providerProfile.passport_discount_pct : '');
   renderHours();
   renderUploader('up-logo', providerProfile.logo_url, 'logo');
@@ -3926,6 +3940,7 @@ function saveProfile() {
   providerProfile.phone         = getPhoneValue();
   providerProfile.website       = document.getElementById('pf-website').value.trim();
   providerProfile.about         = document.getElementById('pf-about').value.trim();
+  var _tvSave = document.getElementById('pf-tour-video'); providerProfile.tour_video_url = _tvSave ? _tvSave.value.trim() : '';
   // capture hours from inputs
   document.querySelectorAll('#hours-grid .hours-row').forEach(row => {
     const day = row.dataset.day;
