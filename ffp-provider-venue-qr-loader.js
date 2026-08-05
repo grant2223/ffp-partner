@@ -18,7 +18,10 @@
    ═══════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
-  var MEMBER_APP = 'https://ffppassport.com/ffp-member-dashboard.html';
+  // Smart landing: members check in, new visitors join FFP (14-day trial) with this partner's referral code.
+  var MEMBER_APP = 'https://findfitpeople.com/visit';
+  var API = 'https://ffp-passport-backend.vercel.app';
+  var refLink = '';
   var QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
   function esc(s) {
     if (typeof window.escHtml === 'function') return window.escHtml(s);
@@ -46,7 +49,13 @@
       '#ffp-venue-qr #venue-qr-box img,#ffp-venue-qr #venue-qr-box canvas{display:block;}',
       '#ffp-venue-qr .vq-name{font-size:15px;font-weight:800;color:var(--ffp-text,#0e2531);margin-top:14px;}',
       '#ffp-venue-qr .vq-pp{font-size:12px;font-weight:700;letter-spacing:1px;color:var(--ffp-yellow,#2b3942);margin-top:3px;}',
-      '#ffp-venue-qr .vq-dl{margin-top:16px;}'
+      '#ffp-venue-qr .vq-dl{margin-top:16px;}',
+      '#ffp-venue-qr .vq-ref{margin-top:14px;text-align:left;}',
+      '#ffp-venue-qr .vq-ref .vq-head{justify-content:flex-start;}',
+      '#ffp-venue-qr .vq-ref .vq-sub{margin-bottom:12px;text-align:left;}',
+      '#ffp-venue-qr .vq-reflink{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--ffp-border,rgba(15,37,49,.12));border-radius:10px;padding:9px 11px;}',
+      '#ffp-venue-qr .vq-reflink span{flex:1;font-size:12.5px;font-weight:700;color:var(--ffp-text,#0e2531);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      '#ffp-venue-qr .vq-reflink .btn{flex:none;display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:7px 11px;}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -86,13 +95,15 @@
     if (!el) return;
     el.innerHTML =
       '<div class="vq-card">' +
-        '<div class="vq-head"><span class="ms">qr_code_2</span> Your venue check-in QR</div>' +
-        '<div class="vq-sub">Print this and display it at your counter. Members scan it to check in for quests.</div>' +
+        '<div class="vq-head"><span class="ms">qr_code_2</span> Your venue QR</div>' +
+        '<div class="vq-sub">Print this and display it at your counter. Members scan it to check in — and new visitors can join FFP.</div>' +
         '<div class="vq-qrwrap"><div id="venue-qr-box"></div></div>' +
         '<div class="vq-name">' + esc(info.business_name || 'Your venue') + '</div>' +
         (info.passport_no ? '<div class="vq-pp">FFP Passport No. ' + esc(info.passport_no) + '</div>' : '') +
         '<div class="vq-dl"><button class="btn btn-pri" onclick="FFPVenueQR.download()"><span class="ms">download</span> Download QR (PNG)</button></div>' +
-      '</div>';
+      '</div>' +
+      '<div class="vq-card vq-ref" id="vq-ref"><div class="vq-head"><span class="ms">redeem</span> Refer &amp; earn</div><div class="vq-refbody" id="vq-refbody"><div class="vq-sub">Checking your listing…</div></div></div>';
+    renderRef();
     loadQrLib(function (err) {
       var box = document.getElementById('venue-qr-box');
       if (!box) return;
@@ -106,6 +117,25 @@
         });
       } catch (e) { box.textContent = 'QR unavailable'; }
     });
+  }
+
+  // Refer & earn card — gated on the SAME rule the backend enforces (claimed + admin-verified + complete profile).
+  function renderRef() {
+    var body = document.getElementById('vq-refbody');
+    if (!body) return;
+    fetch(API + '/api/venue/' + encodeURIComponent(providerId()) + '/join').then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.ok) { body.innerHTML = '<div class="vq-sub">Couldn\'t load your referral status.</div>'; return; }
+      if (d.unlocked && d.ref) {
+        var link = 'findfitpeople.com/join?ref=' + d.ref;
+        refLink = 'https://' + link;
+        body.innerHTML =
+          '<div class="vq-sub">Earn <b>10%</b> of every payment when someone joins FFP Passport through your QR or link — recurring. The check-in QR above is also your referral QR.</div>' +
+          '<div class="vq-reflink"><span id="vq-reftext">' + esc(link) + '</span><button class="btn" onclick="FFPVenueQR.copyRef()"><span class="ms">content_copy</span> Copy link</button></div>';
+      } else {
+        body.innerHTML =
+          '<div class="vq-sub">Refer members and earn <b>10%</b> commission, recurring. To unlock: get your listing <b>admin-verified</b> and complete your <b>profile</b> (name, category, city, about &amp; a photo) so you\'re live on FFP Explore.</div>';
+      }
+    }).catch(function () { body.innerHTML = '<div class="vq-sub">Couldn\'t load your referral status.</div>'; });
   }
 
   // Draw a rounded-rectangle path.
@@ -179,7 +209,16 @@
     triggerSave(null);
   }
 
-  window.FFPVenueQR = { download: download };
+  function copyRef() {
+    if (!refLink) return;
+    try {
+      navigator.clipboard.writeText(refLink).then(function () {
+        var t = document.querySelector('#vq-refbody .vq-reflink .btn');
+        if (t) { var h = t.innerHTML; t.innerHTML = '<span class="ms">check</span> Copied'; setTimeout(function () { t.innerHTML = h; }, 1600); }
+      });
+    } catch (e) {}
+  }
+  window.FFPVenueQR = { download: download, copyRef: copyRef };
   async function fetchInfo() {
     var pid = providerId();
     if (!pid) return;
