@@ -23,41 +23,47 @@
   function val(id) { var e = document.getElementById(id); return e ? String(e.value || '').trim() : ''; }
   function closeModal() { var b = document.getElementById('po-modal'); if (b) b.remove(); }
 
+  // Full-bleed modal (shared openModalShell) + a REQUIRED offer image (no words on the image).
   function openForm(o) {
     o = o || {}; editingId = o.id || null;
     var body =
+      '<div style="font-size:12.5px;color:#8a99a8;margin:-2px 0 14px;">Buy 1, Get 1 Free · shown to Ambassador members.</div>' +
       field('Offer title', inp('po-title', 'Buy 1 Get 1 Free class', 'text', o.title)) +
       field('Description', ta('po-desc', 'Short description shown to members', o.description)) +
       field('Terms / fine print', ta('po-terms', 'e.g. One per member, dine-in only', o.terms)) +
-      '<div style="display:flex;gap:10px;">' +
-        '<div style="flex:1">' + field('Valid from', inp('po-from', '', 'date', o.valid_from)) + '</div>' +
-        '<div style="flex:1">' + field('Valid to', inp('po-to', '', 'date', o.valid_to)) + '</div>' +
-        '<div style="width:120px">' + field('Per-member limit', inp('po-limit', '1', 'number', o.per_member_limit != null ? o.per_member_limit : 1)) + '</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+        '<div style="flex:1;min-width:150px">' + field('Valid from', inp('po-from', '', 'date', o.valid_from)) + '</div>' +
+        '<div style="flex:1;min-width:150px">' + field('Valid to', inp('po-to', '', 'date', o.valid_to)) + '</div>' +
+        '<div style="width:150px">' + field('Per-member limit', inp('po-limit', '1', 'number', o.per_member_limit != null ? o.per_member_limit : 1)) + '</div>' +
+      '</div>' +
+      '<div style="margin-top:4px;"><label style="display:block;font-size:12px;font-weight:700;color:#43525c;margin-bottom:5px;">Offer image <span style="color:#e04b3a;">*</span></label>' +
+        '<div id="listing-photo-slot"></div>' +
+        '<div style="font-size:12px;color:#8a99a8;margin-top:6px;line-height:1.5;">Required. A clean photo of the offer — <b>no words or text on the image.</b></div>' +
       '</div>';
-    var html =
-      '<div id="po-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(8,20,32,.55);display:flex;align-items:center;justify-content:center;padding:20px;">' +
-        '<div style="background:#fff;border-radius:16px;max-width:440px;width:100%;max-height:90vh;overflow:auto;padding:20px;">' +
-          '<div style="font-size:17px;font-weight:900;color:#12232f;margin-bottom:4px;">' + (editingId ? 'Edit offer' : 'Add offer') + '</div>' +
-          '<div style="font-size:12.5px;color:#8a99a8;margin-bottom:14px;">Buy 1, Get 1 Free · shown to Ambassador members.</div>' +
-          body +
-          '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">' +
-            '<button onclick="ffpOffers._close()" style="padding:10px 16px;border:1px solid #d7dee5;background:#fff;border-radius:10px;font-weight:700;cursor:pointer;">Cancel</button>' +
-            '<button onclick="ffpOffers.save()" style="padding:10px 18px;border:none;background:#1980AD;color:#fff;border-radius:10px;font-weight:800;cursor:pointer;">' + (editingId ? 'Save' : 'Add offer') + '</button>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    var wrap = document.createElement('div'); wrap.innerHTML = html; document.body.appendChild(wrap.firstChild);
+    var foot =
+      '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>' +
+      '<button class="btn btn-pri" onclick="ffpOffers.save()">' + (editingId ? 'Save' : 'Add offer') + '</button>';
+    if (typeof window.openModalShell === 'function') {
+      window.openModalShell('lg', (editingId ? 'Edit offer' : 'Add offer'), body, foot);
+    }
+    if (typeof window.renderListingUploader === 'function') {
+      try { window.renderListingUploader(o.image_url || ''); } catch (e) {}
+    }
   }
 
   async function save() {
     if (!prov().id) { toast('Provider not ready — reload.', 'error'); return; }
     if (!val('po-title')) { toast('Offer title is required', 'error'); return; }
+    var slot = document.getElementById('listing-photo-slot');
+    var imgUrl = slot ? (slot.dataset.url || '') : '';
+    if (!imgUrl) { toast('Add an offer image (no words on the image)', 'error'); return; }
     var info = await providerInfo();
     var row = {
       provider_id: prov().id,
       partner_name: info.business_name || prov().business_name || null,
       city: info.city || prov().city || null,
       logo_url: info.logo_url || null,
+      image_url: imgUrl,
       title: val('po-title'),
       description: val('po-desc') || null,
       terms: val('po-terms') || null,
@@ -73,7 +79,8 @@
       if (editingId) res = await sb().from('partner_offers').update(row).eq('id', editingId);
       else { row.status = 'live'; res = await sb().from('partner_offers').insert(row); }
       if (res.error) throw res.error;
-      closeModal(); toast(editingId ? 'Offer updated' : 'Offer added', 'success'); editingId = null; render();
+      if (window.closeModal) window.closeModal();
+      toast(editingId ? 'Offer updated' : 'Offer added', 'success'); editingId = null; render();
     } catch (e) { toast(e.message || 'Save failed', 'error'); }
   }
 
