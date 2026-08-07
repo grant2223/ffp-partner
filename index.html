@@ -324,7 +324,7 @@
 <script src="ffp-provider-quests-loader.js?v=5"></script>
 <!-- Provider quest CREATION (#quests P1): "Your quests" card + create/edit form at the top of the Quests panel -> provider_save_quest RPC. -->
 <script src="ffp-provider-quest-create-loader.js?v=2"></script>
-<script src="ffp-provider-venue-qr-loader.js?v=6"></script>
+<script src="ffp-provider-venue-qr-loader.js?v=8"></script>
 <!-- ffp-provider-quest-analytics-loader.js reference removed (v40): that file does not exist in the repo,
      so it 404'd → returned the HTML fallback → "Unexpected token '<'" console error on every load. -->
 <!-- Feedback widget (shared) -> public.feedback -> admin Feedback panel -->
@@ -2968,6 +2968,14 @@ a { color: var(--ffp-blue); text-decoration: none; }
       </section>
 
 
+      <!-- ════════ REFER & EARN ════════ -->
+      <section class="panel" id="panel-refer">
+        <div class="ph">Refer &amp; earn</div>
+        <div class="psub">Bring new people to FFP and earn 10% of every Passport payment they make — recurring. Share your QR or link; it's the same one members use to check in.</div>
+        <!-- #ffp-refer is injected here by ffp-provider-venue-qr-loader.js -->
+      </section>
+
+
       <!-- ════════ ANALYTICS ════════ -->
       <section class="panel" id="panel-analytics">
         <div class="ph-row">
@@ -3246,6 +3254,7 @@ const NAV = [
   { id: 'overview',    icon: 'dashboard',       label: 'Overview',    section: 'manage' },
   { id: 'analytics',   icon: 'analytics',       label: 'Analytics',   section: 'manage' },
   { id: 'checkins',    icon: 'qr_code_scanner', label: 'Check-ins',   section: 'manage' },
+  { id: 'refer',       icon: 'redeem',          label: 'Refer & earn', section: 'manage' },
   { id: 'announcements',icon: 'campaign',       label: 'Announcements', section: 'manage' },
   // ── Business section (paid $99/mo add-on; admin-granted access. Gated when !FFP_PROVIDER.business_access) ──
   { id: 'reviews',     icon: 'star',            label: 'Reviews',             section: 'business' },
@@ -3287,7 +3296,7 @@ async function ensureBusinessAccess() {
 function showBusinessUpgrade() {
   var body =
     '<div style="text-align:center;padding:6px 4px 2px;">' +
-      '<span class="ms" style="font-size:46px;color:var(--ffp-yellow,#f5c542);">workspace_premium</span>' +
+      '<span class="ms" style="font-size:46px;color:var(--ffp-yellow,#f5c542);">verified</span>' +
       '<h3 style="margin:12px 0 6px;font-size:18px;">Business section — $99/mo</h3>' +
       '<p style="max-width:440px;margin:0 auto;color:var(--ffp-text-muted,#8a99a8);line-height:1.6;font-size:13.5px;">' +
         'Members, Packages, Sessions, Appointments, Staff, Reviews and Payments &amp; Invoices are part of the FFP ' +
@@ -3553,6 +3562,7 @@ function showPanel(id) {
   if (id === 'quests' && window.FFPQuestCheckins) FFPQuestCheckins.reload();
   if (id === 'offers') _callWhenReady('ffpRenderOffers');
   if (id === 'checkins') { renderCheckIns(); if (window.FFPQuestCheckins) FFPQuestCheckins.reload(); }
+  if (id === 'refer' && window.FFPVenueQR && FFPVenueQR.renderRefer) FFPVenueQR.renderRefer();
   if (id === 'analytics') renderAnalytics();
   if (id === 'scheduling' && typeof renderScheduling === 'function') renderScheduling();
   if (id === 'members' && typeof renderMembers === 'function') renderMembers();
