@@ -55,7 +55,24 @@
       '#ffp-venue-qr .vq-ref .vq-sub{margin-bottom:12px;text-align:left;}',
       '#ffp-venue-qr .vq-reflink{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--ffp-border,rgba(15,37,49,.12));border-radius:10px;padding:9px 11px;}',
       '#ffp-venue-qr .vq-reflink span{flex:1;font-size:12.5px;font-weight:700;color:var(--ffp-text,#0e2531);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
-      '#ffp-venue-qr .vq-reflink .btn{flex:none;display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:7px 11px;}'
+      '#ffp-venue-qr .vq-reflink .btn{flex:none;display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:7px 11px;}',
+      // Dedicated "Refer & earn" panel (same look, reused classes).
+      '#ffp-refer .vq-card{background:rgba(15,37,49,.05);border:1px solid var(--ffp-border,rgba(15,37,49,.08));border-radius:14px;padding:20px;text-align:center;margin-bottom:16px;}',
+      '#ffp-refer .vq-hero{font-size:34px;font-weight:900;color:var(--ffp-text,#0e2531);letter-spacing:-1px;line-height:1;}',
+      '#ffp-refer .vq-hero small{display:block;font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--ffp-text-muted,#566069);margin-top:6px;}',
+      '#ffp-refer .vq-sub{font-size:13px;color:var(--ffp-text-muted,#566069);line-height:1.55;}',
+      '#ffp-refer .vq-qrwrap{display:inline-block;background:#fff;padding:20px;border-radius:18px;margin-top:6px;}',
+      '#ffp-refer #refer-qr-box img,#ffp-refer #refer-qr-box canvas{display:block;}',
+      '#ffp-refer .vq-name{font-size:15px;font-weight:800;color:var(--ffp-text,#0e2531);margin-top:14px;}',
+      '#ffp-refer .vq-dl{margin-top:16px;}',
+      '#ffp-refer .vq-reflink{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--ffp-border,rgba(15,37,49,.12));border-radius:10px;padding:10px 12px;margin-top:12px;}',
+      '#ffp-refer .vq-reflink span{flex:1;font-size:12.5px;font-weight:700;color:var(--ffp-text,#0e2531);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;}',
+      '#ffp-refer .vq-reflink .btn{flex:none;display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:8px 12px;}',
+      '#ffp-refer .vq-steps{text-align:left;margin-top:8px;}',
+      '#ffp-refer .vq-step{display:flex;gap:11px;align-items:flex-start;padding:9px 0;font-size:13px;color:var(--ffp-text,#0e2531);font-weight:600;line-height:1.5;}',
+      '#ffp-refer .vq-step .n{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ffp-yellow,#f2a900);color:#3a2d00;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;}',
+      '#ffp-refer .vq-lock{display:flex;gap:9px;align-items:flex-start;background:rgba(242,169,0,.1);border-radius:12px;padding:13px 14px;font-size:12.5px;font-weight:600;color:var(--ffp-text,#0e2531);line-height:1.55;text-align:left;}',
+      '#ffp-refer .vq-lock .ms{color:#c78700;flex:none;}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -218,7 +235,87 @@
       });
     } catch (e) {}
   }
-  window.FFPVenueQR = { download: download, copyRef: copyRef };
+  // ── Dedicated "Refer & earn" panel (its own nav item) ──────────────────────
+  function downloadRefer() {
+    var box = document.getElementById('refer-qr-box');
+    if (!box) { triggerSave(null); return; }
+    var canvas = box.querySelector('canvas'); var img = box.querySelector('img');
+    if (canvas) { try { triggerSave(buildPaddedPng(canvas)); } catch (e) { triggerSave(canvas.toDataURL('image/png')); } return; }
+    if (img) { var im = new Image(); im.onload = function () { try { triggerSave(buildPaddedPng(im)); } catch (e) { triggerSave(img.src); } }; im.onerror = function () { triggerSave(img.src); }; im.src = img.src; return; }
+    triggerSave(null);
+  }
+  function copyReferLink() {
+    if (!refLink) return;
+    try {
+      navigator.clipboard.writeText(refLink).then(function () {
+        var t = document.querySelector('#ffp-refer .vq-reflink .btn');
+        if (t) { var h = t.innerHTML; t.innerHTML = '<span class="ms">check</span> Copied'; setTimeout(function () { t.innerHTML = h; }, 1600); }
+        if (typeof window.showToast === 'function') window.showToast('Referral link copied', 'success');
+      });
+    } catch (e) {}
+  }
+  async function renderRefer() {
+    var panel = document.getElementById('panel-refer');
+    if (!panel) return;
+    injectStyles();
+    var host = document.getElementById('ffp-refer');
+    if (!host) { host = document.createElement('div'); host.id = 'ffp-refer'; panel.appendChild(host); }
+    host.innerHTML = '<div class="vq-card"><div class="vq-sub">Loading your referral program…</div></div>';
+    if (!info.business_name) { try { await fetchInfo(); } catch (e) {} }
+    var pid = providerId();
+    if (!pid) { host.innerHTML = '<div class="vq-card"><div class="vq-sub">Sign in to your venue to see your referral program.</div></div>'; return; }
+    var d = null;
+    try { d = await fetch(API + '/api/venue/' + encodeURIComponent(pid) + '/join').then(function (r) { return r.json(); }); } catch (e) {}
+    if (!d || !d.ok) { host.innerHTML = '<div class="vq-card"><div class="vq-sub">Couldn\'t load your referral status — try again.</div></div>'; return; }
+
+    if (d.unlocked && d.ref) {
+      var link = 'findfitpeople.com/join?ref=' + d.ref;
+      refLink = 'https://' + link;
+      host.innerHTML =
+        '<div class="vq-card">' +
+          '<div class="vq-hero">10%<small>Recurring commission</small></div>' +
+          '<div class="vq-sub" style="margin-top:12px;">Earn <b>10% of every payment</b> when someone joins FFP Passport through your QR or link — for as long as they stay a member.</div>' +
+        '</div>' +
+        '<div class="vq-card">' +
+          '<div class="vq-head" style="justify-content:center;"><span class="ms">qr_code_2</span> Your referral QR</div>' +
+          '<div class="vq-sub">Print it or show it at your counter. New visitors scan → join FFP Passport (14-day free trial) → you earn. It doubles as your check-in QR.</div>' +
+          '<div class="vq-qrwrap"><div id="refer-qr-box"></div></div>' +
+          '<div class="vq-name">' + esc(info.business_name || 'Your venue') + '</div>' +
+          '<div class="vq-dl"><button class="btn btn-pri" onclick="FFPVenueQR.downloadRefer()"><span class="ms">download</span> Download QR (PNG)</button></div>' +
+          '<div class="vq-reflink"><span>' + esc(link) + '</span><button class="btn" onclick="FFPVenueQR.copyReferLink()"><span class="ms">content_copy</span> Copy link</button></div>' +
+        '</div>' +
+        '<div class="vq-card" style="text-align:left;">' +
+          '<div class="vq-head"><span class="ms">insights</span> How it works</div>' +
+          '<div class="vq-steps">' +
+            '<div class="vq-step"><span class="n">1</span><span>Display your QR at the venue, or share your link online.</span></div>' +
+            '<div class="vq-step"><span class="n">2</span><span>A new visitor scans and joins FFP Passport (14-day free trial).</span></div>' +
+            '<div class="vq-step"><span class="n">3</span><span>You earn <b>10%</b> of every payment they make — recurring, paid to your FFP earnings.</span></div>' +
+          '</div>' +
+        '</div>';
+      loadQrLib(function (err) {
+        var box = document.getElementById('refer-qr-box'); if (!box) return; box.innerHTML = '';
+        if (err || !window.QRCode) { box.textContent = 'QR unavailable'; return; }
+        try { new window.QRCode(box, { text: venueUrl(), width: 200, height: 200, colorDark: '#0a0a0a', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.M }); }
+        catch (e) { box.textContent = 'QR unavailable'; }
+      });
+    } else {
+      host.innerHTML =
+        '<div class="vq-card">' +
+          '<div class="vq-hero">10%<small>Recurring commission</small></div>' +
+          '<div class="vq-sub" style="margin-top:12px;">Refer members and earn <b>10%</b> of every FFP Passport payment they make — recurring.</div>' +
+        '</div>' +
+        '<div class="vq-card" style="text-align:left;">' +
+          '<div class="vq-head"><span class="ms">lock</span> Unlock your referral program</div>' +
+          '<div class="vq-steps">' +
+            '<div class="vq-step"><span class="n">1</span><span>Complete your <b>profile</b> — name, category, city, about &amp; a photo — so you\'re live on FFP Explore.</span></div>' +
+            '<div class="vq-step"><span class="n">2</span><span>Get your listing <b>verified</b> by the FFP team.</span></div>' +
+          '</div>' +
+          '<div class="vq-lock" style="margin-top:6px;"><span class="ms">bolt</span><span>Once verified &amp; complete, your QR and referral link appear here and start earning.</span></div>' +
+        '</div>';
+    }
+  }
+
+  window.FFPVenueQR = { download: download, copyRef: copyRef, renderRefer: renderRefer, downloadRefer: downloadRefer, copyReferLink: copyReferLink };
   async function fetchInfo() {
     var pid = providerId();
     if (!pid) return;
