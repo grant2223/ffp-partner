@@ -45,6 +45,7 @@
       tierRow('member', 'Member', T.member) +
       tierRow('supporter', 'Supporter', T.supporter) +
       tierRow('ambassador', 'Ambassador', T.ambassador) +
+      field('How members redeem', ta('po-redeem', 'Your way — e.g. show the confirmation to staff, tell them the code, or scan at the desk', o.redeem_info)) +
       field('Terms / fine print', ta('po-terms', 'e.g. One per member, dine-in only', o.terms)) +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
         '<div style="flex:1;min-width:150px">' + field('Valid from', inp('po-from', '', 'date', o.valid_from)) + '</div>' +
@@ -86,6 +87,7 @@
       tiers: tiers,
       title: val('po-title'),
       description: val('po-desc') || null,
+      redeem_info: val('po-redeem') || null,
       terms: val('po-terms') || null,
       deal_type: 'bogo',
       valid_from: val('po-from') || null,
