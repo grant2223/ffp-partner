@@ -63,13 +63,6 @@
     'Other'
   ];
 
-  var PROVIDER_TYPES = [
-    'Single location',
-    'Multi-location',
-    'Remote / Online',
-    'Event organizer'
-  ];
-
   var UAE_CITIES = [
     'Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman',
     'Ras Al Khaimah', 'Fujairah', 'Al Ain', 'Umm Al Quwain'
@@ -160,15 +153,6 @@
       if (current) catSel.value = current;
     }
 
-    // Replace provider type options
-    var typeSel = document.getElementById('pf-type');
-    if (typeSel) {
-      var currentT = typeSel.value;
-      typeSel.innerHTML = '<option value="">Choose type</option>' +
-        PROVIDER_TYPES.map(function (t) { return '<option value="' + escText(t) + '">' + escText(t) + '</option>'; }).join('');
-      if (currentT) typeSel.value = currentT;
-    }
-
     // Timezone options — full IANA list (shared FFPTime helper), searchable picker
     var tzSel = document.getElementById('pf-timezone');
     if (tzSel) {
@@ -190,7 +174,6 @@
 
     // Wire up the custom dark pickers on top of existing <select>s
     wrapSelectAsPicker('pf-category',  'Choose category');
-    wrapSelectAsPicker('pf-type',      'Choose type');
     wrapSelectAsPicker('pf-phone-cc',  'Code');
     wrapSelectAsPicker('pf-timezone',  'Choose timezone…');
     wrapSelectAsPicker('pf-currency',  'Choose currency');
@@ -367,7 +350,6 @@
 
     var businessName = (document.getElementById('pf-business-name').value || '').trim();
     var category     = document.getElementById('pf-category').value;
-    var providerType = document.getElementById('pf-type').value;
     var city         = document.getElementById('pf-city').value;
     var country      = (document.getElementById('pf-country') || {}).value || '';
     var timezone     = (document.getElementById('pf-timezone') || {}).value || '';
@@ -425,7 +407,6 @@
           business_name:  businessName,
           letter_mark:    letterMark,
           category:       category,
-          provider_type:  providerType || null,
           timezone:       timezone || null,
           currency:       currency || null,
           city:           city,
@@ -457,7 +438,6 @@
         providerProfile.business_name = businessName;
         providerProfile.letter_mark   = letterMark;
         providerProfile.category      = category;
-        providerProfile.provider_type = providerType;
         providerProfile.timezone      = timezone;
         providerProfile.city          = city;
         providerProfile.country       = country;
@@ -720,7 +700,7 @@
         if (profilePanel && profilePanel.classList.contains('active')) {
           try { window.loadProfile(); } catch (e) {}
           // After loadProfile, refresh picker labels (selects got new values)
-          ['pf-category', 'pf-type', 'pf-phone-cc', 'pf-timezone', 'pf-currency'].forEach(function (id) {
+          ['pf-category', 'pf-phone-cc', 'pf-timezone', 'pf-currency'].forEach(function (id) {
             var s = document.getElementById(id);
             if (s) refreshPickerLabel(s);
           });
@@ -740,7 +720,7 @@
     window.loadProfile = function () {
       try { origLoadProfile(); } catch (e) {}
       refineUI();
-      ['pf-category', 'pf-type', 'pf-phone-cc', 'pf-timezone', 'pf-currency'].forEach(function (id) {
+      ['pf-category', 'pf-phone-cc', 'pf-timezone', 'pf-currency'].forEach(function (id) {
         var s = document.getElementById(id);
         if (s) refreshPickerLabel(s);
       });
