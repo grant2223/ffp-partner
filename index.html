@@ -2518,22 +2518,6 @@ a { color: var(--ffp-blue); text-decoration: none; }
               <script>(function(){var s=document.getElementById('pf-category');if(!s)return;var c=(window.FFP_CONST&&window.FFP_CONST.providerCategories)||['Fitness','Wellness','Padel','Yoga & Pilates','Climbing','Combat sports','Recovery','Adventure','Nutrition','Coaching','Retail','Other'];c.forEach(function(x){var o=document.createElement('option');o.textContent=x;s.appendChild(o);});})();</script>
             </div>
             <div class="field">
-              <div class="label">Partner type</div>
-              <select class="select" id="pf-type"><option value="">Choose…</option></select>
-              <script>(function(){
-                var s=document.getElementById('pf-type'); if(!s) return;
-                // Partner type = how they operate — taxonomy-driven (Admin → Taxonomies → provider_type).
-                function fill(){
-                  var list=(window.FFP_TAX&&FFP_TAX.providerTypes&&FFP_TAX.providerTypes.length)?FFP_TAX.providerTypes:['Single location','Remote','Event organizer'];
-                  var cur=s.value;
-                  s.innerHTML='<option value="">Choose…</option>'+list.map(function(x){return '<option'+(x===cur?' selected':'')+'>'+x+'</option>';}).join('');
-                }
-                fill();
-                if(window.FFP_TAX_READY&&typeof window.FFP_TAX_READY.then==='function'){window.FFP_TAX_READY.then(fill);}
-                document.addEventListener('ffp-tax-ready',fill);
-              })();</script>
-            </div>
-            <div class="field">
               <div class="label">Country <span class="req">*</span></div>
               <select class="select" id="pf-country" data-ffp-loc="country" data-ffp-group="provider"></select>
             </div>
@@ -3880,7 +3864,6 @@ function _provMoney(n) { return window.FFPCurrency ? FFPCurrency.format(n, _prov
 function loadProfile() {
   document.getElementById('pf-business-name').value = providerProfile.business_name || '';
   document.getElementById('pf-category').value = providerProfile.category || '';
-  document.getElementById('pf-type').value = providerProfile.provider_type || '';
   var _tzEl = document.getElementById('pf-timezone'); if (_tzEl) { _tzEl.value = providerProfile.timezone || (window.FFP_PROVIDER && window.FFP_PROVIDER.timezone) || 'Asia/Dubai'; }
   var _ccyEl = document.getElementById('pf-currency'); if (_ccyEl) { if (window.FFPCurrency && _ccyEl.options.length <= 1) { _ccyEl.innerHTML = window.FFPCurrency.optionsHtml(providerProfile.currency || 'AED'); } _ccyEl.value = providerProfile.currency || (window.FFP_PROVIDER && window.FFP_PROVIDER.currency) || 'AED'; }
   if (window.FFPLocation) { FFPLocation.setValue('provider', providerProfile.country || '', providerProfile.city || ''); } else { var _pc = document.getElementById('pf-city'); if (_pc) _pc.value = providerProfile.city || ''; }
@@ -3942,7 +3925,6 @@ document.addEventListener('input', e => {
 function saveProfile() {
   providerProfile.business_name = document.getElementById('pf-business-name').value.trim();
   providerProfile.category      = document.getElementById('pf-category').value;
-  providerProfile.provider_type = document.getElementById('pf-type').value;
   providerProfile.country       = (document.getElementById('pf-country') || {}).value || '';
   providerProfile.city          = document.getElementById('pf-city').value;
   providerProfile.area          = document.getElementById('pf-area').value.trim();
