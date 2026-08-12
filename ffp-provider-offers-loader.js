@@ -15,7 +15,21 @@
     try { var r = await sb().from('providers').select('business_name, city, area, region, country, logo_url, approved_by').eq('id', pid).maybeSingle(); _info = (r && r.data) || {}; } catch (e) { _info = {}; }
     return _info;
   }
-  function verified() { return !!(_info && _info.approved_by); }
+  // Grant's model: a REGISTERED provider must COMPLETE their profile before loading offers, and every
+  // offer is VERIFIED (admin-reviewed) before it goes live. Profile-complete = the fields an offer shows.
+  function profileMissing() {
+    var i = _info || {}, miss = [];
+    if (!i.business_name) miss.push('business name');
+    if (!i.city) miss.push('city');
+    if (!i.logo_url) miss.push('logo');
+    return miss;
+  }
+  function profileComplete() { return profileMissing().length === 0; }
+  function statusBadge(s) {
+    var map = { live: ['#e3f4ea', '#127a52', 'Live'], pending: ['#fff3d6', '#8a6100', 'Pending review'], paused: ['#f0f2f4', '#8a99a8', 'Paused'], rejected: ['#fdecea', '#c0392b', 'Rejected'] };
+    var x = map[s] || ['#f0f2f4', '#8a99a8', s || '—'];
+    return '<span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;background:' + x[0] + ';color:' + x[1] + ';">' + esc(x[2]) + '</span>';
+  }
 
   // Offer categories from the admin taxonomy (list_key='offer_category').
   var CATS = [];
@@ -34,7 +48,7 @@
   async function openForm(o) {
     o = o || {}; editingId = o.id || null;
     await providerInfo();
-    if (!verified()) { toast('Your listing must be verified before you can publish offers — complete your profile and an admin will verify it.', 'error'); return; }
+    if (!profileComplete()) { toast('Complete your business profile first — add your ' + profileMissing().join(', ') + ' — then you can add offers.', 'error'); return; }
     var T = o.tiers || {};
     var body =
       '<div style="font-size:12.5px;color:#8a99a8;margin:-2px 0 14px;">Shown to Passport members at your venue — the benefit can vary by tier.</div>' +
@@ -70,7 +84,7 @@
   async function save() {
     if (!prov().id) { toast('Provider not ready — reload.', 'error'); return; }
     var info = await providerInfo();
-    if (!verified()) { toast('Your listing must be verified before you can publish offers.', 'error'); return; }
+    if (!profileComplete()) { toast('Complete your business profile first (' + profileMissing().join(', ') + ').', 'error'); return; }
     if (!val('po-title')) { toast('Offer title is required', 'error'); return; }
     var tiers = { member: val('po-tier-member') || null, supporter: val('po-tier-supporter') || null, ambassador: val('po-tier-ambassador') || null };
     if (!tiers.member && !tiers.supporter && !tiers.ambassador) { toast('Add a benefit for at least one tier', 'error'); return; }
@@ -97,12 +111,14 @@
       updated_at: new Date().toISOString()
     };
     try {
+      // Every partner offer (new OR edited) is submitted for review — goes live only once an admin verifies it.
+      row.status = 'pending';
       var res;
       if (editingId) res = await sb().from('partner_offers').update(row).eq('id', editingId);
-      else { row.status = 'live'; res = await sb().from('partner_offers').insert(row); }
+      else res = await sb().from('partner_offers').insert(row);
       if (res.error) throw res.error;
       if (window.closeModal) window.closeModal();
-      toast(editingId ? 'Offer updated' : 'Offer added', 'success'); editingId = null; render();
+      toast(editingId ? 'Offer updated — sent for review' : 'Offer submitted for review', 'success'); editingId = null; render();
     } catch (e) { toast(e.message || 'Save failed', 'error'); }
   }
 
@@ -114,23 +130,29 @@
     if (!prov().id) { el.innerHTML = '<div style="padding:16px;color:#8a99a8;">Loading…</div>'; return; }
     el.innerHTML = '<div style="padding:16px;color:#8a99a8;">Loading offers…</div>';
     await providerInfo();
-    var notice = verified() ? '' :
+    var miss = profileMissing();
+    var notice = miss.length ?
       '<div style="background:#fff8e6;border:1px solid #f2e2a8;border-radius:12px;padding:14px 16px;margin-bottom:14px;color:#7a5c00;font-size:13px;line-height:1.5;">' +
-      '<b>Get verified to publish offers.</b> Complete your business profile — an admin verifies your listing, then you can create offers members can claim at your venue.</div>';
+      '<b>Complete your profile to add offers.</b> Add your ' + esc(miss.join(', ')) + ' to your business profile, then you can create offers members can claim at your venue.</div>'
+      : '<div style="background:#eef6fb;border:1px solid #cfe6f3;border-radius:12px;padding:12px 16px;margin-bottom:14px;color:#1b5b7a;font-size:12.5px;line-height:1.5;">' +
+      'New and edited offers are <b>reviewed by FFP</b> before they go live to members — usually within a day.</div>';
     try {
       var r = await sb().from('partner_offers').select('*').eq('provider_id', prov().id).order('created_at', { ascending: false });
       if (r.error) throw r.error;
       var rows = r.data || [];
       if (!rows.length) { el.innerHTML = notice + '<div style="padding:20px;color:#8a99a8;">No offers yet. Add one with the button above.</div>'; return; }
       el.innerHTML = notice + rows.map(function (o) {
-        var live = o.status === 'live';
         var valid = [o.valid_from, o.valid_to].filter(Boolean).join(' → ') || 'No dates';
+        // A partner can only pause a live offer / resume a paused one — both are already-approved states.
+        var toggle = (o.status === 'live' || o.status === 'paused')
+          ? '<button onclick="ffpOffers.setStatus(\'' + o.id + '\',\'' + (o.status === 'live' ? 'paused' : 'live') + '\')" title="' + (o.status === 'live' ? 'Pause' : 'Resume') + '" style="border:none;background:none;cursor:pointer;color:#5b6b75;"><span class="ms">' + (o.status === 'live' ? 'pause_circle' : 'play_circle') + '</span></button>'
+          : '';
         return '<div style="background:#fff;border:1px solid #eef2f5;border-radius:12px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">' +
           '<div style="flex:1;min-width:0;"><div style="font-weight:800;color:#12232f;">' + esc(o.title) + '</div>' +
           '<div style="font-size:12px;color:#8a99a8;">' + esc(valid) + ' · ' + (o.redeemed_count || 0) + ' redeemed</div></div>' +
-          '<span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;background:' + (live ? '#e3f4ea;color:#127a52' : '#f0f2f4;color:#8a99a8') + ';">' + esc(o.status) + '</span>' +
+          statusBadge(o.status) +
           '<button onclick=\'ffpOffers.edit(' + JSON.stringify(o).replace(/'/g, "&#39;") + ')\' title="Edit" style="border:none;background:none;cursor:pointer;color:#1980AD;"><span class="ms">edit</span></button>' +
-          '<button onclick="ffpOffers.setStatus(\'' + o.id + '\',\'' + (live ? 'paused' : 'live') + '\')" title="' + (live ? 'Pause' : 'Activate') + '" style="border:none;background:none;cursor:pointer;color:#5b6b75;"><span class="ms">' + (live ? 'pause_circle' : 'play_circle') + '</span></button>' +
+          toggle +
           '<button onclick="ffpOffers.remove(\'' + o.id + '\')" title="Delete" style="border:none;background:none;cursor:pointer;color:#d9534f;"><span class="ms">delete</span></button>' +
           '</div>';
       }).join('');
