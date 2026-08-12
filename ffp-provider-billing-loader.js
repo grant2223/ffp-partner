@@ -57,11 +57,58 @@ function _metric(label, val) {
     '<div style="font-size:18px;font-weight:800;color:var(--ffp-text);">' + val + '</div></div>';
 }
 
+// ─── Stripe Connect (accept card bookings on FFP) ──────────────────────────
+var _stripeFlagHandled = false;
+function _connectCardHtml() {
+  var st = (window.FFP_PROVIDER && FFP_PROVIDER.payments_status) || 'not_connected';
+  if (st === 'connected') {
+    return '<div style="background:rgba(18,122,82,.12);border:1px solid rgba(18,122,82,.4);border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">' +
+      '<span class="ms" style="color:#3ecf8e;">verified</span>' +
+      '<div style="flex:1;min-width:0;"><div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">Payments connected</div>' +
+      '<div class="psub" style="margin:2px 0 0;">Members can book &amp; pay for your classes by card on FFP.</div></div></div>';
+  }
+  var onboarding = st === 'onboarding';
+  return '<div style="background:var(--ffp-bg-3);border:1px solid var(--ffp-border);border-radius:12px;padding:14px;margin-bottom:12px;">' +
+    '<div style="display:flex;align-items:center;gap:9px;margin-bottom:6px;"><span class="ms" style="color:var(--ffp-blue);">account_balance</span>' +
+    '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + (onboarding ? 'Finish connecting payments' : 'Get paid on FFP') + '</div></div>' +
+    '<div class="psub" style="margin:0 0 10px;line-height:1.5;">' + (onboarding
+        ? 'Your Stripe setup was started but isn’t finished. Complete it to accept card bookings.'
+        : 'Connect Stripe to let members book &amp; pay for your classes by card on FFP. (Free and class-credit bookings work without this.)') + '</div>' +
+    '<button id="bill-connect-btn" class="btn btn-pri" onclick="startConnect()"><span class="ms">bolt</span> ' + (onboarding ? 'Finish setup' : 'Connect payments') + '</button></div>';
+}
+async function startConnect() {
+  var pid = _billProvId(); if (!pid) { showToast('Not signed in', 'error'); return; }
+  var refresh = (window.FFPAuth && FFPAuth.getRefresh && FFPAuth.getRefresh()) || null;
+  if (!refresh) { showToast('Please sign in again', 'error'); return; }
+  var btn = document.getElementById('bill-connect-btn'); if (btn) { btn.disabled = true; btn.innerHTML = 'Opening Stripe…'; }
+  try {
+    var r = await fetch('https://ffp-passport-backend.vercel.app/api/facility/connect/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh: refresh, provider_id: pid })
+    });
+    var d = await r.json().catch(function () { return {}; });
+    if (d.already_connected) { if (window.FFP_PROVIDER) FFP_PROVIDER.payments_status = 'connected'; showToast('Payments already connected', 'success'); renderPayments(); return; }
+    if (d.url) { window.location.href = d.url; return; }
+    showToast(d.error || 'Could not start Stripe setup', 'error');
+  } catch (e) { showToast('Could not start Stripe setup', 'error'); }
+  if (btn) { btn.disabled = false; btn.innerHTML = '<span class="ms">bolt</span> Connect payments'; }
+}
+
 async function renderPayments() {
   var host = document.getElementById('pay-list');
   if (!host) return;
   var pid = _billProvId();
   if (!pid) { host.innerHTML = '<div class="empty-sub" style="text-align:left;">Sign in to manage payments.</div>'; return; }
+  // Stripe onboarding bounces back to ?panel=billing&stripe=… — surface the outcome once.
+  try {
+    var _sf = new URLSearchParams(location.search).get('stripe');
+    if (_sf && !_stripeFlagHandled) {
+      _stripeFlagHandled = true;
+      if (_sf === 'connected') { if (window.FFP_PROVIDER) FFP_PROVIDER.payments_status = 'connected'; showToast('Payments connected — you can accept card bookings', 'success'); }
+      else if (_sf === 'incomplete') showToast('Stripe setup isn’t finished — tap Connect to resume', 'info');
+      else if (_sf === 'error') showToast('Stripe setup didn’t complete — please try again', 'error');
+    }
+  } catch (e) {}
   host.innerHTML = '<div class="psub" style="margin:10px 0;">Loading…</div>';
   var sum = {};
   try {
@@ -70,7 +117,7 @@ async function renderPayments() {
     var rs = await window.supabase.rpc('provider_payment_summary', { p_provider: pid });
     sum = (rs && rs.data) ? rs.data : {};
   } catch (e) { _billPayments = []; }
-  var head = '<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">' +
+  var head = _connectCardHtml() + '<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">' +
     _metric('Collected (all time)', _money(sum.collected_total)) +
     _metric('This month', _money(sum.collected_month)) + '</div>';
   if (!_billPayments.length) {
