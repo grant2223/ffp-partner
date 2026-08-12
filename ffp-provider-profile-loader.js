@@ -309,7 +309,7 @@
 
     var provRes = await window.supabase
       .from('providers')
-      .select('id, business_name, letter_mark, category, provider_type, country, city, area, address, contact_email, contact_phone, website, instagram, about, logo_url, hero_photo_url, tour_video_url, status, activities, latitude, longitude, maps_url, passport_discount_pct, timezone, currency')
+      .select('id, business_name, letter_mark, category, provider_type, country, city, area, address, contact_email, contact_phone, website, instagram, about, logo_url, hero_photo_url, tour_video_url, status, activities, latitude, longitude, maps_url, passport_discount_pct, timezone, currency, booking_mode, external_booking_url')
       .eq('id', id).single();
     if (provRes.error) throw provRes.error;
 
@@ -334,6 +334,8 @@
       phone:         p.contact_phone || '',
       website:       p.website || '',
       about:         p.about || '',
+      booking_mode:  p.booking_mode || 'native',
+      external_booking_url: p.external_booking_url || '',
       status:        p.status,
       verified:      p.status === 'approved',
       logo_url:      p.logo_url || null,
@@ -433,6 +435,8 @@
           contact_phone:  phone || null,
           website:        website || null,
           about:          about || null,
+          booking_mode:   (function () { var e = document.getElementById('pf-booking-mode'); return e ? (e.value || 'native') : 'native'; })(),
+          external_booking_url: (function () { var e = document.getElementById('pf-booking-url'); return e ? e.value.trim() : ''; })(),
           logo_url:       logoUrl,
           hero_photo_url: heroUrl,
           tour_video_url: (function () { var e = document.getElementById('pf-tour-video'); return e ? e.value.trim() : ''; })(),
@@ -556,6 +560,19 @@
       '<div class="pf-extras-add"><input id="pf-maps-url" class="input" placeholder="Paste your Google Maps link (any format)"><button type="button" id="pf-loc-btn" class="pf-extras-btn">Find pin</button></div>' +
       '<span id="pf-loc-status" class="pf-loc-status">No location set</span>';
 
+    // Bookings — take bookings on FFP, or send members out to your own booking platform.
+    var f3 = document.createElement('div'); f3.className = 'field full'; f3.id = 'pf-extras-booking';
+    f3.innerHTML =
+      '<div class="label">Bookings <span class="label-hint">— how members book your classes &amp; services</span></div>' +
+      '<select id="pf-booking-mode" class="select" style="margin-bottom:8px;">' +
+        '<option value="native">Take bookings on FFP</option>' +
+        '<option value="external">Send members to my own booking site</option>' +
+      '</select>' +
+      '<div id="pf-booking-url-wrap" style="display:none;">' +
+        '<input id="pf-booking-url" class="input" placeholder="Your booking link — FareHarbor, Rezdy, Mindbody or your website">' +
+        '<span class="pf-loc-status">Members tap “Book” and go straight to this link.</span>' +
+      '</div>';
+
     // v11: tabbed profile — Activities (f1) lives in the Activities tab (#pf-activities-host);
     // the Google Maps link (f2) is venue location, so it sits in Business info after Address.
     var host = document.getElementById('pf-activities-host');
@@ -564,13 +581,16 @@
     var addrField = (addr && addr.closest) ? addr.closest('.field') : null;
     if (addrField && addrField.parentNode) {
       addrField.parentNode.insertBefore(f2, addrField.nextSibling);
+      addrField.parentNode.insertBefore(f3, f2.nextSibling);
       if (!host) addrField.parentNode.insertBefore(f1, addrField.nextSibling);   // fallback: old layout
     } else {
       var saveBtn = panel.querySelector('.btn-pri');
       var anchor = saveBtn ? (saveBtn.closest('.form-actions') || saveBtn) : null;
-      if (anchor && anchor.parentNode) { if (!host) anchor.parentNode.insertBefore(f1, anchor); anchor.parentNode.insertBefore(f2, anchor); }
-      else { if (!host) panel.appendChild(f1); panel.appendChild(f2); }
+      if (anchor && anchor.parentNode) { if (!host) anchor.parentNode.insertBefore(f1, anchor); anchor.parentNode.insertBefore(f2, anchor); anchor.parentNode.insertBefore(f3, anchor); }
+      else { if (!host) panel.appendChild(f1); panel.appendChild(f2); panel.appendChild(f3); }
     }
+    var bmSel = document.getElementById('pf-booking-mode');
+    if (bmSel) bmSel.onchange = function () { var w = document.getElementById('pf-booking-url-wrap'); if (w) w.style.display = (this.value === 'external') ? '' : 'none'; };
     var actInput = document.getElementById('pf-act-input');
     document.getElementById('pf-act-add').onclick = function () { addAct(); };
     actInput.onfocus = function () { renderActDropdown(this.value); };
@@ -651,6 +671,9 @@
     _provExtras.mapsUrl = profile.maps_url || '';
     renderActChips();
     var mu = document.getElementById('pf-maps-url'); if (mu) mu.value = _provExtras.mapsUrl;
+    var bm = document.getElementById('pf-booking-mode'); if (bm) bm.value = profile.booking_mode || 'native';
+    var bu = document.getElementById('pf-booking-url'); if (bu) bu.value = profile.external_booking_url || '';
+    var buw = document.getElementById('pf-booking-url-wrap'); if (buw) buw.style.display = ((profile.booking_mode || 'native') === 'external') ? '' : 'none';
     var st = document.getElementById('pf-loc-status');
     if (st) st.textContent = (_provExtras.lat != null && _provExtras.lng != null)
       ? ('✓ Pin set (' + _provExtras.lat + ', ' + _provExtras.lng + ')')
