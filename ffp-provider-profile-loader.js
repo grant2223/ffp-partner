@@ -292,7 +292,7 @@
 
     var provRes = await window.supabase
       .from('providers')
-      .select('id, business_name, letter_mark, category, provider_type, country, city, area, address, contact_email, contact_phone, website, instagram, about, logo_url, hero_photo_url, tour_video_url, status, activities, latitude, longitude, maps_url, passport_discount_pct, timezone, currency, booking_mode, external_booking_url')
+      .select('id, business_name, letter_mark, category, provider_type, country, city, area, address, contact_email, contact_phone, website, instagram, about, tagline, gallery, amenities, logo_url, hero_photo_url, tour_video_url, status, activities, latitude, longitude, maps_url, passport_discount_pct, timezone, currency, booking_mode, external_booking_url')
       .eq('id', id).single();
     if (provRes.error) throw provRes.error;
 
@@ -317,6 +317,9 @@
       phone:         p.contact_phone || '',
       website:       p.website || '',
       about:         p.about || '',
+      tagline:       p.tagline || '',
+      gallery:       Array.isArray(p.gallery) ? p.gallery : [],
+      amenities:     Array.isArray(p.amenities) ? p.amenities : [],
       booking_mode:  p.booking_mode || 'native',
       external_booking_url: p.external_booking_url || '',
       status:        p.status,
@@ -416,6 +419,9 @@
           contact_phone:  phone || null,
           website:        website || null,
           about:          about || null,
+          tagline:        (function () { var e = document.getElementById('pf-tagline'); return e ? e.value.trim() : ''; })(),
+          gallery:        (typeof providerProfile !== 'undefined' && Array.isArray(providerProfile.gallery)) ? providerProfile.gallery : [],
+          amenities:      (function () { try { return Array.prototype.slice.call(document.querySelectorAll('#pf-amenities-host input:checked')).map(function (c) { return c.value; }); } catch (e) { return (typeof providerProfile !== 'undefined' && Array.isArray(providerProfile.amenities)) ? providerProfile.amenities : []; } })(),
           booking_mode:   (function () { var e = document.getElementById('pf-booking-mode'); return e ? (e.value || 'native') : 'native'; })(),
           external_booking_url: (function () { var e = document.getElementById('pf-booking-url'); return e ? e.value.trim() : ''; })(),
           logo_url:       logoUrl,
@@ -654,6 +660,9 @@
     var bm = document.getElementById('pf-booking-mode'); if (bm) bm.value = profile.booking_mode || 'native';
     var bu = document.getElementById('pf-booking-url'); if (bu) bu.value = profile.external_booking_url || '';
     var buw = document.getElementById('pf-booking-url-wrap'); if (buw) buw.style.display = ((profile.booking_mode || 'native') === 'external') ? '' : 'none';
+    var tg = document.getElementById('pf-tagline'); if (tg) tg.value = profile.tagline || '';
+    try { if (typeof window.renderProviderGallery === 'function') window.renderProviderGallery(); } catch (e) {}
+    try { if (typeof window.renderProviderAmenities === 'function') window.renderProviderAmenities(); } catch (e) {}
     var st = document.getElementById('pf-loc-status');
     if (st) st.textContent = (_provExtras.lat != null && _provExtras.lng != null)
       ? ('✓ Pin set (' + _provExtras.lat + ', ' + _provExtras.lng + ')')
