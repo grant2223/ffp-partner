@@ -2504,6 +2504,19 @@ a { color: var(--ffp-blue); text-decoration: none; }
               <div class="label">Tour video <span class="label-hint">— optional; a short facility tour shown on your public profile. Paste a YouTube, Vimeo or MP4 link.</span></div>
               <input class="input" id="pf-tour-video" type="url" placeholder="https://youtu.be/… or https://vimeo.com/… or https://…/tour.mp4">
             </div>
+            <div class="field full">
+              <div class="label">Tagline <span class="label-hint">— one strong line shown under your name on your public profile.</span></div>
+              <input class="input" id="pf-tagline" maxlength="90" placeholder="e.g. Dubai's home of serious strength">
+            </div>
+            <div class="field full">
+              <div class="label">Photo gallery <span class="label-hint">— your own photos; members swipe through these at the top of your profile.</span></div>
+              <div id="pf-gallery-thumbs" class="pf-gal-thumbs"></div>
+              <button type="button" class="pf-addphoto" onclick="pickGalleryImage()"><span class="ms">add_photo_alternate</span> Add photo</button>
+            </div>
+            <div class="field full">
+              <div class="label">What this place has <span class="label-hint">— tap the amenities you offer.</span></div>
+              <div id="pf-amenities-host" class="pf-amen-grid"></div>
+            </div>
           </div>
         </div>
 
@@ -4174,6 +4187,50 @@ function ffpImgOpts(kind) {
 }
 function pickProviderImage(kind) { var o = ffpImgOpts(kind); if (o) window.FFPUpload.pick(o); }
 function dropProviderImage(kind, file) { var o = ffpImgOpts(kind); if (o) window.FFPUpload.cropFile(file, o); }
+
+/* ── World-class profile: photo gallery + amenities editors ── */
+(function(){ var s=document.createElement('style'); s.textContent=
+  '.pf-gal-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}'+
+  '.pf-gthumb{width:88px;height:66px;border-radius:10px;background:#e6edf2 center/cover;position:relative}'+
+  '.pf-gthumb button{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:none;background:#0e2531;color:#fff;font-size:15px;line-height:1;cursor:pointer}'+
+  '.pf-addphoto{display:inline-flex;align-items:center;gap:6px;border:1.5px dashed #cbd7e1;background:#f6f9fb;color:#1980AD;font-family:inherit;font-weight:800;font-size:13px;padding:11px 16px;border-radius:12px;cursor:pointer}'+
+  '.pf-addphoto .ms{font-size:19px}'+
+  '.pf-amen-grid{display:flex;flex-wrap:wrap;gap:8px}'+
+  '.pf-amen{display:inline-flex;align-items:center;gap:6px;padding:9px 13px;border:1.5px solid #dbe4ec;border-radius:100px;font-size:12.5px;font-weight:700;color:#41505b;cursor:pointer;user-select:none}'+
+  '.pf-amen .ms{font-size:18px;color:#8aa0b2}'+
+  '.pf-amen.on{border-color:#1980AD;background:#eaf4fb;color:#0e2531}.pf-amen.on .ms{color:#1980AD}';
+  document.head.appendChild(s); })();
+
+var PF_AMEN_OPTS = [
+  ['free_weights','fitness_center','Free weights'],['classes','sports_gymnastics','Classes'],['cardio','directions_run','Cardio'],
+  ['pool','pool','Pool'],['sauna','whatshot','Sauna'],['ice_bath','ac_unit','Ice bath'],['parking','local_parking','Parking'],
+  ['showers','shower','Showers'],['lockers','lock','Lockers'],['cafe','local_cafe','Café'],['kids','child_care','Kids area'],
+  ['wifi','wifi','Wi-Fi'],['pt','person','Personal training'],['women_only','female',"Women's area"],['outdoor','park','Outdoor'],['recovery','self_improvement','Recovery']
+];
+window.renderProviderAmenities = function(){
+  var host=document.getElementById('pf-amenities-host'); if(!host) return;
+  var sel=(typeof providerProfile!=='undefined'&&Array.isArray(providerProfile.amenities))?providerProfile.amenities:[];
+  host.innerHTML = PF_AMEN_OPTS.map(function(o){ var on=sel.indexOf(o[0])>=0;
+    return '<label class="pf-amen'+(on?' on':'')+'"><input type="checkbox" value="'+o[0]+'"'+(on?' checked':'')+' style="display:none"><span class="ms">'+o[1]+'</span>'+o[2]+'</label>'; }).join('');
+  Array.prototype.forEach.call(host.querySelectorAll('input'),function(c){ c.onchange=function(){ this.closest('.pf-amen').classList.toggle('on',this.checked); if(typeof setSaveBar==='function') setSaveBar(true); }; });
+};
+window.renderProviderGallery = function(){
+  var host=document.getElementById('pf-gallery-thumbs'); if(!host) return;
+  var g=(typeof providerProfile!=='undefined'&&Array.isArray(providerProfile.gallery))?providerProfile.gallery:[];
+  host.innerHTML = g.map(function(u,i){ return '<div class="pf-gthumb" style="background-image:url(\''+u+'\')"><button type="button" onclick="removeGalleryImage('+i+')">&times;</button></div>'; }).join('');
+};
+window.removeGalleryImage = function(i){
+  if(typeof providerProfile==='undefined'||!Array.isArray(providerProfile.gallery)) return;
+  providerProfile.gallery.splice(i,1); window.renderProviderGallery(); if(typeof setSaveBar==='function') setSaveBar(true);
+};
+window.pickGalleryImage = function(){
+  var pid=(window.FFP_PROVIDER&&window.FFP_PROVIDER.id)||(typeof providerProfile!=='undefined'&&providerProfile.id);
+  if(!pid){ showToast('Provider not loaded','error'); return; }
+  if(!window.FFPUpload){ showToast('Uploader not ready — refresh and retry','error'); return; }
+  window.FFPUpload.pick({ bucket:'provider-heroes', key:'gallery-'+pid+'-'+Date.now(), aspect:4/3, outW:1400, outH:1050, title:'Position your photo (4:3)',
+    onDone:function(url){ if(typeof providerProfile==='undefined') return; if(!Array.isArray(providerProfile.gallery)) providerProfile.gallery=[]; providerProfile.gallery.push(url); window.renderProviderGallery(); if(typeof setSaveBar==='function') setSaveBar(true); showToast('Photo added — Save to commit','success'); },
+    onError:function(err){ console.error('[gallery upload]',err); showToast('Upload failed: '+(err.message||'try again'),'error'); } });
+};
 
 function handleUpload(kind, file) {
   if (!file) return;
