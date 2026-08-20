@@ -669,6 +669,152 @@
       : (_provExtras.mapsUrl ? 'Link saved — tap “Find pin” to set the pin' : 'No location set');
   }
 
+  // ─── Brand mode + "Where it's sold" stockist manager (Brands v1) ───
+  // A partner can flag themselves a product brand (is_brand). Brands pick the LOCATIONS
+  // where they're sold (brand_locations) so members can discover them on Explore → Brands.
+  var _brand = { is_brand: false, sess: Math.random().toString(36).slice(2), locs: [] };
+  var _brandSugT = null;
+
+  function injectBrandCss() {
+    if (document.getElementById('pf-brand-css')) return;
+    var s = document.createElement('style'); s.id = 'pf-brand-css';
+    s.textContent =
+      '.pf-switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none;margin-top:4px;}' +
+      '.pf-switch input{display:none;}' +
+      '.pf-switch .pf-track{width:44px;height:26px;border-radius:100px;background:#cdd6dd;position:relative;transition:background .15s;flex:none;}' +
+      '.pf-switch .pf-track:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .15s;}' +
+      '.pf-switch input:checked + .pf-track{background:var(--ffp-blue);}' +
+      '.pf-switch input:checked + .pf-track:after{left:21px;}' +
+      '.pf-brand-body{margin-top:16px;}' +
+      '.pf-loc-dd{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:60;background:#fff;border:1px solid rgba(25,128,173,.3);border-radius:12px;max-height:260px;overflow-y:auto;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:5px;}' +
+      '.pf-loc-item{padding:10px 12px;border-radius:8px;font-size:13px;font-weight:600;color:#0e2531;cursor:pointer;}' +
+      '.pf-loc-item:hover{background:rgba(25,128,173,.15);}' +
+      '.pf-loc-item small{display:block;color:#8a99a8;font-weight:600;font-size:11px;margin-top:1px;}' +
+      '.pf-stockist{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #eef2f5;}' +
+      '.pf-stockist .tx{flex:1;min-width:0;}' +
+      '.pf-stockist .tx b{font-size:13.5px;font-weight:800;color:#0e2531;display:block;}' +
+      '.pf-stockist .tx span{font-size:12px;color:#8a99a8;font-weight:600;}' +
+      '.pf-stockist button{background:rgba(192,57,43,.1);border:none;color:#c0392b;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;}';
+    document.head.appendChild(s);
+  }
+
+  function injectBrandSection() {
+    if (document.getElementById('pf-brand-field')) return;
+    var panel = document.getElementById('panel-profile'); if (!panel) return;
+    injectBrandCss();
+    var f = document.createElement('div'); f.className = 'field full'; f.id = 'pf-brand-field';
+    f.innerHTML =
+      '<div class="label">Brand <span class="label-hint">— turn on if you sell a product (supplements, apparel, gear) rather than run a venue</span></div>' +
+      '<label class="pf-switch"><input type="checkbox" id="pf-is-brand"><span class="pf-track"></span><span style="font-weight:700;font-size:13px;color:#0e2531;">We’re a product brand</span></label>' +
+      '<div class="pf-brand-body" id="pf-brand-body" style="display:none;">' +
+        '<div class="label" style="margin-top:2px;">Where it’s sold <span class="label-hint">— the stockists / places members can buy you</span></div>' +
+        '<div class="pf-extras-add">' +
+          '<div class="pf-ac-wrap" style="position:relative;">' +
+            '<input id="pf-brand-loc-input" class="input" autocomplete="off" placeholder="Search a city, suburb or store…">' +
+            '<div id="pf-brand-loc-dd" class="pf-loc-dd" style="display:none;"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div id="pf-brand-locs" style="margin-top:12px;"></div>' +
+      '</div>';
+    var cat = document.getElementById('pf-category');
+    var catField = (cat && cat.closest) ? cat.closest('.field') : null;
+    if (catField && catField.parentNode) { catField.parentNode.insertBefore(f, catField.nextSibling); }
+    else { panel.appendChild(f); }
+    document.getElementById('pf-is-brand').onchange = function () { setBrand(this.checked); };
+    var inp = document.getElementById('pf-brand-loc-input');
+    inp.oninput = function () { brandLocSuggest(this.value); };
+    inp.onfocus = function () { if (this.value.trim()) brandLocSuggest(this.value); };
+    if (!window.__pfBrandOutside) {
+      window.__pfBrandOutside = true;
+      document.addEventListener('click', function (e) {
+        var w = document.getElementById('pf-brand-loc-input'), dd = document.getElementById('pf-brand-loc-dd');
+        if (dd && w && e.target !== w && !dd.contains(e.target)) dd.style.display = 'none';
+      });
+    }
+  }
+
+  async function setBrand(on) {
+    var body = document.getElementById('pf-brand-body'); if (body) body.style.display = on ? '' : 'none';
+    _brand.is_brand = on;
+    try {
+      await window.supabase.rpc('provider_set_is_brand', { p_provider: window.FFP_PROVIDER.id, p_on: on });
+      if (on) loadBrandLocs();
+      toast(on ? 'Brand mode on — add where you’re sold' : 'Brand mode off', 'success');
+    } catch (e) { console.error('[Brand] set:', e); toast('Could not update brand mode', 'error'); }
+  }
+
+  async function loadBrandState() {
+    try {
+      var r = await window.supabase.from('providers').select('is_brand').eq('id', window.FFP_PROVIDER.id).maybeSingle();
+      var on = !!(r.data && r.data.is_brand);
+      _brand.is_brand = on;
+      var cb = document.getElementById('pf-is-brand'); if (cb) cb.checked = on;
+      var body = document.getElementById('pf-brand-body'); if (body) body.style.display = on ? '' : 'none';
+      if (on) loadBrandLocs();
+    } catch (e) { console.error('[Brand] state:', e); }
+  }
+
+  async function loadBrandLocs() {
+    try {
+      var r = await window.supabase.rpc('brand_locations_list', { p_provider: window.FFP_PROVIDER.id });
+      _brand.locs = Array.isArray(r.data) ? r.data : [];
+      renderBrandLocs();
+    } catch (e) { console.error('[Brand] list:', e); }
+  }
+  function renderBrandLocs() {
+    var host = document.getElementById('pf-brand-locs'); if (!host) return;
+    if (!_brand.locs.length) { host.innerHTML = '<span class="pf-loc-status">No stockists yet — search above to add where you’re sold.</span>'; return; }
+    host.innerHTML = _brand.locs.map(function (l) {
+      var sub = [l.area, l.city, l.region, l.country].filter(Boolean).slice(0, 2).join(', ');
+      return '<div class="pf-stockist"><div class="tx"><b>' + escText(l.label || l.city || 'Stockist') + '</b><span>' + escText(sub) + '</span></div>' +
+             '<button type="button" onclick="__pfBrandRemove(&quot;' + l.id + '&quot;)">Remove</button></div>';
+    }).join('');
+  }
+  window.__pfBrandRemove = async function (id) {
+    try { await window.supabase.rpc('brand_location_remove', { p_id: id }); _brand.locs = _brand.locs.filter(function (l) { return l.id !== id; }); renderBrandLocs(); }
+    catch (e) { console.error('[Brand] remove:', e); toast('Could not remove', 'error'); }
+  };
+
+  function brandLocSuggest(term) {
+    term = (term || '').trim();
+    var dd = document.getElementById('pf-brand-loc-dd'); if (!dd) return;
+    if (term.length < 2) { dd.style.display = 'none'; return; }
+    clearTimeout(_brandSugT);
+    _brandSugT = setTimeout(async function () {
+      try {
+        var res = await fetch(GEO_API + '/api/places/suggest?q=' + encodeURIComponent(term) + '&session=' + _brand.sess);
+        var j = await res.json();
+        var items = (j && j.suggestions) || [];
+        if (!items.length) { dd.innerHTML = '<div class="pf-loc-item" style="color:#8a99a8;cursor:default;">No matches</div>'; dd.style.display = 'block'; return; }
+        dd.innerHTML = items.slice(0, 8).map(function (s) {
+          return '<div class="pf-loc-item" data-pid="' + escText(s.place_id || '') + '" data-main="' + escText(s.main || '').replace(/"/g, '&quot;') + '">' +
+                 escText(s.main || '') + (s.secondary ? '<small>' + escText(s.secondary) + '</small>' : '') + '</div>';
+        }).join('');
+        dd.style.display = 'block';
+        Array.prototype.forEach.call(dd.querySelectorAll('.pf-loc-item[data-pid]'), function (el) {
+          el.onclick = function () { brandLocPick(el.getAttribute('data-pid'), el.getAttribute('data-main')); };
+        });
+      } catch (e) { console.error('[Brand] suggest:', e); }
+    }, 220);
+  }
+  async function brandLocPick(pid, main) {
+    var dd = document.getElementById('pf-brand-loc-dd'); if (dd) dd.style.display = 'none';
+    var inp = document.getElementById('pf-brand-loc-input'); if (inp) inp.value = '';
+    if (!pid) return;
+    try {
+      var res = await fetch(GEO_API + '/api/places/details?place_id=' + encodeURIComponent(pid) + '&session=' + _brand.sess);
+      var j = await res.json(); var c = (j && j.components) || {};
+      await window.supabase.rpc('brand_location_add', {
+        p_provider: window.FFP_PROVIDER.id,
+        p_label: j.name || main || c.city || 'Stockist',
+        p_city: c.city || null, p_area: c.area || null, p_region: c.region || null, p_country: c.country || null,
+        p_lat: (j.lat != null ? Number(j.lat) : null), p_lng: (j.lng != null ? Number(j.lng) : null)
+      });
+      loadBrandLocs();
+      toast('Stockist added', 'success');
+    } catch (e) { console.error('[Brand] add:', e); toast('Could not add location', 'error'); }
+  }
+
   // ─── Init ───
   async function init() {
     var ok = await waitFor(function () {
@@ -686,6 +832,8 @@
     // Refine UI as soon as the profile panel exists in the DOM
     refineUI();
     injectProviderExtras();
+    injectBrandSection();
+    loadBrandState();
 
     try {
       var real = await fetchProfile();
