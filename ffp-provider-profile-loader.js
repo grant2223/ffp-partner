@@ -352,7 +352,10 @@
     var id = window.FFP_PROVIDER.id;
 
     var businessName = (document.getElementById('pf-business-name').value || '').trim();
-    var category     = document.getElementById('pf-category').value;
+    // Brands use their PRODUCT TYPE (brand_category) as the category; venues use the venue category.
+    var category     = _brand.is_brand
+      ? (_brand.category || (document.getElementById('pf-brand-cat') || {}).value || '')
+      : document.getElementById('pf-category').value;
     var city         = document.getElementById('pf-city').value;
     var country      = (document.getElementById('pf-country') || {}).value || '';
     var timezone     = (document.getElementById('pf-timezone') || {}).value || '';
@@ -707,6 +710,8 @@
       '<div class="label">Brand <span class="label-hint">— turn on if you sell a product (supplements, apparel, gear) rather than run a venue</span></div>' +
       '<label class="pf-switch"><input type="checkbox" id="pf-is-brand"><span class="pf-track"></span><span style="font-weight:700;font-size:13px;color:#0e2531;">We’re a product brand</span></label>' +
       '<div class="pf-brand-body" id="pf-brand-body" style="display:none;">' +
+        '<div class="label" style="margin-top:2px;">Product type <span class="label-hint">— how members find you under Explore → Brands</span></div>' +
+        '<select id="pf-brand-cat" class="select" style="margin-bottom:16px;"><option value="">Choose a product type…</option></select>' +
         '<div class="label" style="margin-top:2px;">Where it’s sold <span class="label-hint">— the stockists / places members can buy you</span></div>' +
         '<div class="pf-extras-add">' +
           '<div class="pf-ac-wrap" style="position:relative;">' +
@@ -721,6 +726,9 @@
     if (catField && catField.parentNode) { catField.parentNode.insertBefore(f, catField.nextSibling); }
     else { panel.appendChild(f); }
     document.getElementById('pf-is-brand').onchange = function () { setBrand(this.checked); };
+    var catSel = document.getElementById('pf-brand-cat');
+    if (catSel) catSel.onchange = function () { setBrandCategory(this.value); };
+    loadBrandCatOptions();
     var inp = document.getElementById('pf-brand-loc-input');
     inp.oninput = function () { brandLocSuggest(this.value); };
     inp.onfocus = function () { if (this.value.trim()) brandLocSuggest(this.value); };
@@ -733,8 +741,19 @@
     }
   }
 
+  // Brands are NOT venues — hide the venue-only fields (venue category, timezone, area, address,
+  // hours, map pin, bookings). The brand's Product type + "Where it's sold" live in the brand section.
+  function _pfField(id) { var e = document.getElementById(id); return (e && e.closest) ? e.closest('.field') : null; }
+  function applyBrandFieldMode(on) {
+    var catF = _pfField('pf-category'); if (catF) catF.style.display = on ? 'none' : '';
+    ['pf-timezone', 'pf-area', 'pf-address'].forEach(function (id) { var f = _pfField(id); if (f) f.style.display = on ? 'none' : ''; });
+    var hg = document.getElementById('hours-grid'); var hs = (hg && hg.closest) ? hg.closest('.form-section') : null; if (hs) hs.style.display = on ? 'none' : '';
+    ['pf-extras-loc', 'pf-extras-booking'].forEach(function (id) { var el = document.getElementById(id); if (el) el.style.display = on ? 'none' : ''; });
+  }
+
   async function setBrand(on) {
     var body = document.getElementById('pf-brand-body'); if (body) body.style.display = on ? '' : 'none';
+    applyBrandFieldMode(on);
     _brand.is_brand = on;
     try {
       await window.supabase.rpc('provider_set_is_brand', { p_provider: window.FFP_PROVIDER.id, p_on: on });
@@ -745,13 +764,30 @@
 
   async function loadBrandState() {
     try {
-      var r = await window.supabase.from('providers').select('is_brand').eq('id', window.FFP_PROVIDER.id).maybeSingle();
+      var r = await window.supabase.from('providers').select('is_brand, category').eq('id', window.FFP_PROVIDER.id).maybeSingle();
       var on = !!(r.data && r.data.is_brand);
       _brand.is_brand = on;
       var cb = document.getElementById('pf-is-brand'); if (cb) cb.checked = on;
       var body = document.getElementById('pf-brand-body'); if (body) body.style.display = on ? '' : 'none';
+      applyBrandFieldMode(on);
+      _brand.category = (r.data && r.data.category) || '';
+      var cs = document.getElementById('pf-brand-cat'); if (cs && _brand.category) cs.value = _brand.category;
       if (on) loadBrandLocs();
     } catch (e) { console.error('[Brand] state:', e); }
+  }
+  async function loadBrandCatOptions() {
+    var sel = document.getElementById('pf-brand-cat'); if (!sel) return;
+    try {
+      var r = await window.supabase.from('taxonomy_items').select('label').eq('list_key', 'brand_category').eq('active', true).order('sort_order', { ascending: true });
+      var items = Array.isArray(r.data) ? r.data : [];
+      sel.innerHTML = '<option value="">Choose a product type…</option>' + items.map(function (it) { return '<option value="' + escText(it.label) + '">' + escText(it.label) + '</option>'; }).join('');
+      if (_brand.category) sel.value = _brand.category;
+    } catch (e) { console.error('[Brand] cat options:', e); }
+  }
+  async function setBrandCategory(v) {
+    _brand.category = v || '';
+    try { await window.supabase.rpc('provider_set_brand_category', { p_provider: window.FFP_PROVIDER.id, p_category: v || null }); toast('Product type saved', 'success'); }
+    catch (e) { console.error('[Brand] set category:', e); toast('Could not save product type', 'error'); }
   }
 
   async function loadBrandLocs() {
