@@ -124,7 +124,7 @@
       '.ffp-pp-pick-item:hover{background:rgba(25,128,173,0.10);}',
       '.ffp-pp-pick-item.active{background:rgba(25,128,173,0.15);color:#1980AD;}',
       '.ffp-pp-pick-search{position:sticky;top:-4px;background:#ffffff;padding:4px 4px 6px;margin:-4px -4px 4px;border-bottom:1px solid rgba(25,128,173,0.15);z-index:1;}',
-      '.ffp-pp-pick-input{width:100%;box-sizing:border-box;background:rgba(25,128,173,0.06);border:1px solid rgba(25,128,173,0.30);border-radius:6px;color:#0e2531;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;}',
+      '.ffp-pp-pick-input{width:100%;box-sizing:border-box;background:rgba(25,128,173,0.06);border:1px solid rgba(25,128,173,0.30);border-radius:6px;color:#0e2531;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;direction:ltr;text-align:left;unicode-bidi:plaintext;}',
       '.ffp-pp-pick-input:focus{border-color:#1980AD;}',
 
       // Phone country-code picker: preserve flex layout side-by-side with .phone-num
@@ -211,7 +211,7 @@
       var q = (filter || '').trim().toLowerCase();
       var html = '';
       if (withSearch) {
-        html += '<div class="ffp-pp-pick-search"><input type="text" class="ffp-pp-pick-input" placeholder="Search…" value="' + escText(filter || '') + '"></div>';
+        html += '<div class="ffp-pp-pick-search"><input type="text" dir="ltr" class="ffp-pp-pick-input" placeholder="Search…" value="' + escText(filter || '') + '"></div>';
       }
       Array.prototype.forEach.call(sel.options, function (opt) {
         if (!opt.value) return; // skip the placeholder ("")
@@ -530,7 +530,10 @@
     if (document.getElementById('pf-extras-acts')) return;
     var panel = document.getElementById('panel-profile'); if (!panel) return;
     injectExtrasCss();
+    // Seed from FFP_TAX for an instant list, then refresh from the FULL DB taxonomy (the fallback can be
+    // stale/incomplete — e.g. it was missing Canyoning, which IS in the taxonomy).
     _actsAll = ((window.FFP_TAX && window.FFP_TAX.activities) || []).map(function (a) { return (a && a.n) ? a.n : a; });
+    loadActivityTaxonomy();
 
     var f1 = document.createElement('div'); f1.className = 'field full'; f1.id = 'pf-extras-acts';
     f1.innerHTML =
@@ -598,6 +601,20 @@
     if (mu) mu.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); resolveMapsLink(); } };
     renderActChips();
   }
+  // The activity list is the admin-managed `activity` taxonomy (single source of truth) — load it fully
+  // from the DB so no real activity is ever missing (and partners can't free-text their own).
+  function loadActivityTaxonomy() {
+    try {
+      window.supabase.from('taxonomy_items').select('label').eq('list_key', 'activity').eq('active', true).order('sort_order', { ascending: true }).then(function (r) {
+        if (r && r.data && r.data.length) {
+          _actsAll = r.data.map(function (x) { return x.label; });
+          var dd = document.getElementById('pf-act-dd');
+          var inp = document.getElementById('pf-act-input');
+          if (dd && dd.style.display === 'block' && inp) renderActDropdown(inp.value);
+        }
+      });
+    } catch (e) { console.error('[Profile] activity taxonomy:', e); }
+  }
   function hideActDropdown() { var dd = document.getElementById('pf-act-dd'); if (dd) dd.style.display = 'none'; }
   function renderActDropdown(filter) {
     var dd = document.getElementById('pf-act-dd'); if (!dd) return;
@@ -609,17 +626,18 @@
     var html = matches.map(function (a) {
       return '<div class="pf-ac-item" onclick="__pfAddAct(&quot;' + escText(a).replace(/"/g, '') + '&quot;)"><span>' + escText(a) + '</span></div>';
     }).join('');
-    // allow adding a custom activity that isn't in the list
-    var exact = _actsAll.some(function (a) { return a.toLowerCase() === f; });
-    if (f && !exact) {
-      html += '<div class="pf-ac-item" onclick="__pfAddAct(&quot;' + escText(filter.trim()).replace(/"/g, '') + '&quot;)"><span>Add “' + escText(filter.trim()) + '”</span><span class="pf-ac-add">custom</span></div>';
-    }
-    dd.innerHTML = html || '<div class="pf-ac-empty">No matching activities.</div>';
+    // Taxonomy-only: NO free-text/custom activities (keeps them searchable + matchable platform-wide).
+    // If an activity is missing, it must be added to the `activity` taxonomy in Admin.
+    dd.innerHTML = html || '<div class="pf-ac-empty">No matching activity — it must be in the FFP activity list. Ask FFP to add it if it’s missing.</div>';
     dd.style.display = 'block';
   }
+  // Only adds a value that exists in the activity taxonomy (case-insensitive), using its canonical label.
   window.__pfAddAct = function (v) {
     v = (v || '').trim(); if (!v) return;
-    if (!_provExtras.activities.some(function (a) { return a.toLowerCase() === v.toLowerCase(); })) _provExtras.activities.push(v);
+    var canon = null;
+    for (var i = 0; i < _actsAll.length; i++) { if (_actsAll[i].toLowerCase() === v.toLowerCase()) { canon = _actsAll[i]; break; } }
+    if (!canon) { toast('Pick an activity from the list — custom activities aren’t allowed.', 'error'); return; }
+    if (!_provExtras.activities.some(function (a) { return a.toLowerCase() === canon.toLowerCase(); })) _provExtras.activities.push(canon);
     var inp = document.getElementById('pf-act-input'); if (inp) { inp.value = ''; inp.focus(); }
     renderActChips(); renderActDropdown('');
   };
