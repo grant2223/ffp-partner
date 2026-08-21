@@ -10,19 +10,28 @@
   function toast(m, k) { if (typeof window.showToast === 'function') { try { window.showToast(m, k || 'info'); return; } catch (e) {} } console.log('[FFP Offers]', m); }
 
   async function providerInfo() {
-    if (_info && _info.business_name) return _info;   // only cache a REAL row (never an empty/failed read)
+    // SOURCE OF TRUTH = the same in-memory profile the completion banner reads (has the saved logo/city/
+    // category the moment the partner saves). This avoids a separate read that can lag or return empty.
+    // NB providerProfile is a top-level `let` (not on window) — reach it by name with a typeof guard.
+    var pp = null; try { if (typeof providerProfile !== 'undefined') pp = providerProfile; } catch (e) {}
+    if (pp && pp.business_name) {
+      _info = {
+        business_name: pp.business_name || '', city: pp.city || '', logo_url: pp.logo_url || '',
+        category: pp.category || '', is_brand: (pp.is_brand != null ? pp.is_brand : (prov().is_brand || false)),
+        approved_by: pp.approved_by
+      };
+      return _info;
+    }
+    if (_info && _info.business_name) return _info;   // never cache an empty/failed read
     var pid = prov().id; if (!pid || !sb()) return _info || {};
     try {
-      var r = await sb().from('providers').select('business_name, city, area, region, country, logo_url, is_brand, category, approved_by').eq('id', pid).maybeSingle();
-      var d = (r && r.data) || {};
-      // Fall back to the in-memory provider so a transient read can't wrongly gate the partner.
-      var p = prov();
-      _info = {
-        business_name: d.business_name || p.business_name || '',
-        city: d.city || p.city || '', logo_url: d.logo_url || p.logo_url || '',
-        category: d.category || p.category || '', is_brand: (d.is_brand != null ? d.is_brand : p.is_brand) || false,
-        area: d.area, region: d.region, country: d.country, approved_by: d.approved_by
-      };
+      var r = await sb().from('providers').select('business_name, city, logo_url, is_brand, category').eq('id', pid).maybeSingle();
+      var d = (r && r.data) || {}; var p = prov();
+      if (d.business_name || d.city || d.logo_url) {
+        _info = { business_name: d.business_name || '', city: d.city || '', logo_url: d.logo_url || '', category: d.category || '', is_brand: d.is_brand || false };
+      } else {
+        _info = null;   // read gave nothing — don't cache, retry next time
+      }
     } catch (e) { _info = null; }
     return _info || {};
   }
