@@ -1,4 +1,8 @@
-/* FFP Provider Profile Loader — v15
+/* FFP Provider Profile Loader — v25
+   v25 (2026-08-21): "What we offer" editor — each added activity is now a row with a DESCRIPTION
+       textarea (placeholder "Describe this…"), saved per-activity to providers.activity_descriptions
+       via provider_set_activity_desc (debounced). Loaded from profile.activity_descriptions. Powers the
+       described list on the public provider profile. Label renamed "Activities we offer"→"What we offer".
    v15 (2026-06-12): TIMEZONE picker — searchable IANA list (assets/ffp-time.js) wired as a dark picker
        (wrapSelectAsPicker now adds a search box when options exceed 12); loads/validates/saves
        providers.timezone via provider_save_profile; updates window.FFP_PROVIDER.timezone on save so
@@ -292,7 +296,7 @@
 
     var provRes = await window.supabase
       .from('providers')
-      .select('id, business_name, letter_mark, category, provider_type, country, city, area, address, contact_email, contact_phone, website, instagram, about, tagline, gallery, amenities, logo_url, hero_photo_url, tour_video_url, status, activities, latitude, longitude, maps_url, passport_discount_pct, timezone, currency, booking_mode, external_booking_url')
+      .select('id, business_name, letter_mark, category, provider_type, country, city, area, address, contact_email, contact_phone, website, instagram, about, tagline, gallery, amenities, logo_url, hero_photo_url, tour_video_url, status, activities, activity_descriptions, latitude, longitude, maps_url, passport_discount_pct, timezone, currency, booking_mode, external_booking_url')
       .eq('id', id).single();
     if (provRes.error) throw provRes.error;
 
@@ -328,6 +332,7 @@
       hero_url:      p.hero_photo_url || null,
       tour_video_url: p.tour_video_url || '',
       activities:    Array.isArray(p.activities) ? p.activities : [],
+      activity_descriptions: (p.activity_descriptions && typeof p.activity_descriptions === 'object') ? p.activity_descriptions : {},
       latitude:      (p.latitude  != null) ? Number(p.latitude)  : null,
       longitude:     (p.longitude != null) ? Number(p.longitude) : null,
       maps_url:      p.maps_url || '',
@@ -498,7 +503,7 @@
   }
 
   // ─── Activities offered + venue location (injected into #panel-profile) ───
-  var _provExtras = { activities: [], lat: null, lng: null, mapsUrl: '' };
+  var _provExtras = { activities: [], activity_descriptions: {}, lat: null, lng: null, mapsUrl: '' };
   var _actsAll = [];   // full activity taxonomy for the custom dropdown
   var GEO_API = 'https://ffp-passport-backend.vercel.app';
 
@@ -513,6 +518,14 @@
       '.pf-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(25,128,173,.12);border:1px solid rgba(25,128,173,.28);border-radius:100px;padding:5px 6px 5px 12px;font-size:12px;font-weight:700;color:#0e2531;}' +
       '.pf-chip button{background:rgba(255,255,255,.12);border:none;color:#cfe0ec;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:13px;line-height:1;}' +
       '.pf-loc-status{display:block;margin-top:6px;font-size:12px;color:#566069;font-weight:600;}' +
+      // "What we offer" — each activity is a row with a description the partner writes (mirrors the public profile)
+      '.pf-actlist{display:flex;flex-direction:column;gap:10px;margin-top:10px;}' +
+      '.pf-actrow{background:#f7f9fb;border:1px solid #e6ecf1;border-radius:12px;padding:11px 12px;}' +
+      '.pf-actrow-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}' +
+      '.pf-actrow-name{font-size:14px;font-weight:800;color:#0e2531;}' +
+      '.pf-actrow-x{background:#eef2f5;border:none;color:#8a97a2;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:15px;line-height:1;flex:none;}' +
+      '.pf-actrow-x:hover{background:#e2452f;color:#fff;}' +
+      '.pf-actrow-desc{width:100%;resize:vertical;min-height:44px;font-size:13px;line-height:1.5;}' +
       // our own activity dropdown (replaces the native <datalist>)
       '.pf-ac-wrap{position:relative;flex:1;min-width:160px;}' +
       '.pf-ac-dd{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:60;background:#ffffff;border:1px solid rgba(25,128,173,.3);border-radius:12px;max-height:260px;overflow-y:auto;box-shadow:0 18px 50px rgba(0,0,0,.55);padding:5px;}' +
@@ -537,7 +550,7 @@
 
     var f1 = document.createElement('div'); f1.className = 'field full'; f1.id = 'pf-extras-acts';
     f1.innerHTML =
-      '<div class="label">Activities we offer <span class="label-hint">— what members pick when they check in here</span></div>' +
+      '<div class="label">What we offer <span class="label-hint">— add each activity, then describe it (shows on your public profile)</span></div>' +
       '<div class="pf-extras-add">' +
         '<div class="pf-ac-wrap">' +
           '<input id="pf-act-input" class="input" autocomplete="off" placeholder="Search activities…">' +
@@ -545,7 +558,7 @@
         '</div>' +
         '<button type="button" id="pf-act-add" class="pf-extras-btn">Add</button>' +
       '</div>' +
-      '<div id="pf-act-chips" class="pf-chips"></div>';
+      '<div id="pf-act-chips" class="pf-actlist"></div>';
     var f2 = document.createElement('div'); f2.className = 'field full'; f2.id = 'pf-extras-loc';
     f2.innerHTML =
       '<div class="label">Google Maps link <span class="label-hint">— sets your check-in pin + gives members Directions</span></div>' +
@@ -646,11 +659,40 @@
     var v = (inp.value || '').trim(); if (!v) { hideActDropdown(); return; }
     window.__pfAddAct(v);
   }
-  window.__pfRemoveAct = function (v) { _provExtras.activities = _provExtras.activities.filter(function (a) { return a !== v; }); renderActChips(); };
+  window.__pfRemoveAct = function (v) {
+    _provExtras.activities = _provExtras.activities.filter(function (a) { return a !== v; });
+    if (_provExtras.activity_descriptions) delete _provExtras.activity_descriptions[v];
+    renderActChips();
+  };
+  // Persist one activity's description to providers.activity_descriptions (own-gated RPC). Debounced per keystroke.
+  var _actDescTimers = {};
+  window.__pfSaveActDesc = function (a, el) {
+    var desc = (el && el.value != null) ? el.value : '';
+    if (!_provExtras.activity_descriptions) _provExtras.activity_descriptions = {};
+    _provExtras.activity_descriptions[a] = desc;
+    if (typeof providerProfile !== 'undefined') providerProfile.activity_descriptions = Object.assign({}, _provExtras.activity_descriptions);
+    var pid = (typeof providerProfile !== 'undefined' && providerProfile.id) ? providerProfile.id : (window.FFP_PROVIDER && window.FFP_PROVIDER.id);
+    if (!pid) return;
+    clearTimeout(_actDescTimers[a]);
+    _actDescTimers[a] = setTimeout(function () {
+      window.supabase.rpc('provider_set_activity_desc', { p_provider: pid, p_activity: a, p_desc: desc.trim() })
+        .then(function (r) { if (r && r.error) console.error('[Profile] set activity desc:', r.error); });
+    }, 700);
+  };
   function renderActChips() {
     var c = document.getElementById('pf-act-chips'); if (!c) return;
+    var descs = _provExtras.activity_descriptions || {};
     c.innerHTML = _provExtras.activities.length
-      ? _provExtras.activities.map(function (a) { return '<span class="pf-chip">' + escText(a) + '<button type="button" onclick="__pfRemoveAct(&quot;' + escText(a).replace(/"/g, '') + '&quot;)">&times;</button></span>'; }).join('')
+      ? _provExtras.activities.map(function (a) {
+          var safe = escText(a).replace(/"/g, '');
+          var d = descs[a] ? escText(descs[a]) : '';
+          return '<div class="pf-actrow">' +
+                   '<div class="pf-actrow-top"><span class="pf-actrow-name">' + escText(a) + '</span>' +
+                     '<button type="button" class="pf-actrow-x" onclick="__pfRemoveAct(&quot;' + safe + '&quot;)" aria-label="Remove">&times;</button></div>' +
+                   '<textarea class="input pf-actrow-desc" rows="2" placeholder="Describe this — what it involves, who it suits, how long it runs" ' +
+                     'oninput="__pfSaveActDesc(&quot;' + safe + '&quot;, this)">' + d + '</textarea>' +
+                 '</div>';
+        }).join('')
       : '<span class="pf-loc-status">None yet — add the activities members can do here.</span>';
     // Keep providerProfile.activities live so the profile-completion % + the "listings hidden" banner
     // update the moment a partner adds/removes an activity (activity is a completion essential).
@@ -673,6 +715,7 @@
   }
   function populateProviderExtras(profile) {
     _provExtras.activities = Array.isArray(profile.activities) ? profile.activities.slice() : [];
+    _provExtras.activity_descriptions = (profile.activity_descriptions && typeof profile.activity_descriptions === 'object') ? Object.assign({}, profile.activity_descriptions) : {};
     _provExtras.lat = (profile.latitude != null) ? profile.latitude : null;
     _provExtras.lng = (profile.longitude != null) ? profile.longitude : null;
     _provExtras.mapsUrl = profile.maps_url || '';
