@@ -10,18 +10,31 @@
   function toast(m, k) { if (typeof window.showToast === 'function') { try { window.showToast(m, k || 'info'); return; } catch (e) {} } console.log('[FFP Offers]', m); }
 
   async function providerInfo() {
-    if (_info) return _info;
-    var pid = prov().id; if (!pid || !sb()) return {};
-    try { var r = await sb().from('providers').select('business_name, city, area, region, country, logo_url, approved_by').eq('id', pid).maybeSingle(); _info = (r && r.data) || {}; } catch (e) { _info = {}; }
-    return _info;
+    if (_info && _info.business_name) return _info;   // only cache a REAL row (never an empty/failed read)
+    var pid = prov().id; if (!pid || !sb()) return _info || {};
+    try {
+      var r = await sb().from('providers').select('business_name, city, area, region, country, logo_url, is_brand, category, approved_by').eq('id', pid).maybeSingle();
+      var d = (r && r.data) || {};
+      // Fall back to the in-memory provider so a transient read can't wrongly gate the partner.
+      var p = prov();
+      _info = {
+        business_name: d.business_name || p.business_name || '',
+        city: d.city || p.city || '', logo_url: d.logo_url || p.logo_url || '',
+        category: d.category || p.category || '', is_brand: (d.is_brand != null ? d.is_brand : p.is_brand) || false,
+        area: d.area, region: d.region, country: d.country, approved_by: d.approved_by
+      };
+    } catch (e) { _info = null; }
+    return _info || {};
   }
   // Grant's model: a REGISTERED provider must COMPLETE their profile before loading offers, and every
   // offer is VERIFIED (admin-reviewed) before it goes live. Profile-complete = the fields an offer shows.
+  // Brands sell across stockists (no single venue city), so a brand needs a product type instead of a city.
   function profileMissing() {
     var i = _info || {}, miss = [];
     if (!i.business_name) miss.push('business name');
-    if (!i.city) miss.push('city');
     if (!i.logo_url) miss.push('logo');
+    if (i.is_brand) { if (!i.category) miss.push('product type'); }
+    else if (!i.city) miss.push('city');
     return miss;
   }
   function profileComplete() { return profileMissing().length === 0; }
