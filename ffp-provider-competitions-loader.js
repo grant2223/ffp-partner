@@ -156,6 +156,7 @@
     var dt = function (v) { return v ? String(v).slice(0, 16) : ''; };
     c.innerHTML =
       '<div class="cx-fld"><div class="cx-lab">Competition name</div><input id="cx-name" class="cx-in" value="' + esc(ev.name || '') + '"></div>' +
+      '<div class="cx-fld"><div class="cx-lab">About (shown on the Info tab in the app)</div><textarea id="cx-desc" class="cx-in" rows="3" placeholder="What the day looks like, format, spectators…">' + esc(ev.description || '') + '</textarea></div>' +
       '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">City</div><input id="cx-city" class="cx-in" value="' + esc(ev.city || '') + '"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Country</div><input id="cx-country" class="cx-in" value="' + esc(ev.country || '') + '"></div></div>' +
       '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Starts</div><input id="cx-start" type="datetime-local" class="cx-in" value="' + dt(ev.starts_at) + '"></div>' +
@@ -179,7 +180,7 @@
   async function saveDetails() {
     var g = function (id) { var e = document.getElementById(id); return e ? e.value : undefined; };
     var p = {
-      name: g('cx-name'), city: g('cx-city'), country: g('cx-country'),
+      name: g('cx-name'), description: g('cx-desc'), city: g('cx-city'), country: g('cx-country'),
       starts_at: g('cx-start'), ends_at: g('cx-end'),
       scoring_mode: _mode || (S.detail.event.scoring_mode || 'points'),
       accent: _accent || S.detail.event.accent || '#d6353b',
