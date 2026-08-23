@@ -2622,6 +2622,10 @@ a { color: var(--ffp-blue); text-decoration: none; }
         <div id="partner-offers-list"></div>
       </section>
 
+      <section class="panel" id="panel-competitions">
+        <div id="comp-root"></div>
+      </section>
+
       <!-- ════════════════════════════════════════════════════════════════
            BUSINESS MANAGEMENT — outline. Four panels, each with tabs that
            become real tools (DB + UI + some backend). Built one at a time.
@@ -3266,6 +3270,7 @@ const NAV = [
   { id: 'events',      icon: 'event',           label: 'Events',      section: 'engagement' },
   { id: 'trips',       icon: 'flight',          label: 'Trips',       section: 'engagement' },
   { id: 'quests',      icon: 'flag',            label: 'Quests',      section: 'engagement' },
+  { id: 'competitions',icon: 'emoji_events',    label: 'Competitions',section: 'engagement' },
   { id: 'offers',      icon: 'local_offer',     label: 'Offers',      section: 'engagement' },
   // Deals + Challenges parked — hidden from nav until built (panels remain in code).
   // ── Account ──
@@ -3393,7 +3398,7 @@ function toggleNavSection(sec) {
 
 // v12: load a panel's data loader the first time that panel is opened.
 // Overview/identity loaders stay eager; only clearly panel-scoped ones defer.
-var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=25', 'members': 'ffp-provider-members-loader.js?v=10', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15', 'offers': 'ffp-provider-offers-loader.js?v=4' };
+var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=25', 'members': 'ffp-provider-members-loader.js?v=10', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15', 'offers': 'ffp-provider-offers-loader.js?v=4', 'competitions': 'ffp-provider-competitions-loader.js?v=1' };
 var _provLoaded = {};
 function ensureProviderLoader(id) {
   var src = _provLoaderSrc[id];
@@ -3558,6 +3563,7 @@ function showPanel(id) {
   if (id === 'challenges') { renderChallenges(); if (window.FFPQuestCheckins) FFPQuestCheckins.reload(); }
   if (id === 'quests' && window.FFPQuestCheckins) FFPQuestCheckins.reload();
   if (id === 'offers') _callWhenReady('ffpRenderOffers');
+  if (id === 'competitions') _callWhenReady('ffpRenderCompetitions');
   if (id === 'checkins') { renderCheckIns(); if (window.FFPQuestCheckins) FFPQuestCheckins.reload(); }
   if (id === 'refer' && window.FFPVenueQR && FFPVenueQR.renderRefer) FFPVenueQR.renderRefer();
   if (id === 'analytics') renderAnalytics();
