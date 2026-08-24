@@ -120,7 +120,7 @@
   function renderEditor() {
     var el = root(); if (!el || !S.detail) return;
     var ev = S.detail.event || {};
-    var tabs = [['details', 'Details'], ['divisions', 'Divisions'], ['workouts', 'Workouts'], ['athletes', 'Athletes'], ['scores', 'Scores'], ['standings', 'Standings']];
+    var tabs = [['details', 'Details'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['scores', 'Scores'], ['standings', 'Standings']];
     el.innerHTML = '<div class="cx-wrap">' +
       '<div class="cx-head"><div style="display:flex;align-items:center;gap:12px;">' +
       '<button class="cx-btn sm" onclick="FFPComp.list()"><span class="ms">arrow_back</span></button>' +
@@ -200,10 +200,10 @@
   // Divisions
   function renderDivisions(c) {
     var divs = (S.detail.divisions || []);
-    c.innerHTML = '<div class="cx-head"><div class="cx-sub">Each division is individual or a team of N, and has its OWN workouts.</div>' +
+    c.innerHTML = '<div class="cx-head"><div class="cx-sub">Each division is individual or a team of N, and has its OWN events.</div>' +
       '<button class="cx-btn pri sm" onclick="FFPComp.editDivision()"><span class="ms">add</span> Add division</button></div>' +
       (divs.length ? divs.map(function (d) {
-        var meta = (d.team_size > 1 ? 'Teams of ' + d.team_size : 'Individual') + (d.gender ? ' · ' + d.gender : '') + ((d.min_age || d.max_age) ? ' · age ' + (d.min_age || 0) + '–' + (d.max_age || '+') : '') + ' · ' + (d.entrants || 0) + ' entered · ' + ((d.workouts || []).length) + ' WODs';
+        var meta = (d.team_size > 1 ? 'Teams of ' + d.team_size : 'Individual') + (d.gender ? ' · ' + d.gender : '') + ((d.min_age || d.max_age) ? ' · age ' + (d.min_age || 0) + '–' + (d.max_age || '+') : '') + ' · ' + (d.entrants || 0) + ' entered · ' + ((d.workouts || []).length) + ' events';
         return '<div class="cx-row"><div class="cx-av"><span class="ms" style="font-size:18px">military_tech</span></div>' +
           '<div class="g"><b>' + esc(d.name) + '</b><span>' + esc(meta) + '</span></div>' +
           '<button class="cx-btn sm" onclick="FFPComp.editDivision(\'' + d.id + '\')">Edit</button></div>';
@@ -235,20 +235,20 @@
     var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; });
     var wods = div ? (div.workouts || []) : [];
     c.innerHTML = '<div class="cx-toolbar">' + divPickerHtml('FFPComp.setDiv(this.value)') +
-      (div ? '<button class="cx-btn pri sm" onclick="FFPComp.editWorkout()"><span class="ms">add</span> Add workout</button>' : '') + '</div>' +
+      (div ? '<button class="cx-btn pri sm" onclick="FFPComp.editWorkout()"><span class="ms">add</span> Add event</button>' : '') + '</div>' +
       (!div ? '' : (wods.length ? wods.map(function (w, i) {
         var meta = w.score_type + ' · ' + (w.direction === 'asc' ? 'lower wins' : 'higher wins') + (w.cap_seconds ? ' · cap ' + Math.floor(w.cap_seconds / 60) + ':' + ('' + (w.cap_seconds % 60)).padStart(2, '0') : '');
         return '<div class="cx-row"><div class="cx-av"><span class="ms" style="font-size:18px">fitness_center</span></div>' +
-          '<div class="g"><b>WOD ' + (i + 1) + ' · ' + esc(w.name) + '</b><span>' + esc(meta) + '</span></div>' +
+          '<div class="g"><b>Event ' + (i + 1) + ' · ' + esc(w.name) + '</b><span>' + esc(meta) + '</span></div>' +
           '<button class="cx-btn sm" onclick="FFPComp.editWorkout(\'' + w.id + '\')">Edit</button></div>';
-      }).join('') : '<div class="cx-empty">No workouts in this division yet.</div>'));
+      }).join('') : '<div class="cx-empty">No events in this division yet.</div>'));
   }
   function editWorkout(id) {
     var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; }); if (!div) return;
     var w = (div.workouts || []).find(function (x) { return x.id === id; }) || {};
     var types = ['time', 'reps', 'weight', 'distance', 'points'];
     var cap = w.cap_seconds ? Math.floor(w.cap_seconds / 60) : '';
-    openModal((id ? 'Edit' : 'Add') + ' workout — ' + esc(div.name),
+    openModal((id ? 'Edit' : 'Add') + ' event — ' + esc(div.name),
       '<div class="cx-fld"><div class="cx-lab">Name</div><input id="cw-name" class="cx-in" value="' + esc(w.name || '') + '" placeholder="e.g. Fran"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Description (optional)</div><textarea id="cw-desc" class="cx-in" rows="3" placeholder="Movements, reps, standards…">' + esc(w.description || '') + '</textarea></div>' +
       '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Scored in</div><select id="cw-type" class="cx-sel" onchange="FFPComp.typeHint(this.value)">' +
@@ -264,7 +264,7 @@
     var g = function (x) { var e = document.getElementById(x); return e ? e.value : ''; };
     var capMin = parseInt(g('cw-cap'), 10);
     var p = { name: g('cw-name'), description: g('cw-desc') || null, score_type: g('cw-type'), direction: g('cw-dir'), cap_seconds: isNaN(capMin) ? null : capMin * 60 };
-    if (!p.name) { toast('Name the workout'); return; }
+    if (!p.name) { toast('Name the event'); return; }
     var r; try { r = await sb().rpc('comp_workout_save', { p_division: S.divId, p_id: id || null, p: p }); } catch (e) { r = { error: e }; }
     if (r && !r.error) { toast('Saved', 'check'); closeModal(); reload(); } else { toast('Save failed', 'error'); }
   }
@@ -306,7 +306,7 @@
     if (!S.wodId || !wods.some(function (w) { return w.id === S.wodId; })) S.wodId = wods[0] ? wods[0].id : null;
     var wodSel = wods.length ? '<select class="cx-sel" onchange="FFPComp.setWod(this.value)">' + wods.map(function (w) { return '<option value="' + w.id + '"' + (w.id === S.wodId ? ' selected' : '') + '>' + esc(w.name) + '</option>'; }).join('') + '</select>' : '';
     c.innerHTML = '<div class="cx-toolbar">' + divPickerHtml('FFPComp.setDiv(this.value)') + wodSel + '</div><div id="cx-scores"><div class="cx-empty">Loading…</div></div>';
-    if (!S.divId || !S.wodId) { document.getElementById('cx-scores').innerHTML = '<div class="cx-empty">Add a workout to this division first.</div>'; return; }
+    if (!S.divId || !S.wodId) { document.getElementById('cx-scores').innerHTML = '<div class="cx-empty">Add an event to this division first.</div>'; return; }
     var w = wods.find(function (x) { return x.id === S.wodId; });
     var r; try { r = await sb().rpc('comp_score_grid', { p_division: S.divId, p_workout: S.wodId }); } catch (e) { r = { error: e }; }
     var rows = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
