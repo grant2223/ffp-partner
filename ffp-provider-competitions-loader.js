@@ -124,6 +124,7 @@
     var el = root(); if (!el || !S.detail) return;
     var ev = S.detail.event || {};
     var tabs = [['details', 'Details'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['scores', 'Scores'], ['standings', 'Standings']];
+    if (ev.club_mode) tabs.push(['clubs', 'Clubs']);
     el.innerHTML = '<div class="cx-wrap">' +
       '<div class="cx-head"><div style="display:flex;align-items:center;gap:12px;">' +
       '<button class="cx-btn sm" onclick="FFPComp.list()"><span class="ms">arrow_back</span></button>' +
@@ -150,6 +151,7 @@
     if (S.tab === 'athletes') return renderAthletes(c);
     if (S.tab === 'scores') return renderScores(c);
     if (S.tab === 'standings') return renderStandings(c);
+    if (S.tab === 'clubs') return renderClubs(c);
   }
 
   // Details
@@ -178,6 +180,10 @@
       '<div class="cx-fld"><div class="cx-lab">Status</div><select id="cx-status" class="cx-sel" style="max-width:240px">' +
         ['draft', 'open', 'live', 'final'].map(function (s) { return '<option value="' + s + '"' + ((ev.status || 'draft') === s ? ' selected' : '') + '>' + s.charAt(0).toUpperCase() + s.slice(1) + (s === 'draft' ? ' (hidden)' : s === 'open' ? ' (registration)' : s === 'live' ? ' (in progress)' : ' (results)') + '</option>'; }).join('') + '</select>' +
         '<div class="cx-sub" style="margin-top:6px">Open / Live / Final appear in the FFP App. Draft stays hidden.</div></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Club championship</div><div class="cx-seg" id="cx-club">' +
+        '<button class="' + (!ev.club_mode ? 'on' : '') + '" data-v="0" onclick="FFPComp.pickClub(this)">Off</button>' +
+        '<button class="' + (ev.club_mode ? 'on' : '') + '" data-v="1" onclick="FFPComp.pickClub(this)">On — clubs compete</button></div>' +
+        '<div class="cx-sub" style="margin-top:6px">When on, each entry picks the partner club it represents at registration, and a Clubs leaderboard ranks clubs by their entries\' final positions (1st = 1 point, 2nd = 2 …) — lowest total wins.</div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Rules (optional)</div><textarea id="cx-rules" class="cx-in" rows="4" placeholder="Movement standards, scoring, tie-breaks, equipment…">' + esc(ev.rules || '') + '</textarea>' +
         '<div class="cx-sub" style="margin-top:6px">Shown to athletes on the competition Info tab.</div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Waiver / disclaimer (optional)</div><textarea id="cx-waiver" class="cx-in" rows="4" placeholder="The waiver athletes must accept when they register…">' + esc(ev.waiver || '') + '</textarea>' +
@@ -185,8 +191,9 @@
       '<button class="cx-btn pri" onclick="FFPComp.saveDetails()"><span class="ms">save</span> Save details</button>';
     if (typeof window.renderListingUploader === 'function') { try { window.renderListingUploader(ev.cover_url || ''); } catch (e) {} }
   }
-  var _mode = null, _accent = null;
+  var _mode = null, _accent = null, _club = null;
   function pickMode(b) { _mode = b.getAttribute('data-v'); Array.prototype.forEach.call(b.parentNode.children, function (x) { x.classList.remove('on'); }); b.classList.add('on'); }
+  function pickClub(b) { _club = b.getAttribute('data-v'); Array.prototype.forEach.call(b.parentNode.children, function (x) { x.classList.remove('on'); }); b.classList.add('on'); }
   function pickAccent(b) { _accent = b.getAttribute('data-v'); Array.prototype.forEach.call(b.parentNode.children, function (x) { x.classList.remove('on'); }); b.classList.add('on'); }
   async function saveDetails() {
     var g = function (id) { var e = document.getElementById(id); return e ? e.value : undefined; };
@@ -196,13 +203,14 @@
       name: g('cx-name'), description: g('cx-desc'), city: g('cx-city'), country: g('cx-country'),
       starts_at: g('cx-start'), ends_at: g('cx-end'),
       rules: g('cx-rules') || null, waiver: g('cx-waiver') || null,
+      club_mode: (_club != null ? _club === '1' : !!S.detail.event.club_mode),
       scoring_mode: _mode || (S.detail.event.scoring_mode || 'points'),
       accent: _accent || S.detail.event.accent || '#d6353b',
       cover_url: cover || null,
       entry_fee: g('cx-fee'), currency: g('cx-cur'), status: g('cx-status')
     };
     var r; try { r = await sb().rpc('comp_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
-    if (r && !r.error) { toast('Saved', 'check'); _mode = _accent = null; reload(); } else { toast('Save failed', 'error'); }
+    if (r && !r.error) { toast('Saved', 'check'); _mode = _accent = _club = null; reload(); } else { toast('Save failed', 'error'); }
   }
 
   // Divisions
@@ -447,6 +455,28 @@
       }).join('') +
       '<div class="cx-sub" style="margin-top:12px">' + (b.mode === 'placement' ? 'Placement scoring — lowest total wins.' : 'Points scoring — highest total wins.') + '</div>';
   }
+  // Clubs standings (club championship)
+  async function renderClubs(c) {
+    c.innerHTML = '<div class="cx-sub" style="margin-bottom:12px">Clubs ranked by their entries\' final positions across every division (1st = 1 point, 2nd = 2 …) — lowest total wins. Updates live as scores go in.</div><div id="cx-clubs"><div class="cx-empty">Loading…</div></div>';
+    var r; try { r = await sb().rpc('comp_club_leaderboard', { p_event: S.eventId }); } catch (e) { r = { error: e }; }
+    var clubs = (r && !r.error && r.data && Array.isArray(r.data.clubs)) ? r.data.clubs : [];
+    var box = document.getElementById('cx-clubs'); if (!box) return;
+    if (!clubs.length) { box.innerHTML = '<div class="cx-empty">No club points yet — they appear once entries are linked to a club and scored.</div>'; return; }
+    var ordn = function (n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+    box.innerHTML = clubs.map(function (cl) {
+      var lg = cl.logo ? '<span class="cx-av" style="width:40px;height:40px;border-radius:11px;background-image:url(\'' + esc(cl.logo) + '\')"></span>' : '<span class="cx-av" style="width:40px;height:40px;border-radius:11px">' + esc((cl.name || '?').slice(0, 1).toUpperCase()) + '</span>';
+      var entries = (cl.rows || []).map(function (e) {
+        return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0 7px 52px;border-top:1px solid var(--ffp-border)">' +
+          '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:#222">' + esc(e.entry) + '</div><div style="font-size:11px;color:#2ba8e0;font-weight:600">' + esc(e.division) + '</div></div>' +
+          '<div style="text-align:right;white-space:nowrap"><b style="font-size:15px;font-weight:800;color:#222">' + e.points + '</b> <span style="font-size:11px;color:#222">' + ordn(e.rank) + '</span></div></div>';
+      }).join('');
+      return '<div class="cx-row" style="border-bottom:none;align-items:center">' +
+        '<span class="rk" style="width:24px;text-align:center;font-size:17px;font-weight:700;color:#222">' + cl.rank + '</span>' + lg +
+        '<div class="g"><b>' + esc(cl.name) + '</b><span>' + esc([cl.city, (cl.entries || 0) + ' entries'].filter(Boolean).join(' · ')) + '</span></div>' +
+        '<div style="text-align:right"><b style="display:block;font-size:18px;font-weight:800;color:#222">' + cl.total + '</b><span style="font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:#9aa8b4;font-weight:700">points</span></div></div>' +
+        entries;
+    }).join('');
+  }
   async function setStatus(st, msg) {
     var r; try { r = await sb().rpc('comp_event_save', { p_id: S.eventId, p: { status: st } }); } catch (e) { r = { error: e }; }
     if (r && !r.error) { toast(msg, 'check'); reload().then(function () { FFPComp.tab('standings'); }); } else { toast('Failed', 'error'); }
@@ -469,7 +499,7 @@
   function tab(t) { S.tab = t; document.querySelectorAll('.cx-editnav button').forEach(function (b) { b.classList.remove('on'); }); var el = document.querySelector('.cx-editnav button[onclick*="\'' + t + '\'"]'); if (el) el.classList.add('on'); renderTab(); }
 
   window.FFPComp = { list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
-    saveDetails: saveDetails, pickMode: pickMode, pickAccent: pickAccent,
+    saveDetails: saveDetails, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub,
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision,
     editWorkout: editWorkout, saveWorkout: saveWorkout, typeHint: typeHint,
     addAthlete: addAthlete, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
