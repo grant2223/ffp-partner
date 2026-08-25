@@ -254,7 +254,7 @@
       '<div class="cx-fld"><div class="cx-lab">Name</div><input id="cd-name" class="cx-in" value="' + esc(d.name || '') + '" placeholder="e.g. RX Women"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Type</div><select id="cd-size" class="cx-sel">' + sizes + '</select></div>' +
       '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Gender (optional)</div><select id="cd-gender" class="cx-sel"><option value="">Open</option>' +
-        ['Female', 'Male'].map(function (x) { return '<option' + (d.gender === x ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
+        (((window.FFP_TAX && window.FFP_TAX.genders) || ['Female', 'Male']).filter(function (g) { return g !== 'Prefer not to say'; })).map(function (x) { return '<option' + (d.gender === x ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
       '<div class="cx-fld"><div class="cx-lab">Scaling (optional)</div><input id="cd-scaling" class="cx-in" value="' + esc(d.scaling || '') + '" placeholder="RX / Scaled"></div></div>' +
       '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Min age</div><input id="cd-min" type="number" class="cx-in" value="' + (d.min_age != null ? d.min_age : '') + '"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Max age</div><input id="cd-max" type="number" class="cx-in" value="' + (d.max_age != null ? d.max_age : '') + '"></div></div>',
