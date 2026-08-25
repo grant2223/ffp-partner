@@ -318,24 +318,68 @@
     var box = document.getElementById('cx-roster'); if (!box) return;
     box.innerHTML = rows.length ? rows.map(function (a) {
       var av = a.photo ? '<span class="cx-av" style="background-image:url(\'' + esc(a.photo) + '\')"></span>' : '<span class="cx-av">' + esc((a.name || '?').slice(0, 1).toUpperCase()) + '</span>';
-      return '<div class="cx-row">' + av + '<div class="g"><b>' + esc(a.name) + '</b><span>#' + (a.athlete_no || '—') + ' · ' + esc(a.status || '') + (a.is_member ? ' · FFP member' : ' · manual') + '</span></div></div>';
-    }).join('') : '<div class="cx-empty">No athletes yet. Members register in the FFP App, or add manually.</div>';
+      var tag = a.is_member ? ' · FFP member' : (a.status === 'invited' ? ' · invited' + (a.invite_email ? ' · ' + esc(a.invite_email) : '') : ' · manual');
+      return '<div class="cx-row">' + av + '<div class="g"><b>' + esc(a.name) + '</b><span>#' + (a.athlete_no || '—') + ' · ' + esc(a.status || '') + tag + '</span></div></div>';
+    }).join('') : '<div class="cx-empty">No athletes yet. Members register themselves in the FFP App, or add them here.</div>';
   }
+  var _caT = null;
   function addAthlete() {
-    openModal('Add athlete / team',
-      '<div class="cx-sub" style="margin-bottom:12px">Members register themselves in the app with their FFP account. Use this for walk-ins / manual entries.</div>' +
-      '<div class="cx-fld"><div class="cx-lab">Name (athlete or team)</div><input id="ca-name" class="cx-in" placeholder="e.g. Sarah King / Reef Raiders"></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Athlete # (optional)</div><input id="ca-no" type="number" class="cx-in" style="max-width:140px"></div>',
-      '<button class="cx-btn" onclick="FFPComp.closeModal()">Cancel</button><button class="cx-btn pri" onclick="FFPComp.saveAthlete()">Add</button>');
+    openModal('Add athlete',
+      '<div class="cx-sub" style="margin-bottom:14px">Everyone on the platform has an FFP account. Search for the member to link their real profile — or invite someone new by email and they\'ll be entered as soon as they sign up.</div>' +
+      '<div class="cx-fld"><div class="cx-lab">Find an FFP member</div><input id="ca-search" class="cx-in" placeholder="Search by name or email" oninput="FFPComp.searchAthlete(this.value)" autocomplete="off"></div>' +
+      '<div id="ca-results"></div>' +
+      '<div style="height:1px;background:var(--ffp-border,#e7ecf0);margin:22px 0"></div>' +
+      '<div class="cx-lab" style="font-size:13px;font-weight:900;color:#12232f">Not on FFP yet? Invite them</div>' +
+      '<div class="cx-sub" style="margin:2px 0 12px">They\'re entered now and emailed a link to create a free account. Their entry links automatically when they sign up with that email.</div>' +
+      '<div class="cx-fld"><div class="cx-lab">Name</div><input id="ca-inv-name" class="cx-in" placeholder="e.g. Sarah King"></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Email</div><input id="ca-inv-email" type="email" class="cx-in" placeholder="name@email.com"></div>',
+      '<button class="cx-btn" onclick="FFPComp.closeModal()">Cancel</button><button class="cx-btn pri" onclick="FFPComp.inviteAthlete()"><span class="ms">mail</span> Invite &amp; email</button>');
   }
-  async function saveAthlete() {
+  function searchAthlete(q) {
+    var box = document.getElementById('ca-results'); if (!box) return;
+    clearTimeout(_caT);
+    q = (q || '').trim();
+    if (q.length < 2) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="cx-empty" style="padding:14px">Searching…</div>';
+    _caT = setTimeout(async function () {
+      var r; try { r = await sb().rpc('comp_member_search', { p_event: S.eventId, p_q: q }); } catch (e) { r = { error: e }; }
+      var rows = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
+      if (!rows.length) { box.innerHTML = '<div class="cx-empty" style="padding:14px">No members found. Invite them below.</div>'; return; }
+      box.innerHTML = rows.map(function (m) {
+        var av = m.photo ? '<span class="cx-av" style="background-image:url(\'' + esc(m.photo) + '\')"></span>' : '<span class="cx-av">' + esc((m.name || '?').slice(0, 1).toUpperCase()) + '</span>';
+        var sub = [m.city, m.email_hint].filter(Boolean).join(' · ');
+        return '<div class="cx-row">' + av + '<div class="g"><b>' + esc(m.name) + '</b><span>' + esc(sub) + '</span></div>' +
+          '<button class="cx-btn pri sm" onclick="FFPComp.linkAthlete(\'' + m.id + '\',this)">Add</button></div>';
+      }).join('');
+    }, 280);
+  }
+  async function linkAthlete(memberId, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
     var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; });
-    var name = (document.getElementById('ca-name') || {}).value || '';
-    if (!name.trim()) { toast('Enter a name'); return; }
-    var no = parseInt((document.getElementById('ca-no') || {}).value, 10);
-    var p = { division_id: S.divId, kind: (div && div.team_size > 1) ? 'team' : 'individual', team_name: name.trim(), athlete_no: isNaN(no) ? null : no, status: 'checked_in' };
+    var p = { division_id: S.divId, kind: (div && div.team_size > 1) ? 'team' : 'individual', member_id: memberId, status: 'registered' };
     var r; try { r = await sb().rpc('comp_entrant_add', { p_event: S.eventId, p: p }); } catch (e) { r = { error: e }; }
-    if (r && !r.error) { toast('Added', 'check'); closeModal(); reload().then(function () { FFPComp.tab('athletes'); }); } else { toast('Failed', 'error'); }
+    if (r && !r.error) { toast('Added', 'check'); closeModal(); reload().then(function () { FFPComp.tab('athletes'); }); }
+    else { toast('Could not add', 'error'); if (btn) { btn.disabled = false; btn.textContent = 'Add'; } }
+  }
+  async function inviteAthlete() {
+    var name = ((document.getElementById('ca-inv-name') || {}).value || '').trim();
+    var email = ((document.getElementById('ca-inv-email') || {}).value || '').trim();
+    if (!name) { toast('Enter a name'); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast('Enter a valid email'); return; }
+    var refresh = (window.FFPAuth && FFPAuth.getRefresh && FFPAuth.getRefresh()) || null;
+    if (!refresh) { toast('Please sign in again', 'error'); return; }
+    var d = null;
+    try {
+      var res = await fetch('https://ffp-passport-backend.vercel.app/api/comp/invite-athlete', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh: refresh, event_id: S.eventId, division_id: S.divId, name: name, email: email })
+      });
+      d = await res.json().catch(function () { return {}; });
+    } catch (e) { d = { error: 'network' }; }
+    if (d && d.ok) {
+      toast(d.already ? 'Already entered' : d.linked ? 'Member linked' : 'Invited — email sent', 'check');
+      closeModal(); reload().then(function () { FFPComp.tab('athletes'); });
+    } else { toast((d && d.error) || 'Could not invite', 'error'); }
   }
 
   // Scores: division + workout grid
@@ -428,7 +472,7 @@
     saveDetails: saveDetails, pickMode: pickMode, pickAccent: pickAccent,
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision,
     editWorkout: editWorkout, saveWorkout: saveWorkout, typeHint: typeHint,
-    addAthlete: addAthlete, saveAthlete: saveAthlete, saveScores: saveScores,
+    addAthlete: addAthlete, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
     publish: publish, finalise: finalise, closeModal: closeModal };
   window.ffpRenderCompetitions = renderList;
 })();
