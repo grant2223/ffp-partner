@@ -1,0 +1,16 @@
+{
+  "name": "FFP Partner",
+  "short_name": "FFP Partner",
+  "description": "Find Fit People — Partner dashboard for facilities and businesses.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f2230",
+  "theme_color": "#0f2230",
+  "icons": [
+    { "src": "/assets/icons/ffp-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/icons/ffp-icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/assets/icons/ffp-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/assets/icons/ffp-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
