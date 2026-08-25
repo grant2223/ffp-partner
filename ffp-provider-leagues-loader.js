@@ -42,7 +42,16 @@
     document.head.appendChild(css);
   }
 
-  async function loadSports() { if (S.sports) return S.sports; var r = await sb().from('lt_sport_schemas').select('key,name,icon').eq('active', true).order('sort'); S.sports = r.data || []; return S.sports; }
+  async function loadSports() { if (S.sports) return S.sports; var r = await sb().from('lt_sport_schemas').select('key,name,icon,match_activities').eq('active', true).order('sort'); S.sports = r.data || []; return S.sports; }
+  // ---- Taxonomy (shared window.FFP_TAX — activity / gender / city / country) ----
+  async function taxReady() { try { if (window.FFP_TAX_READY) await window.FFP_TAX_READY; } catch (e) {} return window.FFP_TAX || {}; }
+  function actNames() { return ((window.FFP_TAX && window.FFP_TAX.activities) || []).map(function (a) { return a && a.n ? a.n : a; }); }
+  function genderNames() { return ((window.FFP_TAX && window.FFP_TAX.genders) || ['Male', 'Female']).filter(function (g) { return g !== 'Prefer not to say'; }); }
+  function cityNames() { var t = window.FFP_TAX; return (t && t.allCities) ? t.allCities() : []; }
+  function countryNames() { var t = window.FFP_TAX; return t && t.cities ? Object.keys(t.cities) : []; }
+  function dlOpts(arr) { return (arr || []).map(function (x) { return '<option value="' + esc(x) + '">'; }).join(''); }
+  function schemaForActivity(act) { var s = (S.sports || []).find(function (x) { return (x.match_activities || []).some(function (a) { return String(a).toLowerCase() === String(act || '').toLowerCase(); }); }); return s ? s.name : 'Generic points'; }
+  function sportHint() { var a = (document.getElementById('lg-sport') || {}).value; var h = document.getElementById('lg-sporthint'); if (h) h.textContent = 'Stats set: ' + schemaForActivity(a); }
 
   // ---------- LIST ----------
   async function renderList() {
@@ -96,13 +105,12 @@
 
   // ---------- DETAILS ----------
   async function renderDetails(host) {
-    var ev = S.detail.event || {}; var sports = await loadSports();
-    var sportOpts = sports.map(function (s) { return '<option value="' + s.key + '"' + (ev.sport_key === s.key ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('');
+    var ev = S.detail.event || {}; await loadSports(); await taxReady();
     host.innerHTML =
       '<div class="lg-fld"><div class="lg-lab">League name</div><input class="lg-in" id="lg-name" value="' + esc(ev.name) + '"></div>'
-      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Sport</div><select class="lg-sel" id="lg-sport">' + sportOpts + '</select></div>'
+      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Sport</div><input class="lg-in" id="lg-sport" list="lg-actl" value="' + esc(ev.activity || '') + '" placeholder="Search sport…" oninput="FFPLeague.sportHint()"><datalist id="lg-actl">' + dlOpts(actNames()) + '</datalist><div class="lg-lab" id="lg-sporthint" style="margin:6px 0 0;font-weight:700;color:#6a7c8a">Stats set: ' + esc(schemaForActivity(ev.activity)) + '</div></div>'
       + '<div class="lg-fld"><div class="lg-lab">Schedule</div><div class="lg-seg" id="lg-mode"><button data-v="single" class="' + (ev.schedule_mode !== 'home_away' ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-mode\')">Single</button><button data-v="home_away" class="' + (ev.schedule_mode === 'home_away' ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-mode\')">Home &amp; away</button></div></div></div>'
-      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">City</div><input class="lg-in" id="lg-city" value="' + esc(ev.city || '') + '"></div><div class="lg-fld"><div class="lg-lab">Country</div><input class="lg-in" id="lg-country" value="' + esc(ev.country || '') + '"></div></div>'
+      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">City</div><input class="lg-in" id="lg-city" list="lg-cityl" value="' + esc(ev.city || '') + '"><datalist id="lg-cityl">' + dlOpts(cityNames()) + '</datalist></div><div class="lg-fld"><div class="lg-lab">Country</div><input class="lg-in" id="lg-country" list="lg-cntl" value="' + esc(ev.country || '') + '"><datalist id="lg-cntl">' + dlOpts(countryNames()) + '</datalist></div></div>'
       + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Season starts</div><input class="lg-in" id="lg-start" type="date" value="' + esc(ev.starts_at || '') + '"></div><div class="lg-fld"><div class="lg-lab">Season ends</div><input class="lg-in" id="lg-end" type="date" value="' + esc(ev.ends_at || '') + '"></div></div>'
       + '<div class="lg-3"><div class="lg-fld"><div class="lg-lab">Win pts</div><input class="lg-in" id="lg-win" type="number" value="' + (ev.win_pts != null ? ev.win_pts : 3) + '"></div><div class="lg-fld"><div class="lg-lab">Draw pts</div><input class="lg-in" id="lg-draw" type="number" value="' + (ev.draw_pts != null ? ev.draw_pts : 1) + '"></div><div class="lg-fld"><div class="lg-lab">Loss pts</div><input class="lg-in" id="lg-loss" type="number" value="' + (ev.loss_pts != null ? ev.loss_pts : 0) + '"></div></div>'
       + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Finals series</div><select class="lg-sel" id="lg-finals"><option value="none"' + (ev.finals_mode === 'none' ? ' selected' : '') + '>None</option><option value="top4"' + (ev.finals_mode === 'top4' ? ' selected' : '') + '>Top 4</option><option value="top8"' + (ev.finals_mode === 'top8' ? ' selected' : '') + '>Top 8</option></select></div>'
@@ -115,7 +123,7 @@
   function segVal(id) { var b = document.querySelector('#' + id + ' button.on'); return b ? b.getAttribute('data-v') : null; }
   function v(id) { var e = document.getElementById(id); return e ? e.value : ''; }
   async function saveDetails() {
-    var p = { name: v('lg-name'), sport_key: v('lg-sport'), schedule_mode: segVal('lg-mode'), city: v('lg-city'), country: v('lg-country'),
+    var p = { name: v('lg-name'), activity: v('lg-sport'), schedule_mode: segVal('lg-mode'), city: v('lg-city'), country: v('lg-country'),
       starts_at: v('lg-start') || null, ends_at: v('lg-end') || null, win_pts: +v('lg-win'), draw_pts: +v('lg-draw'), loss_pts: +v('lg-loss'),
       finals_mode: v('lg-finals'), third_place: segVal('lg-third') === 'true', status: v('lg-status'), description: v('lg-desc'), rules: v('lg-rules') };
     var r; try { r = await sb().rpc('league_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
@@ -135,9 +143,13 @@
   }
   function divEditor(d) {
     d = d || {}; var isTeam = (d.kind || 'team') !== 'individual';
+    var gOpts = '<option value="">Open / any</option>' + genderNames().map(function (g) { return '<option' + (d.gender === g ? ' selected' : '') + '>' + esc(g) + '</option>'; }).join('');
     return '<div class="lg-edit">'
       + '<input class="lg-in" id="lg-dvname" placeholder="Division name" value="' + esc(d.name || '') + '">'
       + '<div class="lg-seg" id="lg-dvkind"><button data-v="team" class="' + (isTeam ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-dvkind\')">Team</button><button data-v="individual" class="' + (!isTeam ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-dvkind\')">Individual</button></div>'
+      + '<select class="lg-sel" id="lg-dvgender" style="width:auto">' + gOpts + '</select>'
+      + '<input class="lg-in" id="lg-dvmin" type="number" placeholder="Min age" value="' + (d.min_age != null ? d.min_age : '') + '" style="width:88px">'
+      + '<input class="lg-in" id="lg-dvmax" type="number" placeholder="Max age" value="' + (d.max_age != null ? d.max_age : '') + '" style="width:88px">'
       + '<button class="lg-btn pri" onclick="FFPLeague.saveDivision(\'' + (d.id || '') + '\')">' + ic('check') + 'Save</button>'
       + '<button class="lg-btn ghost" onclick="FFPLeague.cancelDivision()">Cancel</button></div>';
   }
@@ -146,7 +158,8 @@
   async function saveDivision(id) {
     var nm = (document.getElementById('lg-dvname') || {}).value; if (!nm || !nm.trim()) { toast('Name required', 'error'); return; }
     var kind = segVal('lg-dvkind') || 'team';
-    var r; try { r = await sb().rpc('league_division_save', { p_league: S.eventId, p_id: id || null, p: { name: nm.trim(), kind: kind, team_size: kind === 'team' ? 5 : 1 } }); } catch (e) { r = { error: e }; }
+    var p = { name: nm.trim(), kind: kind, team_size: kind === 'team' ? 5 : 1, gender: v('lg-dvgender') || 'any', min_age: v('lg-dvmin') || null, max_age: v('lg-dvmax') || null };
+    var r; try { r = await sb().rpc('league_division_save', { p_league: S.eventId, p_id: id || null, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Save failed', 'error'); return; }
     S.divEdit = null; toast('Saved', 'success'); refreshDetail();
   }
@@ -229,7 +242,7 @@
     back: function () { S.view = 'list'; renderList(); }, tab: function (t) { S.tab = t; renderEditor(); },
     setDiv: function (val, tab) { S.divId = val; S.tab = tab; renderTab(); },
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
-    saveDetails: saveDetails, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
+    saveDetails: saveDetails, sportHint: sportHint, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     confirmGen: confirmGen, cancelGen: cancelGen, doGen: doGen, saveResults: saveResults
   };
