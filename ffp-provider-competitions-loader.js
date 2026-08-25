@@ -69,10 +69,13 @@
       '.cx-lb .rk{text-align:center;font-weight:900;color:var(--ffp-text-muted);} .cx-lb.r1 .rk{color:#e0a83e;}.cx-lb.r2 .rk{color:#8a99a8;}.cx-lb.r3 .rk{color:#c08a52;}',
       '.cx-lb .at{display:flex;align-items:center;gap:8px;min-width:0;} .cx-lb .at b{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
       '.cx-lb .tot{text-align:center;font-weight:900;color:#d6353b;} .cx-lb .c b{display:block;font-size:11px;font-weight:900;} .cx-lb .c b.p1{color:#e0a83e;}.cx-lb .c b.p2{color:#8a99a8;}.cx-lb .c b.p3{color:#c08a52;} .cx-lb .c span{font-size:8px;font-weight:800;color:var(--ffp-text-muted);}',
-      '.cx-mbk{position:fixed;inset:0;background:rgba(8,18,26,.5);z-index:1200;display:flex;align-items:center;justify-content:center;padding:16px;}',
-      '.cx-modal{background:#fff;border-radius:16px;width:100%;max-width:460px;max-height:90vh;overflow:auto;padding:22px;}',
-      '.cx-modal h3{font-size:18px;font-weight:900;margin:0 0 16px;color:var(--ffp-text);}',
-      '.cx-mfoot{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}'
+      '.cx-mbk{position:fixed;inset:0;background:#fff;z-index:1200;overflow-y:auto;-webkit-overflow-scrolling:touch;}',
+      '.cx-modal{width:100%;max-width:640px;margin:0 auto;min-height:100dvh;background:#fff;padding:0 18px calc(env(safe-area-inset-bottom) + 30px);box-sizing:border-box;display:flex;flex-direction:column;}',
+      '.cx-mhead{position:sticky;top:0;background:#fff;z-index:2;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 12px) 0 12px;border-bottom:1px solid var(--ffp-border,#e7ecf0);margin-bottom:18px;}',
+      '.cx-mback{width:38px;height:38px;flex:none;border:none;background:none;border-radius:50%;color:var(--ffp-text,#12232f);display:flex;align-items:center;justify-content:center;cursor:pointer;} .cx-mback .ms{font-size:24px;}',
+      '.cx-modal h3{font-size:20px;font-weight:900;margin:0;color:var(--ffp-text);}',
+      '.cx-mfoot{display:flex;gap:10px;justify-content:flex-end;margin-top:auto;padding-top:22px;}',
+      '.cx-mfoot .cx-btn{flex:1;justify-content:center;}'
     ].join('');
     document.head.appendChild(css);
   }
@@ -175,6 +178,10 @@
       '<div class="cx-fld"><div class="cx-lab">Status</div><select id="cx-status" class="cx-sel" style="max-width:240px">' +
         ['draft', 'open', 'live', 'final'].map(function (s) { return '<option value="' + s + '"' + ((ev.status || 'draft') === s ? ' selected' : '') + '>' + s.charAt(0).toUpperCase() + s.slice(1) + (s === 'draft' ? ' (hidden)' : s === 'open' ? ' (registration)' : s === 'live' ? ' (in progress)' : ' (results)') + '</option>'; }).join('') + '</select>' +
         '<div class="cx-sub" style="margin-top:6px">Open / Live / Final appear in the FFP App. Draft stays hidden.</div></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Rules (optional)</div><textarea id="cx-rules" class="cx-in" rows="4" placeholder="Movement standards, scoring, tie-breaks, equipment…">' + esc(ev.rules || '') + '</textarea>' +
+        '<div class="cx-sub" style="margin-top:6px">Shown to athletes on the competition Info tab.</div></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Waiver / disclaimer (optional)</div><textarea id="cx-waiver" class="cx-in" rows="4" placeholder="The waiver athletes must accept when they register…">' + esc(ev.waiver || '') + '</textarea>' +
+        '<div class="cx-sub" style="margin-top:6px">Athletes must accept this to complete registration.</div></div>' +
       '<button class="cx-btn pri" onclick="FFPComp.saveDetails()"><span class="ms">save</span> Save details</button>';
     if (typeof window.renderListingUploader === 'function') { try { window.renderListingUploader(ev.cover_url || ''); } catch (e) {} }
   }
@@ -188,6 +195,7 @@
     var p = {
       name: g('cx-name'), description: g('cx-desc'), city: g('cx-city'), country: g('cx-country'),
       starts_at: g('cx-start'), ends_at: g('cx-end'),
+      rules: g('cx-rules') || null, waiver: g('cx-waiver') || null,
       scoring_mode: _mode || (S.detail.event.scoring_mode || 'points'),
       accent: _accent || S.detail.event.accent || '#d6353b',
       cover_url: cover || null,
@@ -202,12 +210,25 @@
     var divs = (S.detail.divisions || []);
     c.innerHTML = '<div class="cx-head"><div class="cx-sub">Each division is individual or a team of N, and has its OWN events.</div>' +
       '<button class="cx-btn pri sm" onclick="FFPComp.editDivision()"><span class="ms">add</span> Add division</button></div>' +
-      (divs.length ? divs.map(function (d) {
+      (divs.length ? divs.map(function (d, i) {
         var meta = (d.team_size > 1 ? 'Teams of ' + d.team_size : 'Individual') + (d.gender ? ' · ' + d.gender : '') + ((d.min_age || d.max_age) ? ' · age ' + (d.min_age || 0) + '–' + (d.max_age || '+') : '') + ' · ' + (d.entrants || 0) + ' entered · ' + ((d.workouts || []).length) + ' events';
         return '<div class="cx-row"><div class="cx-av"><span class="ms" style="font-size:18px">military_tech</span></div>' +
           '<div class="g"><b>' + esc(d.name) + '</b><span>' + esc(meta) + '</span></div>' +
+          '<button class="cx-btn sm" onclick="FFPComp.moveDivision(\'' + d.id + '\',-1)"' + (i === 0 ? ' disabled' : '') + ' title="Move up"><span class="ms">arrow_upward</span></button>' +
+          '<button class="cx-btn sm" onclick="FFPComp.moveDivision(\'' + d.id + '\',1)"' + (i === divs.length - 1 ? ' disabled' : '') + ' title="Move down"><span class="ms">arrow_downward</span></button>' +
           '<button class="cx-btn sm" onclick="FFPComp.editDivision(\'' + d.id + '\')">Edit</button></div>';
       }).join('') : '<div class="cx-empty">No divisions yet. Add one to start.</div>');
+  }
+  async function moveDivision(id, dir) {
+    var divs = (S.detail.divisions || []).slice();
+    var i = divs.findIndex(function (x) { return x.id === id; });
+    var j = i + dir;
+    if (i < 0 || j < 0 || j >= divs.length) return;
+    var tmp = divs[i]; divs[i] = divs[j]; divs[j] = tmp;
+    S.detail.divisions = divs; renderTab();
+    var ids = divs.map(function (x) { return x.id; });
+    var r; try { r = await sb().rpc('comp_divisions_reorder', { p_event: S.eventId, p_ids: ids }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast('Reorder failed', 'error'); reload(); }
   }
   function editDivision(id) {
     var d = (S.detail.divisions || []).find(function (x) { return x.id === id; }) || {};
@@ -248,6 +269,11 @@
     var w = (div.workouts || []).find(function (x) { return x.id === id; }) || {};
     var types = ['time', 'reps', 'weight', 'distance', 'points'];
     var cap = w.cap_seconds ? Math.floor(w.cap_seconds / 60) : '';
+    var allDivs = (S.detail.divisions || []);
+    var multi = !id && allDivs.length > 1 ?
+      '<div class="cx-fld"><div class="cx-lab">Add this event to</div><div id="cw-divs" style="display:flex;flex-direction:column;gap:8px">' +
+        allDivs.map(function (d) { return '<label style="display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px;color:#12232f;cursor:pointer"><input type="checkbox" value="' + d.id + '"' + (d.id === S.divId ? ' checked' : '') + ' style="width:18px;height:18px">' + esc(d.name) + '</label>'; }).join('') +
+        '</div><div class="cx-sub" style="margin-top:6px">Tick every division this event runs in — it\'s added to each. Scores are still entered per division.</div></div>' : '';
     openModal((id ? 'Edit' : 'Add') + ' event — ' + esc(div.name),
       '<div class="cx-fld"><div class="cx-lab">Name</div><input id="cw-name" class="cx-in" value="' + esc(w.name || '') + '" placeholder="e.g. Fran"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Description (optional)</div><textarea id="cw-desc" class="cx-in" rows="3" placeholder="Movements, reps, standards…">' + esc(w.description || '') + '</textarea></div>' +
@@ -256,7 +282,7 @@
       '<div class="cx-fld"><div class="cx-lab">Winner</div><select id="cw-dir" class="cx-sel">' +
         '<option value="asc"' + (w.direction === 'asc' ? ' selected' : '') + '>Lower wins (time)</option>' +
         '<option value="desc"' + (w.direction === 'desc' ? ' selected' : '') + '>Higher wins (reps/weight)</option></select></div></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Time cap minutes (optional)</div><input id="cw-cap" type="number" class="cx-in" value="' + cap + '" style="max-width:160px"></div>',
+      '<div class="cx-fld"><div class="cx-lab">Time cap minutes (optional)</div><input id="cw-cap" type="number" class="cx-in" value="' + cap + '" style="max-width:160px"></div>' + multi,
       '<button class="cx-btn" onclick="FFPComp.closeModal()">Cancel</button><button class="cx-btn pri" onclick="FFPComp.saveWorkout(\'' + (id || '') + '\')">Save</button>');
   }
   function typeHint(t) { var d = document.getElementById('cw-dir'); if (!d) return; d.value = (t === 'time') ? 'asc' : 'desc'; }
@@ -265,8 +291,21 @@
     var capMin = parseInt(g('cw-cap'), 10);
     var p = { name: g('cw-name'), description: g('cw-desc') || null, score_type: g('cw-type'), direction: g('cw-dir'), cap_seconds: isNaN(capMin) ? null : capMin * 60 };
     if (!p.name) { toast('Name the event'); return; }
-    var r; try { r = await sb().rpc('comp_workout_save', { p_division: S.divId, p_id: id || null, p: p }); } catch (e) { r = { error: e }; }
-    if (r && !r.error) { toast('Saved', 'check'); closeModal(); reload(); } else { toast('Save failed', 'error'); }
+    // New event can be allocated to multiple divisions at once
+    var targets = [S.divId];
+    if (!id) {
+      var box = document.getElementById('cw-divs');
+      if (box) {
+        targets = Array.prototype.slice.call(box.querySelectorAll('input:checked')).map(function (c) { return c.value; });
+        if (!targets.length) targets = [S.divId];
+      }
+    }
+    var ok = true;
+    for (var i = 0; i < targets.length; i++) {
+      var r; try { r = await sb().rpc('comp_workout_save', { p_division: targets[i], p_id: id || null, p: p }); } catch (e) { r = { error: e }; }
+      if (!r || r.error) ok = false;
+    }
+    if (ok) { toast(targets.length > 1 ? 'Added to ' + targets.length + ' divisions' : 'Saved', 'check'); closeModal(); reload(); } else { toast('Save failed', 'error'); }
   }
 
   // Athletes (roster) per division
@@ -375,8 +414,7 @@
   function openModal(title, body, foot) {
     closeModal();
     var bk = document.createElement('div'); bk.className = 'cx-mbk'; bk.id = 'cx-mbk';
-    bk.innerHTML = '<div class="cx-modal"><h3>' + esc(title) + '</h3>' + body + '<div class="cx-mfoot">' + foot + '</div></div>';
-    bk.addEventListener('click', function (e) { if (e.target === bk) closeModal(); });
+    bk.innerHTML = '<div class="cx-modal"><div class="cx-mhead"><button class="cx-mback" onclick="FFPComp.closeModal()" aria-label="Back"><span class="ms">arrow_back</span></button><h3>' + esc(title) + '</h3></div>' + body + '<div class="cx-mfoot">' + foot + '</div></div>';
     document.body.appendChild(bk);
   }
   function closeModal() { var b = document.getElementById('cx-mbk'); if (b) b.remove(); }
@@ -388,7 +426,7 @@
 
   window.FFPComp = { list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
     saveDetails: saveDetails, pickMode: pickMode, pickAccent: pickAccent,
-    editDivision: editDivision, saveDivision: saveDivision,
+    editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision,
     editWorkout: editWorkout, saveWorkout: saveWorkout, typeHint: typeHint,
     addAthlete: addAthlete, saveAthlete: saveAthlete, saveScores: saveScores,
     publish: publish, finalise: finalise, closeModal: closeModal };
