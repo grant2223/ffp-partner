@@ -2648,6 +2648,14 @@ a { color: var(--ffp-blue); text-decoration: none; }
         <div id="comp-root"></div>
       </section>
 
+      <section class="panel" id="panel-leagues">
+        <div id="lg-root"></div>
+      </section>
+
+      <section class="panel" id="panel-tournaments">
+        <div id="tg-root"></div>
+      </section>
+
       <!-- ════════════════════════════════════════════════════════════════
            BUSINESS MANAGEMENT — outline. Four panels, each with tabs that
            become real tools (DB + UI + some backend). Built one at a time.
@@ -3293,6 +3301,8 @@ const NAV = [
   { id: 'trips',       icon: 'flight',          label: 'Trips',       section: 'engagement' },
   { id: 'quests',      icon: 'flag',            label: 'Quests',      section: 'engagement' },
   { id: 'competitions',icon: 'emoji_events',    label: 'Competitions',section: 'engagement' },
+  { id: 'leagues',     icon: 'sports_soccer',   label: 'Leagues',     section: 'engagement' },
+  { id: 'tournaments', icon: 'account_tree',    label: 'Tournaments', section: 'engagement' },
   { id: 'offers',      icon: 'local_offer',     label: 'Offers',      section: 'engagement' },
   // Deals + Challenges parked — hidden from nav until built (panels remain in code).
   // ── Account ──
@@ -3420,7 +3430,7 @@ function toggleNavSection(sec) {
 
 // v12: load a panel's data loader the first time that panel is opened.
 // Overview/identity loaders stay eager; only clearly panel-scoped ones defer.
-var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=25', 'members': 'ffp-provider-members-loader.js?v=10', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15', 'offers': 'ffp-provider-offers-loader.js?v=5', 'competitions': 'ffp-provider-competitions-loader.js?v=10' };
+var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=25', 'members': 'ffp-provider-members-loader.js?v=10', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15', 'offers': 'ffp-provider-offers-loader.js?v=5', 'competitions': 'ffp-provider-competitions-loader.js?v=10', 'leagues': 'ffp-provider-leagues-loader.js?v=1', 'tournaments': 'ffp-provider-tournaments-loader.js?v=1' };
 var _provLoaded = {};
 function ensureProviderLoader(id) {
   var src = _provLoaderSrc[id];
@@ -3586,6 +3596,8 @@ function showPanel(id) {
   if (id === 'quests' && window.FFPQuestCheckins) FFPQuestCheckins.reload();
   if (id === 'offers') _callWhenReady('ffpRenderOffers');
   if (id === 'competitions') _callWhenReady('ffpRenderCompetitions');
+  if (id === 'leagues') _callWhenReady('ffpRenderLeagues');
+  if (id === 'tournaments') _callWhenReady('ffpRenderTournaments');
   if (id === 'checkins') { renderCheckIns(); if (window.FFPQuestCheckins) FFPQuestCheckins.reload(); }
   if (id === 'refer' && window.FFPVenueQR && FFPVenueQR.renderRefer) FFPVenueQR.renderRefer();
   if (id === 'analytics') renderAnalytics();
