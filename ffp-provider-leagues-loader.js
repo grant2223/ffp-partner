@@ -40,7 +40,22 @@
       '.lg-tb{display:grid;grid-template-columns:26px 1fr 30px 30px 30px 44px 40px;align-items:center;gap:6px;padding:10px 6px;border-bottom:1px solid var(--ffp-border);font-size:13px;} .lg-tb span{text-align:center;} .lg-tb .nm{text-align:left;font-weight:800;} .lg-tb.head{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--ffp-text-muted);} .lg-tb .pts{font-weight:900;color:var(--ffp-blue);}',
       '.lg-brand{display:flex;gap:12px;align-items:stretch;} .lg-logo{width:76px;height:76px;flex:none;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:10px;font-weight:800;} .lg-logo .ms{font-size:22px;} .lg-banner{flex:1;height:76px;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:11px;font-weight:800;} .lg-banner .ms{font-size:22px;} .lg-row .act{margin-left:auto;color:#9aa8b4;font-size:19px;cursor:pointer;}',
       '.lg-fldbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .lg-fldchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--ffp-border-mid);border-radius:12px;padding:7px 11px;font-size:12.5px;font-weight:800;} .lg-fldchip .t{color:var(--ffp-text-muted);font-weight:700;} .lg-fldchip .x{color:#9aa8b4;font-size:16px;cursor:pointer;} .lg-fldchip.add{border-style:dashed;gap:4px;}',
-      '.lg-srow{display:grid;grid-template-columns:1fr 132px 92px 120px 140px;gap:9px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .lg-srow .mt{font-size:13.5px;font-weight:800;color:var(--ffp-text);min-width:0;} .lg-srow .mt span{display:block;font-size:11px;color:var(--ffp-text-muted);font-weight:600;} .lg-srow .lg-in,.lg-srow .lg-sel{padding:8px 9px;font-size:12.5px;width:100%;}'
+      '.lg-srow{display:grid;grid-template-columns:1fr 132px 92px 120px 140px;gap:9px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .lg-srow .mt{font-size:13.5px;font-weight:800;color:var(--ffp-text);min-width:0;} .lg-srow .mt span{display:block;font-size:11px;color:var(--ffp-text-muted);font-weight:600;} .lg-srow .lg-in,.lg-srow .lg-sel{padding:8px 9px;font-size:12.5px;width:100%;}',
+      /* crest + fixtures v2 */
+      '.lg-crest{width:32px;height:32px;border-radius:9px;flex:none;background:#0d3550 center/cover no-repeat;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.14);vertical-align:middle;} .lg-crest.big{width:38px;height:38px;}',
+      '.lg-fx2{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:14px 4px;border-bottom:1px solid #f0f3f6;} .lg-fx2 .tm{display:flex;align-items:center;gap:10px;min-width:0;font-size:14.5px;font-weight:800;color:var(--ffp-text);} .lg-fx2 .tm.a{flex-direction:row-reverse;text-align:right;} .lg-fx2 .tm span:not(.lg-crest){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.lg-fx2 .mid{display:flex;flex-direction:column;align-items:center;gap:4px;} .lg-fx2 .fxday{font-size:11px;font-weight:700;color:#9aa8b4;white-space:nowrap;} .lg-fx2 .sc{display:flex;align-items:center;gap:7px;} .lg-fx2 .sc input{width:46px;height:42px;text-align:center;border:1.5px solid #d7dee5;border-radius:9px;font:inherit;font-weight:800;font-size:15px;} .lg-fx2 .sc .v{font-size:12px;font-weight:800;color:#b7c2cc;}',
+      /* bye */
+      '.lg-bye{display:flex;align-items:center;gap:11px;padding:13px 4px;border-bottom:1px solid #f0f3f6;} .lg-bye b{font-size:14px;font-weight:800;} .lg-bye .lg-crest{opacity:.5;} .lg-bye .tag{font-size:10px;font-weight:900;letter-spacing:.09em;color:#a86a08;background:#fff4e0;padding:4px 10px;border-radius:20px;} .lg-bye .msg{font-size:12.5px;color:#9aa8b4;font-weight:600;}',
+      /* collapsible round header */
+      '.lg-rnd{display:flex;align-items:center;gap:12px;margin:20px 0 2px;padding:12px 14px;background:linear-gradient(180deg,#f7fafc,#eef4f8);border:1px solid #e4edf3;border-radius:12px;cursor:pointer;user-select:none;} .lg-rnd:hover{background:linear-gradient(180deg,#f2f8fb,#e7f1f7);} .lg-rnd .chev{color:var(--ffp-blue);font-size:22px;transition:transform .2s;} .lg-rnd.collapsed .chev{transform:rotate(-90deg);} .lg-rnd .rt{font-size:14px;font-weight:900;color:var(--ffp-text);} .lg-rnd .rc{font-size:11px;font-weight:800;color:var(--ffp-blue);background:#e2eff6;padding:3px 10px;border-radius:20px;} .lg-rnd .rd{font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-rnd .sp{flex:1;} .lg-rbody.hidden{display:none;}',
+      /* venues */
+      '.lg-venue{padding:18px 4px;border-bottom:1px solid var(--ffp-border);} .lg-vh{display:flex;align-items:center;gap:12px;} .lg-vpin{width:38px;height:38px;border-radius:11px;background:linear-gradient(180deg,#eaf4f9,#dcecf3);color:var(--ffp-blue);display:flex;align-items:center;justify-content:center;flex:none;} .lg-vpin .ms{font-size:21px;} .lg-vh .g{flex:1;min-width:0;} .lg-vh .g b{font-size:16px;font-weight:900;color:var(--ffp-text);} .lg-vh .g span{display:block;font-size:12.5px;color:var(--ffp-text-muted);font-weight:700;} .lg-vh .act{color:#9aa8b4;font-size:19px;cursor:pointer;padding:5px;border-radius:8px;} .lg-vh .act:hover{color:var(--ffp-blue);background:#f4f7f9;}',
+      '.lg-surfs{margin:12px 0 0 51px;position:relative;} .lg-surfs:before{content:"";position:absolute;left:-13px;top:2px;bottom:18px;width:1.5px;background:#e4edf3;} .lg-surf{display:flex;align-items:center;gap:10px;padding:10px 0;font-size:14px;font-weight:600;border-bottom:1px solid #f4f7f9;} .lg-surf .ms{color:var(--ffp-blue);font-size:18px;opacity:.85;} .lg-surf .x{color:#c0cad2;cursor:pointer;font-size:18px;} .lg-surf .x:hover{color:#d64545;} .lg-addsurf{margin:12px 0 0 51px;} .lg-btn.ghostb{color:var(--ffp-blue);border-color:#d4e6ef;background:#f5fafc;}',
+      /* schedule v2 */
+      '.lg-srow2{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-srow2 .s-match b{font-size:15px;font-weight:800;} .lg-srow2 .s-match small{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;margin-top:3px;} .lg-srow2 .s-when{display:flex;gap:8px;margin-top:11px;} .lg-srow2 .s-when .lg-in{padding:8px 9px;font-size:13px;} .lg-srow2 .s-right{display:flex;flex-direction:column;gap:9px;} .lg-srow2 .fl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;} .lg-srow2 .st-f{padding:9px 10px;font-size:13px;}',
+      '.lg-offlist{display:flex;flex-direction:column;gap:6px;} .lg-offtag{display:flex;align-items:center;gap:9px;font-size:13px;padding:7px 10px;border:1px solid var(--ffp-border-mid);border-radius:9px;background:#fbfcfd;} .lg-offtag .role{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ffp-blue);} .lg-offtag .nm{font-weight:700;} .lg-offtag .sp{flex:1;} .lg-offtag .x{color:#c0cad2;cursor:pointer;font-size:16px;} .lg-assign{display:flex;gap:7px;align-items:center;} .lg-assign .lg-sel{padding:7px 9px;font-size:12.5px;flex:1;} .lg-btn.sm{padding:7px 11px;font-size:12px;}',
+      '.lg-maed{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px;margin-bottom:14px;}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -93,7 +108,7 @@
     var ev = S.detail.event || {};
     el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(' · ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPLeague.back()">' + ic('arrow_back') + 'All leagues</button></div>'
-      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('officials', 'Officials') + tabBtn('schedule', 'Schedule') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
+      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('schedule', 'Schedule') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
     renderTab();
   }
   function tabBtn(id, label) { return '<button class="' + (S.tab === id ? 'on' : '') + '" onclick="FFPLeague.tab(\'' + id + '\')">' + label + '</button>'; }
@@ -103,10 +118,56 @@
     if (S.tab === 'divisions') return renderDivisions(host);
     if (S.tab === 'entrants') return renderEntrants(host);
     if (S.tab === 'fixtures') return renderFixtures(host);
+    if (S.tab === 'venues') return renderVenues(host);
     if (S.tab === 'officials') return renderOfficials(host);
     if (S.tab === 'schedule') return renderSchedule(host);
     if (S.tab === 'table') return renderTable(host);
   }
+
+  // ---------- shared helpers (rounds / logos / venues) ----------
+  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var ROLES = ['Referee','Assistant referee','Umpire','Touch judge','Line judge','Timekeeper','Scorer','TMO'];
+  function fmtDay(d) { return DOW[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()]; }
+  function fmtTime(d) { return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function crest(o, big) {
+    o = o || {}; var nm = o.name || 'TBD'; var cls = 'lg-crest' + (big ? ' big' : '');
+    if (o.logo) return '<span class="' + cls + '" style="background-image:url(\'' + esc(o.logo) + '\')"></span>';
+    return '<span class="' + cls + '">' + esc(nm.replace(/[^A-Za-z ]/g, '').split(' ').map(function (w) { return w[0] || ''; }).join('').slice(0, 2).toUpperCase() || '?') + '</span>';
+  }
+  function roundRange(list) {
+    var ds = list.map(function (f) { return f.scheduled_at ? new Date(f.scheduled_at) : null; }).filter(Boolean);
+    if (!ds.length) return 'Not scheduled';
+    var mn = new Date(Math.min.apply(null, ds)), mx = new Date(Math.max.apply(null, ds));
+    var sameDay = mn.toDateString() === mx.toDateString();
+    if (sameDay) return fmtDay(mn) + ' · 1 day';
+    var days = Math.round((new Date(mx.getFullYear(), mx.getMonth(), mx.getDate()) - new Date(mn.getFullYear(), mn.getMonth(), mn.getDate())) / 86400000) + 1;
+    var span = (mn.getMonth() === mx.getMonth()) ? (mn.getDate() + '–' + mx.getDate() + ' ' + MON[mx.getMonth()]) : (mn.getDate() + ' ' + MON[mn.getMonth()] + ' – ' + mx.getDate() + ' ' + MON[mx.getMonth()]);
+    return span + ' · ' + days + ' days';
+  }
+  function surfaceOpts(fields, selId) {
+    var groups = {}; var order = [];
+    (fields || []).forEach(function (x) { var g = x.venue || 'Other'; if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(x); });
+    var body = order.map(function (g) {
+      return '<optgroup label="' + esc(g) + '">' + groups[g].map(function (x) {
+        return '<option value="' + x.id + '"' + (selId && x.id === selId ? ' selected' : '') + '>' + esc(x.name) + '</option>';
+      }).join('') + '</optgroup>';
+    }).join('');
+    return '<option value="">Surface…</option>' + body;
+  }
+  function togRound(btn) {
+    btn.classList.toggle('collapsed');
+    var b = btn.nextElementSibling; if (b && b.classList.contains('lg-rbody')) b.classList.toggle('hidden');
+  }
+  function roundHead(label, count, range) {
+    return '<div class="lg-rnd" onclick="FFPLeague.togRound(this)"><span class="ms chev">expand_more</span><span class="rt">' + esc(label) + '</span><span class="rc">' + count + (count === 1 ? ' match' : ' matches') + '</span><span class="sp"></span><span class="rd"><span class="ms" style="font-size:14px;vertical-align:-2px">event</span> ' + esc(range) + '</span></div>';
+  }
+  function entOpts(sel, skip) {
+    return '<option value="">Select…</option>' + (S._entrants || []).filter(function (e) { return e.id !== skip; }).map(function (e) {
+      return '<option value="' + e.id + '"' + (sel === e.id ? ' selected' : '') + '>' + esc(e.name) + '</option>';
+    }).join('');
+  }
+  async function loadEntrants() { var r; try { r = await sb().rpc('league_roster', { p_division: S.divId }); } catch (e) { r = null; } S._entrants = (r && r.data) || []; return S._entrants; }
 
   // ---------- OFFICIALS ----------
   async function renderOfficials(host) {
@@ -127,58 +188,123 @@
   }
   async function removeOfficial(id) { await sb().rpc('lt_official_remove', { p_id: id }); renderTab(); }
 
+  // ---------- VENUES ----------
+  async function renderVenues(host) {
+    host.innerHTML = '<div class="lg-tool"><div><div class="lg-h1" style="font-size:18px">Venues &amp; surfaces</div><div class="lg-sub">A venue can hold many pitches, courts, ovals or lanes</div></div><span class="sp"></span><button class="lg-btn pri" onclick="FFPLeague.addVenue()">' + ic('add') + 'Add venue</button></div>'
+      + (S.venAdd ? venueEditor(null) : '') + '<div id="lg-venlist"><div class="lg-empty">Loading…</div></div>';
+    var r; try { r = await sb().rpc('lt_venues_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { r = { error: e }; }
+    var vs = (r && r.data) || []; var h2 = document.getElementById('lg-venlist');
+    if (!vs.length && !S.venAdd) { h2.innerHTML = '<div class="lg-empty">No venues yet. Add a venue, then its pitches/courts.</div>'; return; }
+    h2.innerHTML = vs.map(function (v) {
+      if (S.venEdit === v.id) return venueEditor(v);
+      var surfaces = (v.surfaces || []).map(function (s) {
+        return '<div class="lg-surf"><span class="ms">crop_landscape</span>' + esc(s.name) + '<span class="sp"></span><span class="ms x" onclick="FFPLeague.removeSurface(\'' + s.id + '\')">delete</span></div>';
+      }).join('');
+      var addS = (S.surfAdd === v.id)
+        ? '<div class="lg-edit" style="margin-left:44px;border:none;padding-top:8px"><input class="lg-in" id="lg-sfname" placeholder="Pitch / court / oval name" style="max-width:260px" onkeydown="if(event.key===\'Enter\')FFPLeague.saveSurface(\'' + v.id + '\')"><button class="lg-btn pri" onclick="FFPLeague.saveSurface(\'' + v.id + '\')">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPLeague.cancelSurface()">Cancel</button></div>'
+        : '<div class="lg-addsurf"><button class="lg-btn ghostb" onclick="FFPLeague.addSurface(\'' + v.id + '\')">' + ic('add') + 'Add surface</button></div>';
+      return '<div class="lg-venue"><div class="lg-vh"><span class="lg-vpin"><span class="ms">location_on</span></span><div class="g"><b>' + esc(v.name) + '</b><span>' + esc([v.city, 'default start ' + (v.start_time || '08:00')].filter(Boolean).join(' · ')) + '</span></div><span class="ms act" onclick="FFPLeague.editVenue(\'' + v.id + '\')">edit</span><span class="ms act" onclick="FFPLeague.removeVenue(\'' + v.id + '\')">delete</span></div>'
+        + (surfaces ? '<div class="lg-surfs">' + surfaces + '</div>' : '') + addS + '</div>';
+    }).join('');
+    var f = document.getElementById('lg-vname'); if (f) f.focus();
+    var sf = document.getElementById('lg-sfname'); if (sf) sf.focus();
+  }
+  function venueEditor(v) {
+    v = v || {};
+    return '<div class="lg-edit"><input class="lg-in" id="lg-vname" placeholder="Venue name" value="' + esc(v.name || '') + '" style="flex:2;min-width:180px">'
+      + '<input class="lg-in" id="lg-vcity" list="lg-cityl" placeholder="City" value="' + esc(v.city || '') + '" style="flex:1;min-width:120px"><datalist id="lg-cityl">' + dlOpts(cityNames()) + '</datalist>'
+      + '<span class="lg-lab" style="margin:0">Start</span><input class="lg-in" id="lg-vstart" type="time" value="' + esc(v.start_time || '08:00') + '" style="width:100px">'
+      + '<button class="lg-btn pri" onclick="FFPLeague.saveVenue(\'' + (v.id || '') + '\')">' + ic('check') + 'Save</button>'
+      + '<button class="lg-btn ghost" onclick="FFPLeague.cancelVenue()">Cancel</button></div>';
+  }
+  function addVenue() { S.venAdd = true; S.venEdit = null; renderTab(); }
+  function editVenue(id) { S.venEdit = id; S.venAdd = false; renderTab(); }
+  function cancelVenue() { S.venAdd = false; S.venEdit = null; renderTab(); }
+  async function saveVenue(id) {
+    var nm = v('lg-vname'); if (!nm || !nm.trim()) { toast('Name required', 'error'); return; }
+    var r; try { r = await sb().rpc('lt_venue_save', { p_scope: 'league', p_event: S.eventId, p_id: id || null, p_name: nm.trim(), p_city: v('lg-vcity') || null, p_start: v('lg-vstart') || null }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Save failed', 'error'); return; } S.venAdd = false; S.venEdit = null; toast('Saved', 'success'); renderTab();
+  }
+  async function removeVenue(id) { await sb().rpc('lt_venue_remove', { p_id: id }); toast('Removed', 'success'); renderTab(); }
+  function addSurface(vid) { S.surfAdd = vid; renderTab(); }
+  function cancelSurface() { S.surfAdd = null; renderTab(); }
+  async function saveSurface(vid) {
+    var nm = v('lg-sfname'); if (!nm || !nm.trim()) return;
+    var r; try { r = await sb().rpc('lt_field_save', { p_scope: 'league', p_event: S.eventId, p_id: null, p_name: nm.trim(), p_start: null, p_venue: vid }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Add failed', 'error'); return; } S.surfAdd = null; toast('Added', 'success'); renderTab();
+  }
+  async function removeSurface(id) { await sb().rpc('lt_field_remove', { p_id: id }); renderTab(); }
+
   // ---------- SCHEDULE ----------
   async function renderSchedule(host) {
     var divs = S.detail.divisions || [];
     if (!S.divId && divs.length) S.divId = divs[0].id;
     var fr; try { fr = await sb().rpc('lt_fields_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { fr = { error: e }; }
     var fields = (fr && fr.data) || [];
-    var chips = fields.map(function (f) { return '<span class="lg-fldchip"><span class="ms" style="font-size:15px;color:var(--ffp-blue)">stadium</span>' + esc(f.name) + ' <span class="t">· from ' + esc(f.start_time) + '</span><span class="ms x" onclick="FFPLeague.removeField(\'' + f.id + '\')">close</span></span>'; }).join('');
+    if (S.divId) await loadEntrants();
     host.innerHTML =
-      '<div class="lg-fldbar">' + chips
-      + '<span class="lg-fldchip add"><input class="lg-in" id="lg-fldname" placeholder="Field / court" style="width:130px;border:none;padding:4px"><input class="lg-in" id="lg-fldtime" type="time" value="08:00" style="width:96px;border:none;padding:4px"><button class="lg-btn sm pri" onclick="FFPLeague.addField()">Add</button></span></div>'
-      + '<div class="lg-tool" style="margin-top:12px">' + (divs.length > 1 ? '<select class="lg-sel" onchange="FFPLeague.setDiv(this.value,\'schedule\')">' + divOpts() + '</select>' : '')
+      '<div class="lg-tool">' + (divs.length > 1 ? '<select class="lg-sel" onchange="FFPLeague.setDiv(this.value,\'schedule\')">' + divOpts() + '</select>' : '')
       + '<span class="lg-lab" style="margin:0">Match length</span><input class="lg-in" id="lg-mlen" type="number" value="30" style="width:64px"><span style="font-size:12px;color:var(--ffp-text-muted)">min</span>'
-      + '<span class="sp"></span><button class="lg-btn pri" onclick="FFPLeague.autoplan()">' + ic('auto_awesome') + 'Auto-plan</button></div>'
+      + '<span class="sp"></span><button class="lg-btn" onclick="FFPLeague.addMatch(\'schedule\')">' + ic('add') + 'Add match</button><button class="lg-btn pri" onclick="FFPLeague.autoplan()">' + ic('auto_awesome') + 'Auto-plan</button></div>'
+      + (S.addMatch === 'schedule' ? matchEditor() : '')
       + '<div id="lg-schedlist"><div class="lg-empty">Loading…</div></div>';
-    if (!fields.length) { document.getElementById('lg-schedlist').innerHTML = '<div class="lg-empty">Add a field/court above, then Auto-plan.</div>'; return; }
+    if (!fields.length) { document.getElementById('lg-schedlist').innerHTML = '<div class="lg-empty">Add a venue + surfaces on the <b>Venues</b> tab, then Auto-plan.</div>'; }
     if (!S.divId) { document.getElementById('lg-schedlist').innerHTML = '<div class="lg-empty">Add a division + generate fixtures first.</div>'; return; }
+    await loadEntrants();
     var r; try { r = await sb().rpc('league_fixtures_list', { p_division: S.divId }); } catch (e) { r = { error: e }; }
-    var fx = (r && r.data) || []; var offr = await sb().rpc('lt_officials_list', { p_scope: 'league', p_event: S.eventId }); var offs = (offr && offr.data) || [];
+    var fx = ((r && r.data) || []).filter(function (f) { return !f.bye; });
+    var offr; try { offr = await sb().rpc('lt_officials_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { offr = null; }
+    var offs = (offr && offr.data) || [];
     var host2 = document.getElementById('lg-schedlist');
     if (!fx.length) { host2.innerHTML = '<div class="lg-empty">No fixtures yet — generate them on the Fixtures tab.</div>'; return; }
     S._fields = fields; S._offs = offs;
-    host2.innerHTML = fx.map(function (f) {
-      var t = f.scheduled_at ? new Date(f.scheduled_at) : null;
-      var tv = t ? (('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2)) : '';
-      var fldOpts = '<option value="">Court…</option>' + fields.map(function (x) { return '<option value="' + x.id + '"' + (f.court === x.name ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('');
-      var ofOpts = '<option value="">Official…</option>' + offs.map(function (x) { return '<option value="' + x.id + '"' + (f.official === x.name ? ' selected' : '') + '>' + esc(x.name || x.email) + '</option>'; }).join('');
-      var dv = t ? (t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2)) : ((S.detail.event && S.detail.event.starts_at) || '');
-      return '<div class="lg-srow" data-id="' + f.id + '"><div class="mt">' + esc((f.home && f.home.name) || 'TBD') + ' v ' + esc((f.away && f.away.name) || 'TBD') + '<span>Round ' + f.round + '</span></div>'
-        + '<input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"><input class="lg-in st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"><select class="lg-sel st-f" onchange="FFPLeague.schedSet(\'' + f.id + '\')">' + fldOpts + '</select><select class="lg-sel st-o" onchange="FFPLeague.schedSet(\'' + f.id + '\')">' + ofOpts + '</select></div>';
+    var byRound = {}; var order = [];
+    fx.forEach(function (f) { if (!byRound[f.round]) { byRound[f.round] = []; order.push(f.round); } byRound[f.round].push(f); });
+    order.sort(function (a, b) { return a - b; });
+    host2.innerHTML = order.map(function (rd) {
+      var list = byRound[rd];
+      return roundHead('Round ' + rd, list.length, roundRange(list)) + '<div class="lg-rbody">' + list.map(schedRow).join('') + '</div>';
     }).join('');
   }
-  async function addField() {
-    var nm = (document.getElementById('lg-fldname') || {}).value, tm = (document.getElementById('lg-fldtime') || {}).value || '08:00';
-    if (!nm || !nm.trim()) return;
-    await sb().rpc('lt_field_save', { p_scope: 'league', p_event: S.eventId, p_id: null, p_name: nm.trim(), p_start: tm }); renderTab();
+  function schedRow(f) {
+    var t = f.scheduled_at ? new Date(f.scheduled_at) : null;
+    var tv = t ? fmtTime(t) : '';
+    var dv = t ? (t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2)) : ((S.detail.event && S.detail.event.starts_at) || '');
+    var offs = f.officials || [];
+    var tags = offs.map(function (o) {
+      return '<div class="lg-offtag"><span class="role">' + esc(o.role || 'Official') + '</span><span class="nm">' + esc(o.name) + '</span><span class="sp"></span><span class="ms x" onclick="FFPLeague.offRemove(\'' + o.id + '\')">close</span></div>';
+    }).join('');
+    var roleOpts = '<option value="">Role…</option>' + ROLES.map(function (r) { return '<option>' + r + '</option>'; }).join('');
+    var offOpts = '<option value="">Official…</option>' + (S._offs || []).map(function (x) { return '<option value="' + x.id + '">' + esc(x.name || x.email) + '</option>'; }).join('');
+    return '<div class="lg-srow2" data-id="' + f.id + '"><div class="s-match"><b>' + esc((f.home && f.home.name) || 'TBD') + ' v ' + esc((f.away && f.away.name) || 'TBD') + '</b><small>Round ' + f.round + '</small>'
+      + '<div class="s-when"><input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"><input class="lg-in st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"></div></div>'
+      + '<div class="s-right"><div class="fl">Surface</div><select class="lg-sel st-f" onchange="FFPLeague.schedSet(\'' + f.id + '\')">' + surfaceOpts(S._fields, f.field_id) + '</select>'
+      + '<div class="fl">Officials</div>' + (tags ? '<div class="lg-offlist">' + tags + '</div>' : '')
+      + '<div class="lg-assign"><select class="lg-sel a-role">' + roleOpts + '</select><select class="lg-sel a-off">' + offOpts + '</select><button class="lg-btn sm pri" onclick="FFPLeague.offAdd(\'' + f.id + '\')">Add</button></div></div></div>';
   }
-  async function removeField(id) { await sb().rpc('lt_field_remove', { p_id: id }); renderTab(); }
   async function autoplan() {
     if (!S.divId) { toast('Pick a division', 'error'); return; }
     var len = +((document.getElementById('lg-mlen') || {}).value) || 30;
     var r; try { r = await sb().rpc('lt_autoplan', { p_scope: 'league', p_division: S.divId, p_match_len: len }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a field first' : 'Could not plan', 'error'); return; }
+    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a surface first (Venues tab)' : 'Could not plan', 'error'); return; }
     toast((r.data || 0) + ' matches planned', 'success'); renderTab();
   }
   async function schedSet(id) {
-    var row = document.querySelector('.lg-srow[data-id="' + id + '"]'); if (!row) return;
-    var dv = (row.querySelector('.st-d') || {}).value, tv = row.querySelector('.st-t').value, fid = row.querySelector('.st-f').value || null, oid = row.querySelector('.st-o').value || null;
+    var row = document.querySelector('.lg-srow2[data-id="' + id + '"]'); if (!row) return;
+    var dv = (row.querySelector('.st-d') || {}).value, tv = row.querySelector('.st-t').value, fid = row.querySelector('.st-f').value || null;
     var base = dv || (S.detail.event && S.detail.event.starts_at) || new Date().toISOString().slice(0, 10);
     var when = (tv || dv) ? new Date(base + 'T' + (tv || '00:00') + ':00').toISOString() : null;
-    await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: oid });
+    await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null });
     toast('Rescheduled', 'success');
   }
+  async function offAdd(matchId) {
+    var row = document.querySelector('.lg-srow2[data-id="' + matchId + '"]'); if (!row) return;
+    var role = (row.querySelector('.a-role') || {}).value || null, off = (row.querySelector('.a-off') || {}).value || null;
+    if (!off) { toast('Pick an official', 'error'); return; }
+    var r; try { r = await sb().rpc('lt_match_official_add', { p_scope: 'league', p_match: matchId, p_official: off, p_role: role }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not assign', 'error'); return; } toast('Assigned', 'success'); renderTab();
+  }
+  async function offRemove(id) { await sb().rpc('lt_match_official_remove', { p_id: id }); renderTab(); }
 
   // ---------- DETAILS ----------
   async function renderDetails(host) {
@@ -281,15 +407,39 @@
       ? (S.fxConfirm ? '<button class="lg-btn" onclick="FFPLeague.doGen()">' + ic('warning') + 'Replace fixtures?</button><button class="lg-btn ghost" onclick="FFPLeague.cancelGen()">Cancel</button>'
         : '<button class="lg-btn" onclick="FFPLeague.confirmGen()">' + ic('autorenew') + 'Regenerate</button>')
       : '<button class="lg-btn" onclick="FFPLeague.doGen()">' + ic('auto_awesome') + 'Auto-generate fixtures</button>';
-    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPLeague.setDiv(this.value,\'fixtures\')">' + divOpts() + '</select><span class="sp"></span>' + genBtn + '<button class="lg-btn pri" onclick="FFPLeague.saveResults()">' + ic('check') + 'Save results</button></div><div id="lg-fixlist"></div>';
+    await loadEntrants();
+    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPLeague.setDiv(this.value,\'fixtures\')">' + divOpts() + '</select><span class="sp"></span><button class="lg-btn" onclick="FFPLeague.addMatch(\'fixtures\')">' + ic('add') + 'Add match</button>' + genBtn + '<button class="lg-btn pri" onclick="FFPLeague.saveResults()">' + ic('check') + 'Save results</button></div>'
+      + (S.addMatch === 'fixtures' ? matchEditor() : '') + '<div id="lg-fixlist"></div>';
     var host2 = document.getElementById('lg-fixlist');
-    if (!fx.length) { host2.innerHTML = '<div class="lg-empty">No fixtures yet — auto-generate the round-robin.</div>'; return; }
-    var byRound = {}; fx.forEach(function (f) { (byRound[f.round] = byRound[f.round] || []).push(f); });
-    host2.innerHTML = Object.keys(byRound).sort(function (a, b) { return a - b; }).map(function (rd) {
-      return '<div class="lg-rndlab">Round ' + rd + '</div>' + byRound[rd].map(function (f) {
-        return '<div class="lg-fx" data-id="' + f.id + '"><div class="t a">' + esc((f.home && f.home.name) || 'TBD') + '</div><div class="sc"><input type="number" class="lg-hs" value="' + (f.home_score != null ? f.home_score : '') + '" placeholder="–"><input type="number" class="lg-as" value="' + (f.away_score != null ? f.away_score : '') + '" placeholder="–"></div><div class="t">' + esc((f.away && f.away.name) || 'TBD') + '</div></div>';
-      }).join('');
+    if (!fx.length) { host2.innerHTML = '<div class="lg-empty">No fixtures yet — auto-generate the round-robin, or add one manually.</div>'; return; }
+    var byRound = {}; var order = [];
+    fx.forEach(function (f) { if (!byRound[f.round]) { byRound[f.round] = []; order.push(f.round); } byRound[f.round].push(f); });
+    order.sort(function (a, b) { return a - b; });
+    host2.innerHTML = order.map(function (rd) {
+      var list = byRound[rd]; var games = list.filter(function (f) { return !f.bye; });
+      return roundHead('Round ' + rd, games.length, roundRange(games)) + '<div class="lg-rbody">' + list.map(function (f) {
+        if (f.bye) return '<div class="lg-bye">' + crest(f.home) + '<b>' + esc((f.home && f.home.name) || '') + '</b><span class="tag">BYE</span><span class="msg">no match this round</span></div>';
+        var day = f.scheduled_at ? '<div class="fxday">' + fmtDay(new Date(f.scheduled_at)) + ' · ' + fmtTime(new Date(f.scheduled_at)) + '</div>' : '';
+        return '<div class="lg-fx2" data-id="' + f.id + '"><div class="tm a">' + esc((f.home && f.home.name) || 'TBD') + crest(f.home) + '</div>'
+          + '<div class="mid">' + day + '<div class="sc"><input type="number" class="lg-hs" value="' + (f.home_score != null ? f.home_score : '') + '" placeholder="–"><span class="v">v</span><input type="number" class="lg-as" value="' + (f.away_score != null ? f.away_score : '') + '" placeholder="–"></div></div>'
+          + '<div class="tm">' + crest(f.away) + esc((f.away && f.away.name) || 'TBD') + '</div></div>';
+      }).join('') + '</div>';
     }).join('');
+  }
+  function matchEditor() {
+    return '<div class="lg-edit lg-maed"><select class="lg-sel" id="lg-mm-h" style="flex:1;min-width:150px">' + entOpts(null) + '</select>'
+      + '<span style="font-weight:800;color:#8a99a6">v</span><select class="lg-sel" id="lg-mm-a" style="flex:1;min-width:150px">' + entOpts(null) + '</select>'
+      + '<input class="lg-in" id="lg-mm-r" type="number" placeholder="Round" value="1" style="width:96px">'
+      + '<button class="lg-btn pri" onclick="FFPLeague.saveMatch()">' + ic('check') + 'Add</button>'
+      + '<button class="lg-btn ghost" onclick="FFPLeague.cancelMatch()">Cancel</button></div>';
+  }
+  function addMatch(tab) { S.addMatch = tab; renderTab(); }
+  function cancelMatch() { S.addMatch = null; renderTab(); }
+  async function saveMatch() {
+    var h = (document.getElementById('lg-mm-h') || {}).value || null, a = (document.getElementById('lg-mm-a') || {}).value || null, rd = +((document.getElementById('lg-mm-r') || {}).value) || 1;
+    if (!h || !a || h === a) { toast('Pick two different teams', 'error'); return; }
+    var r; try { r = await sb().rpc('lt_match_add', { p_scope: 'league', p_division: S.divId, p_round: rd, p_home: h, p_away: a, p_when: null, p_field: null, p_stage: 'regular' }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not add', 'error'); return; } S.addMatch = null; toast('Match added', 'success'); renderTab();
   }
   function confirmGen() { S.fxConfirm = true; renderTab(); }
   function cancelGen() { S.fxConfirm = false; renderTab(); }
@@ -342,7 +492,11 @@
     saveDetails: saveDetails, sportHint: sportHint, pickImg: pickImg, entLogo: entLogo, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     confirmGen: confirmGen, cancelGen: cancelGen, doGen: doGen, saveResults: saveResults,
-    addOfficial: addOfficial, removeOfficial: removeOfficial, addField: addField, removeField: removeField, autoplan: autoplan, schedSet: schedSet
+    addOfficial: addOfficial, removeOfficial: removeOfficial, autoplan: autoplan, schedSet: schedSet,
+    togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch,
+    addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
+    addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface,
+    offAdd: offAdd, offRemove: offRemove
   };
   window.ffpRenderLeagues = function () { S.view = 'list'; S.creating = false; renderList(); };
 })();
