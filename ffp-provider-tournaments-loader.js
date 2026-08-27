@@ -49,6 +49,7 @@
       '.tg-rnd{display:flex;flex-direction:column;justify-content:space-around;gap:14px;min-width:200px;} .tg-rnd .rh{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:#9aa8b4;text-align:center;margin-bottom:2px;}',
       '.tg-m{background:#fff;border:1px solid #d7dee5;border-radius:11px;overflow:hidden;} .tg-m .s{display:flex;align-items:center;gap:7px;padding:7px 9px;} .tg-m .s+.s{border-top:1px solid #eef1f6;} .tg-m .s b{flex:1;font-size:12.5px;font-weight:700;color:#12232f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .tg-m .s input{width:40px;padding:5px;border:1.5px solid #d7dee5;border-radius:7px;font:inherit;font-weight:800;text-align:center;} .tg-m .s.win b{color:#0a8f5f;} .tg-m .s.tbd b{color:#9aa8b4;font-weight:600;}',
       '.tg-grph{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:#12232f;margin:16px 0 4px;}',
+      '.tg-group{border-bottom:1px solid var(--ffp-border);padding-bottom:10px;margin-bottom:6px;} .tg-gteams{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px;} .tg-gteam{display:inline-flex;align-items:center;gap:7px;background:#f4f7f9;border:1px solid var(--ffp-border);border-radius:20px;padding:5px 12px 5px 6px;font-size:13px;font-weight:700;} .tg-gteam .lg-crest{width:22px;height:22px;border-radius:6px;font-size:9px;}',
       '.tg-fmts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;} .tg-fmt{border:1.5px solid var(--ffp-border);border-radius:14px;padding:16px 12px;cursor:pointer;text-align:center;} .tg-fmt.on{border-color:var(--ffp-blue);box-shadow:0 0 0 3px rgba(25,128,173,.12);} .tg-fmt .dia{height:74px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;} .tg-fmt b{display:block;font-size:13.5px;font-weight:900;} .tg-fmt span{display:block;font-size:11.5px;color:var(--ffp-text-muted);font-weight:600;margin-top:3px;line-height:1.4;} .tgd rect{fill:none;stroke:#c3ced6;stroke-width:2.4;} .tgd line{stroke:#c3ced6;stroke-width:2.4;} .tg-fmt.on .tgd rect,.tg-fmt.on .tgd line{stroke:var(--ffp-blue);}',
       '.tg-fmtset{margin-top:18px;border-top:1px solid var(--ffp-border);padding-top:16px;}',
       '.lg-fldbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .lg-fldchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--ffp-border-mid);border-radius:12px;padding:7px 11px;font-size:12.5px;font-weight:800;} .lg-fldchip .t{color:var(--ffp-text-muted);font-weight:700;} .lg-fldchip .x{color:#9aa8b4;font-size:16px;cursor:pointer;} .lg-fldchip.add{border-style:dashed;gap:4px;}',
@@ -119,7 +120,7 @@
     var ev = S.detail.event || {};
     el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(' · ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPTourn.back()">' + ic('arrow_back') + 'All tournaments</button></div>'
-      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Categories') + tabBtn('entrants', 'Entrants') + tabBtn('structure', 'Structure') + (ev.group_stage ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Bracket & results') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('schedule', 'Schedule') + '</div><div id="tg-tab"></div></div>';
+      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('structure', 'Structure') + (ev.group_stage ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Bracket & results') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('schedule', 'Schedule') + '</div><div id="tg-tab"></div></div>';
     renderTab();
   }
   function tabBtn(id, label) { return '<button class="' + (S.tab === id ? 'on' : '') + '" onclick="FFPTourn.tab(\'' + id + '\')">' + label + '</button>'; }
@@ -175,6 +176,7 @@
   // ---------- STRUCTURE (visual format picker) ----------
   function renderStructure(host) {
     var ev = S.detail.event || {};
+    if (!S.divId && (S.detail.divisions || []).length) S.divId = S.detail.divisions[0].id;
     var fmt = S.fmt || (ev.group_stage ? 'gk' : 'ko');
     S.fmt = fmt;
     var card = function (key, title, sub, svg) {
@@ -184,28 +186,28 @@
     var gkSvg = '<svg width="86" height="74" viewBox="0 0 86 74" class="tgd"><rect x="2" y="4" width="34" height="10"/><rect x="2" y="17" width="34" height="10"/><rect x="2" y="30" width="34" height="10"/><rect x="52" y="10" width="32" height="10"/><line x1="36" y1="9" x2="52" y2="15"/><line x1="36" y1="35" x2="52" y2="15"/><rect x="16" y="52" width="24" height="9"/><rect x="16" y="63" width="24" height="9"/><rect x="48" y="57" width="24" height="9"/><line x1="40" y1="56" x2="48" y2="61"/><line x1="40" y1="67" x2="48" y2="61"/></svg>';
     var koSvg = '<svg width="80" height="66" viewBox="0 0 80 66" class="tgd"><rect x="2" y="8" width="26" height="10"/><rect x="2" y="22" width="26" height="10"/><rect x="2" y="40" width="26" height="10"/><rect x="2" y="54" width="26" height="10"/><rect x="40" y="14" width="26" height="10"/><rect x="40" y="46" width="26" height="10"/><line x1="28" y1="13" x2="40" y2="19"/><line x1="28" y1="27" x2="40" y2="19"/><line x1="28" y1="45" x2="40" y2="51"/><line x1="28" y1="59" x2="40" y2="51"/></svg>';
     host.innerHTML =
-      '<div class="lg-tool" style="margin-bottom:14px">' + (S.detail.divisions.length ? '<select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'structure\')">' + divOpts() + '</select>' : '<span class="lg-empty" style="padding:0">Add a category first.</span>') + '</div>'
+      '<div class="lg-tool" style="margin-bottom:14px">' + (S.detail.divisions.length ? '<select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'structure\')">' + divOpts() + '</select>' : '<span class="lg-empty" style="padding:0">Add a division first.</span>') + '</div>'
       + '<div class="tg-fmts">' + card('grp', 'Group only', 'Round-robin, final table', grpSvg) + card('gk', 'Groups → Knockout', 'Top N advance to a bracket', gkSvg) + card('ko', 'Knockout only', 'Straight single elimination', koSvg) + '</div>'
       + '<div class="tg-fmtset">'
-      + (fmt !== 'ko' ? '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Groups</div><input class="lg-in" id="tg-ng2" type="number" value="' + (ev.groups_advance ? 4 : 4) + '"></div><div class="lg-fld"><div class="lg-lab">Advance per group</div><input class="lg-in" id="tg-adv2" type="number" value="' + (ev.groups_advance || 2) + '"></div></div>' : '')
+      + (fmt !== 'ko' ? '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Number of groups</div><input class="lg-in" id="tg-ng2" type="number" min="1" value="2"></div><div class="lg-fld"><div class="lg-lab">Advance per group</div><input class="lg-in" id="tg-adv2" type="number" min="1" value="' + (ev.groups_advance || 2) + '"></div></div>' : '')
       + '<div class="lg-fld" style="margin-top:6px"><div class="lg-lab">3rd-place play-off</div><div class="lg-seg" id="tg-third2"><button data-v="true" class="' + (ev.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third2\')">Yes</button><button data-v="false" class="' + (!ev.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third2\')">No</button></div></div>'
       + '<button class="lg-btn pri" style="margin-top:14px" onclick="FFPTourn.buildStructure()">' + ic('bolt') + 'Build structure</button>'
       + '<div class="lg-empty" style="text-align:left;padding:10px 0 0">' + (fmt === 'grp' ? 'Draws round-robin groups, ranked into a final table.' : fmt === 'ko' ? 'Draws a single-elimination bracket from your seeds.' : 'Draws groups, then the top entrants seed into a knockout bracket.') + '</div></div>';
   }
   function setFmt(k) { S.fmt = k; renderTab(); }
   async function buildStructure() {
-    if (!S.divId) { toast('Pick a category', 'error'); return; }
+    if (!S.divId) { toast('Pick a division', 'error'); return; }
     var fmt = S.fmt || 'ko'; var third = segVal('tg-third2') === 'true';
-    await sb().rpc('tourn_event_save', { p_id: S.eventId, p: { group_stage: (fmt !== 'ko'), groups_advance: +((document.getElementById('tg-adv2') || {}).value || 2), third_place: third } });
+    try { await sb().rpc('tourn_event_save', { p_id: S.eventId, p: { group_stage: (fmt !== 'ko'), groups_advance: +((document.getElementById('tg-adv2') || {}).value || 2), third_place: third } }); } catch (e) {}
     if (fmt !== 'ko') {
       var ng = +((document.getElementById('tg-ng2') || {}).value) || 2;
       var g; try { g = await sb().rpc('tourn_groups_generate', { p_division: S.divId, p_num_groups: ng }); } catch (e) { g = { error: e }; }
       if (g.error) { toast('Could not draw groups', 'error'); return; }
-      toast('Groups drawn — enter results, then build the bracket', 'success'); S.tab = 'groups'; open(S.eventId); return;
+      toast((g.data || 0) + ' group fixtures drawn', 'success'); S.tab = 'groups'; refreshDetail(); return;
     }
     var r; try { r = await sb().rpc('tourn_bracket_build', { p_division: S.divId }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not build bracket', 'error'); return; }
-    toast('Bracket built', 'success'); S.tab = 'bracket'; open(S.eventId);
+    toast('Bracket built', 'success'); S.tab = 'bracket'; refreshDetail();
   }
 
   // ---------- OFFICIALS ----------
@@ -287,7 +289,7 @@
       + '<span class="sp"></span><button class="lg-btn" onclick="FFPTourn.addMatch()">' + ic('add') + 'Add match</button><button class="lg-btn pri" onclick="FFPTourn.autoplan()">' + ic('auto_awesome') + 'Auto-plan</button></div>'
       + (S.addMatch ? matchEditor() : '') + '<div id="tg-schedlist"><div class="lg-empty">Loading…</div></div>';
     if (!fields.length) { document.getElementById('tg-schedlist').innerHTML = '<div class="lg-empty">Add a venue + surfaces on the <b>Venues</b> tab, then Auto-plan.</div>'; }
-    if (!S.divId) { document.getElementById('tg-schedlist').innerHTML = '<div class="lg-empty">Add a category first.</div>'; return; }
+    if (!S.divId) { document.getElementById('tg-schedlist').innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
     var names = await entrantNames(S.divId); await loadEntrantsArr();
     var mr; try { mr = await sb().from('tourn_matches').select('id,stage,group_label,round,slot,home_entrant,away_entrant,scheduled_at,court,field_id').eq('division_id', S.divId).order('round').order('slot'); } catch (e) { mr = { error: e }; }
     var ms = (mr && mr.data) || []; var offr = await sb().rpc('lt_officials_list', { p_scope: 'tourn', p_event: S.eventId }); var offs = (offr && offr.data) || [];
@@ -349,7 +351,7 @@
     if (r.error) { toast('Could not add', 'error'); return; } S.addMatch = false; toast('Match added', 'success'); renderTab();
   }
   async function autoplan() {
-    if (!S.divId) { toast('Pick a category', 'error'); return; }
+    if (!S.divId) { toast('Pick a division', 'error'); return; }
     var len = +((document.getElementById('tg-mlen') || {}).value) || 30;
     var r; try { r = await sb().rpc('lt_autoplan', { p_scope: 'tourn', p_division: S.divId, p_match_len: len }); } catch (e) { r = { error: e }; }
     if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a surface first (Venues tab)' : 'Could not plan', 'error'); return; }
@@ -408,13 +410,13 @@
       if (S.divEdit === d.id) return divEditor(d);
       return '<div class="lg-row"><span class="ms drag">drag_indicator</span><div class="g"><b>' + esc(d.name) + '</b> <span>· ' + (d.kind === 'individual' ? 'Individual' : 'Team') + ' · ' + (d.entrant_count || 0) + ' in</span></div><span class="ms act" onclick="FFPTourn.editDivision(\'' + d.id + '\')">edit</span></div>';
     }).join('');
-    var adder = S.divEdit === 'new' ? divEditor(null) : '<button class="lg-btn" style="margin-top:12px" onclick="FFPTourn.editDivision(\'new\')">' + ic('add') + 'Add category</button>';
+    var adder = S.divEdit === 'new' ? divEditor(null) : '<button class="lg-btn" style="margin-top:12px" onclick="FFPTourn.editDivision(\'new\')">' + ic('add') + 'Add division</button>';
     host.innerHTML = rows + adder; var f = document.getElementById('tg-dvname'); if (f) f.focus();
   }
   function divEditor(d) {
     d = d || {}; var isTeam = (d.kind || 'team') !== 'individual';
     var gOpts = '<option value="">Open / any</option>' + genderNames().map(function (g) { return '<option' + (d.gender === g ? ' selected' : '') + '>' + esc(g) + '</option>'; }).join('');
-    return '<div class="lg-edit"><input class="lg-in" id="tg-dvname" placeholder="Category name" value="' + esc(d.name || '') + '">'
+    return '<div class="lg-edit"><input class="lg-in" id="tg-dvname" placeholder="Division name" value="' + esc(d.name || '') + '">'
       + '<div class="lg-seg" id="tg-dvkind"><button data-v="team" class="' + (isTeam ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-dvkind\')">Team / pair</button><button data-v="individual" class="' + (!isTeam ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-dvkind\')">Individual</button></div>'
       + '<select class="lg-sel" id="tg-dvgender" style="width:auto">' + gOpts + '</select>'
       + '<input class="lg-in" id="tg-dvmin" type="number" placeholder="Min age" value="' + (d.min_age != null ? d.min_age : '') + '" style="width:88px">'
@@ -434,7 +436,7 @@
   // ENTRANTS (inline)
   async function renderEntrants(host) {
     var divs = S.detail.divisions || [];
-    if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a category first.</div>'; return; }
+    if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
     if (!S.divId) S.divId = divs[0].id;
     var adder = S.entAdd
       ? '<div class="lg-edit"><input class="lg-in" id="tg-entname" placeholder="Team / player name" onkeydown="if(event.key===\'Enter\')FFPTourn.saveEntrant()"><button class="lg-btn pri" onclick="FFPTourn.saveEntrant()">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPTourn.cancelEntrant()">Cancel</button></div>'
@@ -459,33 +461,41 @@
 
   // GROUP STAGE (inline draw count)
   async function renderGroups(host) {
-    var divs = S.detail.divisions || []; if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a category first.</div>'; return; }
+    var divs = S.detail.divisions || []; if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first, then add entrants.</div>'; return; }
     if (!S.divId) S.divId = divs[0].id;
-    var drawCtl = S.grpDraw
-      ? '<span class="lg-lab" style="margin:0">Groups</span><input class="lg-in" id="tg-ng" type="number" value="2" min="1"><button class="lg-btn pri" onclick="FFPTourn.doGroups()">' + ic('check') + 'Draw</button><button class="lg-btn ghost" onclick="FFPTourn.cancelGroups()">Cancel</button>'
-      : '<button class="lg-btn" onclick="FFPTourn.startGroups()">' + ic('shuffle') + 'Draw groups</button>';
-    var brkCtl = S.brkConfirm
-      ? '<button class="lg-btn green" onclick="FFPTourn.doBracket()">' + ic('check') + 'Confirm build</button><button class="lg-btn ghost" onclick="FFPTourn.cancelBracket()">Cancel</button>'
-      : '<button class="lg-btn green" onclick="FFPTourn.confirmBracket()">' + ic('account_tree') + 'Build bracket from groups</button>';
-    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'groups\')">' + divOpts() + '</select><span class="sp"></span>' + drawCtl + '<button class="lg-btn pri" onclick="FFPTourn.saveGroupResults()">' + ic('check') + 'Save results</button>' + brkCtl + '</div><div id="tg-glist"><div class="lg-empty">Loading…</div></div>';
-    if (S.grpDraw) { var gi = document.getElementById('tg-ng'); if (gi) gi.focus(); }
-    var r; try { r = await sb().from('tourn_matches').select('*').eq('division_id', S.divId).eq('stage', 'group').order('group_label').order('slot'); } catch (e) { r = { error: e }; }
-    var ms = (r && r.data) || []; var host2 = document.getElementById('tg-glist');
-    if (!ms.length) { host2.innerHTML = '<div class="lg-empty">No groups yet — draw groups to assign entrants and fixtures.</div>'; return; }
-    var names = await entrantNames(S.divId);
-    var byG = {}; ms.forEach(function (m) { (byG[m.group_label] = byG[m.group_label] || []).push(m); });
-    host2.innerHTML = Object.keys(byG).sort().map(function (g) {
-      return '<div class="tg-grph">Group ' + esc(g) + '</div>' + byG[g].map(function (m) {
+    var er; try { er = await sb().rpc('tourn_roster', { p_division: S.divId }); } catch (e) { er = null; }
+    var roster = (er && er.data) || [];
+    var eligible = roster.filter(function (r) { return ['registered', 'paid', 'invited'].indexOf(r.status) >= 0; });
+    var suggested = S._ng || Math.max(1, Math.round(eligible.length / 4)) || 2;
+    host.innerHTML = '<div class="lg-tool">' + (divs.length > 1 ? '<select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'groups\')">' + divOpts() + '</select>' : '')
+      + '<span class="lg-lab" style="margin:0">Number of groups</span><input class="lg-in" id="tg-ng" type="number" min="1" value="' + suggested + '" style="width:70px">'
+      + '<button class="lg-btn pri" onclick="FFPTourn.doGroups()">' + ic('shuffle') + 'Draw groups</button><span class="sp"></span>'
+      + '<span class="lg-sub" style="margin:0">' + eligible.length + ' entrant' + (eligible.length === 1 ? '' : 's') + '</span></div>'
+      + '<div id="tg-glist"><div class="lg-empty">Loading…</div></div>';
+    var host2 = document.getElementById('tg-glist');
+    if (eligible.length < 2) { host2.innerHTML = '<div class="lg-empty">Add at least 2 entrants (Entrants tab) before drawing groups.</div>'; return; }
+    var mr; try { mr = await sb().from('tourn_matches').select('*').eq('division_id', S.divId).eq('stage', 'group').order('group_label').order('slot'); } catch (e) { mr = { error: e }; }
+    var ms = (mr && mr.data) || []; var names = {}; roster.forEach(function (r) { names[r.id] = r.name; });
+    var groups = {}; var order = [];
+    eligible.forEach(function (r) { if (r.group_label) { if (!groups[r.group_label]) { groups[r.group_label] = []; order.push(r.group_label); } groups[r.group_label].push(r); } });
+    order.sort();
+    if (!order.length) { host2.innerHTML = '<div class="lg-empty"><span class="ms" style="font-size:34px;color:#c0cad2;display:block;margin-bottom:6px">groups</span><b>No groups drawn yet</b><div style="margin-top:4px">Set the number of groups above and tap <b>Draw groups</b> — your ' + eligible.length + ' entrants are split evenly with round-robin fixtures in each group.</div></div>'; return; }
+    var byMatch = {}; ms.forEach(function (m) { (byMatch[m.group_label] = byMatch[m.group_label] || []).push(m); });
+    host2.innerHTML = order.map(function (g) {
+      var teams = groups[g].map(function (t) { return '<span class="tg-gteam">' + crest(t) + esc(t.name) + '</span>'; }).join('');
+      var fx = (byMatch[g] || []).map(function (m) {
         return '<div class="lg-fx" data-id="' + m.id + '"><div class="t a">' + esc(names[m.home_entrant] || 'TBD') + '</div><div class="sc"><input type="number" class="tg-hs" value="' + (m.home_score != null ? m.home_score : '') + '" placeholder="–"><input type="number" class="tg-as" value="' + (m.away_score != null ? m.away_score : '') + '" placeholder="–"></div><div class="t">' + esc(names[m.away_entrant] || 'TBD') + '</div></div>';
-      }).join('');
-    }).join('');
+      }).join('') || '<div class="lg-sub" style="padding:8px 2px">Single entrant — no fixtures.</div>';
+      return '<div class="tg-group"><div class="tg-grph">Group ' + esc(g) + ' · ' + groups[g].length + ' team' + (groups[g].length === 1 ? '' : 's') + '</div><div class="tg-gteams">' + teams + '</div>' + fx + '</div>';
+    }).join('')
+      + '<div class="lg-tool" style="margin-top:18px;border-top:1px solid var(--ffp-border);padding-top:14px"><span class="sp"></span><button class="lg-btn pri" onclick="FFPTourn.saveGroupResults()">' + ic('check') + 'Save results</button><button class="lg-btn green" onclick="FFPTourn.doBracket()">' + ic('account_tree') + 'Build knockout from groups</button></div>';
   }
-  function startGroups() { S.grpDraw = true; renderTab(); }
-  function cancelGroups() { S.grpDraw = false; renderTab(); }
   async function doGroups() {
-    var n = parseInt((document.getElementById('tg-ng') || {}).value, 10) || 2; S.grpDraw = false;
+    var n = parseInt((document.getElementById('tg-ng') || {}).value, 10) || 2; S._ng = n;
     var r; try { r = await sb().rpc('tourn_groups_generate', { p_division: S.divId, p_num_groups: n }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not draw groups', 'error'); return; } toast('Groups drawn', 'success'); open(S.eventId);
+    if (r.error) { toast(/not_owner/.test(r.error.message || '') ? 'Not your tournament' : 'Could not draw groups', 'error'); return; }
+    if ((r.data || 0) === 0) { toast('Add at least 2 entrants first', 'error'); renderTab(); return; }
+    toast(n + ' group' + (n === 1 ? '' : 's') + ' drawn · ' + r.data + ' fixtures', 'success'); renderTab();
   }
   async function saveGroupResults() {
     var rows = Array.prototype.slice.call(document.querySelectorAll('#tg-glist .lg-fx')); var n = 0;
@@ -497,12 +507,12 @@
   async function doBracket() {
     S.brkConfirm = false;
     var r; try { r = await sb().rpc('tourn_bracket_build', { p_division: S.divId }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not build bracket', 'error'); return; } toast('Bracket built', 'success'); S.tab = 'bracket'; open(S.eventId);
+    if (r.error) { toast('Could not build bracket', 'error'); return; } toast('Bracket built', 'success'); S.tab = 'bracket'; refreshDetail();
   }
 
   // BRACKET
   async function renderBracket(host) {
-    var divs = S.detail.divisions || []; if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a category first.</div>'; return; }
+    var divs = S.detail.divisions || []; if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
     if (!S.divId) S.divId = divs[0].id; var ev = S.detail.event || {};
     var buildCtl = S.brkConfirm
       ? '<button class="lg-btn green" onclick="FFPTourn.doBracket()">' + ic('check') + 'Confirm build</button><button class="lg-btn ghost" onclick="FFPTourn.cancelBracket()">Cancel</button>'
