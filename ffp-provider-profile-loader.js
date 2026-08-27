@@ -526,6 +526,17 @@
       '.pf-actrow-x{background:#eef2f5;border:none;color:#8a97a2;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:15px;line-height:1;flex:none;}' +
       '.pf-actrow-x:hover{background:#e2452f;color:#fff;}' +
       '.pf-actrow-desc{width:100%;resize:vertical;min-height:44px;font-size:13px;line-height:1.5;}' +
+      // Brand product highlights (shown in place of activities when is_brand)
+      '.pf-prod-cap{display:flex;justify-content:space-between;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#9aa8b4;margin:2px 0 8px;}' +
+      '.pf-prod-add{display:flex;gap:10px;margin-bottom:4px;}' +
+      '.pf-prod{display:grid;grid-template-columns:76px 1fr;gap:13px;padding:15px 0;border-bottom:1px solid #e6ecf1;position:relative;}' +
+      '.pf-prod .pimg{width:76px;height:76px;border-radius:11px;background:#eef2f5 center/cover no-repeat;border:1.5px dashed #d7dee5;display:flex;align-items:center;justify-content:center;color:#9aa8b4;cursor:pointer;flex:none;}' +
+      '.pf-prod .pimg.has{border:none;} .pf-prod .pimg .ms{font-size:24px;}' +
+      '.pf-prod .pcol{display:flex;flex-direction:column;gap:8px;min-width:0;}' +
+      '.pf-prod .prow{display:flex;gap:10px;} .pf-prod .pnm{flex:1;min-width:0;} .pf-prod .ppr{width:104px;flex:none;}' +
+      '.pf-prod input.input,.pf-prod textarea.input{font-size:13.5px;}' +
+      '.pf-prod .pdel{position:absolute;top:12px;right:0;background:#eef2f5;border:none;color:#8a97a2;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:15px;line-height:1;}' +
+      '.pf-prod .pdel:hover{background:#e2452f;color:#fff;}' +
       // our own activity dropdown (replaces the native <datalist>)
       '.pf-ac-wrap{position:relative;flex:1;min-width:160px;}' +
       '.pf-ac-dd{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:60;background:#ffffff;border:1px solid rgba(25,128,173,.3);border-radius:12px;max-height:260px;overflow-y:auto;box-shadow:0 18px 50px rgba(0,0,0,.55);padding:5px;}' +
@@ -699,6 +710,73 @@
     if (typeof providerProfile !== 'undefined') providerProfile.activities = _provExtras.activities.slice();
     if (typeof window.renderProfileCompletion === 'function') { try { window.renderProfileCompletion(); } catch (e) {} }
   }
+
+  // ─── Brand product highlights (shown in the Activities tab when is_brand) ───
+  function _pfPid() { return (window.FFP_PROVIDER && window.FFP_PROVIDER.id) || (typeof providerProfile !== 'undefined' && providerProfile.id) || null; }
+  function injectProductsEditor() {
+    if (document.getElementById('pf-products-wrap')) return;
+    var host = document.getElementById('pf-activities-host'); if (!host) return;
+    var w = document.createElement('div'); w.id = 'pf-products-wrap'; w.style.display = 'none';
+    w.innerHTML =
+      '<div class="pf-prod-cap"><span>Your products — add up to 6</span><span id="pf-prod-count">0 / 6</span></div>' +
+      '<div class="pf-prod-add"><input id="pf-prod-name" class="input" placeholder="Product name…" style="flex:1"><button type="button" class="btn-pri" onclick="__pfProdAddNew()">Add</button></div>' +
+      '<div id="pf-prod-list"></div>';
+    host.appendChild(w);
+    var ni = document.getElementById('pf-prod-name'); if (ni) ni.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); window.__pfProdAddNew(); } };
+  }
+  function loadBrandProducts() {
+    var pid = _pfPid(); if (!pid) return;
+    window.supabase.rpc('brand_products_list', { p_provider: pid }).then(function (r) {
+      _brand.products = (r && r.data) || []; renderBrandProducts();
+    });
+  }
+  function renderBrandProducts() {
+    var list = document.getElementById('pf-prod-list'); if (!list) return;
+    var cnt = document.getElementById('pf-prod-count'); if (cnt) cnt.textContent = _brand.products.length + ' / 6';
+    if (!_brand.products.length) { list.innerHTML = '<span class="pf-loc-status">None yet — add a few products you make.</span>'; return; }
+    list.innerHTML = _brand.products.map(function (p) {
+      var img = p.image_url ? 'has" style="background-image:url(\'' + escText(p.image_url) + '\')"' : '"';
+      var imgInner = p.image_url ? '' : '<span class="ms">add_a_photo</span>';
+      return '<div class="pf-prod">' +
+        '<button type="button" class="pdel" onclick="__pfProdRemove(\'' + p.id + '\')" aria-label="Remove">&times;</button>' +
+        '<div class="pimg ' + img + ' onclick="__pfProdImg(\'' + p.id + '\')">' + imgInner + '</div>' +
+        '<div class="pcol">' +
+          '<div class="prow"><input class="input pnm" value="' + escText(p.name || '') + '" placeholder="Product name" onchange="__pfProdField(\'' + p.id + '\',\'name\',this.value)">' +
+            '<input class="input ppr" value="' + escText(p.price != null ? p.price : '') + '" placeholder="Price" onchange="__pfProdField(\'' + p.id + '\',\'price\',this.value)"></div>' +
+          '<textarea class="input" rows="2" placeholder="One line — what it is (optional)" onchange="__pfProdField(\'' + p.id + '\',\'description\',this.value)">' + escText(p.description || '') + '</textarea>' +
+          '<input class="input" value="' + escText(p.buy_url || '') + '" placeholder="Shop / buy link (optional)" onchange="__pfProdField(\'' + p.id + '\',\'buy_url\',this.value)">' +
+        '</div></div>';
+    }).join('');
+  }
+  window.__pfProdAddNew = function () {
+    var pid = _pfPid(); if (!pid) return;
+    var ni = document.getElementById('pf-prod-name'); var nm = ni ? (ni.value || '').trim() : '';
+    if (!nm) { if (ni) ni.focus(); return; }
+    window.supabase.rpc('brand_product_save', { p_provider: pid, p_id: null, p: { name: nm } }).then(function (r) {
+      if (r && r.error) { toast(/max_products/.test(r.error.message || '') ? 'Up to 6 products' : 'Could not add', 'error'); return; }
+      if (ni) ni.value = ''; loadBrandProducts();
+    });
+  };
+  var _pfProdTimers = {};
+  window.__pfProdField = function (id, field, value) {
+    var pid = _pfPid(); if (!pid) return;
+    var p = {}; p[field] = (field === 'price') ? (value === '' ? null : String(value).replace(/[^0-9.]/g, '')) : value;
+    clearTimeout(_pfProdTimers[id + field]);
+    _pfProdTimers[id + field] = setTimeout(function () {
+      window.supabase.rpc('brand_product_save', { p_provider: pid, p_id: id, p: p }).then(function (r) { if (r && r.error) console.error('[Brand product]', r.error); });
+    }, 500);
+  };
+  window.__pfProdRemove = function (id) {
+    window.supabase.rpc('brand_product_remove', { p_id: id }).then(function (r) { if (r && r.error) { toast('Could not remove', 'error'); return; } loadBrandProducts(); });
+  };
+  window.__pfProdImg = function (id) {
+    var pid = _pfPid(); if (!pid) return;
+    if (!window.FFPUpload) { toast('Uploader not ready — refresh and retry', 'error'); return; }
+    window.FFPUpload.pick({ bucket: 'brand-products', key: 'prod-' + pid + '-' + id + '-' + Date.now(), aspect: 1, outW: 800, outH: 800, title: 'Product photo (square)',
+      onDone: function (url) { window.supabase.rpc('brand_product_save', { p_provider: pid, p_id: id, p: { image_url: url } }).then(function () { loadBrandProducts(); toast('Photo added', 'success'); }); },
+      onError: function (err) { console.error('[prod upload]', err); toast('Upload failed', 'error'); } });
+  };
+
   async function resolveMapsLink() {
     var inp = document.getElementById('pf-maps-url'), st = document.getElementById('pf-loc-status');
     var url = inp ? (inp.value || '').trim() : '';
@@ -736,7 +814,7 @@
   // ─── Brand mode + "Where it's sold" stockist manager (Brands v1) ───
   // A partner can flag themselves a product brand (is_brand). Brands pick the LOCATIONS
   // where they're sold (brand_locations) so members can discover them on Explore → Brands.
-  var _brand = { is_brand: false, sess: Math.random().toString(36).slice(2), locs: [] };
+  var _brand = { is_brand: false, sess: Math.random().toString(36).slice(2), locs: [], products: [] };
   var _brandSugT = null;
 
   function injectBrandCss() {
@@ -810,6 +888,14 @@
     ['pf-timezone', 'pf-area', 'pf-address'].forEach(function (id) { var f = _pfField(id); if (f) f.style.display = on ? 'none' : ''; });
     var hg = document.getElementById('hours-grid'); var hs = (hg && hg.closest) ? hg.closest('.form-section') : null; if (hs) hs.style.display = on ? 'none' : '';
     ['pf-extras-loc', 'pf-extras-booking'].forEach(function (id) { var el = document.getElementById(id); if (el) el.style.display = on ? 'none' : ''; });
+    // Brand mode: the Activities tab becomes Products — relabel the tab and swap its content.
+    try { injectProductsEditor(); } catch (e) {}
+    var actTab = document.querySelector('.pf-tab[data-pftab="activities"]');
+    if (actTab) actTab.innerHTML = on ? '<span class="ms">sell</span> Products' : '<span class="ms">fitness_center</span> Activities';
+    var actInp = document.getElementById('pf-act-input'); var actField = (actInp && actInp.closest) ? actInp.closest('.field') : null;
+    if (actField) actField.style.display = on ? 'none' : '';
+    var pw = document.getElementById('pf-products-wrap'); if (pw) pw.style.display = on ? '' : 'none';
+    if (on) loadBrandProducts();
   }
 
   async function setBrand(on) {
