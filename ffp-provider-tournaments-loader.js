@@ -693,7 +693,7 @@
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
     saveDetails: saveDetails, sportHint: sportHint, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
-    startGroups: startGroups, cancelGroups: cancelGroups, doGroups: doGroups, saveGroupResults: saveGroupResults,
+    doGroups: doGroups, saveGroupResults: saveGroupResults,
     confirmBracket: confirmBracket, cancelBracket: cancelBracket, doBracket: doBracket, saveBracketResults: saveBracketResults,
     setFmt: setFmt, buildStructure: buildStructure, pickImg: pickImg, entLogo: entLogo, addOfficial: addOfficial, removeOfficial: removeOfficial,
     autoplan: autoplan, schedSet: schedSet,
