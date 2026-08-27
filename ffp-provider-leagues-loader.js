@@ -38,8 +38,9 @@
       '.lg-fx{display:grid;grid-template-columns:1fr 128px 1fr;align-items:center;gap:8px;padding:11px 2px;border-bottom:1px solid var(--ffp-border);} .lg-fx .t{font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .lg-fx .t.a{text-align:right;} .lg-fx .sc{display:flex;gap:6px;justify-content:center;} .lg-fx .sc input{width:46px;padding:8px;border:1.5px solid #d7dee5;border-radius:8px;font:inherit;font-weight:800;text-align:center;}',
       '.lg-rndlab{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:var(--ffp-text-muted);margin:16px 0 4px;}',
       '.lg-tb{display:grid;grid-template-columns:26px 1fr 30px 30px 30px 44px 40px;align-items:center;gap:6px;padding:10px 6px;border-bottom:1px solid var(--ffp-border);font-size:13px;} .lg-tb span{text-align:center;} .lg-tb .nm{text-align:left;font-weight:800;} .lg-tb.head{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--ffp-text-muted);} .lg-tb .pts{font-weight:900;color:var(--ffp-blue);}',
+      '.lg-brand{display:flex;gap:12px;align-items:stretch;} .lg-logo{width:76px;height:76px;flex:none;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:10px;font-weight:800;} .lg-logo .ms{font-size:22px;} .lg-banner{flex:1;height:76px;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:11px;font-weight:800;} .lg-banner .ms{font-size:22px;} .lg-row .act{margin-left:auto;color:#9aa8b4;font-size:19px;cursor:pointer;}',
       '.lg-fldbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .lg-fldchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--ffp-border-mid);border-radius:12px;padding:7px 11px;font-size:12.5px;font-weight:800;} .lg-fldchip .t{color:var(--ffp-text-muted);font-weight:700;} .lg-fldchip .x{color:#9aa8b4;font-size:16px;cursor:pointer;} .lg-fldchip.add{border-style:dashed;gap:4px;}',
-      '.lg-srow{display:grid;grid-template-columns:1fr 108px 128px 148px;gap:10px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .lg-srow .mt{font-size:13.5px;font-weight:800;color:var(--ffp-text);min-width:0;} .lg-srow .mt span{display:block;font-size:11px;color:var(--ffp-text-muted);font-weight:600;} .lg-srow .lg-in,.lg-srow .lg-sel{padding:8px 9px;font-size:12.5px;width:100%;}'
+      '.lg-srow{display:grid;grid-template-columns:1fr 132px 92px 120px 140px;gap:9px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .lg-srow .mt{font-size:13.5px;font-weight:800;color:var(--ffp-text);min-width:0;} .lg-srow .mt span{display:block;font-size:11px;color:var(--ffp-text-muted);font-weight:600;} .lg-srow .lg-in,.lg-srow .lg-sel{padding:8px 9px;font-size:12.5px;width:100%;}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -152,8 +153,9 @@
       var tv = t ? (('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2)) : '';
       var fldOpts = '<option value="">Court…</option>' + fields.map(function (x) { return '<option value="' + x.id + '"' + (f.court === x.name ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('');
       var ofOpts = '<option value="">Official…</option>' + offs.map(function (x) { return '<option value="' + x.id + '"' + (f.official === x.name ? ' selected' : '') + '>' + esc(x.name || x.email) + '</option>'; }).join('');
+      var dv = t ? (t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2)) : ((S.detail.event && S.detail.event.starts_at) || '');
       return '<div class="lg-srow" data-id="' + f.id + '"><div class="mt">' + esc((f.home && f.home.name) || 'TBD') + ' v ' + esc((f.away && f.away.name) || 'TBD') + '<span>Round ' + f.round + '</span></div>'
-        + '<input class="lg-in st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"><select class="lg-sel st-f" onchange="FFPLeague.schedSet(\'' + f.id + '\')">' + fldOpts + '</select><select class="lg-sel st-o" onchange="FFPLeague.schedSet(\'' + f.id + '\')">' + ofOpts + '</select></div>';
+        + '<input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"><input class="lg-in st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"><select class="lg-sel st-f" onchange="FFPLeague.schedSet(\'' + f.id + '\')">' + fldOpts + '</select><select class="lg-sel st-o" onchange="FFPLeague.schedSet(\'' + f.id + '\')">' + ofOpts + '</select></div>';
     }).join('');
   }
   async function addField() {
@@ -171,18 +173,21 @@
   }
   async function schedSet(id) {
     var row = document.querySelector('.lg-srow[data-id="' + id + '"]'); if (!row) return;
-    var tv = row.querySelector('.st-t').value, fid = row.querySelector('.st-f').value || null, oid = row.querySelector('.st-o').value || null;
-    var when = null;
-    if (tv) { var base = (S.detail.event && S.detail.event.starts_at) || new Date().toISOString().slice(0, 10); when = new Date(base + 'T' + tv + ':00').toISOString(); }
+    var dv = (row.querySelector('.st-d') || {}).value, tv = row.querySelector('.st-t').value, fid = row.querySelector('.st-f').value || null, oid = row.querySelector('.st-o').value || null;
+    var base = dv || (S.detail.event && S.detail.event.starts_at) || new Date().toISOString().slice(0, 10);
+    var when = (tv || dv) ? new Date(base + 'T' + (tv || '00:00') + ':00').toISOString() : null;
     await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: oid });
-    toast('Saved', 'success');
+    toast('Rescheduled', 'success');
   }
 
   // ---------- DETAILS ----------
   async function renderDetails(host) {
     var ev = S.detail.event || {}; await loadSports(); await taxReady();
     host.innerHTML =
-      '<div class="lg-fld"><div class="lg-lab">League name</div><input class="lg-in" id="lg-name" value="' + esc(ev.name) + '"></div>'
+      '<div class="lg-fld"><div class="lg-lab">Logo &amp; banner</div><div class="lg-brand">'
+      + '<div class="lg-logo" onclick="FFPLeague.pickImg(\'logo\')" style="' + (ev.logo_url ? 'background-image:url(\'' + esc(ev.logo_url) + '\')' : '') + '">' + (ev.logo_url ? '' : '<span class="ms">add_photo_alternate</span><span>Logo</span>') + '</div>'
+      + '<div class="lg-banner" onclick="FFPLeague.pickImg(\'cover\')" style="' + (ev.cover_url ? 'background-image:url(\'' + esc(ev.cover_url) + '\')' : '') + '">' + (ev.cover_url ? '' : '<span class="ms">image</span><span>Add banner (16:9)</span>') + '</div></div></div>'
+      + '<div class="lg-fld"><div class="lg-lab">League name</div><input class="lg-in" id="lg-name" value="' + esc(ev.name) + '"></div>'
       + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Sport</div><input class="lg-in" id="lg-sport" list="lg-actl" value="' + esc(ev.activity || '') + '" placeholder="Search sport…" oninput="FFPLeague.sportHint()"><datalist id="lg-actl">' + dlOpts(actNames()) + '</datalist><div class="lg-lab" id="lg-sporthint" style="margin:6px 0 0;font-weight:700;color:#6a7c8a">Stats set: ' + esc(schemaForActivity(ev.activity)) + '</div></div>'
       + '<div class="lg-fld"><div class="lg-lab">Schedule</div><div class="lg-seg" id="lg-mode"><button data-v="single" class="' + (ev.schedule_mode !== 'home_away' ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-mode\')">Single</button><button data-v="home_away" class="' + (ev.schedule_mode === 'home_away' ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-mode\')">Home &amp; away</button></div></div></div>'
       + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">City</div><input class="lg-in" id="lg-city" list="lg-cityl" value="' + esc(ev.city || '') + '"><datalist id="lg-cityl">' + dlOpts(cityNames()) + '</datalist></div><div class="lg-fld"><div class="lg-lab">Country</div><input class="lg-in" id="lg-country" list="lg-cntl" value="' + esc(ev.country || '') + '"><datalist id="lg-cntl">' + dlOpts(countryNames()) + '</datalist></div></div>'
@@ -251,7 +256,10 @@
     var f = document.getElementById('lg-entname'); if (f) f.focus();
     var r; try { r = await sb().rpc('league_roster', { p_division: S.divId }); } catch (e) { r = { error: e }; }
     var rows = (r && r.data) || []; var host2 = document.getElementById('lg-roster');
-    host2.innerHTML = rows.length ? rows.map(function (en) { return '<div class="lg-row"><span class="lg-av" style="' + (en.logo ? 'background-image:url(\'' + esc(en.logo) + '\')' : '') + '">' + (en.logo ? '' : esc((en.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(en.name) + '</b> <span>· ' + esc(en.status) + '</span></div></div>'; }).join('') : '<div class="lg-empty">No entrants yet. Members self-register in the app, or add them here.</div>';
+    host2.innerHTML = rows.length ? rows.map(function (en) {
+      var flag = en.nationality ? ' · ' + esc(en.nationality) : '';
+      return '<div class="lg-row"><span class="lg-av" style="' + (en.logo ? 'background-image:url(\'' + esc(en.logo) + '\')' : '') + '">' + (en.logo ? '' : esc((en.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(en.name) + '</b> <span>· ' + esc(en.status) + (en.kind === 'individual' ? flag : '') + '</span></div>' + (en.kind !== 'individual' ? '<span class="ms act" title="Team logo" onclick="FFPLeague.entLogo(\'' + en.id + '\')">add_a_photo</span>' : '') + '</div>';
+    }).join('') : '<div class="lg-empty">No entrants yet. Members self-register in the app, or add them here.</div>';
   }
   function addEntrant() { S.entAdd = true; renderTab(); }
   function cancelEntrant() { S.entAdd = false; renderTab(); }
@@ -309,6 +317,20 @@
       + rows.map(function (r2, i) { return '<div class="lg-tb"><span>' + (i + 1) + '</span><span class="nm">' + esc(r2.name) + '</span><span>' + r2.p + '</span><span>' + r2.w + '</span><span>' + r2.d + '</span><span>' + (r2.gd > 0 ? '+' + r2.gd : r2.gd) + '</span><span class="pts">' + r2.pts + '</span></div>'; }).join('');
   }
 
+  function pickImg(kind) {
+    if (!window.FFPUpload) { toast('Uploader not ready — refresh', 'error'); return; }
+    var isLogo = kind === 'logo';
+    window.FFPUpload.pick({ bucket: isLogo ? 'provider-logos' : 'listing-covers', key: (isLogo ? 'lglogo-' : 'lgcover-') + S.eventId + '-' + Date.now(),
+      aspect: isLogo ? 1 : 16 / 9, outW: isLogo ? 512 : 1600, outH: isLogo ? 512 : 900, title: isLogo ? 'League logo (square)' : 'Banner (16:9)',
+      onDone: function (url) { var p = {}; p[isLogo ? 'logo_url' : 'cover_url'] = url; sb().rpc('league_event_save', { p_id: S.eventId, p: p }).then(function () { toast('Saved', 'success'); open(S.eventId); }); },
+      onError: function (e) { toast('Upload failed', 'error'); } });
+  }
+  function entLogo(id) {
+    if (!window.FFPUpload) { toast('Uploader not ready — refresh', 'error'); return; }
+    window.FFPUpload.pick({ bucket: 'provider-logos', key: 'lgteam-' + id + '-' + Date.now(), aspect: 1, outW: 400, outH: 400, title: 'Team logo (square)',
+      onDone: function (url) { sb().rpc('league_entrant_set_logo', { p_id: id, p_logo: url }).then(function () { toast('Logo saved', 'success'); renderTab(); }); },
+      onError: function () { toast('Upload failed', 'error'); } });
+  }
   async function refreshDetail() { var r; try { r = await sb().rpc('league_detail', { p_league: S.eventId }); } catch (e) { r = { error: e }; } S.detail = (r && r.data) || S.detail; renderTab(); }
   function divOpts() { return (S.detail.divisions || []).map(function (d) { return '<option value="' + d.id + '"' + (d.id === S.divId ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join(''); }
 
@@ -317,7 +339,7 @@
     back: function () { S.view = 'list'; renderList(); }, tab: function (t) { S.tab = t; renderEditor(); },
     setDiv: function (val, tab) { S.divId = val; S.tab = tab; renderTab(); },
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
-    saveDetails: saveDetails, sportHint: sportHint, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
+    saveDetails: saveDetails, sportHint: sportHint, pickImg: pickImg, entLogo: entLogo, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     confirmGen: confirmGen, cancelGen: cancelGen, doGen: doGen, saveResults: saveResults,
     addOfficial: addOfficial, removeOfficial: removeOfficial, addField: addField, removeField: removeField, autoplan: autoplan, schedSet: schedSet
