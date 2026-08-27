@@ -51,7 +51,7 @@
       '.lg-rnd{display:flex;align-items:center;gap:12px;margin:20px 0 2px;padding:12px 14px;background:linear-gradient(180deg,#f7fafc,#eef4f8);border:1px solid #e4edf3;border-radius:12px;cursor:pointer;user-select:none;} .lg-rnd:hover{background:linear-gradient(180deg,#f2f8fb,#e7f1f7);} .lg-rnd .chev{color:var(--ffp-blue);font-size:22px;transition:transform .2s;} .lg-rnd.collapsed .chev{transform:rotate(-90deg);} .lg-rnd .rt{font-size:14px;font-weight:900;color:var(--ffp-text);} .lg-rnd .rc{font-size:11px;font-weight:800;color:var(--ffp-blue);background:#e2eff6;padding:3px 10px;border-radius:20px;} .lg-rnd .rd{font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-rnd .sp{flex:1;} .lg-rbody.hidden{display:none;}',
       /* venues */
       '.lg-venue{padding:18px 4px;border-bottom:1px solid var(--ffp-border);} .lg-vh{display:flex;align-items:center;gap:12px;} .lg-vpin{width:38px;height:38px;border-radius:11px;background:linear-gradient(180deg,#eaf4f9,#dcecf3);color:var(--ffp-blue);display:flex;align-items:center;justify-content:center;flex:none;} .lg-vpin .ms{font-size:21px;} .lg-vh .g{flex:1;min-width:0;} .lg-vh .g b{font-size:16px;font-weight:900;color:var(--ffp-text);} .lg-vh .g span{display:block;font-size:12.5px;color:var(--ffp-text-muted);font-weight:700;} .lg-vh .act{color:#9aa8b4;font-size:19px;cursor:pointer;padding:5px;border-radius:8px;} .lg-vh .act:hover{color:var(--ffp-blue);background:#f4f7f9;}',
-      '.lg-surfs{margin:12px 0 0 51px;position:relative;} .lg-surfs:before{content:"";position:absolute;left:-13px;top:2px;bottom:18px;width:1.5px;background:#e4edf3;} .lg-surf{display:flex;align-items:center;gap:10px;padding:10px 0;font-size:14px;font-weight:600;border-bottom:1px solid #f4f7f9;} .lg-surf .ms{color:var(--ffp-blue);font-size:18px;opacity:.85;} .lg-surf .x{color:#c0cad2;cursor:pointer;font-size:18px;} .lg-surf .x:hover{color:#d64545;} .lg-addsurf{margin:12px 0 0 51px;} .lg-btn.ghostb{color:var(--ffp-blue);border-color:#d4e6ef;background:#f5fafc;}',
+      '.lg-surfs{margin:12px 0 0 51px;position:relative;} .lg-surfs:before{content:"";position:absolute;left:-13px;top:2px;bottom:18px;width:1.5px;background:#e4edf3;} .lg-surf{display:flex;align-items:center;gap:10px;padding:10px 0;font-size:14px;font-weight:600;border-bottom:1px solid #f4f7f9;} .lg-surf .ms{color:var(--ffp-blue);font-size:18px;opacity:.85;} .lg-surf .x{color:#c0cad2;cursor:pointer;font-size:18px;} .lg-surf .x:hover{color:#d64545;} .lg-addsurf{margin:12px 0 0 51px;} .lg-btn.ghostb{color:var(--ffp-blue);border-color:#d4e6ef;background:#f5fafc;} .lg-maplink{display:inline-flex;align-items:center;gap:3px;color:var(--ffp-blue);font-weight:800;text-decoration:none;} .lg-maplink .ms{font-size:15px;vertical-align:-3px;}',
       /* schedule v2 */
       '.lg-srow2{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-srow2 .s-match b{font-size:15px;font-weight:800;} .lg-srow2 .s-match small{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;margin-top:3px;} .lg-srow2 .s-when{display:flex;gap:8px;margin-top:11px;} .lg-srow2 .s-when .lg-in{padding:8px 9px;font-size:13px;} .lg-srow2 .s-right{display:flex;flex-direction:column;gap:9px;} .lg-srow2 .fl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;} .lg-srow2 .st-f{padding:9px 10px;font-size:13px;}',
       '.lg-offlist{display:flex;flex-direction:column;gap:6px;} .lg-offtag{display:flex;align-items:center;gap:9px;font-size:13px;padding:7px 10px;border:1px solid var(--ffp-border-mid);border-radius:9px;background:#fbfcfd;} .lg-offtag .role{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ffp-blue);} .lg-offtag .nm{font-weight:700;} .lg-offtag .sp{flex:1;} .lg-offtag .x{color:#c0cad2;cursor:pointer;font-size:16px;} .lg-assign{display:flex;gap:7px;align-items:center;} .lg-assign .lg-sel{padding:7px 9px;font-size:12.5px;flex:1;} .lg-btn.sm{padding:7px 11px;font-size:12px;}',
@@ -198,12 +198,13 @@
     h2.innerHTML = vs.map(function (v) {
       if (S.venEdit === v.id) return venueEditor(v);
       var surfaces = (v.surfaces || []).map(function (s) {
-        return '<div class="lg-surf"><span class="ms">crop_landscape</span>' + esc(s.name) + '<span class="sp"></span><span class="ms x" onclick="FFPLeague.removeSurface(\'' + s.id + '\')">delete</span></div>';
+        return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name) + '<span class="sp"></span><span class="ms x" onclick="FFPLeague.removeSurface(\'' + s.id + '\')">delete</span></div>';
       }).join('');
+      var vmeta = [v.city, (v.maps_url ? '<a class="lg-maplink" href="' + esc(v.maps_url) + '" target="_blank" rel="noopener">' + ic('map') + 'Map</a>' : '')].filter(Boolean).join(' · ');
       var addS = (S.surfAdd === v.id)
         ? '<div class="lg-edit" style="margin-left:44px;border:none;padding-top:8px"><input class="lg-in" id="lg-sfname" placeholder="Pitch / court / oval name" style="max-width:260px" onkeydown="if(event.key===\'Enter\')FFPLeague.saveSurface(\'' + v.id + '\')"><button class="lg-btn pri" onclick="FFPLeague.saveSurface(\'' + v.id + '\')">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPLeague.cancelSurface()">Cancel</button></div>'
         : '<div class="lg-addsurf"><button class="lg-btn ghostb" onclick="FFPLeague.addSurface(\'' + v.id + '\')">' + ic('add') + 'Add surface</button></div>';
-      return '<div class="lg-venue"><div class="lg-vh"><span class="lg-vpin"><span class="ms">location_on</span></span><div class="g"><b>' + esc(v.name) + '</b><span>' + esc([v.city, 'default start ' + (v.start_time || '08:00')].filter(Boolean).join(' · ')) + '</span></div><span class="ms act" onclick="FFPLeague.editVenue(\'' + v.id + '\')">edit</span><span class="ms act" onclick="FFPLeague.removeVenue(\'' + v.id + '\')">delete</span></div>'
+      return '<div class="lg-venue"><div class="lg-vh"><span class="lg-vpin"><span class="ms">location_on</span></span><div class="g"><b>' + esc(v.name) + '</b><span>' + vmeta + '</span></div><span class="ms act" onclick="FFPLeague.editVenue(\'' + v.id + '\')">edit</span><span class="ms act" onclick="FFPLeague.removeVenue(\'' + v.id + '\')">delete</span></div>'
         + (surfaces ? '<div class="lg-surfs">' + surfaces + '</div>' : '') + addS + '</div>';
     }).join('');
     var f = document.getElementById('lg-vname'); if (f) f.focus();
@@ -211,9 +212,9 @@
   }
   function venueEditor(v) {
     v = v || {};
-    return '<div class="lg-edit"><input class="lg-in" id="lg-vname" placeholder="Venue name" value="' + esc(v.name || '') + '" style="flex:2;min-width:180px">'
-      + '<input class="lg-in" id="lg-vcity" list="lg-cityl" placeholder="City" value="' + esc(v.city || '') + '" style="flex:1;min-width:120px"><datalist id="lg-cityl">' + dlOpts(cityNames()) + '</datalist>'
-      + '<span class="lg-lab" style="margin:0">Start</span><input class="lg-in" id="lg-vstart" type="time" value="' + esc(v.start_time || '08:00') + '" style="width:100px">'
+    return '<div class="lg-edit"><input class="lg-in" id="lg-vname" placeholder="Venue name" value="' + esc(v.name || '') + '" style="flex:2;min-width:170px">'
+      + '<input class="lg-in" id="lg-vcity" list="lg-cityl" placeholder="City" value="' + esc(v.city || '') + '" style="flex:1;min-width:110px"><datalist id="lg-cityl">' + dlOpts(cityNames()) + '</datalist>'
+      + '<input class="lg-in" id="lg-vmaps" placeholder="Google Maps link (optional)" value="' + esc(v.maps_url || '') + '" style="flex:2;min-width:180px">'
       + '<button class="lg-btn pri" onclick="FFPLeague.saveVenue(\'' + (v.id || '') + '\')">' + ic('check') + 'Save</button>'
       + '<button class="lg-btn ghost" onclick="FFPLeague.cancelVenue()">Cancel</button></div>';
   }
@@ -222,7 +223,7 @@
   function cancelVenue() { S.venAdd = false; S.venEdit = null; renderTab(); }
   async function saveVenue(id) {
     var nm = v('lg-vname'); if (!nm || !nm.trim()) { toast('Name required', 'error'); return; }
-    var r; try { r = await sb().rpc('lt_venue_save', { p_scope: 'league', p_event: S.eventId, p_id: id || null, p_name: nm.trim(), p_city: v('lg-vcity') || null, p_start: v('lg-vstart') || null }); } catch (e) { r = { error: e }; }
+    var r; try { r = await sb().rpc('lt_venue_save', { p_scope: 'league', p_event: S.eventId, p_id: id || null, p_name: nm.trim(), p_city: v('lg-vcity') || null, p_maps: v('lg-vmaps') || null }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Save failed', 'error'); return; } S.venAdd = false; S.venEdit = null; toast('Saved', 'success'); renderTab();
   }
   async function removeVenue(id) { await sb().rpc('lt_venue_remove', { p_id: id }); toast('Removed', 'success'); renderTab(); }
