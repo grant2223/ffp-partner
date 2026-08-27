@@ -40,6 +40,11 @@
       '.cx-editnav{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--ffp-border);margin-bottom:18px;}',
       '.cx-editnav button{background:none;border:none;font:inherit;font-size:13.5px;font-weight:800;color:var(--ffp-text-muted);padding:11px 4px;margin-right:14px;border-bottom:2.5px solid transparent;cursor:pointer;}',
       '.cx-editnav button.on{color:var(--ffp-blue);border-bottom-color:var(--ffp-blue);}',
+      '.cx-seg{display:inline-flex;border:1.5px solid var(--ffp-border-mid);border-radius:10px;overflow:hidden;} .cx-seg button{background:#fff;border:none;padding:8px 13px;font:inherit;font-size:12px;font-weight:800;color:var(--ffp-text-muted);cursor:pointer;} .cx-seg button.on{background:var(--ffp-blue);color:#fff;}',
+      '.cx-btn.sm,.cx-in.sm,.cx-sel.sm{padding:7px 10px;font-size:12px;} .cx-in.sm{width:auto;}',
+      '.cx-heath{display:flex;align-items:center;gap:10px;padding:18px 0 8px;border-bottom:2px solid var(--ffp-text);margin-top:6px;} .cx-heath b{font-size:15px;font-weight:900;} .cx-heath .fin{font-size:9.5px;font-weight:900;letter-spacing:.4px;color:#3a2600;background:var(--ffp-yellow,#f2a900);padding:3px 9px;border-radius:20px;} .cx-heath .r{margin-left:auto;display:flex;gap:8px;align-items:center;}',
+      '.cx-lrow{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .cx-lrow .ln{width:22px;text-align:center;font-size:13px;font-weight:900;color:var(--ffp-text-muted);} .cx-lrow .pl{font-size:11px;font-weight:900;color:var(--ffp-blue);width:34px;} .cx-lrow b{flex:1;font-size:14px;font-weight:800;} .cx-lrow .cx-sel{width:auto;}',
+      '.cx-av{width:32px;height:32px;border-radius:50%;background:#e7ecef center/cover;flex:none;display:flex;align-items:center;justify-content:center;font-weight:900;color:#6a7681;font-size:12px;} .cx-row .g{flex:1;} .cx-row .g b{font-size:14px;font-weight:800;} .cx-row .g span{display:block;font-size:12px;color:var(--ffp-text-muted);font-weight:700;}',
       '.cx-pill{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;}',
       '.cx-pill.live{background:#fdeaea;color:#d6353b;} .cx-pill.open{background:#e3f6ec;color:#0a8f5f;} .cx-pill.draft{background:#eef2f5;color:#5b6b75;} .cx-pill.final{background:#eef2f5;color:#5b6b75;}',
       '.cx-lab{font-size:12px;font-weight:800;color:#43525c;margin:0 0 6px;}',
@@ -123,7 +128,7 @@
   function renderEditor() {
     var el = root(); if (!el || !S.detail) return;
     var ev = S.detail.event || {};
-    var tabs = [['details', 'Details'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['scores', 'Scores'], ['standings', 'Standings']];
+    var tabs = [['details', 'Details'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['heats', 'Heats & lanes'], ['judges', 'Judges'], ['scores', 'Scores'], ['standings', 'Standings']];
     if (ev.club_mode) tabs.push(['clubs', 'Clubs']);
     el.innerHTML = '<div class="cx-wrap">' +
       '<div class="cx-head"><div style="display:flex;align-items:center;gap:12px;">' +
@@ -149,6 +154,8 @@
     if (S.tab === 'divisions') return renderDivisions(c);
     if (S.tab === 'workouts') return renderWorkouts(c);
     if (S.tab === 'athletes') return renderAthletes(c);
+    if (S.tab === 'heats') return renderHeats(c);
+    if (S.tab === 'judges') return renderJudges(c);
     if (S.tab === 'scores') return renderScores(c);
     if (S.tab === 'standings') return renderStandings(c);
     if (S.tab === 'clubs') return renderClubs(c);
@@ -508,6 +515,71 @@
   }
   function closeModal() { var b = document.getElementById('cx-mbk'); if (b) b.remove(); }
 
+  // ---------- HEATS & LANES ----------
+  async function renderHeats(c) {
+    var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; });
+    var wods = div ? (div.workouts || []) : [];
+    if (!S.wodId || !wods.some(function (w) { return w.id === S.wodId; })) S.wodId = wods[0] ? wods[0].id : null;
+    var wodSel = wods.length ? '<select class="cx-sel" onchange="FFPComp.setWod(this.value)">' + wods.map(function (w) { return '<option value="' + w.id + '"' + (w.id === S.wodId ? ' selected' : '') + '>' + esc(w.name) + '</option>'; }).join('') + '</select>' : '';
+    var w = wods.find(function (x) { return x.id === S.wodId; });
+    var lanes = (w && w.lanes) || S._lanes || 8;
+    var mode = S._heatMode || 'position';
+    c.innerHTML = '<div class="cx-toolbar">' + divPickerHtml('FFPComp.setDiv(this.value)') + wodSel + '</div>'
+      + (!S.wodId ? '<div class="cx-empty">Add an event to this division first.</div>'
+        : '<div class="cx-toolbar"><span style="font-size:12px;font-weight:800;color:#43525c">Lanes</span><input class="cx-in" id="cx-lanes" value="' + lanes + '" style="width:60px">'
+          + '<span style="font-size:12px;font-weight:800;color:#43525c;margin-left:6px">Seed by</span><div class="cx-seg" id="cx-hmode"><button data-v="position" class="' + (mode === 'position' ? 'on' : '') + '" onclick="FFPComp.hmode(this)">Current position</button><button data-v="random" class="' + (mode === 'random' ? 'on' : '') + '" onclick="FFPComp.hmode(this)">Random</button></div>'
+          + '<span style="flex:1"></span><button class="cx-btn pri sm" onclick="FFPComp.genHeats()"><span class="ms">auto_awesome</span> Generate</button></div><div id="cx-heats"><div class="cx-empty">Loading…</div></div>');
+    if (!S.wodId) return;
+    var hr; try { hr = await sb().rpc('comp_heats_view', { p_workout: S.wodId }); } catch (e) { hr = { error: e }; }
+    var heats = (hr && hr.data) || [];
+    var jr = await sb().rpc('comp_judges_list', { p_event: S.eventId }); var judges = (jr && jr.data) || [];
+    var host = document.getElementById('cx-heats');
+    if (!heats.length) { host.innerHTML = '<div class="cx-empty">No heats yet — set lanes and Generate.</div>'; return; }
+    var jOpts = function (sel) { return '<option value="">Judge…</option>' + judges.map(function (j) { return '<option value="' + j.member_id + '"' + (sel === j.member_id ? ' selected' : '') + '>' + esc(j.name) + '</option>'; }).join(''); };
+    host.innerHTML = heats.map(function (h) {
+      var t = h.start_at ? new Date(h.start_at) : null; var tv = t ? (('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2)) : '';
+      var laneOpts = function (cur) { var o = ''; for (var i = 1; i <= lanes; i++) o += '<option value="' + i + '"' + (i === cur ? ' selected' : '') + '>Lane ' + i + '</option>'; return o; };
+      var rows = (h.lanes || []).map(function (l) {
+        return '<div class="cx-lrow"><span class="ln">' + l.lane + '</span><span class="pl">' + (l.pos != null ? '#' + l.pos : '') + '</span><b>' + esc(l.name || 'Athlete') + '</b>'
+          + '<select class="cx-sel sm" onchange="FFPComp.heatMove(\'' + h.id + '\',\'' + l.entrant_id + '\',this.value)">' + laneOpts(l.lane) + '</select></div>';
+      }).join('');
+      return '<div class="cx-heath" data-h="' + h.id + '"><b>' + esc(h.name) + '</b>' + (h.ord === heats.length ? '<span class="fin">FINAL</span>' : '')
+        + '<span class="r"><input class="cx-in sm" type="time" value="' + tv + '" onchange="FFPComp.heatSet(\'' + h.id + '\')"><select class="cx-sel sm cx-hjudge" onchange="FFPComp.heatSet(\'' + h.id + '\')">' + jOpts(h.judge_id) + '</select></span></div>' + rows;
+    }).join('');
+  }
+  function hmode(btn) { document.querySelectorAll('#cx-hmode button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); S._heatMode = btn.getAttribute('data-v'); }
+  async function genHeats() {
+    var lanes = +((document.getElementById('cx-lanes') || {}).value) || 8;
+    var mode = S._heatMode || 'position'; S._lanes = lanes;
+    var r; try { r = await sb().rpc('comp_heats_generate', { p_workout: S.wodId, p_lanes: lanes, p_mode: mode }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not generate', 'error'); return; } toast((r.data || 0) + ' heats created', 'success'); renderTab();
+  }
+  async function heatMove(heat, entrant, lane) { await sb().rpc('comp_heat_lane_move', { p_heat: heat, p_lane: +lane, p_entrant: entrant }); renderTab(); }
+  async function heatSet(heat) {
+    var row = document.querySelector('.cx-heath[data-h="' + heat + '"]'); if (!row) return;
+    var tv = (row.querySelector('input[type=time]') || {}).value, jid = (row.querySelector('.cx-hjudge') || {}).value || null;
+    var base = (S.detail.event && S.detail.event.starts_at) || new Date().toISOString().slice(0, 10);
+    var when = tv ? new Date(base + 'T' + tv + ':00').toISOString() : null;
+    await sb().rpc('comp_heat_set', { p_heat: heat, p_start: when, p_judge: jid }); toast('Saved', 'success');
+  }
+
+  // ---------- JUDGES ----------
+  async function renderJudges(c) {
+    c.innerHTML = '<div class="cx-sub" style="margin-bottom:12px">Judges enter scores from their own login. Add by their FFP account email.</div>'
+      + '<div class="cx-toolbar"><input class="cx-in" id="cx-jemail" placeholder="Judge\'s FFP email" style="flex:1;min-width:180px"><button class="cx-btn pri sm" onclick="FFPComp.addJudge()"><span class="ms">add</span> Add judge</button></div><div id="cx-judges"><div class="cx-empty">Loading…</div></div>';
+    var r; try { r = await sb().rpc('comp_judges_list', { p_event: S.eventId }); } catch (e) { r = { error: e }; }
+    var rows = (r && r.data) || []; var host = document.getElementById('cx-judges');
+    host.innerHTML = rows.length ? rows.map(function (j) {
+      return '<div class="cx-row"><span class="cx-av" style="' + (j.photo ? 'background-image:url(\'' + esc(j.photo) + '\')' : '') + '">' + (j.photo ? '' : esc((j.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(j.name) + '</b><span>' + esc(j.email || '') + ' · can score</span></div><span class="ms" style="color:#9aa8b4;cursor:pointer" onclick="FFPComp.removeJudge(\'' + j.member_id + '\')">close</span></div>';
+    }).join('') : '<div class="cx-empty">No judges yet.</div>';
+  }
+  async function addJudge() {
+    var em = (document.getElementById('cx-jemail') || {}).value; if (!em) return;
+    var r; try { r = await sb().rpc('comp_judge_add', { p_event: S.eventId, p_email: em, p_name: null }); } catch (e) { r = { error: e }; }
+    if (r.error || (r.data && r.data.error)) { toast('No FFP account with that email', 'error'); return; } toast('Judge added', 'success'); renderTab();
+  }
+  async function removeJudge(mid) { await sb().rpc('comp_judge_remove', { p_event: S.eventId, p_member: mid }); renderTab(); }
+
   // actions
   function setDiv(v) { S.divId = v; S.wodId = null; renderTab(); }
   function setWod(v) { S.wodId = v; renderTab(); }
@@ -518,6 +590,7 @@
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision,
     editWorkout: editWorkout, saveWorkout: saveWorkout, typeHint: typeHint,
     addAthlete: addAthlete, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
+    hmode: hmode, genHeats: genHeats, heatMove: heatMove, heatSet: heatSet, addJudge: addJudge, removeJudge: removeJudge,
     publish: publish, finalise: finalise, closeModal: closeModal };
   window.ffpRenderCompetitions = renderList;
 })();
