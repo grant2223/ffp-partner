@@ -20,9 +20,9 @@
         category: pp.category || '', is_brand: (pp.is_brand != null ? pp.is_brand : (prov().is_brand || false)),
         approved_by: pp.approved_by
       };
-      return _info;
+      await _resolveBrandLocation(); return _info;
     }
-    if (_info && _info.business_name) return _info;   // never cache an empty/failed read
+    if (_info && _info.business_name) { await _resolveBrandLocation(); return _info; }
     var pid = prov().id; if (!pid || !sb()) return _info || {};
     try {
       var r = await sb().from('providers').select('business_name, city, logo_url, is_brand, category').eq('id', pid).maybeSingle();
@@ -33,7 +33,14 @@
         _info = null;   // read gave nothing — don't cache, retry next time
       }
     } catch (e) { _info = null; }
+    await _resolveBrandLocation();
     return _info || {};
+  }
+  // A brand offer is redeemed at a stockist, so a brand needs >=1 stockist location before it can offer.
+  async function _resolveBrandLocation() {
+    if (!_info || !_info.is_brand) return;
+    var pid = prov().id; if (!pid || !sb()) return;
+    try { var r = await sb().rpc('brand_has_location', { p_provider: pid }); _info.has_location = !!(r && r.data); } catch (e) {}
   }
   // Grant's model: a REGISTERED provider must COMPLETE their profile before loading offers, and every
   // offer is VERIFIED (admin-reviewed) before it goes live. Profile-complete = the fields an offer shows.
@@ -42,7 +49,7 @@
     var i = _info || {}, miss = [];
     if (!i.business_name) miss.push('business name');
     if (!i.logo_url) miss.push('logo');
-    if (i.is_brand) { if (!i.category) miss.push('product type'); }
+    if (i.is_brand) { if (!i.category) miss.push('product type'); if (!i.has_location) miss.push('a stockist location'); }
     else if (!i.city) miss.push('city');
     return miss;
   }
