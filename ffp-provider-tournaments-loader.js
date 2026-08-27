@@ -48,7 +48,11 @@
       '.tg-brk{overflow-x:auto;padding:6px 2px 16px;} .tg-brkin{display:flex;gap:16px;min-width:max-content;}',
       '.tg-rnd{display:flex;flex-direction:column;justify-content:space-around;gap:14px;min-width:200px;} .tg-rnd .rh{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:#9aa8b4;text-align:center;margin-bottom:2px;}',
       '.tg-m{background:#fff;border:1px solid #d7dee5;border-radius:11px;overflow:hidden;} .tg-m .s{display:flex;align-items:center;gap:7px;padding:7px 9px;} .tg-m .s+.s{border-top:1px solid #eef1f6;} .tg-m .s b{flex:1;font-size:12.5px;font-weight:700;color:#12232f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .tg-m .s input{width:40px;padding:5px;border:1.5px solid #d7dee5;border-radius:7px;font:inherit;font-weight:800;text-align:center;} .tg-m .s.win b{color:#0a8f5f;} .tg-m .s.tbd b{color:#9aa8b4;font-weight:600;}',
-      '.tg-grph{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:#12232f;margin:16px 0 4px;}'
+      '.tg-grph{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:#12232f;margin:16px 0 4px;}',
+      '.tg-fmts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;} .tg-fmt{border:1.5px solid var(--ffp-border);border-radius:14px;padding:16px 12px;cursor:pointer;text-align:center;} .tg-fmt.on{border-color:var(--ffp-blue);box-shadow:0 0 0 3px rgba(25,128,173,.12);} .tg-fmt .dia{height:74px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;} .tg-fmt b{display:block;font-size:13.5px;font-weight:900;} .tg-fmt span{display:block;font-size:11.5px;color:var(--ffp-text-muted);font-weight:600;margin-top:3px;line-height:1.4;} .tgd rect{fill:none;stroke:#c3ced6;stroke-width:2.4;} .tgd line{stroke:#c3ced6;stroke-width:2.4;} .tg-fmt.on .tgd rect,.tg-fmt.on .tgd line{stroke:var(--ffp-blue);}',
+      '.tg-fmtset{margin-top:18px;border-top:1px solid var(--ffp-border);padding-top:16px;}',
+      '.lg-fldbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .lg-fldchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--ffp-border-mid);border-radius:12px;padding:7px 11px;font-size:12.5px;font-weight:800;} .lg-fldchip .t{color:var(--ffp-text-muted);font-weight:700;} .lg-fldchip .x{color:#9aa8b4;font-size:16px;cursor:pointer;} .lg-fldchip.add{border-style:dashed;gap:4px;}',
+      '.lg-srow{display:grid;grid-template-columns:1fr 108px 128px 148px;gap:10px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .lg-srow .mt{font-size:13.5px;font-weight:800;color:var(--ffp-text);min-width:0;} .lg-srow .mt span{display:block;font-size:11px;color:var(--ffp-text-muted);font-weight:600;} .lg-srow .lg-in,.lg-srow .lg-sel{padding:8px 9px;font-size:12.5px;width:100%;}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -97,7 +101,7 @@
     var ev = S.detail.event || {};
     el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(' · ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPTourn.back()">' + ic('arrow_back') + 'All tournaments</button></div>'
-      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Categories') + tabBtn('entrants', 'Entrants') + (ev.group_stage ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Bracket & results') + '</div><div id="tg-tab"></div></div>';
+      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Categories') + tabBtn('entrants', 'Entrants') + tabBtn('structure', 'Structure') + (ev.group_stage ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Bracket & results') + tabBtn('officials', 'Officials') + tabBtn('schedule', 'Schedule') + '</div><div id="tg-tab"></div></div>';
     renderTab();
   }
   function tabBtn(id, label) { return '<button class="' + (S.tab === id ? 'on' : '') + '" onclick="FFPTourn.tab(\'' + id + '\')">' + label + '</button>'; }
@@ -106,8 +110,117 @@
     if (S.tab === 'details') return renderDetails(host);
     if (S.tab === 'divisions') return renderDivisions(host);
     if (S.tab === 'entrants') return renderEntrants(host);
+    if (S.tab === 'structure') return renderStructure(host);
     if (S.tab === 'groups') return renderGroups(host);
     if (S.tab === 'bracket') return renderBracket(host);
+    if (S.tab === 'officials') return renderOfficials(host);
+    if (S.tab === 'schedule') return renderSchedule(host);
+  }
+
+  // ---------- STRUCTURE (visual format picker) ----------
+  function renderStructure(host) {
+    var ev = S.detail.event || {};
+    var fmt = S.fmt || (ev.group_stage ? 'gk' : 'ko');
+    S.fmt = fmt;
+    var card = function (key, title, sub, svg) {
+      return '<div class="tg-fmt' + (fmt === key ? ' on' : '') + '" onclick="FFPTourn.setFmt(\'' + key + '\')"><div class="dia">' + svg + '</div><b>' + title + '</b><span>' + sub + '</span></div>';
+    };
+    var grpSvg = '<svg width="56" height="60" viewBox="0 0 56 60" class="tgd"><rect x="2" y="4" width="52" height="12" rx="2"/><rect x="2" y="18" width="52" height="12" rx="2"/><rect x="2" y="32" width="52" height="12" rx="2"/><rect x="2" y="46" width="52" height="12" rx="2"/></svg>';
+    var gkSvg = '<svg width="86" height="74" viewBox="0 0 86 74" class="tgd"><rect x="2" y="4" width="34" height="10"/><rect x="2" y="17" width="34" height="10"/><rect x="2" y="30" width="34" height="10"/><rect x="52" y="10" width="32" height="10"/><line x1="36" y1="9" x2="52" y2="15"/><line x1="36" y1="35" x2="52" y2="15"/><rect x="16" y="52" width="24" height="9"/><rect x="16" y="63" width="24" height="9"/><rect x="48" y="57" width="24" height="9"/><line x1="40" y1="56" x2="48" y2="61"/><line x1="40" y1="67" x2="48" y2="61"/></svg>';
+    var koSvg = '<svg width="80" height="66" viewBox="0 0 80 66" class="tgd"><rect x="2" y="8" width="26" height="10"/><rect x="2" y="22" width="26" height="10"/><rect x="2" y="40" width="26" height="10"/><rect x="2" y="54" width="26" height="10"/><rect x="40" y="14" width="26" height="10"/><rect x="40" y="46" width="26" height="10"/><line x1="28" y1="13" x2="40" y2="19"/><line x1="28" y1="27" x2="40" y2="19"/><line x1="28" y1="45" x2="40" y2="51"/><line x1="28" y1="59" x2="40" y2="51"/></svg>';
+    host.innerHTML =
+      '<div class="lg-tool" style="margin-bottom:14px">' + (S.detail.divisions.length ? '<select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'structure\')">' + divOpts() + '</select>' : '<span class="lg-empty" style="padding:0">Add a category first.</span>') + '</div>'
+      + '<div class="tg-fmts">' + card('grp', 'Group only', 'Round-robin, final table', grpSvg) + card('gk', 'Groups → Knockout', 'Top N advance to a bracket', gkSvg) + card('ko', 'Knockout only', 'Straight single elimination', koSvg) + '</div>'
+      + '<div class="tg-fmtset">'
+      + (fmt !== 'ko' ? '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Groups</div><input class="lg-in" id="tg-ng2" type="number" value="' + (ev.groups_advance ? 4 : 4) + '"></div><div class="lg-fld"><div class="lg-lab">Advance per group</div><input class="lg-in" id="tg-adv2" type="number" value="' + (ev.groups_advance || 2) + '"></div></div>' : '')
+      + '<div class="lg-fld" style="margin-top:6px"><div class="lg-lab">3rd-place play-off</div><div class="lg-seg" id="tg-third2"><button data-v="true" class="' + (ev.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third2\')">Yes</button><button data-v="false" class="' + (!ev.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third2\')">No</button></div></div>'
+      + '<button class="lg-btn pri" style="margin-top:14px" onclick="FFPTourn.buildStructure()">' + ic('bolt') + 'Build structure</button>'
+      + '<div class="lg-empty" style="text-align:left;padding:10px 0 0">' + (fmt === 'grp' ? 'Draws round-robin groups, ranked into a final table.' : fmt === 'ko' ? 'Draws a single-elimination bracket from your seeds.' : 'Draws groups, then the top entrants seed into a knockout bracket.') + '</div></div>';
+  }
+  function setFmt(k) { S.fmt = k; renderTab(); }
+  async function buildStructure() {
+    if (!S.divId) { toast('Pick a category', 'error'); return; }
+    var fmt = S.fmt || 'ko'; var third = segVal('tg-third2') === 'true';
+    await sb().rpc('tourn_event_save', { p_id: S.eventId, p: { group_stage: (fmt !== 'ko'), groups_advance: +((document.getElementById('tg-adv2') || {}).value || 2), third_place: third } });
+    if (fmt !== 'ko') {
+      var ng = +((document.getElementById('tg-ng2') || {}).value) || 2;
+      var g; try { g = await sb().rpc('tourn_groups_generate', { p_division: S.divId, p_num_groups: ng }); } catch (e) { g = { error: e }; }
+      if (g.error) { toast('Could not draw groups', 'error'); return; }
+      toast('Groups drawn — enter results, then build the bracket', 'success'); S.tab = 'groups'; open(S.eventId); return;
+    }
+    var r; try { r = await sb().rpc('tourn_bracket_build', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not build bracket', 'error'); return; }
+    toast('Bracket built', 'success'); S.tab = 'bracket'; open(S.eventId);
+  }
+
+  // ---------- OFFICIALS ----------
+  async function renderOfficials(host) {
+    host.innerHTML = '<div class="lg-sub" style="margin-bottom:12px">Officials can enter results from their own login. Add by FFP email to link their account.</div>'
+      + '<div class="lg-edit"><input class="lg-in" id="tg-ofname" placeholder="Name" style="max-width:200px"><input class="lg-in" id="tg-ofemail" placeholder="FFP email (optional)"><button class="lg-btn pri" onclick="FFPTourn.addOfficial()">' + ic('add') + 'Add official</button></div><div id="tg-oflist"><div class="lg-empty">Loading…</div></div>';
+    var r; try { r = await sb().rpc('lt_officials_list', { p_scope: 'tourn', p_event: S.eventId }); } catch (e) { r = { error: e }; }
+    var rows = (r && r.data) || []; var h2 = document.getElementById('tg-oflist');
+    h2.innerHTML = rows.length ? rows.map(function (o) {
+      return '<div class="lg-row"><span class="lg-av" style="' + (o.photo ? 'background-image:url(\'' + esc(o.photo) + '\')' : '') + '">' + (o.photo ? '' : esc((o.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(o.name || o.email || 'Official') + '</b><span>' + (o.member_id ? 'FFP account linked · can score' : (o.email ? esc(o.email) + ' · not linked' : 'Manual')) + '</span></div><span class="ms act" onclick="FFPTourn.removeOfficial(\'' + o.id + '\')">close</span></div>';
+    }).join('') : '<div class="lg-empty">No officials yet.</div>';
+  }
+  async function addOfficial() {
+    var nm = (document.getElementById('tg-ofname') || {}).value, em = (document.getElementById('tg-ofemail') || {}).value;
+    if (!nm && !em) return;
+    var r; try { r = await sb().rpc('lt_official_add', { p_scope: 'tourn', p_event: S.eventId, p_member: null, p_name: nm, p_email: em }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not add', 'error'); return; } toast('Added', 'success'); renderTab();
+  }
+  async function removeOfficial(id) { await sb().rpc('lt_official_remove', { p_id: id }); renderTab(); }
+
+  // ---------- SCHEDULE ----------
+  async function renderSchedule(host) {
+    var divs = S.detail.divisions || [];
+    if (!S.divId && divs.length) S.divId = divs[0].id;
+    var fr; try { fr = await sb().rpc('lt_fields_list', { p_scope: 'tourn', p_event: S.eventId }); } catch (e) { fr = { error: e }; }
+    var fields = (fr && fr.data) || [];
+    var chips = fields.map(function (f) { return '<span class="lg-fldchip"><span class="ms" style="font-size:15px;color:var(--ffp-blue)">stadium</span>' + esc(f.name) + ' <span class="t">· from ' + esc(f.start_time) + '</span><span class="ms x" onclick="FFPTourn.removeField(\'' + f.id + '\')">close</span></span>'; }).join('');
+    host.innerHTML =
+      '<div class="lg-fldbar">' + chips
+      + '<span class="lg-fldchip add"><input class="lg-in" id="tg-fldname" placeholder="Field / court" style="width:130px;border:none;padding:4px"><input class="lg-in" id="tg-fldtime" type="time" value="08:00" style="width:96px;border:none;padding:4px"><button class="lg-btn sm pri" onclick="FFPTourn.addField()">Add</button></span></div>'
+      + '<div class="lg-tool" style="margin-top:12px">' + (divs.length > 1 ? '<select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'schedule\')">' + divOpts() + '</select>' : '')
+      + '<span class="lg-lab" style="margin:0">Match length</span><input class="lg-in" id="tg-mlen" type="number" value="30" style="width:64px"><span style="font-size:12px;color:var(--ffp-text-muted)">min</span>'
+      + '<span class="sp"></span><button class="lg-btn pri" onclick="FFPTourn.autoplan()">' + ic('auto_awesome') + 'Auto-plan</button></div><div id="tg-schedlist"><div class="lg-empty">Loading…</div></div>';
+    if (!fields.length) { document.getElementById('tg-schedlist').innerHTML = '<div class="lg-empty">Add a field/court above, then Auto-plan.</div>'; return; }
+    if (!S.divId) { document.getElementById('tg-schedlist').innerHTML = '<div class="lg-empty">Add a category first.</div>'; return; }
+    var names = await entrantNames(S.divId);
+    var mr; try { mr = await sb().from('tourn_matches').select('id,stage,round,slot,home_entrant,away_entrant,scheduled_at,court,official_id').eq('division_id', S.divId).order('round').order('slot'); } catch (e) { mr = { error: e }; }
+    var ms = (mr && mr.data) || []; var offr = await sb().rpc('lt_officials_list', { p_scope: 'tourn', p_event: S.eventId }); var offs = (offr && offr.data) || [];
+    var host2 = document.getElementById('tg-schedlist');
+    if (!ms.length) { host2.innerHTML = '<div class="lg-empty">No matches yet — draw groups or build the bracket first.</div>'; return; }
+    host2.innerHTML = ms.map(function (m) {
+      var t = m.scheduled_at ? new Date(m.scheduled_at) : null;
+      var tv = t ? (('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2)) : '';
+      var fldOpts = '<option value="">Court…</option>' + fields.map(function (x) { return '<option value="' + x.id + '"' + (m.court === x.name ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('');
+      var ofOpts = '<option value="">Official…</option>' + offs.map(function (x) { return '<option value="' + x.id + '"' + (m.official_id === x.id ? ' selected' : '') + '>' + esc(x.name || x.email) + '</option>'; }).join('');
+      var lbl = m.stage === 'group' ? ('Group ' + (m.group_label || '')) : (STAGE[m.stage] || m.stage);
+      return '<div class="lg-srow" data-id="' + m.id + '"><div class="mt">' + esc(names[m.home_entrant] || 'TBD') + ' v ' + esc(names[m.away_entrant] || 'TBD') + '<span>' + esc(lbl) + '</span></div>'
+        + '<input class="lg-in st-t" type="time" value="' + tv + '" onchange="FFPTourn.schedSet(\'' + m.id + '\')"><select class="lg-sel st-f" onchange="FFPTourn.schedSet(\'' + m.id + '\')">' + fldOpts + '</select><select class="lg-sel st-o" onchange="FFPTourn.schedSet(\'' + m.id + '\')">' + ofOpts + '</select></div>';
+    }).join('');
+  }
+  async function addField() {
+    var nm = (document.getElementById('tg-fldname') || {}).value, tm = (document.getElementById('tg-fldtime') || {}).value || '08:00';
+    if (!nm || !nm.trim()) return;
+    await sb().rpc('lt_field_save', { p_scope: 'tourn', p_event: S.eventId, p_id: null, p_name: nm.trim(), p_start: tm }); renderTab();
+  }
+  async function removeField(id) { await sb().rpc('lt_field_remove', { p_id: id }); renderTab(); }
+  async function autoplan() {
+    if (!S.divId) { toast('Pick a category', 'error'); return; }
+    var len = +((document.getElementById('tg-mlen') || {}).value) || 30;
+    var r; try { r = await sb().rpc('lt_autoplan', { p_scope: 'tourn', p_division: S.divId, p_match_len: len }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a field first' : 'Could not plan', 'error'); return; }
+    toast((r.data || 0) + ' matches planned', 'success'); renderTab();
+  }
+  async function schedSet(id) {
+    var row = document.querySelector('.lg-srow[data-id="' + id + '"]'); if (!row) return;
+    var tv = row.querySelector('.st-t').value, fid = row.querySelector('.st-f').value || null, oid = row.querySelector('.st-o').value || null;
+    var when = null;
+    if (tv) { var base = (S.detail.event && S.detail.event.starts_at) || new Date().toISOString().slice(0, 10); when = new Date(base + 'T' + tv + ':00').toISOString(); }
+    await sb().rpc('lt_match_schedule', { p_scope: 'tourn', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: oid });
+    toast('Saved', 'success');
   }
 
   async function renderDetails(host) {
@@ -275,7 +388,9 @@
     saveDetails: saveDetails, sportHint: sportHint, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     startGroups: startGroups, cancelGroups: cancelGroups, doGroups: doGroups, saveGroupResults: saveGroupResults,
-    confirmBracket: confirmBracket, cancelBracket: cancelBracket, doBracket: doBracket, saveBracketResults: saveBracketResults
+    confirmBracket: confirmBracket, cancelBracket: cancelBracket, doBracket: doBracket, saveBracketResults: saveBracketResults,
+    setFmt: setFmt, buildStructure: buildStructure, addOfficial: addOfficial, removeOfficial: removeOfficial,
+    addField: addField, removeField: removeField, autoplan: autoplan, schedSet: schedSet
   };
   window.ffpRenderTournaments = function () { S.view = 'list'; S.creating = false; renderList(); };
 })();
