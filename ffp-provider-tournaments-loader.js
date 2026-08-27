@@ -45,11 +45,14 @@
     if (document.getElementById('tgx-css')) return;
     var css = document.createElement('style'); css.id = 'tgx-css';
     css.textContent = [
-      '.tg-brk{overflow-x:auto;padding:6px 2px 16px;} .tg-brkin{display:flex;gap:16px;min-width:max-content;}',
+      '.tg-brk{overflow-x:auto;padding:6px 2px 16px;} .tg-brkin{display:flex;gap:16px;min-width:max-content;} .tg-thirdwrap{margin-top:16px;border-top:1px solid var(--ffp-border);padding-top:16px;}',
       '.tg-rnd{display:flex;flex-direction:column;justify-content:space-around;gap:14px;min-width:200px;} .tg-rnd .rh{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:#9aa8b4;text-align:center;margin-bottom:2px;}',
       '.tg-m{background:#fff;border:1px solid #d7dee5;border-radius:11px;overflow:hidden;} .tg-m .s{display:flex;align-items:center;gap:7px;padding:7px 9px;} .tg-m .s+.s{border-top:1px solid #eef1f6;} .tg-m .s b{flex:1;font-size:12.5px;font-weight:700;color:#12232f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .tg-m .s input{width:40px;padding:5px;border:1.5px solid #d7dee5;border-radius:7px;font:inherit;font-weight:800;text-align:center;} .tg-m .s.win b{color:#0a8f5f;} .tg-m .s.tbd b{color:#9aa8b4;font-weight:600;}',
       '.tg-grph{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:#12232f;margin:16px 0 4px;}',
-      '.tg-group{border-bottom:1px solid var(--ffp-border);padding-bottom:10px;margin-bottom:6px;} .tg-gteams{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px;} .tg-gteam{display:inline-flex;align-items:center;gap:7px;background:#f4f7f9;border:1px solid var(--ffp-border);border-radius:20px;padding:5px 12px 5px 6px;font-size:13px;font-weight:700;} .tg-gteam .lg-crest{width:22px;height:22px;border-radius:6px;font-size:9px;}',
+      '.tg-group{border-bottom:1px solid var(--ffp-border);padding-bottom:14px;margin-bottom:8px;} .tg-gteams{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px;} .tg-gteam{display:inline-flex;align-items:center;gap:7px;background:#f4f7f9;border:1px solid var(--ffp-border);border-radius:20px;padding:5px 12px 5px 6px;font-size:13px;font-weight:700;} .tg-gteam .lg-crest{width:22px;height:22px;border-radius:6px;font-size:9px;}',
+      '.tg-phase{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#9aa8b4;padding:0 6px;} .tg-navsep{display:inline-block;width:1px;height:20px;background:var(--ffp-border);margin:0 4px;vertical-align:middle;}',
+      '.tg-tbl{width:100%;border-collapse:collapse;margin-bottom:12px;} .tg-tbl th{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#9aa8b4;text-align:center;padding:6px 4px;border-bottom:1px solid var(--ffp-border);} .tg-tbl th.nm{text-align:left} .tg-tbl td{font-size:13px;padding:9px 4px;text-align:center;border-bottom:1px solid #f0f3f6;} .tg-tbl td.nm{text-align:left;font-weight:700} .tg-tbl td.nm .in{display:flex;align-items:center;gap:9px} .tg-tbl td.pts{font-weight:900;color:var(--ffp-blue)} .tg-tbl tr.adv td{background:#eafaf3} .tg-tbl .rk{color:#9aa8b4;font-weight:800;width:24px} .tg-tbl .lg-crest{width:22px;height:22px;border-radius:6px;font-size:9px;}',
+      '.tg-rlbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#b7c2cc;margin:9px 0 1px;} .tg-gfx{display:grid;grid-template-columns:1fr 116px 1fr auto;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid #f0f3f6;} .tg-gfx .t{font-size:13.5px;font-weight:700} .tg-gfx .t.a{text-align:right} .tg-gfx .sc{display:flex;gap:6px;justify-content:center} .tg-gfx .sc input{width:42px;height:34px;text-align:center;border:1.5px solid #d7dee5;border-radius:8px;font:inherit;font-weight:800;} .fxlab{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#9aa8b4;margin:10px 0 2px;}',
       '.tg-fmts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;} .tg-fmt{border:1.5px solid var(--ffp-border);border-radius:14px;padding:16px 12px;cursor:pointer;text-align:center;} .tg-fmt.on{border-color:var(--ffp-blue);box-shadow:0 0 0 3px rgba(25,128,173,.12);} .tg-fmt .dia{height:74px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;} .tg-fmt b{display:block;font-size:13.5px;font-weight:900;} .tg-fmt span{display:block;font-size:11.5px;color:var(--ffp-text-muted);font-weight:600;margin-top:3px;line-height:1.4;} .tgd rect{fill:none;stroke:#c3ced6;stroke-width:2.4;} .tgd line{stroke:#c3ced6;stroke-width:2.4;} .tg-fmt.on .tgd rect,.tg-fmt.on .tgd line{stroke:var(--ffp-blue);}',
       '.tg-fmtset{margin-top:18px;border-top:1px solid var(--ffp-border);padding-top:16px;}',
       '.lg-fldbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .lg-fldchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--ffp-border-mid);border-radius:12px;padding:7px 11px;font-size:12.5px;font-weight:800;} .lg-fldchip .t{color:var(--ffp-text-muted);font-weight:700;} .lg-fldchip .x{color:#9aa8b4;font-size:16px;cursor:pointer;} .lg-fldchip.add{border-style:dashed;gap:4px;}',
@@ -77,7 +80,7 @@
   }
   function injectCss() { injectBaseCss(); injectExtraCss(); }
 
-  async function loadSports() { if (S.sports) return S.sports; var r = await sb().from('lt_sport_schemas').select('key,name,icon,match_activities,player_fields,team_match_fields').eq('active', true).order('sort'); S.sports = r.data || []; return S.sports; }
+  async function loadSports() { if (S.sports) return S.sports; var r = await sb().from('lt_sport_schemas').select('key,name,icon,match_activities,player_fields,team_match_fields,scoring_kinds').eq('active', true).order('sort'); S.sports = r.data || []; return S.sports; }
   async function taxReady() { try { if (window.FFP_TAX_READY) await window.FFP_TAX_READY; } catch (e) {} return window.FFP_TAX || {}; }
   function actNames() { return ((window.FFP_TAX && window.FFP_TAX.activities) || []).map(function (a) { return a && a.n ? a.n : a; }); }
   function genderNames() { return ((window.FFP_TAX && window.FFP_TAX.genders) || ['Male', 'Female']).filter(function (g) { return g !== 'Prefer not to say'; }); }
@@ -120,7 +123,8 @@
     var ev = S.detail.event || {};
     el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(' · ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPTourn.back()">' + ic('arrow_back') + 'All tournaments</button></div>'
-      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('structure', 'Structure') + (ev.group_stage ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Bracket & results') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('schedule', 'Schedule') + '</div><div id="tg-tab"></div></div>';
+      + '<div class="lg-nav"><span class="tg-phase">Set up</span>' + tabBtn('details', 'Details') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials')
+      + '<span class="tg-navsep"></span><span class="tg-phase">Run</span>' + (ev.group_stage ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Knockout') + tabBtn('schedule', 'Schedule') + '</div><div id="tg-tab"></div></div>';
     renderTab();
   }
   function tabBtn(id, label) { return '<button class="' + (S.tab === id ? 'on' : '') + '" onclick="FFPTourn.tab(\'' + id + '\')">' + label + '</button>'; }
@@ -129,7 +133,6 @@
     if (S.tab === 'details') return renderDetails(host);
     if (S.tab === 'divisions') return renderDivisions(host);
     if (S.tab === 'entrants') return renderEntrants(host);
-    if (S.tab === 'structure') return renderStructure(host);
     if (S.tab === 'groups') return renderGroups(host);
     if (S.tab === 'bracket') return renderBracket(host);
     if (S.tab === 'venues') return renderVenues(host);
@@ -304,18 +307,17 @@
       var offName = {}; offs.forEach(function (o) { offName[o.id] = o.name || o.email; });
       (mo.data || []).forEach(function (x) { (moMap[x.match_id] = moMap[x.match_id] || []).push({ id: x.id, role: x.role, name: offName[x.official_id] || 'Official' }); });
     } catch (e) {}
-    // group by stage/round label
-    var buckets = {}; var order = [];
-    ms.forEach(function (m) {
-      var key = m.stage === 'group' ? ('Group ' + (m.group_label || '')) : (STAGE[m.stage] || m.stage || 'Matches');
-      if (!buckets[key]) { buckets[key] = []; order.push(key); }
-      m._names = names; m._offs = moMap[m.id] || [];
-      buckets[key].push(m);
-    });
-    host2.innerHTML = order.map(function (lbl) {
-      var list = buckets[lbl];
-      return roundHead(lbl, list.length, roundRange(list)) + '<div class="lg-rbody">' + list.map(schedRow).join('') + '</div>';
-    }).join('');
+    // two stages: all Group matches, then Knockout
+    ms.forEach(function (m) { m._names = names; m._offs = moMap[m.id] || []; });
+    var grp = ms.filter(function (m) { return m.stage === 'group'; });
+    var ko = ms.filter(function (m) { return m.stage !== 'group'; });
+    grp.sort(function (a, b) { return (a.group_label || '').localeCompare(b.group_label || '') || (a.round || 0) - (b.round || 0) || (a.slot || 0) - (b.slot || 0); });
+    var koRank = { r64: 1, r32: 2, r16: 3, quarter: 4, semi: 5, third: 6, final: 7 };
+    ko.sort(function (a, b) { return (koRank[a.stage] || 9) - (koRank[b.stage] || 9) || (a.slot || 0) - (b.slot || 0); });
+    var html = '';
+    if (grp.length) html += roundHead('Group stage', grp.length, roundRange(grp)) + '<div class="lg-rbody">' + grp.map(schedRow).join('') + '</div>';
+    if (ko.length) html += roundHead('Knockout', ko.length, roundRange(ko)) + '<div class="lg-rbody">' + ko.map(schedRow).join('') + '</div>';
+    host2.innerHTML = html || '<div class="lg-empty">No matches yet — draw groups or build the bracket.</div>';
   }
   function schedRow(m) {
     var names = m._names || {};
@@ -474,19 +476,26 @@
       + '<div id="tg-glist"><div class="lg-empty">Loading…</div></div>';
     var host2 = document.getElementById('tg-glist');
     if (eligible.length < 2) { host2.innerHTML = '<div class="lg-empty">Add at least 2 entrants (Entrants tab) before drawing groups.</div>'; return; }
-    var mr; try { mr = await sb().from('tourn_matches').select('*').eq('division_id', S.divId).eq('stage', 'group').order('group_label').order('slot'); } catch (e) { mr = { error: e }; }
+    var mr; try { mr = await sb().from('tourn_matches').select('*').eq('division_id', S.divId).eq('stage', 'group').order('group_label').order('round').order('slot'); } catch (e) { mr = { error: e }; }
     var ms = (mr && mr.data) || []; var names = {}; roster.forEach(function (r) { names[r.id] = r.name; });
-    var groups = {}; var order = [];
-    eligible.forEach(function (r) { if (r.group_label) { if (!groups[r.group_label]) { groups[r.group_label] = []; order.push(r.group_label); } groups[r.group_label].push(r); } });
-    order.sort();
-    if (!order.length) { host2.innerHTML = '<div class="lg-empty"><span class="ms" style="font-size:34px;color:#c0cad2;display:block;margin-bottom:6px">groups</span><b>No groups drawn yet</b><div style="margin-top:4px">Set the number of groups above and tap <b>Draw groups</b> — your ' + eligible.length + ' entrants are split evenly with round-robin fixtures in each group.</div></div>'; return; }
+    var gt; try { gt = await sb().rpc('tourn_group_tables', { p_division: S.divId }); } catch (e) { gt = null; }
+    var tables = (gt && gt.data && gt.data.groups) || [];
+    if (!tables.length) { host2.innerHTML = '<div class="lg-empty"><span class="ms" style="font-size:34px;color:#c0cad2;display:block;margin-bottom:6px">groups</span><b>No groups drawn yet</b><div style="margin-top:4px">Set the number of groups above and tap <b>Draw groups</b> — your ' + eligible.length + ' entrants are split evenly with round-robin fixtures in each group.</div></div>'; return; }
     var byMatch = {}; ms.forEach(function (m) { (byMatch[m.group_label] = byMatch[m.group_label] || []).push(m); });
-    host2.innerHTML = order.map(function (g) {
-      var teams = groups[g].map(function (t) { return '<span class="tg-gteam">' + crest(t) + esc(t.name) + '</span>'; }).join('');
-      var fx = (byMatch[g] || []).map(function (m) {
-        return '<div class="lg-fx" data-id="' + m.id + '"><div class="t a">' + esc(names[m.home_entrant] || 'TBD') + '</div><div class="sc"><input type="number" class="tg-hs" value="' + (m.home_score != null ? m.home_score : '') + '" placeholder="–"><input type="number" class="tg-as" value="' + (m.away_score != null ? m.away_score : '') + '" placeholder="–"></div><div class="t">' + esc(names[m.away_entrant] || 'TBD') + '</div></div>';
-      }).join('') || '<div class="lg-sub" style="padding:8px 2px">Single entrant — no fixtures.</div>';
-      return '<div class="tg-group"><div class="tg-grph">Group ' + esc(g) + ' · ' + groups[g].length + ' team' + (groups[g].length === 1 ? '' : 's') + '</div><div class="tg-gteams">' + teams + '</div>' + fx + '</div>';
+    host2.innerHTML = tables.map(function (g) {
+      var tbl = '<table class="tg-tbl"><tr><th class="rk"></th><th class="nm">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>+/-</th><th>Pts</th></tr>'
+        + (g.rows || []).map(function (r) {
+          return '<tr class="' + (r.advances ? 'adv' : '') + '"><td class="rk">' + r.rank + '</td><td class="nm"><span class="in">' + crest(r) + esc(r.name) + '</span></td><td>' + r.p + '</td><td>' + r.w + '</td><td>' + r.d + '</td><td>' + r.l + '</td><td>' + (r.gd > 0 ? '+' + r.gd : r.gd) + '</td><td class="pts">' + r.pts + '</td></tr>';
+        }).join('') + '</table>';
+      var rounds = {}; var rord = [];
+      (byMatch[g.label] || []).forEach(function (m) { var rd = m.round || 1; if (!rounds[rd]) { rounds[rd] = []; rord.push(rd); } rounds[rd].push(m); });
+      rord.sort(function (a, b) { return a - b; });
+      var fx = rord.length ? rord.map(function (rd) {
+        return '<div class="tg-rlbl">Round ' + rd + '</div>' + rounds[rd].map(function (m) {
+          return '<div class="tg-gfx" data-id="' + m.id + '"><span class="t a">' + esc(names[m.home_entrant] || 'TBD') + '</span><span class="sc"><input type="number" class="tg-hs" value="' + (m.home_score != null ? m.home_score : '') + '" placeholder="–"><input type="number" class="tg-as" value="' + (m.away_score != null ? m.away_score : '') + '" placeholder="–"></span><span class="t">' + esc(names[m.away_entrant] || 'TBD') + '</span><button class="lg-btn ghostb sm" onclick="FFPTourn.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + 'Match centre</button></div>';
+        }).join('');
+      }).join('') : '<div class="lg-sub" style="padding:8px 2px">Single entrant — no fixtures.</div>';
+      return '<div class="tg-group"><div class="tg-grph">Group ' + esc(g.label) + ' · ' + (g.rows || []).length + ' team' + ((g.rows || []).length === 1 ? '' : 's') + '</div>' + tbl + '<div class="fxlab">Fixtures &amp; results · in play order</div>' + fx + '</div>';
     }).join('')
       + '<div class="lg-tool" style="margin-top:18px;border-top:1px solid var(--ffp-border);padding-top:14px"><span class="sp"></span><button class="lg-btn pri" onclick="FFPTourn.saveGroupResults()">' + ic('check') + 'Save results</button><button class="lg-btn green" onclick="FFPTourn.doBracket()">' + ic('account_tree') + 'Build knockout from groups</button></div>';
   }
@@ -498,7 +507,7 @@
     toast(n + ' group' + (n === 1 ? '' : 's') + ' drawn · ' + r.data + ' fixtures', 'success'); renderTab();
   }
   async function saveGroupResults() {
-    var rows = Array.prototype.slice.call(document.querySelectorAll('#tg-glist .lg-fx')); var n = 0;
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#tg-glist .tg-gfx')); var n = 0;
     for (var i = 0; i < rows.length; i++) { var el = rows[i]; var h = el.querySelector('.tg-hs').value, a = el.querySelector('.tg-as').value; if (h === '' || a === '') continue; try { await sb().rpc('tourn_result_save', { p_match: el.getAttribute('data-id'), p_home: +h, p_away: +a, p_sets: null, p_status: 'final' }); n++; } catch (e) {} }
     toast(n + ' results saved', 'success'); renderTab();
   }
@@ -527,8 +536,8 @@
       return '<div class="tg-rnd"><div class="rh">' + esc(STAGE[items[0].stage] || items[0].stage) + '</div>' + items.map(mHtml).join('') + '</div>';
     }).join('');
     var third = ms.find(function (m) { return m.stage === 'third'; });
-    var thirdHtml = third ? '<div class="tg-rnd"><div class="rh">3rd place</div>' + mHtml(third) + '</div>' : '';
-    host2.innerHTML = '<div class="tg-brk"><div class="tg-brkin">' + cols + thirdHtml + '</div></div>';
+    host2.innerHTML = '<div class="tg-brk"><div class="tg-brkin">' + cols + '</div></div>'
+      + (third ? '<div class="tg-thirdwrap"><div class="rh" style="text-align:left;margin-bottom:8px">3rd / 4th play-off</div><div style="max-width:230px">' + mHtml(third) + '</div></div>' : '');
   }
   function mHtml(m) {
     var hw = m.winner_entrant && m.home && m.home.id === m.winner_entrant, aw = m.winner_entrant && m.away && m.away.id === m.winner_entrant;
@@ -570,7 +579,8 @@
     S._mc = m;
     var ev = m.events || []; var last = ev.length ? ev[ev.length - 1] : null; var score = last ? last.rs : '0–0';
     var teamOpts = '<option value="' + m.home.id + '">' + esc(m.home.name) + '</option><option value="' + m.away.id + '">' + esc(m.away.name) + '</option>';
-    var kindOpts = Object.keys(KIND_LBL).map(function (k) { return '<option value="' + k + '">' + KIND_LBL[k] + '</option>'; }).join('');
+    var kinds = mcScoringKinds();
+    var kindOpts = kinds.map(function (k) { return '<option value="' + esc(k.key) + '" data-pts="' + (k.points || 0) + '">' + esc(k.label) + '</option>'; }).join('');
     var tab = S.mcTab || 'timeline';
     var liveBtn = m.status === 'final' ? '<span class="lg-mcstat final">Full time</span>'
       : (m.status === 'live' ? '<button class="lg-btn lg-livebtn" onclick="FFPTourn.setLive(\'scheduled\')">● LIVE</button>'
@@ -580,10 +590,11 @@
       + '<div class="lg-mchd"><div class="tm">' + crest(m.home) + '<b>' + esc(m.home.name) + '</b></div><div class="scr">' + esc(score) + '</div><div class="tm a"><b>' + esc(m.away.name) + '</b>' + crest(m.away) + '</div></div>'
       + '<div class="lg-mctabs"><button class="' + (tab === 'timeline' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'timeline\')">Scoring timeline</button><button class="' + (tab === 'stats' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'stats\')">Player stats</button><button class="' + (tab === 'team' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'team\')">Team stats</button></div>'
       + (tab === 'timeline'
-        ? ('<div class="lg-mcadd"><select class="lg-sel" id="mc-team">' + teamOpts + '</select><select class="lg-sel" id="mc-player"></select>'
-          + '<select class="lg-sel" id="mc-kind" onchange="FFPTourn.mcKind()">' + kindOpts + '</select>'
-          + '<input class="lg-in" id="mc-min" type="number" placeholder="Min" style="width:70px"><input class="lg-in" id="mc-pts" type="number" value="5" style="width:64px">'
-          + '<button class="lg-btn pri" onclick="FFPTourn.addEvent()">' + ic('add') + 'Add</button></div><div id="mc-list"></div>')
+        ? ('<div class="lg-mcadd"><input class="lg-in" id="mc-min" type="number" placeholder="Min" style="width:70px">'
+          + '<select class="lg-sel" id="mc-kind">' + kindOpts + '</select>'
+          + '<select class="lg-sel" id="mc-team">' + teamOpts + '</select><select class="lg-sel" id="mc-player"></select>'
+          + '<button class="lg-btn pri" onclick="FFPTourn.addEvent()">' + ic('add') + 'Add</button></div>'
+          + '<div class="lg-sub" style="margin:6px 0 0">Order: time · action · team · player</div><div id="mc-list"></div>')
         : tab === 'stats' ? '<div id="mc-stats"><div class="lg-empty">Loading…</div></div>'
         : '<div id="mc-team"><div class="lg-empty">Loading…</div></div>');
     if (tab === 'timeline') { mcFillPlayers(); document.getElementById('mc-team').addEventListener('change', mcFillPlayers); renderMcList(); }
@@ -624,22 +635,23 @@
     var sq = mcSquadFor(document.getElementById('mc-team').value);
     sel.innerHTML = sq.map(function (p) { return '<option value="' + p.player_id + '">' + esc(p.name) + '</option>'; }).join('') + '<option value="__other">Other (type name)…</option>';
   }
-  function mcKind() { var k = document.getElementById('mc-kind').value; var p = document.getElementById('mc-pts'); if (p) p.value = (KIND_PTS[k] != null ? KIND_PTS[k] : 0); }
+  function mcScoringKinds() { var m = S._mc || {}; var s = (S.sports || []).find(function (x) { return x.key === m.sport_key; }); return (s && s.scoring_kinds) || [{ key: 'point', label: 'Point', points: 1 }]; }
+  function mcKindLabel(k) { var f = mcScoringKinds().find(function (x) { return x.key === k; }); return f ? f.label : (k || '').replace(/_/g, ' '); }
   function renderMcList() {
     var host = document.getElementById('mc-list'); if (!host) return; var m = S._mc || {}; var ev = m.events || [];
-    if (!ev.length) { host.innerHTML = '<div class="lg-empty">No events yet. Add tries, conversions, penalties and cards — the app timeline and player stats update from these.</div>'; return; }
+    if (!ev.length) { host.innerHTML = '<div class="lg-empty">No scores yet — add them above. The app timeline and player stats update from these.</div>'; return; }
     host.innerHTML = ev.map(function (e) {
       var sideName = e.side === 'home' ? m.home.name : m.away.name;
-      return '<div class="lg-mcrow"><span class="mn">' + (e.minute != null ? e.minute + "'" : '') + '</span><span class="kd ' + esc(e.kind) + '">' + (KIND_LBL[e.kind] || e.kind) + '</span><span class="pl">' + esc(e.player) + '</span><span class="tn">' + esc(sideName) + '</span><span class="rs">' + esc(e.rs) + '</span><span class="ms x" onclick="FFPTourn.removeEvent(\'' + e.id + '\')">close</span></div>';
+      return '<div class="lg-mcrow"><span class="mn">' + (e.minute != null ? e.minute + "'" : '') + '</span><span class="kd ' + esc(e.kind) + '">' + esc(mcKindLabel(e.kind)) + '</span><span class="pl">' + esc(e.player) + '</span><span class="tn">' + esc(sideName) + '</span><span class="rs">' + esc(e.rs) + '</span><span class="ms x" onclick="FFPTourn.removeEvent(\'' + e.id + '\')">close</span></div>';
     }).join('');
   }
   async function addEvent() {
     var team = document.getElementById('mc-team').value; var psel = document.getElementById('mc-player'); var pv = psel.value;
     var pid = (pv && pv !== '__other') ? pv : null; var pname = null;
     if (pv === '__other') { pname = prompt('Player name'); if (!pname) return; } else { pname = psel.options[psel.selectedIndex] ? psel.options[psel.selectedIndex].text : null; }
-    var kind = document.getElementById('mc-kind').value;
+    var ksel = document.getElementById('mc-kind'); var kind = ksel.value;
+    var pts = parseInt(ksel.options[ksel.selectedIndex] ? ksel.options[ksel.selectedIndex].getAttribute('data-pts') : '0', 10); if (isNaN(pts)) pts = 0;
     var minute = parseInt((document.getElementById('mc-min') || {}).value, 10); if (isNaN(minute)) minute = null;
-    var pts = parseInt((document.getElementById('mc-pts') || {}).value, 10); if (isNaN(pts)) pts = 0;
     var r; try { r = await sb().rpc('lt_event_add', { p_scope: 'tourn', p_match: S.matchOpen, p_entrant: team, p_player: pid, p_player_name: pname, p_minute: minute, p_kind: kind, p_points: pts }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not add', 'error'); return; }
     var mn = document.getElementById('mc-min'); if (mn) mn.value = ''; renderMatchCentre();
@@ -660,16 +672,27 @@
     S._mcStats = (sr && sr.data) || {};
     var flat = []; [{ t: m.home, list: m.home_squad || [] }, { t: m.away, list: m.away_squad || [] }].forEach(function (g) { g.list.forEach(function (p) { flat.push({ p: p, ent: g.t.id, team: g.t.name }); }); });
     if (!flat.length) { host.innerHTML = '<div class="lg-empty">Add players to the team rosters (Entrants tab) to record detailed stats.</div>'; return; }
-    var fields = mcSchemaFields();
+    var custom = (m.custom_fields || []);
+    var fields = mcSchemaFields().concat(custom);
     var pOpts = flat.map(function (x) { return '<option value="' + x.p.player_id + '">' + esc(x.p.name) + ' · ' + esc(x.team) + '</option>'; }).join('');
     if (!S.mcStatPlayer) S.mcStatPlayer = flat[0].p.player_id;
     var cur = flat.find(function (x) { return x.p.player_id === S.mcStatPlayer; }) || flat[0];
     var saved = S._mcStats[S.mcStatPlayer] || {};
     host.innerHTML = '<div class="lg-sub" style="margin:4px 0 12px">Enter each player’s match stats for <b>' + esc(m.activity || 'this sport') + '</b>. These power the player &amp; team stat pages.</div>'
       + '<div class="lg-mcadd" style="border:none"><select class="lg-sel" id="mc-sp" onchange="FFPTourn.mcPickStatPlayer(this.value)" style="flex:1;min-width:180px">' + pOpts + '</select></div>'
-      + '<div class="lg-mcfields">' + fields.map(function (f) { return '<div class="lg-mcf"><label>' + esc(f.label) + '</label><input class="lg-in mc-f" data-key="' + esc(f.key) + '" type="number" value="' + (saved[f.key] != null ? saved[f.key] : '') + '" placeholder="0"></div>'; }).join('') + '</div>'
-      + '<button class="lg-btn pri" style="margin-top:12px" onclick="FFPTourn.saveStats()">' + ic('check') + 'Save ' + esc(cur.p.name.split(' ')[0]) + '’s stats</button>';
+      + '<div class="lg-mcfields">' + fields.map(function (f) { return '<div class="lg-mcf"><label>' + esc(f.label) + (f.custom ? ' <span class="ms" style="font-size:14px;color:#c0cad2;cursor:pointer;vertical-align:-2px" onclick="FFPTourn.removeCustomStat(\'' + esc(f.key) + '\')">close</span>' : '') + '</label><input class="lg-in mc-f" data-key="' + esc(f.key) + '" type="number" value="' + (saved[f.key] != null ? saved[f.key] : '') + '" placeholder="0"></div>'; }).join('') + '</div>'
+      + '<div style="display:flex;gap:10px;align-items:center;margin-top:14px"><button class="lg-btn pri" onclick="FFPTourn.saveStats()">' + ic('check') + 'Save ' + esc(cur.p.name.split(' ')[0]) + '’s stats</button><button class="lg-btn ghostb" onclick="FFPTourn.addCustomStat()">' + ic('add') + 'Add your own stat</button></div>';
     var sp = document.getElementById('mc-sp'); if (sp) sp.value = S.mcStatPlayer;
+  }
+  async function addCustomStat() {
+    var label = prompt('New stat name (e.g. Turnovers, Kicks, Tackles)'); if (!label || !label.trim()) return;
+    var r; try { r = await sb().rpc('lt_event_custom_stat', { p_scope: 'tourn', p_event: S.eventId, p_label: label.trim() }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not add', 'error'); return; }
+    if (S._mc) S._mc.custom_fields = r.data; toast('Stat added', 'success'); renderMcStats();
+  }
+  async function removeCustomStat(key) {
+    var r; try { r = await sb().rpc('lt_event_custom_stat_remove', { p_scope: 'tourn', p_event: S.eventId, p_key: key }); } catch (e) { r = { error: e }; }
+    if (r && !r.error && S._mc) S._mc.custom_fields = r.data; renderMcStats();
   }
   function mcPickStatPlayer(vv) { S.mcStatPlayer = vv; renderMcStats(); }
   async function saveStats() {
@@ -701,8 +724,9 @@
     addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
     addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface,
     offAdd: offAdd, offRemove: offRemove,
-    openMatch: openMatch, closeMatch: closeMatch, mcKind: mcKind, addEvent: addEvent, removeEvent: removeEvent, saveResultFromEvents: saveResultFromEvents,
-    mcTab: mcTab, mcPickStatPlayer: mcPickStatPlayer, saveStats: saveStats, setLive: setLive, saveTeamStats: saveTeamStats
+    openMatch: openMatch, closeMatch: closeMatch, addEvent: addEvent, removeEvent: removeEvent, saveResultFromEvents: saveResultFromEvents,
+    mcTab: mcTab, mcPickStatPlayer: mcPickStatPlayer, saveStats: saveStats, setLive: setLive, saveTeamStats: saveTeamStats,
+    addCustomStat: addCustomStat, removeCustomStat: removeCustomStat
   };
   window.ffpRenderTournaments = function () { S.view = 'list'; S.creating = false; renderList(); };
 })();
