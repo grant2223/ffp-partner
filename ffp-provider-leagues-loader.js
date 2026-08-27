@@ -37,7 +37,9 @@
       '.lg-edit{display:flex;align-items:center;gap:10px;padding:12px 2px;border-bottom:1px solid var(--ffp-border);flex-wrap:wrap;} .lg-edit .lg-in{width:auto;flex:1;min-width:160px;}',
       '.lg-fx{display:grid;grid-template-columns:1fr 128px 1fr;align-items:center;gap:8px;padding:11px 2px;border-bottom:1px solid var(--ffp-border);} .lg-fx .t{font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .lg-fx .t.a{text-align:right;} .lg-fx .sc{display:flex;gap:6px;justify-content:center;} .lg-fx .sc input{width:46px;padding:8px;border:1.5px solid #d7dee5;border-radius:8px;font:inherit;font-weight:800;text-align:center;}',
       '.lg-rndlab{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:var(--ffp-text-muted);margin:16px 0 4px;}',
-      '.lg-tb{display:grid;grid-template-columns:26px 1fr 30px 30px 30px 44px 40px;align-items:center;gap:6px;padding:10px 6px;border-bottom:1px solid var(--ffp-border);font-size:13px;} .lg-tb span{text-align:center;} .lg-tb .nm{text-align:left;font-weight:800;} .lg-tb.head{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--ffp-text-muted);} .lg-tb .pts{font-weight:900;color:var(--ffp-blue);}'
+      '.lg-tb{display:grid;grid-template-columns:26px 1fr 30px 30px 30px 44px 40px;align-items:center;gap:6px;padding:10px 6px;border-bottom:1px solid var(--ffp-border);font-size:13px;} .lg-tb span{text-align:center;} .lg-tb .nm{text-align:left;font-weight:800;} .lg-tb.head{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--ffp-text-muted);} .lg-tb .pts{font-weight:900;color:var(--ffp-blue);}',
+      '.lg-fldbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .lg-fldchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--ffp-border-mid);border-radius:12px;padding:7px 11px;font-size:12.5px;font-weight:800;} .lg-fldchip .t{color:var(--ffp-text-muted);font-weight:700;} .lg-fldchip .x{color:#9aa8b4;font-size:16px;cursor:pointer;} .lg-fldchip.add{border-style:dashed;gap:4px;}',
+      '.lg-srow{display:grid;grid-template-columns:1fr 108px 128px 148px;gap:10px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .lg-srow .mt{font-size:13.5px;font-weight:800;color:var(--ffp-text);min-width:0;} .lg-srow .mt span{display:block;font-size:11px;color:var(--ffp-text-muted);font-weight:600;} .lg-srow .lg-in,.lg-srow .lg-sel{padding:8px 9px;font-size:12.5px;width:100%;}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -90,7 +92,7 @@
     var ev = S.detail.event || {};
     el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(' · ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPLeague.back()">' + ic('arrow_back') + 'All leagues</button></div>'
-      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
+      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('officials', 'Officials') + tabBtn('schedule', 'Schedule') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
     renderTab();
   }
   function tabBtn(id, label) { return '<button class="' + (S.tab === id ? 'on' : '') + '" onclick="FFPLeague.tab(\'' + id + '\')">' + label + '</button>'; }
@@ -100,7 +102,80 @@
     if (S.tab === 'divisions') return renderDivisions(host);
     if (S.tab === 'entrants') return renderEntrants(host);
     if (S.tab === 'fixtures') return renderFixtures(host);
+    if (S.tab === 'officials') return renderOfficials(host);
+    if (S.tab === 'schedule') return renderSchedule(host);
     if (S.tab === 'table') return renderTable(host);
+  }
+
+  // ---------- OFFICIALS ----------
+  async function renderOfficials(host) {
+    host.innerHTML = '<div class="lg-sub" style="margin-bottom:12px">Officials can enter results from their own login. Add by FFP email to link their account.</div>'
+      + '<div class="lg-edit"><input class="lg-in" id="lg-ofname" placeholder="Name" style="max-width:200px"><input class="lg-in" id="lg-ofemail" placeholder="FFP email (optional)"><button class="lg-btn pri" onclick="FFPLeague.addOfficial()">' + ic('add') + 'Add official</button></div>'
+      + '<div id="lg-oflist"><div class="lg-empty">Loading…</div></div>';
+    var r; try { r = await sb().rpc('lt_officials_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { r = { error: e }; }
+    var rows = (r && r.data) || []; var h2 = document.getElementById('lg-oflist');
+    h2.innerHTML = rows.length ? rows.map(function (o) {
+      return '<div class="lg-row"><span class="lg-av" style="' + (o.photo ? 'background-image:url(\'' + esc(o.photo) + '\')' : '') + '">' + (o.photo ? '' : esc((o.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(o.name || o.email || 'Official') + '</b><span>' + (o.member_id ? 'FFP account linked · can score' : (o.email ? esc(o.email) + ' · not linked' : 'Manual')) + '</span></div><span class="ms act" onclick="FFPLeague.removeOfficial(\'' + o.id + '\')">close</span></div>';
+    }).join('') : '<div class="lg-empty">No officials yet.</div>';
+  }
+  async function addOfficial() {
+    var nm = (document.getElementById('lg-ofname') || {}).value, em = (document.getElementById('lg-ofemail') || {}).value;
+    if (!nm && !em) return;
+    var r; try { r = await sb().rpc('lt_official_add', { p_scope: 'league', p_event: S.eventId, p_member: null, p_name: nm, p_email: em }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not add', 'error'); return; } toast('Added', 'success'); renderTab();
+  }
+  async function removeOfficial(id) { await sb().rpc('lt_official_remove', { p_id: id }); renderTab(); }
+
+  // ---------- SCHEDULE ----------
+  async function renderSchedule(host) {
+    var divs = S.detail.divisions || [];
+    if (!S.divId && divs.length) S.divId = divs[0].id;
+    var fr; try { fr = await sb().rpc('lt_fields_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { fr = { error: e }; }
+    var fields = (fr && fr.data) || [];
+    var chips = fields.map(function (f) { return '<span class="lg-fldchip"><span class="ms" style="font-size:15px;color:var(--ffp-blue)">stadium</span>' + esc(f.name) + ' <span class="t">· from ' + esc(f.start_time) + '</span><span class="ms x" onclick="FFPLeague.removeField(\'' + f.id + '\')">close</span></span>'; }).join('');
+    host.innerHTML =
+      '<div class="lg-fldbar">' + chips
+      + '<span class="lg-fldchip add"><input class="lg-in" id="lg-fldname" placeholder="Field / court" style="width:130px;border:none;padding:4px"><input class="lg-in" id="lg-fldtime" type="time" value="08:00" style="width:96px;border:none;padding:4px"><button class="lg-btn sm pri" onclick="FFPLeague.addField()">Add</button></span></div>'
+      + '<div class="lg-tool" style="margin-top:12px">' + (divs.length > 1 ? '<select class="lg-sel" onchange="FFPLeague.setDiv(this.value,\'schedule\')">' + divOpts() + '</select>' : '')
+      + '<span class="lg-lab" style="margin:0">Match length</span><input class="lg-in" id="lg-mlen" type="number" value="30" style="width:64px"><span style="font-size:12px;color:var(--ffp-text-muted)">min</span>'
+      + '<span class="sp"></span><button class="lg-btn pri" onclick="FFPLeague.autoplan()">' + ic('auto_awesome') + 'Auto-plan</button></div>'
+      + '<div id="lg-schedlist"><div class="lg-empty">Loading…</div></div>';
+    if (!fields.length) { document.getElementById('lg-schedlist').innerHTML = '<div class="lg-empty">Add a field/court above, then Auto-plan.</div>'; return; }
+    if (!S.divId) { document.getElementById('lg-schedlist').innerHTML = '<div class="lg-empty">Add a division + generate fixtures first.</div>'; return; }
+    var r; try { r = await sb().rpc('league_fixtures_list', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+    var fx = (r && r.data) || []; var offr = await sb().rpc('lt_officials_list', { p_scope: 'league', p_event: S.eventId }); var offs = (offr && offr.data) || [];
+    var host2 = document.getElementById('lg-schedlist');
+    if (!fx.length) { host2.innerHTML = '<div class="lg-empty">No fixtures yet — generate them on the Fixtures tab.</div>'; return; }
+    S._fields = fields; S._offs = offs;
+    host2.innerHTML = fx.map(function (f) {
+      var t = f.scheduled_at ? new Date(f.scheduled_at) : null;
+      var tv = t ? (('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2)) : '';
+      var fldOpts = '<option value="">Court…</option>' + fields.map(function (x) { return '<option value="' + x.id + '"' + (f.court === x.name ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('');
+      var ofOpts = '<option value="">Official…</option>' + offs.map(function (x) { return '<option value="' + x.id + '"' + (f.official === x.name ? ' selected' : '') + '>' + esc(x.name || x.email) + '</option>'; }).join('');
+      return '<div class="lg-srow" data-id="' + f.id + '"><div class="mt">' + esc((f.home && f.home.name) || 'TBD') + ' v ' + esc((f.away && f.away.name) || 'TBD') + '<span>Round ' + f.round + '</span></div>'
+        + '<input class="lg-in st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"><select class="lg-sel st-f" onchange="FFPLeague.schedSet(\'' + f.id + '\')">' + fldOpts + '</select><select class="lg-sel st-o" onchange="FFPLeague.schedSet(\'' + f.id + '\')">' + ofOpts + '</select></div>';
+    }).join('');
+  }
+  async function addField() {
+    var nm = (document.getElementById('lg-fldname') || {}).value, tm = (document.getElementById('lg-fldtime') || {}).value || '08:00';
+    if (!nm || !nm.trim()) return;
+    await sb().rpc('lt_field_save', { p_scope: 'league', p_event: S.eventId, p_id: null, p_name: nm.trim(), p_start: tm }); renderTab();
+  }
+  async function removeField(id) { await sb().rpc('lt_field_remove', { p_id: id }); renderTab(); }
+  async function autoplan() {
+    if (!S.divId) { toast('Pick a division', 'error'); return; }
+    var len = +((document.getElementById('lg-mlen') || {}).value) || 30;
+    var r; try { r = await sb().rpc('lt_autoplan', { p_scope: 'league', p_division: S.divId, p_match_len: len }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a field first' : 'Could not plan', 'error'); return; }
+    toast((r.data || 0) + ' matches planned', 'success'); renderTab();
+  }
+  async function schedSet(id) {
+    var row = document.querySelector('.lg-srow[data-id="' + id + '"]'); if (!row) return;
+    var tv = row.querySelector('.st-t').value, fid = row.querySelector('.st-f').value || null, oid = row.querySelector('.st-o').value || null;
+    var when = null;
+    if (tv) { var base = (S.detail.event && S.detail.event.starts_at) || new Date().toISOString().slice(0, 10); when = new Date(base + 'T' + tv + ':00').toISOString(); }
+    await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: oid });
+    toast('Saved', 'success');
   }
 
   // ---------- DETAILS ----------
@@ -244,7 +319,8 @@
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
     saveDetails: saveDetails, sportHint: sportHint, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
-    confirmGen: confirmGen, cancelGen: cancelGen, doGen: doGen, saveResults: saveResults
+    confirmGen: confirmGen, cancelGen: cancelGen, doGen: doGen, saveResults: saveResults,
+    addOfficial: addOfficial, removeOfficial: removeOfficial, addField: addField, removeField: removeField, autoplan: autoplan, schedSet: schedSet
   };
   window.ffpRenderLeagues = function () { S.view = 'list'; S.creating = false; renderList(); };
 })();
