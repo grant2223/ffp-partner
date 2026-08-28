@@ -143,7 +143,8 @@
     fetch(API + '/api/venue/' + encodeURIComponent(providerId()) + '/join').then(function (r) { return r.json(); }).then(function (d) {
       if (!d || !d.ok) { body.innerHTML = '<div class="vq-sub">Couldn\'t load your referral status.</div>'; return; }
       if (d.unlocked && d.ref) {
-        var link = 'findfitpeople.com/join?ref=' + d.ref;
+        // Partner-branded join landing (same as the QR) — shows the venue + a Standard/Premium choice, carries the referral.
+        var link = 'findfitpeople.com/visit?venue=' + encodeURIComponent(providerId());
         refLink = 'https://' + link;
         body.innerHTML =
           '<div class="vq-sub">Earn <b>10%</b> of every payment when someone joins FFP Passport through your QR or link — recurring. The check-in QR above is also your referral QR.</div>' +
@@ -269,7 +270,8 @@
     if (!d || !d.ok) { host.innerHTML = '<div class="vq-card"><div class="vq-sub">Couldn\'t load your referral status — try again.</div></div>'; return; }
 
     if (d.unlocked && d.ref) {
-      var link = 'findfitpeople.com/join?ref=' + d.ref;
+      // Partner-branded join landing (same as the QR) — venue + Standard/Premium choice, carries the referral.
+      var link = 'findfitpeople.com/visit?venue=' + encodeURIComponent(pid);
       refLink = 'https://' + link;
       host.innerHTML =
         '<div class="vq-card">' +
