@@ -478,6 +478,7 @@
     host.innerHTML =
       '<div class="lg-tool"><button class="lg-btn" onclick="FFPLeague.closeMatch()">' + ic('arrow_back') + 'Back to fixtures</button><span class="sp"></span>' + liveBtn + '<button class="lg-btn pri" onclick="FFPLeague.saveResultFromEvents()">' + ic('check') + 'Save result</button></div>'
       + '<div class="lg-mchd"><div class="tm">' + crest(m.home) + '<b>' + esc(m.home.name) + '</b></div><div class="scr">' + esc(score) + '</div><div class="tm a"><b>' + esc(m.away.name) + '</b>' + crest(m.away) + '</div></div>'
+      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:10px 0"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPLeague.saveStream()">' + ic('live_tv') + 'Save stream</button></div>'
       + '<div class="lg-mctabs"><button class="' + (tab === 'timeline' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'timeline\')">Scoring timeline</button><button class="' + (tab === 'stats' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'stats\')">Player stats</button><button class="' + (tab === 'team' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'team\')">Team stats</button></div>'
       + (tab === 'timeline'
         ? ('<div class="lg-mcadd">'
@@ -495,6 +496,11 @@
       renderMcList();
     } else if (tab === 'stats') { renderMcStats(); }
     else { renderMcTeam(); }
+  }
+  async function saveStream() {
+    var el = document.getElementById('mc-stream'); if (!el) return;
+    try { await sb().rpc('lt_match_set_stream', { p_scope: 'league', p_match: S.matchOpen, p_url: el.value.trim() }); toast('Stream link saved', 'success'); }
+    catch (e) { toast('Could not save stream link', 'error'); }
   }
   async function setLive(status) {
     try { await sb().rpc('lt_match_status', { p_scope: 'league', p_match: S.matchOpen, p_status: status }); } catch (e) { toast('Could not update', 'error'); return; }
@@ -679,7 +685,7 @@
     addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface,
     offAdd: offAdd, offRemove: offRemove,
     openMatch: openMatch, closeMatch: closeMatch, addEvent: addEvent, removeEvent: removeEvent, saveResultFromEvents: saveResultFromEvents,
-    mcTab: mcTab, mcPickStatPlayer: mcPickStatPlayer, saveStats: saveStats, setLive: setLive, saveTeamStats: saveTeamStats,
+    mcTab: mcTab, mcPickStatPlayer: mcPickStatPlayer, saveStats: saveStats, setLive: setLive, saveTeamStats: saveTeamStats, saveStream: saveStream,
     addCustomStat: addCustomStat, removeCustomStat: removeCustomStat
   };
   window.ffpRenderLeagues = function () { S.view = 'list'; S.creating = false; renderList(); };
