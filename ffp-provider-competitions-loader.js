@@ -182,6 +182,8 @@
       '<div class="cx-fld"><div class="cx-lab">Banner image <span style="font-weight:500;color:#8a99a8;">— wide photo, no words on the image</span></div>' +
         '<div id="listing-photo-slot" data-url="' + esc(ev.cover_url || '') + '"></div>' +
         '<div class="cx-sub" style="margin-top:6px">This is your event\'s banner across the top of the competition page in the app. Use a clean landscape photo with no text.</div></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Live stream URL <span style="font-weight:500;color:#8a99a8;">— YouTube, Twitch, Facebook…</span></div><input id="cx-stream" class="cx-in" value="' + esc(ev.stream_url || '') + '" placeholder="https://…">' +
+        '<div class="cx-sub" style="margin-top:6px">Shows a "Watch live" button on the competition page in the app.</div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Accent colour</div><div id="cx-accent">' + accents.map(function (a) { return '<span class="cx-sw' + ((ev.accent || '#d6353b') === a ? ' on' : '') + '" style="background:' + a + '" data-v="' + a + '" onclick="FFPComp.pickAccent(this)"></span>'; }).join('') + '</div>' +
         '<div class="cx-sub" style="margin-top:6px">Your logo comes from your business profile; the banner above is this event\'s own image.</div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Status</div><select id="cx-status" class="cx-sel" style="max-width:240px">' +
@@ -226,7 +228,7 @@
       entry_fee: g('cx-fee'), currency: g('cx-cur'), status: g('cx-status')
     };
     var r; try { r = await sb().rpc('comp_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
-    if (r && !r.error) { toast('Saved', 'check'); _mode = _accent = _club = _self = null; reload(); } else { toast('Save failed', 'error'); }
+    if (r && !r.error) { try { await sb().rpc('comp_set_stream', { p_event: S.eventId, p_url: g('cx-stream') || '' }); } catch (e) {} toast('Saved', 'check'); _mode = _accent = _club = _self = null; reload(); } else { toast('Save failed', 'error'); }
   }
 
   // Divisions
