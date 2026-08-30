@@ -846,10 +846,9 @@
     injectBrandCss();
     var f = document.createElement('div'); f.className = 'field full'; f.id = 'pf-brand-field';
     f.innerHTML =
-      '<div class="label">Brand <span class="label-hint">— turn on if you sell a product (supplements, apparel, gear) rather than run a venue</span></div>' +
-      '<label class="pf-switch"><input type="checkbox" id="pf-is-brand"><span class="pf-track"></span><span style="font-weight:700;font-size:13px;color:#0e2531;">We’re a product brand</span></label>' +
-      '<div class="label" style="margin-top:14px;">Event organizer <span class="label-hint">— turn on if you run events, leagues, tournaments or competitions rather than a venue</span></div>' +
-      '<label class="pf-switch"><input type="checkbox" id="pf-is-organizer"><span class="pf-track"></span><span style="font-weight:700;font-size:13px;color:#0e2531;">We’re an event organizer</span></label>' +
+      '<div class="label">Account type <span class="label-hint">— pick one; if you’re more than one, set up a separate account for each</span></div>' +
+      '<select id="pf-acct-type" class="select"><option value="venue">Venue / provider</option><option value="brand">Product brand</option><option value="organizer">Event organizer</option></select>' +
+      '<div class="label-hint" style="margin:6px 0 2px;line-height:1.5;">Venues can also run events, leagues, tournaments &amp; competitions. Brands and event organizers don’t need a venue, so the venue/business fields are hidden.</div>' +
       '<div class="pf-brand-body" id="pf-brand-body" style="display:none;">' +
         '<div class="label" style="margin-top:2px;">Product type <span class="label-hint">— how members find you under Explore → Brands</span></div>' +
         '<select id="pf-brand-cat" class="select" style="margin-bottom:16px;"><option value="">Choose a product type…</option></select>' +
@@ -866,8 +865,7 @@
     var catField = (cat && cat.closest) ? cat.closest('.field') : null;
     if (catField && catField.parentNode) { catField.parentNode.insertBefore(f, catField.nextSibling); }
     else { panel.appendChild(f); }
-    document.getElementById('pf-is-brand').onchange = function () { setBrand(this.checked); };
-    var orgCb = document.getElementById('pf-is-organizer'); if (orgCb) orgCb.onchange = function () { setOrganizer(this.checked); };
+    var atSel = document.getElementById('pf-acct-type'); if (atSel) atSel.onchange = function () { setAccountType(this.value); };
     var catSel = document.getElementById('pf-brand-cat');
     if (catSel) catSel.onchange = function () { setBrandCategory(this.value); };
     loadBrandCatOptions();
@@ -903,30 +901,19 @@
     if (on) loadBrandProducts();
   }
 
-  async function setBrand(on) {
-    if (on && _brand.is_organizer) { _brand.is_organizer = false; var ocb = document.getElementById('pf-is-organizer'); if (ocb) ocb.checked = false; }
-    var body = document.getElementById('pf-brand-body'); if (body) body.style.display = on ? '' : 'none';
-    _brand.is_brand = on;
-    applyBrandFieldMode(on);
+  // Account type = ONE of venue / brand / organizer (mutually exclusive). Venue keeps the
+  // business/venue fields (and can still run events); brand + organizer hide them.
+  async function setAccountType(type) {
+    var isBrand = type === 'brand', isOrg = type === 'organizer';
+    _brand.is_brand = isBrand; _brand.is_organizer = isOrg;
+    var body = document.getElementById('pf-brand-body'); if (body) body.style.display = isBrand ? '' : 'none';
+    applyBrandFieldMode(isBrand);
     try {
-      if (on) { try { await window.supabase.rpc('provider_set_is_organizer', { p_provider: window.FFP_PROVIDER.id, p_on: false }); } catch (e2) {} }
-      await window.supabase.rpc('provider_set_is_brand', { p_provider: window.FFP_PROVIDER.id, p_on: on });
-      if (on) loadBrandLocs();
-      toast(on ? 'Brand mode on — add where you’re sold' : 'Brand mode off', 'success');
-    } catch (e) { console.error('[Brand] set:', e); toast('Could not update brand mode', 'error'); }
-  }
-  async function setOrganizer(on) {
-    if (on && _brand.is_brand) {
-      _brand.is_brand = false;
-      var bcb = document.getElementById('pf-is-brand'); if (bcb) bcb.checked = false;
-      var bb = document.getElementById('pf-brand-body'); if (bb) bb.style.display = 'none';
-    }
-    _brand.is_organizer = on;
-    applyBrandFieldMode(_brand.is_brand);
-    try {
-      await window.supabase.rpc('provider_set_is_organizer', { p_provider: window.FFP_PROVIDER.id, p_on: on });
-      toast(on ? 'Event organizer mode on' : 'Event organizer mode off', 'success');
-    } catch (e) { console.error('[Organizer] set:', e); toast('Could not update organizer mode', 'error'); }
+      await window.supabase.rpc('provider_set_is_organizer', { p_provider: window.FFP_PROVIDER.id, p_on: isOrg });
+      await window.supabase.rpc('provider_set_is_brand', { p_provider: window.FFP_PROVIDER.id, p_on: isBrand });
+      if (isBrand) loadBrandLocs();
+      toast('Account type saved', 'success');
+    } catch (e) { console.error('[AcctType] set:', e); toast('Could not update account type', 'error'); }
   }
 
   async function loadBrandState() {
@@ -935,8 +922,8 @@
       var on = !!(r.data && r.data.is_brand);
       _brand.is_brand = on;
       _brand.is_organizer = !!(r.data && r.data.is_organizer);
-      var cb = document.getElementById('pf-is-brand'); if (cb) cb.checked = on;
-      var ocb = document.getElementById('pf-is-organizer'); if (ocb) ocb.checked = _brand.is_organizer;
+      var type = _brand.is_organizer ? 'organizer' : (on ? 'brand' : 'venue');
+      var atSel = document.getElementById('pf-acct-type'); if (atSel) atSel.value = type;
       var body = document.getElementById('pf-brand-body'); if (body) body.style.display = on ? '' : 'none';
       applyBrandFieldMode(on);
       _brand.category = (r.data && r.data.category) || '';
