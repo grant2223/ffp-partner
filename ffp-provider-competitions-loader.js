@@ -167,6 +167,10 @@
     var ev = S.detail.event || {};
     var accents = ['#d6353b', '#1980ad', '#0a8f5f', '#7a3ff2', '#f2a900', '#e0483d'];
     var dt = function (v) { return v ? String(v).slice(0, 16) : ''; };
+    if (!S.seriesList) { S.seriesList = []; sb().rpc('comp_my_series').then(function (r) { S.seriesList = (r && !r.error && r.data) || []; if (S.tab === 'details') renderTab(); }, function () {}); }
+    var seriesOpts = '<option value="">One-off competition</option>' +
+      (S.seriesList || []).map(function (s) { return '<option value="' + s.id + '"' + (ev.series_id === s.id ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') +
+      '<option value="__new">+ New series…</option>';
     c.innerHTML =
       '<div class="cx-fld"><div class="cx-lab">Competition name</div><input id="cx-name" class="cx-in" value="' + esc(ev.name || '') + '"></div>' +
       '<div class="cx-fld"><div class="cx-lab">About (shown on the Info tab in the app)</div><textarea id="cx-desc" class="cx-in" rows="3" placeholder="What the day looks like, format, spectators…">' + esc(ev.description || '') + '</textarea></div>' +
@@ -204,9 +208,15 @@
         '<div class="cx-sub" style="margin-top:6px">Shown to athletes on the competition Info tab.</div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Waiver / disclaimer (optional)</div><textarea id="cx-waiver" class="cx-in" rows="4" placeholder="The waiver athletes must accept when they register…">' + esc(ev.waiver || '') + '</textarea>' +
         '<div class="cx-sub" style="margin-top:6px">Athletes must accept this to complete registration.</div></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Series / Season</div><select id="cx-series" class="cx-sel" style="max-width:340px" onchange="FFPComp.seriesPick(this.value)">' + seriesOpts + '</select>' +
+        '<div id="cx-series-extra" style="' + (ev.series_id ? '' : 'display:none;') + 'margin-top:10px">' +
+          '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Round number</div><input id="cx-series-round" type="number" min="1" class="cx-in" value="' + (ev.series_round || '') + '" style="max-width:120px"></div>' +
+          '<div class="cx-fld"><div class="cx-lab">&nbsp;</div><label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;color:#12232f;padding-top:10px"><input type="checkbox" id="cx-series-finals" ' + (ev.is_finals ? 'checked' : '') + ' style="width:18px;height:18px"> This is the finals event</label></div></div></div>' +
+        '<div class="cx-sub" style="margin-top:6px">One-off = a standalone competition. Add it to a series to carry its final results into a season leaderboard.</div></div>' +
       '<button class="cx-btn pri" onclick="FFPComp.saveDetails()"><span class="ms">save</span> Save details</button>';
     if (typeof window.renderListingUploader === 'function') { try { window.renderListingUploader(ev.cover_url || ''); } catch (e) {} }
   }
+  function seriesPick(v) { var x = document.getElementById('cx-series-extra'); if (x) x.style.display = (v && v !== '') ? '' : 'none'; }
   var _mode = null, _accent = null, _club = null, _self = null;
   function pickMode(b) { _mode = b.getAttribute('data-v'); Array.prototype.forEach.call(b.parentNode.children, function (x) { x.classList.remove('on'); }); b.classList.add('on'); }
   function pickClub(b) { _club = b.getAttribute('data-v'); Array.prototype.forEach.call(b.parentNode.children, function (x) { x.classList.remove('on'); }); b.classList.add('on'); }
@@ -229,7 +239,25 @@
       entry_fee: g('cx-fee'), currency: g('cx-cur'), status: g('cx-status')
     };
     var r; try { r = await sb().rpc('comp_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
-    if (r && !r.error) { try { await sb().rpc('comp_set_stream', { p_event: S.eventId, p_url: g('cx-stream') || '' }); } catch (e) {} toast('Saved', 'check'); _mode = _accent = _club = _self = null; reload(); } else { toast('Save failed', 'error'); }
+    if (r && !r.error) {
+      try { await sb().rpc('comp_set_stream', { p_event: S.eventId, p_url: g('cx-stream') || '' }); } catch (e) {}
+      // Series / Season linking
+      try {
+        var sv = g('cx-series');
+        if (sv !== undefined) {
+          var round = parseInt(g('cx-series-round'), 10); if (isNaN(round)) round = null;
+          var finals = !!(document.getElementById('cx-series-finals') || {}).checked;
+          if (sv === '' ) { await sb().rpc('comp_series_unset_event', { p_event: S.eventId }); }
+          else if (sv === '__new') {
+            var nm = window.prompt('Name this series / season'); if (nm) {
+              var rs = await sb().rpc('comp_series_save', { p_id: null, p: { name: nm, organizer_provider_id: (S.detail.event.organizer_provider_id || null), status: 'open' } });
+              if (rs && !rs.error && rs.data) { await sb().rpc('comp_series_set_event', { p_series: rs.data, p_event: S.eventId, p_round: round, p_is_finals: finals }); S.seriesList = null; }
+            }
+          } else { await sb().rpc('comp_series_set_event', { p_series: sv, p_event: S.eventId, p_round: round, p_is_finals: finals }); }
+        }
+      } catch (e) { console.error('[comp series]', e); }
+      toast('Saved', 'check'); _mode = _accent = _club = _self = null; reload();
+    } else { toast('Save failed', 'error'); }
   }
 
   // Divisions
@@ -665,7 +693,7 @@
   function tab(t) { S.tab = t; document.querySelectorAll('.cx-editnav button').forEach(function (b) { b.classList.remove('on'); }); var el = document.querySelector('.cx-editnav button[onclick*="\'' + t + '\'"]'); if (el) el.classList.add('on'); renderTab(); }
 
   window.FFPComp = { list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
-    saveDetails: saveDetails, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
+    saveDetails: saveDetails, seriesPick: seriesPick, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision,
     editWorkout: editWorkout, saveWorkout: saveWorkout, moveWorkout: moveWorkout, typeHint: typeHint,
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
