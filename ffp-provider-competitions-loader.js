@@ -49,8 +49,21 @@
       '.cx-pill{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;}',
       '.cx-pill.live{background:#fdeaea;color:#d6353b;} .cx-pill.open{background:#e3f6ec;color:#0a8f5f;} .cx-pill.draft{background:#eef2f5;color:#5b6b75;} .cx-pill.final{background:#eef2f5;color:#5b6b75;}',
       '.cx-lab{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#8a97a2;margin:0 0 7px;}',
-      '.cx-sec{display:block;margin:26px 0 12px;padding:8px 13px;background:#eef3f7;border-left:3px solid #1980AD;border-radius:7px;font-family:inherit;font-weight:900;font-size:13px;letter-spacing:.02em;color:#12232f;}',
-      '.cx-sec:first-child{margin-top:4px;}',
+      '.cx-sec{display:block;margin:44px 0 20px;padding:13px 18px;background:linear-gradient(180deg,rgba(24,50,67,.4),rgba(18,35,47,.4));border-radius:10px;font-family:inherit;font-weight:800;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:#12232f;box-shadow:0 2px 8px rgba(15,34,48,.10);}',
+      '.cx-fld:first-child .cx-sec{margin-top:8px;}',
+      '.cx-schdiv{margin:34px 0 6px;padding-bottom:8px;border-bottom:2px solid #e0e7ec;font-weight:900;font-size:17px;color:#12232f;}',
+      '.cx-schdiv:first-of-type{margin-top:14px;}',
+      '.cx-schev{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:20px 0 10px;padding:12px 18px;background:linear-gradient(180deg,rgba(24,50,67,.4),rgba(18,35,47,.4));border-radius:10px;box-shadow:0 2px 8px rgba(15,34,48,.10);}',
+      '.cx-schev .k{font-size:10px;font-weight:800;letter-spacing:.08em;color:#3a5568;display:block;margin-bottom:2px;}',
+      '.cx-schev .ttl{font-weight:800;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:#12232f;}',
+      '.cx-schtime{display:flex;align-items:center;gap:8px;}',
+      '.cx-schtime label{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#33526a;}',
+      '.cx-schtime input{padding:8px 10px;border:1.5px solid rgba(18,35,47,.25);border-radius:9px;font:inherit;font-size:13px;background:rgba(255,255,255,.85);color:#12232f;}',
+      '.cx-schrow{display:flex;align-items:center;gap:14px;padding:12px 6px;border-bottom:1px solid #edf1f4;}',
+      '.cx-schrow .hn{font-weight:900;font-size:14px;color:#12232f;min-width:74px;}',
+      '.cx-schrow .who{flex:1;color:#5b6b75;font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      '.cx-schrow input[type=time]{width:120px;}',
+      '.cx-schnoheat{color:var(--ffp-text-muted);font-weight:600;font-size:13px;padding:12px 6px;}',
       '.cx-in,.cx-sel{width:100%;padding:10px 12px;border:1px solid #d7dee5;border-radius:10px;font:inherit;box-sizing:border-box;background:#fff;color:#12232f;}',
       '.cx-fld{margin-bottom:14px;} .cx-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}',
       '.cx-seg{display:inline-flex;border:1.5px solid var(--ffp-border-mid);border-radius:10px;overflow:hidden;}',
@@ -135,7 +148,7 @@
   function renderEditor() {
     var el = root(); if (!el || !S.detail) return;
     var ev = S.detail.event || {};
-    var tabs = [['details', 'Details'], ['setup', 'Set up'], ['sponsors', 'Sponsors'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['heats', 'Heats & lanes'], ['judges', 'Judges'], ['scores', 'Scores'], ['standings', 'Standings']];
+    var tabs = [['details', 'Details'], ['setup', 'Set up'], ['sponsors', 'Sponsors'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['schedule', 'Schedule'], ['heats', 'Heats & lanes'], ['judges', 'Judges'], ['scores', 'Scores'], ['standings', 'Standings']];
     if (ev.club_mode) tabs.push(['clubs', 'Clubs']);
     el.innerHTML = '<div class="cx-wrap">' +
       '<div class="cx-head"><div style="display:flex;align-items:center;gap:12px;">' +
@@ -161,6 +174,7 @@
     if (S.tab === 'divisions') return renderDivisions(c);
     if (S.tab === 'workouts') return renderWorkouts(c);
     if (S.tab === 'athletes') return renderAthletes(c);
+    if (S.tab === 'schedule') return renderSchedule(c);
     if (S.tab === 'heats') return renderHeats(c);
     if (S.tab === 'setup') return renderSetup(c);
     if (S.tab === 'judges') return renderJudges(c);
@@ -409,7 +423,6 @@
         '<option value="desc"' + (w.direction === 'desc' ? ' selected' : '') + '>Higher wins (reps/weight)</option></select></div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Time cap minutes (optional)</div><input id="cw-cap" type="number" class="cx-in" value="' + cap + '" style="max-width:160px"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Points weighting (optional)</div><input id="cw-pw" type="number" step="0.1" class="cx-in" value="' + pw + '" placeholder="1" style="max-width:160px"><div class="cx-sub" style="margin-top:6px">Multiplies this event\'s points (e.g. 2 = worth double). Leave blank for normal.</div></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Event start time</div><input id="cw-start" type="datetime-local" class="cx-in" value="' + _dtLocal(w.start_at) + '" style="max-width:240px"><div class="cx-sub" style="margin-top:6px">When this event begins — shown to athletes on the event page.</div></div>' +
       '<div id="cw-media">' + cwMediaHtml() + '</div>' +
       '<div class="cx-fld"><div class="cx-lab">Explainer video link (optional)</div><input id="cw-video" class="cx-in" value="' + esc(w.video_url || '') + '" placeholder="YouTube / Vimeo link"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Event sponsor (optional)</div><input id="cw-spon-name" class="cx-in" value="' + esc(w.sponsor_name || '') + '" placeholder="Sponsor name" style="margin-bottom:8px">' +
@@ -491,8 +504,7 @@
     var p = { name: g('cw-name'), description: g('cw-desc') || null, score_type: g('cw-type'), direction: g('cw-dir'), cap_seconds: isNaN(capMin) ? null : capMin * 60,
       points_weight: (isNaN(pwv) || pwv <= 0) ? 1 : pwv,
       banner_url: cw.banner || null, image_urls: (cw.imgs || []), video_url: g('cw-video') || null,
-      sponsor_name: g('cw-spon-name') || null, sponsor_logo_url: cw.sponLogo || null, sponsor_url: g('cw-spon-url') || null,
-      start_at: g('cw-start') ? new Date(g('cw-start')).toISOString() : null };
+      sponsor_name: g('cw-spon-name') || null, sponsor_logo_url: cw.sponLogo || null, sponsor_url: g('cw-spon-url') || null };
     if (!p.name) { toast('Name the event'); return; }
     // New event can be allocated to multiple divisions at once
     var targets = [S.divId];
@@ -741,14 +753,13 @@
     if (!heats.length) { host.innerHTML = '<div class="cx-empty">No heats yet — set lanes and Generate.</div>'; return; }
     var jOpts = function (sel) { return '<option value="">Judge…</option>' + judges.map(function (j) { return '<option value="' + j.member_id + '"' + (sel === j.member_id ? ' selected' : '') + '>' + esc(j.name) + '</option>'; }).join(''); };
     host.innerHTML = heats.map(function (h) {
-      var t = h.start_at ? new Date(h.start_at) : null; var tv = t ? (('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2)) : '';
       var laneOpts = function (cur) { var o = ''; for (var i = 1; i <= lanes; i++) o += '<option value="' + i + '"' + (i === cur ? ' selected' : '') + '>Lane ' + i + '</option>'; return o; };
       var rows = (h.lanes || []).map(function (l) {
         return '<div class="cx-lrow"><span class="ln">' + l.lane + '</span><span class="pl">' + (l.pos != null ? '#' + l.pos : '') + '</span><b>' + esc(l.name || 'Athlete') + '</b>'
           + '<select class="cx-sel sm" onchange="FFPComp.heatMove(\'' + h.id + '\',\'' + l.entrant_id + '\',this.value)">' + laneOpts(l.lane) + '</select></div>';
       }).join('');
       return '<div class="cx-heath" data-h="' + h.id + '"><b>' + esc(h.name) + '</b>' + (h.ord === heats.length ? '<span class="fin">FINAL</span>' : '')
-        + '<span class="r"><input class="cx-in sm" type="time" value="' + tv + '" onchange="FFPComp.heatSet(\'' + h.id + '\')"><select class="cx-sel sm cx-hjudge" onchange="FFPComp.heatSet(\'' + h.id + '\')">' + jOpts(h.judge_id) + '</select></span></div>' + rows;
+        + '<span class="r"><select class="cx-sel sm cx-hjudge" onchange="FFPComp.heatSet(\'' + h.id + '\')">' + jOpts(h.judge_id) + '</select></span></div>' + rows;
     }).join('');
   }
   function hmode(btn) { document.querySelectorAll('#cx-hmode button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); S._heatMode = btn.getAttribute('data-v'); }
@@ -760,14 +771,62 @@
   }
   async function heatMove(heat, entrant, lane) { await sb().rpc('comp_heat_lane_move', { p_heat: heat, p_lane: +lane, p_entrant: entrant }); renderTab(); }
   async function heatSet(heat) {
+    // Heats & lanes tab now only assigns the JUDGE — heat start times are set in the Schedule tab (no double-up).
     var row = document.querySelector('.cx-heath[data-h="' + heat + '"]'); if (!row) return;
-    var tv = (row.querySelector('input[type=time]') || {}).value, jid = (row.querySelector('.cx-hjudge') || {}).value || null;
-    // Base the heat date on the EVENT's own start date if set, else the competition start date
+    var jid = (row.querySelector('.cx-hjudge') || {}).value || null;
+    await sb().rpc('comp_heat_set', { p_heat: heat, p_start: null, p_judge: jid }); toast('Saved', 'success');
+  }
+
+  // ---- SCHEDULE tab — whole-event running order + all timings in one place ----
+  function renderSchedule(c) {
+    var divs = S.detail.divisions || [];
+    var anyEvents = divs.some(function (d) { return (d.workouts || []).length; });
+    if (!anyEvents) { c.innerHTML = '<div class="cx-empty">Add divisions and events first — then set their start times here.</div>'; return; }
+    var html = '<div class="cx-sub" style="margin:0 0 6px">The running order for the whole competition. Set each event\'s start time and each heat\'s start time — these show to athletes in the FFP App. Lane assignments &amp; judges are set in Heats &amp; lanes.</div>';
+    divs.forEach(function (d) {
+      var wods = d.workouts || []; if (!wods.length) return;
+      html += '<div class="cx-schdiv">' + esc(d.name) + '</div>';
+      wods.forEach(function (w, i) {
+        html += '<div class="cx-schev">'
+          + '<div><span class="k">Event ' + (i + 1) + '</span><span class="ttl">' + esc(w.name) + '</span></div>'
+          + '<div class="cx-schtime"><label>Starts</label><input type="datetime-local" value="' + _dtLocal(w.start_at) + '" onchange="FFPComp.schedEvent(\'' + d.id + '\',\'' + w.id + '\',this.value)"></div>'
+          + '</div>'
+          + '<div id="cx-schheats-' + w.id + '"><div class="cx-sub" style="padding:8px 6px">Loading heats…</div></div>';
+      });
+    });
+    c.innerHTML = html;
+    // Lazy-load heats per event
+    divs.forEach(function (d) {
+      (d.workouts || []).forEach(function (w) { loadSchedHeats(w.id, w.start_at); });
+    });
+  }
+  async function loadSchedHeats(wid, wStart) {
+    var host = document.getElementById('cx-schheats-' + wid); if (!host) return;
+    var hr; try { hr = await sb().rpc('comp_heats_view', { p_workout: wid }); } catch (e) { hr = { error: e }; }
+    var heats = (hr && hr.data) || [];
+    if (!heats.length) { host.innerHTML = '<div class="cx-schnoheat">No heats generated yet — create them in Heats &amp; lanes, then set their times here.</div>'; return; }
+    host.innerHTML = heats.map(function (h) {
+      var t = h.start_at ? new Date(h.start_at) : null; var tv = t ? (('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2)) : '';
+      var who = (h.lanes || []).map(function (l) { return esc(l.name || 'Athlete'); }).join(' · ') || (h.lanes ? '' : '');
+      return '<div class="cx-schrow"><span class="hn">' + esc(h.name) + '</span><span class="who">' + who + '</span>'
+        + '<input type="time" class="cx-in sm" value="' + tv + '" data-heat="' + h.id + '" data-judge="' + (h.judge_id || '') + '" onchange="FFPComp.schedHeat(\'' + h.id + '\',this)"></div>';
+    }).join('');
+  }
+  async function schedEvent(divId, wid, val) {
+    var iso = val ? new Date(val).toISOString() : null;
+    var r; try { r = await sb().rpc('comp_workout_save', { p_division: divId, p_id: wid, p: { start_at: iso } }); } catch (e) { r = { error: e }; }
+    if (r && !r.error) { toast('Event time saved', 'check'); (S.detail.divisions || []).forEach(function (d) { (d.workouts || []).forEach(function (w) { if (w.id === wid) w.start_at = iso; }); }); }
+    else toast('Save failed', 'error');
+  }
+  async function schedHeat(heatId, el) {
+    // Derive the date from the event's own start date if set, else the competition start; preserve the judge.
     var wStart = null;
-    (S.detail.divisions || []).forEach(function (d) { (d.workouts || []).forEach(function (w) { if (w.id === S.wodId && w.start_at) wStart = w.start_at; }); });
+    (S.detail.divisions || []).forEach(function (d) { (d.workouts || []).forEach(function (w) { var host = document.getElementById('cx-schheats-' + w.id); if (host && host.contains(el) && w.start_at) wStart = w.start_at; }); });
     var base = (wStart || (S.detail.event && S.detail.event.starts_at) || new Date().toISOString()).slice(0, 10);
-    var when = tv ? new Date(base + 'T' + tv + ':00').toISOString() : null;
-    await sb().rpc('comp_heat_set', { p_heat: heat, p_start: when, p_judge: jid }); toast('Saved', 'success');
+    var when = el.value ? new Date(base + 'T' + el.value + ':00').toISOString() : null;
+    var jid = el.getAttribute('data-judge') || null;
+    var r; try { r = await sb().rpc('comp_heat_set', { p_heat: heatId, p_start: when, p_judge: jid }); } catch (e) { r = { error: e }; }
+    if (r && !r.error) toast('Heat time saved', 'check'); else toast('Save failed', 'error');
   }
 
   // ---------- JUDGES ----------
@@ -807,6 +866,7 @@
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
     addAthlete: addAthlete, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
     hmode: hmode, genHeats: genHeats, heatMove: heatMove, heatSet: heatSet, addJudge: addJudge, removeJudge: removeJudge,
+    schedEvent: schedEvent, schedHeat: schedHeat,
     publish: publish, finalise: finalise, closeModal: closeModal };
   window.ffpRenderCompetitions = renderList;
 })();
