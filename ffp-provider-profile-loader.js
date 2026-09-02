@@ -891,11 +891,25 @@
     ['pf-timezone', 'pf-area', 'pf-address'].forEach(function (id) { var f = _pfField(id); if (f) f.style.display = hideBiz ? 'none' : ''; });
     var hg = document.getElementById('hours-grid'); var hs = (hg && hg.closest) ? hg.closest('.form-section') : null; if (hs) hs.style.display = hideBiz ? 'none' : '';
     ['pf-extras-loc', 'pf-extras-booking'].forEach(function (id) { var el = document.getElementById(id); if (el) el.style.display = hideBiz ? 'none' : ''; });
-    // Brand mode: the Activities tab becomes Products — relabel the tab and swap its content.
+    // Relabel the Activities tab per account type: Venue = Activities, Brand = Products, Event organizer = Event types.
     try { injectProductsEditor(); } catch (e) {}
+    var isOrg = _brand.is_organizer && !on;
     var actTab = document.querySelector('.pf-tab[data-pftab="activities"]');
-    if (actTab) actTab.innerHTML = on ? '<span class="ms">sell</span> Products' : '<span class="ms">fitness_center</span> Activities';
-    var actInp = document.getElementById('pf-act-input'); var actField = (actInp && actInp.closest) ? actInp.closest('.field') : null;
+    if (actTab) actTab.innerHTML = on ? '<span class="ms">sell</span> Products'
+      : (isOrg ? '<span class="ms">emoji_events</span> Event types' : '<span class="ms">fitness_center</span> Activities');
+    // Intro line (index.html #pf-acts-intro)
+    var intro = document.getElementById('pf-acts-intro');
+    if (intro) intro.textContent = isOrg
+      ? 'The types of events you organise (competitions, leagues, tournaments, meet-ups, etc). Members see these on your profile.'
+      : 'The activities you offer. Members see these on your profile, and they\'re the exact options shown when someone checks in at your venue.';
+    // Injected field label (#pf-extras-acts)
+    var actLbl = document.querySelector('#pf-extras-acts .label');
+    if (actLbl) actLbl.innerHTML = isOrg
+      ? 'Events you organise <span class="label-hint">— add each type of event you run, then describe it</span>'
+      : 'What we offer <span class="label-hint">— add each activity, then describe it (shows on your public profile)</span>';
+    var actInp = document.getElementById('pf-act-input');
+    if (actInp) actInp.placeholder = isOrg ? 'Search event types…' : 'Search activities…';
+    var actField = (actInp && actInp.closest) ? actInp.closest('.field') : null;
     if (actField) actField.style.display = on ? 'none' : '';
     var pw = document.getElementById('pf-products-wrap'); if (pw) pw.style.display = on ? '' : 'none';
     if (on) loadBrandProducts();
