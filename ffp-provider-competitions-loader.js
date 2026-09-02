@@ -49,6 +49,8 @@
       '.cx-pill{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;}',
       '.cx-pill.live{background:#fdeaea;color:#d6353b;} .cx-pill.open{background:#e3f6ec;color:#0a8f5f;} .cx-pill.draft{background:#eef2f5;color:#5b6b75;} .cx-pill.final{background:#eef2f5;color:#5b6b75;}',
       '.cx-lab{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#8a97a2;margin:0 0 7px;}',
+      '.cx-sec{display:block;margin:26px 0 12px;padding:8px 13px;background:#eef3f7;border-left:3px solid #1980AD;border-radius:7px;font-family:inherit;font-weight:900;font-size:13px;letter-spacing:.02em;color:#12232f;}',
+      '.cx-sec:first-child{margin-top:4px;}',
       '.cx-in,.cx-sel{width:100%;padding:10px 12px;border:1px solid #d7dee5;border-radius:10px;font:inherit;box-sizing:border-box;background:#fff;color:#12232f;}',
       '.cx-fld{margin-bottom:14px;} .cx-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}',
       '.cx-seg{display:inline-flex;border:1.5px solid var(--ffp-border-mid);border-radius:10px;overflow:hidden;}',
@@ -243,26 +245,26 @@
       (S.seriesList || []).map(function (s) { return '<option value="' + s.id + '"' + (ev.series_id === s.id ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') +
       '<option value="__new">+ New series…</option>';
     c.innerHTML =
-      '<div class="cx-fld"><div class="cx-lab">Format</div><select id="su-series" class="cx-sel" style="max-width:340px" onchange="FFPComp.suSeriesPick(this.value)">' + seriesOpts + '</select>' +
+      '<div class="cx-fld"><div class="cx-sec">Format</div><select id="su-series" class="cx-sel" style="max-width:340px" onchange="FFPComp.suSeriesPick(this.value)">' + seriesOpts + '</select>' +
         '<div id="su-series-extra" style="' + (ev.series_id ? '' : 'display:none;') + 'margin-top:10px">' +
           '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Round number</div><input id="su-series-round" type="number" min="1" class="cx-in" value="' + (ev.series_round || '') + '" style="max-width:120px"></div>' +
           '<div class="cx-fld"><div class="cx-lab">&nbsp;</div><label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;color:#12232f;padding-top:10px"><input type="checkbox" id="su-series-finals" ' + (ev.is_finals ? 'checked' : '') + ' style="width:18px;height:18px"> This is the finals event</label></div></div></div>' +
         '<div class="cx-sub" style="margin-top:6px">One-off = a standalone competition. Add it to a series to carry its final results into a season leaderboard.</div></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Scoring method</div><div class="cx-seg" id="cx-mode">' +
+      '<div class="cx-fld"><div class="cx-sec">Scoring method</div><div class="cx-seg" id="cx-mode">' +
         '<button class="' + (ev.scoring_mode !== 'placement' ? 'on' : '') + '" data-v="points" onclick="FFPComp.pickMode(this)">Points (100,96,92…)</button>' +
         '<button class="' + (ev.scoring_mode === 'placement' ? 'on' : '') + '" data-v="placement" onclick="FFPComp.pickMode(this)">Placement (1,2,3…)</button></div>' +
         '<div class="cx-sub" style="margin-top:6px">Points = higher is better (F45/CrossFit style). Placement = lowest total wins. Tie-break = best single-event finish.</div></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Club championship</div><div class="cx-seg" id="cx-club">' +
+      '<div class="cx-fld"><div class="cx-sec">Club championship</div><div class="cx-seg" id="cx-club">' +
         '<button class="' + (!ev.club_mode ? 'on' : '') + '" data-v="0" onclick="FFPComp.pickClub(this)">Off</button>' +
         '<button class="' + (ev.club_mode ? 'on' : '') + '" data-v="1" onclick="FFPComp.pickClub(this)">On — clubs compete</button></div>' +
         '<div class="cx-sub" style="margin-top:6px">When on, each entry picks the partner club it represents at registration, and a Clubs leaderboard ranks clubs by their entries\' final positions.</div></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Athlete self-scoring</div><div class="cx-seg" id="cx-self">' +
+      '<div class="cx-fld"><div class="cx-sec">Athlete self-scoring</div><div class="cx-seg" id="cx-self">' +
         '<button class="' + (!ev.self_score ? 'on' : '') + '" data-v="0" onclick="FFPComp.pickSelf(this)">Off</button>' +
         '<button class="' + (ev.self_score ? 'on' : '') + '" data-v="1" onclick="FFPComp.pickSelf(this)">On — athletes enter their own</button></div>' +
         '<div class="cx-sub" style="margin-top:6px">Athletes submit their result per event from the FFP App. It counts immediately — you can edit, hide or remove any score in the Scores tab.</div>' +
         '<div style="margin-top:10px"><div class="cx-lab">Proof</div><select id="cx-proof" class="cx-sel" style="max-width:260px">' +
           ['off', 'optional', 'required'].map(function (o) { return '<option value="' + o + '"' + ((ev.self_score_proof || 'off') === o ? ' selected' : '') + '>' + ({ off: 'No proof needed', optional: 'Optional photo / video', required: 'Require photo / video' })[o] + '</option>'; }).join('') + '</select></div></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Score entry</div><div class="cx-sub" style="margin-top:0">A <b>head scorer</b> (you or an assigned scorer) enters every score in the Scores tab. Add judges/officials in the Judges tab. Judges scoring from their own app is coming soon.</div></div>' +
+      '<div class="cx-fld"><div class="cx-sec">Score entry</div><div class="cx-sub" style="margin-top:0">A <b>head scorer</b> (you or an assigned scorer) enters every score in the Scores tab. Add judges/officials in the Judges tab. Judges scoring from their own app is coming soon.</div></div>' +
       '<button class="cx-btn pri" onclick="FFPComp.saveSetup()"><span class="ms">save</span> Save set up</button>';
   }
   function suSeriesPick(v) { var x = document.getElementById('su-series-extra'); if (x) x.style.display = (v && v !== '') ? '' : 'none'; }
