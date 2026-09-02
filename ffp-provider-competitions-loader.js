@@ -163,7 +163,7 @@
     if (S.tab === 'judges') return renderJudges(c);
     if (S.tab === 'scores') return renderScores(c);
     if (S.tab === 'standings') return renderStandings(c);
-    if (S.tab === 'sponsors') return (window.FFPSponsors ? window.FFPSponsors.render(c, { scope: 'comp', eventId: S.eventId }) : (c.innerHTML = '<div class="cx-empty">Sponsor editor unavailable.</div>'));
+    if (S.tab === 'sponsors') return renderSponsorsTab(c);
     if (S.tab === 'clubs') return renderClubs(c);
   }
 
@@ -210,9 +210,11 @@
         '<div style="margin-top:10px"><div class="cx-lab">Proof</div><select id="cx-proof" class="cx-sel" style="max-width:260px">' +
           ['off', 'optional', 'required'].map(function (o) { return '<option value="' + o + '"' + ((ev.self_score_proof || 'off') === o ? ' selected' : '') + '>' + ({ off: 'No proof needed', optional: 'Optional photo / video', required: 'Require photo / video' })[o] + '</option>'; }).join('') + '</select></div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Rules (optional)</div><textarea id="cx-rules" class="cx-in" rows="4" placeholder="Movement standards, scoring, tie-breaks, equipment…">' + esc(ev.rules || '') + '</textarea>' +
-        '<div class="cx-sub" style="margin-top:6px">Shown to athletes on the competition Info tab.</div></div>' +
+        '<div style="display:flex;gap:8px;align-items:center;margin-top:8px"><input id="cx-rules-url" class="cx-in" value="' + esc(ev.rules_url || '') + '" placeholder="…or paste a link to a rules document (URL)"><button type="button" class="cx-btn sm" style="flex:none" onclick="FFPComp.uploadDoc(\'rules\')"><span class="ms">upload_file</span> Upload</button></div>' +
+        '<div class="cx-sub" style="margin-top:6px">Type the rules above, or link / upload a document (PDF). Shown to athletes on the competition Info tab.</div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Waiver / disclaimer (optional)</div><textarea id="cx-waiver" class="cx-in" rows="4" placeholder="The waiver athletes must accept when they register…">' + esc(ev.waiver || '') + '</textarea>' +
-        '<div class="cx-sub" style="margin-top:6px">Athletes must accept this to complete registration.</div></div>' +
+        '<div style="display:flex;gap:8px;align-items:center;margin-top:8px"><input id="cx-waiver-url" class="cx-in" value="' + esc(ev.waiver_url || '') + '" placeholder="…or paste a link to a waiver document (URL)"><button type="button" class="cx-btn sm" style="flex:none" onclick="FFPComp.uploadDoc(\'waiver\')"><span class="ms">upload_file</span> Upload</button></div>' +
+        '<div class="cx-sub" style="margin-top:6px">Athletes must accept this to complete registration. Type it above, or link / upload a document.</div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Series / Season</div><select id="cx-series" class="cx-sel" style="max-width:340px" onchange="FFPComp.seriesPick(this.value)">' + seriesOpts + '</select>' +
         '<div id="cx-series-extra" style="' + (ev.series_id ? '' : 'display:none;') + 'margin-top:10px">' +
           '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Round number</div><input id="cx-series-round" type="number" min="1" class="cx-in" value="' + (ev.series_round || '') + '" style="max-width:120px"></div>' +
@@ -222,6 +224,10 @@
     if (typeof window.renderListingUploader === 'function') { try { window.renderListingUploader(ev.cover_url || ''); } catch (e) {} }
   }
   function seriesPick(v) { var x = document.getElementById('cx-series-extra'); if (x) x.style.display = (v && v !== '') ? '' : 'none'; }
+  function uploadDoc(kind) {
+    if (!window.FFPUpload) { toast('Upload unavailable', 'error'); return; }
+    FFPUpload.pick({ bucket: 'comp-docs', key: kind + '-' + S.eventId + '-' + Date.now(), title: (kind === 'rules' ? 'Rules' : 'Waiver') + ' document', accept: 'application/pdf,image/*', onDone: function (url) { var el = document.getElementById('cx-' + kind + '-url'); if (el) el.value = url; toast('Document added — Save details to apply', 'check'); } });
+  }
   var _mode = null, _accent = null, _club = null, _self = null;
   function pickMode(b) { _mode = b.getAttribute('data-v'); Array.prototype.forEach.call(b.parentNode.children, function (x) { x.classList.remove('on'); }); b.classList.add('on'); }
   function pickClub(b) { _club = b.getAttribute('data-v'); Array.prototype.forEach.call(b.parentNode.children, function (x) { x.classList.remove('on'); }); b.classList.add('on'); }
@@ -235,6 +241,7 @@
       name: g('cx-name'), description: g('cx-desc'), city: g('cx-city'), country: g('cx-country'),
       starts_at: g('cx-start'), ends_at: g('cx-end'),
       rules: g('cx-rules') || null, waiver: g('cx-waiver') || null,
+      rules_url: g('cx-rules-url') || null, waiver_url: g('cx-waiver-url') || null,
       club_mode: (_club != null ? _club === '1' : !!S.detail.event.club_mode),
       self_score: (_self != null ? _self === '1' : !!S.detail.event.self_score),
       self_score_proof: g('cx-proof') || (S.detail.event.self_score_proof || 'off'),
@@ -410,6 +417,16 @@
   function cwRmImg(i) { S.cw.imgs.splice(i, 1); _cwRefresh(); }
   function cwSpon() { if (!window.FFPUpload) { toast('Upload unavailable', 'error'); return; } FFPUpload.pick({ bucket: 'event-sponsors', key: 'cw-spon-' + S.eventId + '-' + Date.now(), title: 'Sponsor logo', onDone: function (u) { S.cw.sponLogo = u; _cwRefresh(); } }); }
   function cwRmSpon() { S.cw.sponLogo = ''; _cwRefresh(); }
+  function renderSponsorsTab(c) {
+    if (window.FFPSponsors) { try { window.FFPSponsors.render(c, { scope: 'comp', eventId: S.eventId }); } catch (e) { c.innerHTML = '<div class="cx-empty">Couldn\'t load sponsors.</div>'; } return; }
+    c.innerHTML = '<div class="cx-empty">Loading sponsors…</div>';
+    var existing = document.querySelector('script[data-ffp-spon]');
+    var done = function () { if (window.FFPSponsors && S.tab === 'sponsors') { try { window.FFPSponsors.render(c, { scope: 'comp', eventId: S.eventId }); } catch (e) { c.innerHTML = '<div class="cx-empty">Couldn\'t load sponsors.</div>'; } } else if (S.tab === 'sponsors') { c.innerHTML = '<div class="cx-empty">Sponsor editor failed to load.</div>'; } };
+    if (existing) { existing.addEventListener('load', done); if (window.FFPSponsors) done(); return; }
+    var s = document.createElement('script'); s.src = 'ffp-event-sponsors-editor.js?v=2'; s.setAttribute('data-ffp-spon', '1');
+    s.onload = done; s.onerror = function () { if (S.tab === 'sponsors') c.innerHTML = '<div class="cx-empty">Sponsor editor failed to load.</div>'; };
+    document.body.appendChild(s);
+  }
   function typeHint(t) { var d = document.getElementById('cw-dir'); if (!d) return; d.value = (t === 'time') ? 'asc' : 'desc'; }
   async function saveWorkout(id) {
     var g = function (x) { var e = document.getElementById(x); return e ? e.value : ''; };
@@ -707,7 +724,7 @@
   function tab(t) { S.tab = t; document.querySelectorAll('.cx-editnav button').forEach(function (b) { b.classList.remove('on'); }); var el = document.querySelector('.cx-editnav button[onclick*="\'' + t + '\'"]'); if (el) el.classList.add('on'); renderTab(); }
 
   window.FFPComp = { list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
-    saveDetails: saveDetails, seriesPick: seriesPick, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
+    saveDetails: saveDetails, seriesPick: seriesPick, uploadDoc: uploadDoc, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision,
     editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
