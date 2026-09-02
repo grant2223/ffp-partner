@@ -78,7 +78,7 @@
       '.cx-lb.r3{background:linear-gradient(90deg,rgba(200,140,90,.1),transparent);}',
       '.cx-lb .rk{text-align:center;font-weight:900;color:var(--ffp-text-muted);} .cx-lb.r1 .rk{color:#e0a83e;}.cx-lb.r2 .rk{color:#8a99a8;}.cx-lb.r3 .rk{color:#c08a52;}',
       '.cx-lb .at{display:flex;align-items:center;gap:8px;min-width:0;} .cx-lb .at b{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-      '.cx-lb .tot{text-align:center;font-weight:900;color:#d6353b;} .cx-lb .c b{display:block;font-size:11px;font-weight:900;} .cx-lb .c b.p1{color:#e0a83e;}.cx-lb .c b.p2{color:#8a99a8;}.cx-lb .c b.p3{color:#c08a52;} .cx-lb .c span{font-size:8px;font-weight:800;color:var(--ffp-text-muted);}',
+      '.cx-lb .tot{text-align:center;font-weight:900;color:#d6353b;} .cx-lb .c{text-align:center;} .cx-lb .c b{display:block;font-size:11px;font-weight:900;} .cx-lb .c b.p1{color:#e0a83e;}.cx-lb .c b.p2{color:#8a99a8;}.cx-lb .c b.p3{color:#c08a52;} .cx-lb .c span{display:block;font-size:8px;font-weight:800;color:var(--ffp-text-muted);}',
       '.cx-mbk{position:fixed;inset:0;background:#fff;z-index:1200;overflow-y:auto;-webkit-overflow-scrolling:touch;}',
       '.cx-modal{width:100%;max-width:640px;margin:0 auto;min-height:100dvh;background:#fff;padding:0 18px calc(env(safe-area-inset-bottom) + 30px);box-sizing:border-box;display:flex;flex-direction:column;}',
       '.cx-mhead{position:sticky;top:0;background:#fff;z-index:2;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 12px) 0 12px;border-bottom:1px solid var(--ffp-border,#e7ecf0);margin-bottom:18px;}',
@@ -133,7 +133,7 @@
   function renderEditor() {
     var el = root(); if (!el || !S.detail) return;
     var ev = S.detail.event || {};
-    var tabs = [['details', 'Details'], ['sponsors', 'Sponsors'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['heats', 'Heats & lanes'], ['judges', 'Judges'], ['scores', 'Scores'], ['standings', 'Standings']];
+    var tabs = [['details', 'Details'], ['setup', 'Set up'], ['sponsors', 'Sponsors'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['heats', 'Heats & lanes'], ['judges', 'Judges'], ['scores', 'Scores'], ['standings', 'Standings']];
     if (ev.club_mode) tabs.push(['clubs', 'Clubs']);
     el.innerHTML = '<div class="cx-wrap">' +
       '<div class="cx-head"><div style="display:flex;align-items:center;gap:12px;">' +
@@ -160,6 +160,7 @@
     if (S.tab === 'workouts') return renderWorkouts(c);
     if (S.tab === 'athletes') return renderAthletes(c);
     if (S.tab === 'heats') return renderHeats(c);
+    if (S.tab === 'setup') return renderSetup(c);
     if (S.tab === 'judges') return renderJudges(c);
     if (S.tab === 'scores') return renderScores(c);
     if (S.tab === 'standings') return renderStandings(c);
@@ -183,10 +184,6 @@
       '<div class="cx-fld"><div class="cx-lab">Country</div><input id="cx-country" class="cx-in" value="' + esc(ev.country || '') + '"></div></div>' +
       '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Starts</div><input id="cx-start" type="datetime-local" class="cx-in" value="' + dt(ev.starts_at) + '"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Ends</div><input id="cx-end" type="datetime-local" class="cx-in" value="' + dt(ev.ends_at) + '"></div></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Scoring method</div><div class="cx-seg" id="cx-mode">' +
-        '<button class="' + (ev.scoring_mode !== 'placement' ? 'on' : '') + '" data-v="points" onclick="FFPComp.pickMode(this)">Points (100,96,92…)</button>' +
-        '<button class="' + (ev.scoring_mode === 'placement' ? 'on' : '') + '" data-v="placement" onclick="FFPComp.pickMode(this)">Placement (1,2,3…)</button></div>' +
-        '<div class="cx-sub" style="margin-top:6px">Points = higher is better (F45/CrossFit style). Placement = lowest total wins.</div></div>' +
       '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Entry fee (0 = free)</div><input id="cx-fee" type="number" min="0" class="cx-in" value="' + (ev.entry_fee != null ? ev.entry_fee : '') + '"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Currency</div><input id="cx-cur" class="cx-in" value="' + esc(ev.currency || 'USD') + '"></div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Banner image <span style="font-weight:500;color:#8a99a8;">— wide photo, no words on the image</span></div>' +
@@ -199,27 +196,12 @@
       '<div class="cx-fld"><div class="cx-lab">Status</div><select id="cx-status" class="cx-sel" style="max-width:240px">' +
         ['draft', 'open', 'live', 'final'].map(function (s) { return '<option value="' + s + '"' + ((ev.status || 'draft') === s ? ' selected' : '') + '>' + s.charAt(0).toUpperCase() + s.slice(1) + (s === 'draft' ? ' (hidden)' : s === 'open' ? ' (registration)' : s === 'live' ? ' (in progress)' : ' (results)') + '</option>'; }).join('') + '</select>' +
         '<div class="cx-sub" style="margin-top:6px">Open / Live / Final appear in the FFP App. Draft stays hidden.</div></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Club championship</div><div class="cx-seg" id="cx-club">' +
-        '<button class="' + (!ev.club_mode ? 'on' : '') + '" data-v="0" onclick="FFPComp.pickClub(this)">Off</button>' +
-        '<button class="' + (ev.club_mode ? 'on' : '') + '" data-v="1" onclick="FFPComp.pickClub(this)">On — clubs compete</button></div>' +
-        '<div class="cx-sub" style="margin-top:6px">When on, each entry picks the partner club it represents at registration, and a Clubs leaderboard ranks clubs by their entries\' final positions (1st = 1 point, 2nd = 2 …) — lowest total wins.</div></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Athlete self-scoring</div><div class="cx-seg" id="cx-self">' +
-        '<button class="' + (!ev.self_score ? 'on' : '') + '" data-v="0" onclick="FFPComp.pickSelf(this)">Off</button>' +
-        '<button class="' + (ev.self_score ? 'on' : '') + '" data-v="1" onclick="FFPComp.pickSelf(this)">On — athletes enter their own</button></div>' +
-        '<div class="cx-sub" style="margin-top:6px">Athletes submit their result per event from the FFP App. It counts immediately — you can edit, hide or remove any score in the Scores tab.</div>' +
-        '<div style="margin-top:10px"><div class="cx-lab">Proof</div><select id="cx-proof" class="cx-sel" style="max-width:260px">' +
-          ['off', 'optional', 'required'].map(function (o) { return '<option value="' + o + '"' + ((ev.self_score_proof || 'off') === o ? ' selected' : '') + '>' + ({ off: 'No proof needed', optional: 'Optional photo / video', required: 'Require photo / video' })[o] + '</option>'; }).join('') + '</select></div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Rules (optional)</div><textarea id="cx-rules" class="cx-in" rows="4" placeholder="Movement standards, scoring, tie-breaks, equipment…">' + esc(ev.rules || '') + '</textarea>' +
         '<div style="display:flex;gap:8px;align-items:center;margin-top:8px"><input id="cx-rules-url" class="cx-in" value="' + esc(ev.rules_url || '') + '" placeholder="…or paste a link to a rules document (URL)"><button type="button" class="cx-btn sm" style="flex:none" onclick="FFPComp.uploadDoc(\'rules\')"><span class="ms">upload_file</span> Upload</button></div>' +
         '<div class="cx-sub" style="margin-top:6px">Type the rules above, or link / upload a document (PDF). Shown to athletes on the competition Info tab.</div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Waiver / disclaimer (optional)</div><textarea id="cx-waiver" class="cx-in" rows="4" placeholder="The waiver athletes must accept when they register…">' + esc(ev.waiver || '') + '</textarea>' +
         '<div style="display:flex;gap:8px;align-items:center;margin-top:8px"><input id="cx-waiver-url" class="cx-in" value="' + esc(ev.waiver_url || '') + '" placeholder="…or paste a link to a waiver document (URL)"><button type="button" class="cx-btn sm" style="flex:none" onclick="FFPComp.uploadDoc(\'waiver\')"><span class="ms">upload_file</span> Upload</button></div>' +
         '<div class="cx-sub" style="margin-top:6px">Athletes must accept this to complete registration. Type it above, or link / upload a document.</div></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Series / Season</div><select id="cx-series" class="cx-sel" style="max-width:340px" onchange="FFPComp.seriesPick(this.value)">' + seriesOpts + '</select>' +
-        '<div id="cx-series-extra" style="' + (ev.series_id ? '' : 'display:none;') + 'margin-top:10px">' +
-          '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Round number</div><input id="cx-series-round" type="number" min="1" class="cx-in" value="' + (ev.series_round || '') + '" style="max-width:120px"></div>' +
-          '<div class="cx-fld"><div class="cx-lab">&nbsp;</div><label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;color:#12232f;padding-top:10px"><input type="checkbox" id="cx-series-finals" ' + (ev.is_finals ? 'checked' : '') + ' style="width:18px;height:18px"> This is the finals event</label></div></div></div>' +
-        '<div class="cx-sub" style="margin-top:6px">One-off = a standalone competition. Add it to a series to carry its final results into a season leaderboard.</div></div>' +
       '<button class="cx-btn pri" onclick="FFPComp.saveDetails()"><span class="ms">save</span> Save details</button>';
     if (typeof window.renderListingUploader === 'function') { try { window.renderListingUploader(ev.cover_url || ''); } catch (e) {} }
   }
@@ -242,10 +224,6 @@
       starts_at: g('cx-start'), ends_at: g('cx-end'),
       rules: g('cx-rules') || null, waiver: g('cx-waiver') || null,
       rules_url: g('cx-rules-url') || null, waiver_url: g('cx-waiver-url') || null,
-      club_mode: (_club != null ? _club === '1' : !!S.detail.event.club_mode),
-      self_score: (_self != null ? _self === '1' : !!S.detail.event.self_score),
-      self_score_proof: g('cx-proof') || (S.detail.event.self_score_proof || 'off'),
-      scoring_mode: _mode || (S.detail.event.scoring_mode || 'points'),
       accent: _accent || S.detail.event.accent || '#d6353b',
       cover_url: cover || null,
       entry_fee: g('cx-fee'), currency: g('cx-cur'), status: g('cx-status')
@@ -253,23 +231,68 @@
     var r; try { r = await sb().rpc('comp_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
     if (r && !r.error) {
       try { await sb().rpc('comp_set_stream', { p_event: S.eventId, p_url: g('cx-stream') || '' }); } catch (e) {}
-      // Series / Season linking
-      try {
-        var sv = g('cx-series');
-        if (sv !== undefined) {
-          var round = parseInt(g('cx-series-round'), 10); if (isNaN(round)) round = null;
-          var finals = !!(document.getElementById('cx-series-finals') || {}).checked;
-          if (sv === '' ) { await sb().rpc('comp_series_unset_event', { p_event: S.eventId }); }
-          else if (sv === '__new') {
-            var nm = window.prompt('Name this series / season'); if (nm) {
-              var rs = await sb().rpc('comp_series_save', { p_id: null, p: { name: nm, organizer_provider_id: (S.detail.event.organizer_provider_id || null), status: 'open' } });
-              if (rs && !rs.error && rs.data) { await sb().rpc('comp_series_set_event', { p_series: rs.data, p_event: S.eventId, p_round: round, p_is_finals: finals }); S.seriesList = null; }
-            }
-          } else { await sb().rpc('comp_series_set_event', { p_series: sv, p_event: S.eventId, p_round: round, p_is_finals: finals }); }
-        }
-      } catch (e) { console.error('[comp series]', e); }
-      toast('Saved', 'check'); _mode = _accent = _club = _self = null; reload();
+      toast('Saved', 'check'); _accent = null; reload();
     } else { toast('Save failed', 'error'); }
+  }
+
+  // ─── SET UP tab: series/one-off, points system, clubs, athlete self-scoring, score entry ───
+  function renderSetup(c) {
+    var ev = S.detail.event || {};
+    if (!S.seriesList) { S.seriesList = []; sb().rpc('comp_my_series').then(function (r) { S.seriesList = (r && !r.error && r.data) || []; if (S.tab === 'setup') renderTab(); }, function () {}); }
+    var seriesOpts = '<option value="">One-off competition</option>' +
+      (S.seriesList || []).map(function (s) { return '<option value="' + s.id + '"' + (ev.series_id === s.id ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') +
+      '<option value="__new">+ New series…</option>';
+    c.innerHTML =
+      '<div class="cx-fld"><div class="cx-lab">Format</div><select id="su-series" class="cx-sel" style="max-width:340px" onchange="FFPComp.suSeriesPick(this.value)">' + seriesOpts + '</select>' +
+        '<div id="su-series-extra" style="' + (ev.series_id ? '' : 'display:none;') + 'margin-top:10px">' +
+          '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Round number</div><input id="su-series-round" type="number" min="1" class="cx-in" value="' + (ev.series_round || '') + '" style="max-width:120px"></div>' +
+          '<div class="cx-fld"><div class="cx-lab">&nbsp;</div><label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;color:#12232f;padding-top:10px"><input type="checkbox" id="su-series-finals" ' + (ev.is_finals ? 'checked' : '') + ' style="width:18px;height:18px"> This is the finals event</label></div></div></div>' +
+        '<div class="cx-sub" style="margin-top:6px">One-off = a standalone competition. Add it to a series to carry its final results into a season leaderboard.</div></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Scoring method</div><div class="cx-seg" id="cx-mode">' +
+        '<button class="' + (ev.scoring_mode !== 'placement' ? 'on' : '') + '" data-v="points" onclick="FFPComp.pickMode(this)">Points (100,96,92…)</button>' +
+        '<button class="' + (ev.scoring_mode === 'placement' ? 'on' : '') + '" data-v="placement" onclick="FFPComp.pickMode(this)">Placement (1,2,3…)</button></div>' +
+        '<div class="cx-sub" style="margin-top:6px">Points = higher is better (F45/CrossFit style). Placement = lowest total wins. Tie-break = best single-event finish.</div></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Club championship</div><div class="cx-seg" id="cx-club">' +
+        '<button class="' + (!ev.club_mode ? 'on' : '') + '" data-v="0" onclick="FFPComp.pickClub(this)">Off</button>' +
+        '<button class="' + (ev.club_mode ? 'on' : '') + '" data-v="1" onclick="FFPComp.pickClub(this)">On — clubs compete</button></div>' +
+        '<div class="cx-sub" style="margin-top:6px">When on, each entry picks the partner club it represents at registration, and a Clubs leaderboard ranks clubs by their entries\' final positions.</div></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Athlete self-scoring</div><div class="cx-seg" id="cx-self">' +
+        '<button class="' + (!ev.self_score ? 'on' : '') + '" data-v="0" onclick="FFPComp.pickSelf(this)">Off</button>' +
+        '<button class="' + (ev.self_score ? 'on' : '') + '" data-v="1" onclick="FFPComp.pickSelf(this)">On — athletes enter their own</button></div>' +
+        '<div class="cx-sub" style="margin-top:6px">Athletes submit their result per event from the FFP App. It counts immediately — you can edit, hide or remove any score in the Scores tab.</div>' +
+        '<div style="margin-top:10px"><div class="cx-lab">Proof</div><select id="cx-proof" class="cx-sel" style="max-width:260px">' +
+          ['off', 'optional', 'required'].map(function (o) { return '<option value="' + o + '"' + ((ev.self_score_proof || 'off') === o ? ' selected' : '') + '>' + ({ off: 'No proof needed', optional: 'Optional photo / video', required: 'Require photo / video' })[o] + '</option>'; }).join('') + '</select></div></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Score entry</div><div class="cx-sub" style="margin-top:0">A <b>head scorer</b> (you or an assigned scorer) enters every score in the Scores tab. Add judges/officials in the Judges tab. Judges scoring from their own app is coming soon.</div></div>' +
+      '<button class="cx-btn pri" onclick="FFPComp.saveSetup()"><span class="ms">save</span> Save set up</button>';
+  }
+  function suSeriesPick(v) { var x = document.getElementById('su-series-extra'); if (x) x.style.display = (v && v !== '') ? '' : 'none'; }
+  async function saveSetup() {
+    var ev = S.detail.event || {};
+    var g = function (id) { var e = document.getElementById(id); return e ? e.value : undefined; };
+    var p = {
+      scoring_mode: _mode || (ev.scoring_mode || 'points'),
+      club_mode: (_club != null ? _club === '1' : !!ev.club_mode),
+      self_score: (_self != null ? _self === '1' : !!ev.self_score),
+      self_score_proof: g('cx-proof') || (ev.self_score_proof || 'off')
+    };
+    var r; try { r = await sb().rpc('comp_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast('Save failed', 'error'); return; }
+    // Series / Season linking
+    try {
+      var sv = g('su-series');
+      if (sv !== undefined) {
+        var round = parseInt(g('su-series-round'), 10); if (isNaN(round)) round = null;
+        var finals = !!(document.getElementById('su-series-finals') || {}).checked;
+        if (sv === '') { await sb().rpc('comp_series_unset_event', { p_event: S.eventId }); }
+        else if (sv === '__new') {
+          var nm = window.prompt('Name this series / season'); if (nm) {
+            var rs = await sb().rpc('comp_series_save', { p_id: null, p: { name: nm, organizer_provider_id: (ev.organizer_provider_id || null), status: 'open' } });
+            if (rs && !rs.error && rs.data) { await sb().rpc('comp_series_set_event', { p_series: rs.data, p_event: S.eventId, p_round: round, p_is_finals: finals }); S.seriesList = null; }
+          }
+        } else { await sb().rpc('comp_series_set_event', { p_series: sv, p_event: S.eventId, p_round: round, p_is_finals: finals }); }
+      }
+    } catch (e) { console.error('[comp setup series]', e); }
+    toast('Set up saved', 'check'); _mode = _club = _self = null; reload();
   }
 
   // Divisions
@@ -384,6 +407,7 @@
         '<option value="desc"' + (w.direction === 'desc' ? ' selected' : '') + '>Higher wins (reps/weight)</option></select></div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Time cap minutes (optional)</div><input id="cw-cap" type="number" class="cx-in" value="' + cap + '" style="max-width:160px"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Points weighting (optional)</div><input id="cw-pw" type="number" step="0.1" class="cx-in" value="' + pw + '" placeholder="1" style="max-width:160px"><div class="cx-sub" style="margin-top:6px">Multiplies this event\'s points (e.g. 2 = worth double). Leave blank for normal.</div></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Event start time</div><input id="cw-start" type="datetime-local" class="cx-in" value="' + _dtLocal(w.start_at) + '" style="max-width:240px"><div class="cx-sub" style="margin-top:6px">When this event begins — shown to athletes on the event page.</div></div>' +
       '<div id="cw-media">' + cwMediaHtml() + '</div>' +
       '<div class="cx-fld"><div class="cx-lab">Explainer video link (optional)</div><input id="cw-video" class="cx-in" value="' + esc(w.video_url || '') + '" placeholder="YouTube / Vimeo link"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Event sponsor (optional)</div><input id="cw-spon-name" class="cx-in" value="' + esc(w.sponsor_name || '') + '" placeholder="Sponsor name" style="margin-bottom:8px">' +
@@ -465,7 +489,8 @@
     var p = { name: g('cw-name'), description: g('cw-desc') || null, score_type: g('cw-type'), direction: g('cw-dir'), cap_seconds: isNaN(capMin) ? null : capMin * 60,
       points_weight: (isNaN(pwv) || pwv <= 0) ? 1 : pwv,
       banner_url: cw.banner || null, image_urls: (cw.imgs || []), video_url: g('cw-video') || null,
-      sponsor_name: g('cw-spon-name') || null, sponsor_logo_url: cw.sponLogo || null, sponsor_url: g('cw-spon-url') || null };
+      sponsor_name: g('cw-spon-name') || null, sponsor_logo_url: cw.sponLogo || null, sponsor_url: g('cw-spon-url') || null,
+      start_at: g('cw-start') ? new Date(g('cw-start')).toISOString() : null };
     if (!p.name) { toast('Name the event'); return; }
     // New event can be allocated to multiple divisions at once
     var targets = [S.divId];
@@ -586,32 +611,42 @@
     var rows = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
     var box = document.getElementById('cx-scores'); if (!box) return;
     if (!rows.length) { box.innerHTML = '<div class="cx-empty">No athletes in this division yet.</div>'; return; }
-    var unit = w.score_type === 'time' ? 'seconds' : w.score_type === 'weight' ? 'kg' : w.score_type === 'distance' ? 'metres' : w.score_type;
-    box.innerHTML = '<div class="cx-sub" style="margin-bottom:8px">Enter each score in <b>' + esc(unit) + '</b> (' + (w.direction === 'asc' ? 'lower wins' : 'higher wins') + '). Save recalculates the leaderboard. <b>SELF</b> = the athlete entered it themselves — you can edit, hide or clear any score.</div>' +
-      '<div class="cx-sc head"><span>#</span><span>Athlete</span><span style="text-align:center">Score</span><span style="text-align:center">Proof</span><span style="text-align:center">Show</span></div>' +
+    var t = w.score_type;
+    var unitWord = t === 'time' ? 'time (m:ss)' : t === 'weight' ? 'kilograms' : t === 'distance' ? 'metres' : t === 'reps' ? 'reps' : 'points';
+    var ph = t === 'time' ? 'm:ss' : t === 'weight' ? 'kg' : t === 'distance' ? 'm' : t === 'reps' ? 'reps' : 'pts';
+    box.innerHTML = '<div class="cx-sub" style="margin-bottom:8px">Enter each result as <b>' + esc(unitWord) + '</b> (' + (w.direction === 'asc' ? 'lower wins' : 'higher wins') + '). Save recalculates the leaderboard. <b>SELF</b> = the athlete entered it themselves — you can edit, hide or clear any score.</div>' +
+      '<div class="cx-sc head"><span>#</span><span>Athlete</span><span style="text-align:center">' + (t === 'time' ? 'Time' : t === 'weight' ? 'Weight' : t === 'distance' ? 'Distance' : t === 'reps' ? 'Reps' : 'Points') + '</span><span style="text-align:center">Proof</span><span style="text-align:center">Show</span></div>' +
       rows.map(function (a) {
         var av = a.photo ? '<span class="cx-av" style="width:26px;height:26px;background-image:url(\'' + esc(a.photo) + '\')"></span>' : '<span class="cx-av" style="width:26px;height:26px">' + esc((a.name || '?').slice(0, 1).toUpperCase()) + '</span>';
         var proof = a.proof_url ? '<a href="' + esc(a.proof_url) + '" target="_blank" rel="noopener" style="color:#1980ad;font-weight:800;font-size:11px">View</a>' : (a.source === 'self' ? '<span style="font-size:10px;font-weight:800;color:#8a99a8">SELF</span>' : '');
         var hide = (a.raw != null) ? '<button class="cx-btn sm" style="padding:5px 9px" onclick="FFPComp.toggleHide(\'' + a.entrant_id + '\',' + (a.hidden ? 'false' : 'true') + ')">' + (a.hidden ? 'Show' : 'Hide') + '</button>' : '';
+        var inputEl = (t === 'time')
+          ? '<input id="cs-' + a.entrant_id + '" type="text" inputmode="numeric" value="' + (a.raw != null ? _scFmt(a.raw, t) : '') + '" placeholder="' + ph + '">'
+          : '<div style="display:flex;align-items:center;gap:5px"><input id="cs-' + a.entrant_id + '" type="number" step="any" min="0" value="' + (a.raw != null ? a.raw : '') + '" placeholder="—"><span style="font-size:11px;font-weight:800;color:#8a99a8">' + esc(ph) + '</span></div>';
         return '<div class="cx-sc"' + (a.hidden ? ' style="opacity:.5"' : '') + '><span style="text-align:center;font-weight:800;color:var(--ffp-text-muted)">' + (a.athlete_no || '') + '</span>' +
           '<span style="display:flex;align-items:center;gap:8px;min-width:0">' + av + '<b style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(a.name) + '</b></span>' +
-          '<input id="cs-' + a.entrant_id + '" type="number" step="any" value="' + (a.raw != null ? a.raw : '') + '" placeholder="—">' +
+          inputEl +
           '<span style="text-align:center">' + proof + '</span><span style="text-align:center">' + hide + '</span></div>';
       }).join('') +
       '<div style="margin-top:16px;display:flex;gap:10px"><button class="cx-btn pri" onclick="FFPComp.saveScores()"><span class="ms">bolt</span> Save scores</button>' +
       '<button class="cx-btn" onclick="FFPComp.tab(\'standings\')">View standings</button></div>';
   }
+  // score formatting/parsing by event type (time = m:ss)
+  function _scFmt(raw, t) { if (raw == null || raw === '') return ''; if (t === 'time') { var s = Math.round(Number(raw)), m = Math.floor(s / 60), ss = s % 60; return m + ':' + (ss < 10 ? '0' : '') + ss; } return String(raw); }
+  function _dtLocal(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d.getTime())) return ''; var p = function (n) { return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+  function _scParse(val, t) { val = (val == null ? '' : String(val)).trim(); if (val === '') return null; if (t === 'time') { if (val.indexOf(':') > -1) { var p = val.split(':'); return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0); } var n = parseFloat(val); return isNaN(n) ? null : n; } var x = parseFloat(val); return isNaN(x) ? null : x; }
   async function saveScores() {
     var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; });
-    var rows = (div && div.workouts) ? [] : [];
+    var w = (div && div.workouts || []).find(function (x) { return x.id === S.wodId; }) || {};
+    var t = w.score_type;
     var inputs = document.querySelectorAll('[id^="cs-"]');
     var jobs = [];
     inputs.forEach(function (inp) {
       var eid = inp.id.slice(3);
-      var v = inp.value === '' ? null : Number(inp.value);
+      var v = _scParse(inp.value, t);
       jobs.push(sb().rpc('comp_score_set', { p_workout: S.wodId, p_entrant: eid, p_raw: v, p_tiebreak: null, p_notes: null }));
     });
-    try { await Promise.all(jobs); toast('Scores saved — leaderboard updated', 'check'); } catch (e) { toast('Some scores failed', 'error'); }
+    try { await Promise.all(jobs); toast('Scores saved — leaderboard updated', 'check'); renderTab(); } catch (e) { toast('Some scores failed', 'error'); }
   }
 
   // Standings: leaderboard per division + publish
@@ -725,25 +760,36 @@
   async function heatSet(heat) {
     var row = document.querySelector('.cx-heath[data-h="' + heat + '"]'); if (!row) return;
     var tv = (row.querySelector('input[type=time]') || {}).value, jid = (row.querySelector('.cx-hjudge') || {}).value || null;
-    var base = (S.detail.event && S.detail.event.starts_at) || new Date().toISOString().slice(0, 10);
+    // Base the heat date on the EVENT's own start date if set, else the competition start date
+    var wStart = null;
+    (S.detail.divisions || []).forEach(function (d) { (d.workouts || []).forEach(function (w) { if (w.id === S.wodId && w.start_at) wStart = w.start_at; }); });
+    var base = (wStart || (S.detail.event && S.detail.event.starts_at) || new Date().toISOString()).slice(0, 10);
     var when = tv ? new Date(base + 'T' + tv + ':00').toISOString() : null;
     await sb().rpc('comp_heat_set', { p_heat: heat, p_start: when, p_judge: jid }); toast('Saved', 'success');
   }
 
   // ---------- JUDGES ----------
   async function renderJudges(c) {
-    c.innerHTML = '<div class="cx-sub" style="margin-bottom:12px">Judges enter scores from their own login. Add by their FFP account email.</div>'
-      + '<div class="cx-toolbar"><input class="cx-in" id="cx-jemail" placeholder="Judge\'s FFP email" style="flex:1;min-width:180px"><button class="cx-btn pri sm" onclick="FFPComp.addJudge()"><span class="ms">add</span> Add judge</button></div><div id="cx-judges"><div class="cx-empty">Loading…</div></div>';
+    c.innerHTML = '<div class="cx-sub" style="margin-bottom:6px">Add your judges &amp; officials. They need an <b>FFP App account</b> — add them by their FFP email, or send an invite to join (shares your referral link).</div>'
+      + '<div class="cx-sub" style="margin-bottom:12px;color:#8a99a8">Scoring is done by the head scorer in the Scores tab. Judges scoring from their own app is coming soon.</div>'
+      + '<div class="cx-toolbar"><input class="cx-in" id="cx-jemail" placeholder="Judge\'s FFP email" style="flex:1;min-width:180px"><button class="cx-btn pri sm" onclick="FFPComp.addJudge()"><span class="ms">person_add</span> Add</button><button class="cx-btn sm" onclick="FFPComp.inviteJudge()"><span class="ms">mail</span> Invite</button></div><div id="cx-judges"><div class="cx-empty">Loading…</div></div>';
     var r; try { r = await sb().rpc('comp_judges_list', { p_event: S.eventId }); } catch (e) { r = { error: e }; }
     var rows = (r && r.data) || []; var host = document.getElementById('cx-judges');
     host.innerHTML = rows.length ? rows.map(function (j) {
-      return '<div class="cx-row"><span class="cx-av" style="' + (j.photo ? 'background-image:url(\'' + esc(j.photo) + '\')' : '') + '">' + (j.photo ? '' : esc((j.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(j.name) + '</b><span>' + esc(j.email || '') + ' · can score</span></div><span class="ms" style="color:#9aa8b4;cursor:pointer" onclick="FFPComp.removeJudge(\'' + j.member_id + '\')">close</span></div>';
+      return '<div class="cx-row"><span class="cx-av" style="' + (j.photo ? 'background-image:url(\'' + esc(j.photo) + '\')' : '') + '">' + (j.photo ? '' : esc((j.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(j.name) + '</b><span>' + esc(j.email || '') + ' · official</span></div><span class="ms" style="color:#9aa8b4;cursor:pointer" onclick="FFPComp.removeJudge(\'' + j.member_id + '\')">close</span></div>';
     }).join('') : '<div class="cx-empty">No judges yet.</div>';
   }
   async function addJudge() {
     var em = (document.getElementById('cx-jemail') || {}).value; if (!em) return;
     var r; try { r = await sb().rpc('comp_judge_add', { p_event: S.eventId, p_email: em, p_name: null }); } catch (e) { r = { error: e }; }
-    if (r.error || (r.data && r.data.error)) { toast('No FFP account with that email', 'error'); return; } toast('Judge added', 'success'); renderTab();
+    if (r.error || (r.data && r.data.error)) { toast('No FFP account with that email — send them an invite to join first', 'error'); return; } toast('Judge added', 'success'); renderTab();
+  }
+  function inviteJudge() {
+    var pid = ((S.detail && S.detail.event) || {}).organizer_provider_id || prov().id;
+    var link = pid ? ('https://findfitpeople.com/visit?venue=' + pid) : 'https://app.findfitpeople.com/signup';
+    var msg = 'Join me on Find Fit People to judge my competition: ' + link;
+    try { navigator.clipboard.writeText(msg); toast('Invite link copied — send it to your judge', 'check'); }
+    catch (e) { window.prompt('Copy this invite link for your judge:', link); }
   }
   async function removeJudge(mid) { await sb().rpc('comp_judge_remove', { p_event: S.eventId, p_member: mid }); renderTab(); }
 
@@ -753,7 +799,7 @@
   function tab(t) { S.tab = t; document.querySelectorAll('.cx-editnav button').forEach(function (b) { b.classList.remove('on'); }); var el = document.querySelector('.cx-editnav button[onclick*="\'' + t + '\'"]'); if (el) el.classList.add('on'); renderTab(); }
 
   window.FFPComp = { list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
-    saveDetails: saveDetails, seriesPick: seriesPick, uploadDoc: uploadDoc, sponPick: sponPick, sponAdd: sponAdd, sponRemove: sponRemove, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
+    saveDetails: saveDetails, seriesPick: seriesPick, saveSetup: saveSetup, suSeriesPick: suSeriesPick, uploadDoc: uploadDoc, sponPick: sponPick, sponAdd: sponAdd, sponRemove: sponRemove, inviteJudge: inviteJudge, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision,
     editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
