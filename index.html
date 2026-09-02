@@ -216,7 +216,7 @@
 <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.js"></script>
 <script src="assets/ffp-image-upload.js?v=7"></script>
 <script src="assets/ffp-gallery.js?v=1"></script>
-<script src="ffp-provider-profile-loader.js?v=28"></script>
+<script src="ffp-provider-profile-loader.js?v=29"></script>
 <!-- Shared provider picker (FFPPicker) defined HERE in the dashboard so Events/Challenges/Experiences
      activity + country/city pickers never depend on a separately-uploaded loader being present. -->
 <script>
@@ -2608,7 +2608,7 @@ a { color: var(--ffp-blue); text-decoration: none; }
 
         <!-- ── ACTIVITIES ── (chips injected by ffp-provider-profile-loader.js into #pf-activities-host) -->
         <div class="pf-pane" id="pf-pane-activities">
-          <div class="psub" style="margin:0 0 4px;">The activities you offer. Members see these on your profile, and they're the exact options shown when someone checks in at your venue.</div>
+          <div class="psub" id="pf-acts-intro" style="margin:0 0 4px;">The activities you offer. Members see these on your profile, and they're the exact options shown when someone checks in at your venue.</div>
           <div id="pf-activities-host"></div>
         </div>
 
@@ -3315,7 +3315,7 @@ const NAV = [
   { id: 'settings',    icon: 'settings',        label: 'Settings',    section: 'account' }
 ];
 
-var _navCollapsed = {};   // section id -> true when collapsed
+var _navCollapsed = { business: true };   // section id -> true when collapsed (Business hidden by default)
 const sectionLabels = { manage: 'Manage', business: 'Business', engagement: 'Engagement', account: 'Account' };
 
 // ── Business section = paid $99/mo add-on, admin-granted (providers.business_access). Free for now: admin toggles it on. ──
