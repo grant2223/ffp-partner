@@ -24,7 +24,20 @@ function _memProvId() {
          (typeof providerProfile !== 'undefined' && providerProfile.id) || null;
 }
 
+function _memInjectCss() {
+  if (document.getElementById('mem-bd-css')) return;
+  var s = document.createElement('style'); s.id = 'mem-bd-css';
+  s.textContent =
+    '.mem-bd{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 2px 12px;font-size:13px;font-weight:700;color:#5b6b75;}'
+    + '.mem-bd .mem-bd-c{font-weight:900;color:#12232f;}'
+    + '.mem-bd .mem-bd-seg{position:relative;padding-left:14px;}'
+    + '.mem-bd .mem-bd-seg::before{content:"·";position:absolute;left:4px;color:#c4ced5;}'
+    + '.mem-bd .mem-export{margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:#1980AD;color:#fff;border:none;border-radius:9px;padding:8px 14px;font:inherit;font-weight:800;font-size:13px;cursor:pointer;}'
+    + '.mem-bd .mem-export .ms{font-size:17px;}';
+  document.head.appendChild(s);
+}
 async function renderMembers() {
+  _memInjectCss();
   var host = document.getElementById('mem-list');
   if (!host) return;
   var pid = _memProvId();
@@ -59,8 +72,52 @@ function renderMembersList() {
       : emptyState('No members yet', 'Add your first member. Bookings, memberships and attendance will all link back to them.', 'Add member', 'openMemberModal()');
     return;
   }
-  host.innerHTML = '<div class="psub" style="margin:0 2px 8px;">' + _members.length + ' member' + (_members.length === 1 ? '' : 's') + '</div>' +
-                   items.map(memberRow).join('');
+  // Breakdown across ALL members (not the filtered view) + email-list count + export.
+  var by = { active: 0, trial: 0, lapsed: 0, prospect: 0 };
+  var withEmail = 0;
+  _members.forEach(function (m) { var s = m.member_status || 'active'; if (by[s] == null) by[s] = 0; by[s]++; if (m.email) withEmail++; });
+  var seg = [];
+  if (by.active) seg.push(by.active + ' active');
+  if (by.trial) seg.push(by.trial + ' trial');
+  if (by.lapsed) seg.push(by.lapsed + ' lapsed');
+  if (by.prospect) seg.push(by.prospect + ' prospect' + (by.prospect === 1 ? '' : 's'));
+  var bd = '<div class="mem-bd"><span class="mem-bd-c">' + _members.length + ' member' + (_members.length === 1 ? '' : 's') + '</span>'
+    + (seg.length ? '<span class="mem-bd-seg">' + seg.join(' · ') + '</span>' : '')
+    + '<span class="mem-bd-seg">' + withEmail + ' with email</span>'
+    + '<button class="mem-export" onclick="exportMembers()"><span class="ms">download</span> Export CSV</button></div>';
+  host.innerHTML = bd + items.map(memberRow).join('');
+}
+
+// Filtered+sorted list (mirrors renderMembersList) so export matches what's on screen.
+function _memFiltered() {
+  var box = document.getElementById('mem-search');
+  var q = (box ? box.value : '').trim().toLowerCase();
+  var items = _members.slice();
+  if (q) items = items.filter(function (m) { return ((m.full_name || '') + ' ' + (m.email || '') + ' ' + (m.phone || '') + ' ' + (m.tags || '')).toLowerCase().indexOf(q) !== -1; });
+  var sortBox = document.getElementById('mem-sort'); var sort = sortBox ? sortBox.value : 'name';
+  if (sort === 'recent') items.sort(function (a, b) { return new Date(b.created_at || b.join_date || 0) - new Date(a.created_at || a.join_date || 0); });
+  else if (sort === 'status') items.sort(function (a, b) { return (a.member_status || '').localeCompare(b.member_status || '') || (a.full_name || '').localeCompare(b.full_name || ''); });
+  else items.sort(function (a, b) { return (a.full_name || '').localeCompare(b.full_name || ''); });
+  return items;
+}
+
+// Download the member/client list as CSV (respects the current search + sort).
+function exportMembers() {
+  var items = _memFiltered();
+  if (!items.length) { if (typeof showToast === 'function') showToast('No members to export', 'info'); return; }
+  var cols = ['Name', 'Email', 'Phone', 'Status', 'Tags', 'City', 'Country', 'Joined'];
+  var cell = function (v) { v = (v == null ? '' : String(v)); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  var lines = [cols.join(',')];
+  items.forEach(function (m) {
+    var nm = (m.full_name || ((m.given_names || '') + ' ' + (m.surname || '')).trim()) || '';
+    lines.push([nm, m.email, m.phone, m.member_status || 'active', m.tags, m.city, m.country, m.join_date || m.created_at || ''].map(cell).join(','));
+  });
+  var name = ((window.FFP_PROVIDER && window.FFP_PROVIDER.business_name) || 'members').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+  var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob); var a = document.createElement('a');
+  a.href = url; a.download = name + '-members-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  if (typeof showToast === 'function') showToast('Exported ' + items.length + ' member' + (items.length === 1 ? '' : 's'), 'check');
 }
 
 // Compact, dense row — scales to 100s of clients. Whole row opens the client profile.
