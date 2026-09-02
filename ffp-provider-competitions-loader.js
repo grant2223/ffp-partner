@@ -133,7 +133,7 @@
   function renderEditor() {
     var el = root(); if (!el || !S.detail) return;
     var ev = S.detail.event || {};
-    var tabs = [['details', 'Details'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['heats', 'Heats & lanes'], ['judges', 'Judges'], ['scores', 'Scores'], ['standings', 'Standings'], ['sponsors', 'Sponsors']];
+    var tabs = [['details', 'Details'], ['sponsors', 'Sponsors'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['heats', 'Heats & lanes'], ['judges', 'Judges'], ['scores', 'Scores'], ['standings', 'Standings']];
     if (ev.club_mode) tabs.push(['clubs', 'Clubs']);
     el.innerHTML = '<div class="cx-wrap">' +
       '<div class="cx-head"><div style="display:flex;align-items:center;gap:12px;">' +
@@ -417,15 +417,44 @@
   function cwRmImg(i) { S.cw.imgs.splice(i, 1); _cwRefresh(); }
   function cwSpon() { if (!window.FFPUpload) { toast('Upload unavailable', 'error'); return; } FFPUpload.pick({ bucket: 'event-sponsors', key: 'cw-spon-' + S.eventId + '-' + Date.now(), title: 'Sponsor logo', onDone: function (u) { S.cw.sponLogo = u; _cwRefresh(); } }); }
   function cwRmSpon() { S.cw.sponLogo = ''; _cwRefresh(); }
-  function renderSponsorsTab(c) {
-    if (window.FFPSponsors) { try { window.FFPSponsors.render(c, { scope: 'comp', eventId: S.eventId }); } catch (e) { c.innerHTML = '<div class="cx-empty">Couldn\'t load sponsors.</div>'; } return; }
+  // Self-contained sponsor editor (no external file dependency). Uses the event_sponsors RPCs.
+  async function renderSponsorsTab(c) {
     c.innerHTML = '<div class="cx-empty">Loading sponsors…</div>';
-    var existing = document.querySelector('script[data-ffp-spon]');
-    var done = function () { if (window.FFPSponsors && S.tab === 'sponsors') { try { window.FFPSponsors.render(c, { scope: 'comp', eventId: S.eventId }); } catch (e) { c.innerHTML = '<div class="cx-empty">Couldn\'t load sponsors.</div>'; } } else if (S.tab === 'sponsors') { c.innerHTML = '<div class="cx-empty">Sponsor editor failed to load.</div>'; } };
-    if (existing) { existing.addEventListener('load', done); if (window.FFPSponsors) done(); return; }
-    var s = document.createElement('script'); s.src = 'ffp-event-sponsors-editor.js?v=2'; s.setAttribute('data-ffp-spon', '1');
-    s.onload = done; s.onerror = function () { if (S.tab === 'sponsors') c.innerHTML = '<div class="cx-empty">Sponsor editor failed to load.</div>'; };
-    document.body.appendChild(s);
+    var r; try { r = await sb().rpc('event_sponsors_list', { p_scope: 'comp', p_event: S.eventId }); } catch (e) { r = { error: e }; }
+    if (S.tab !== 'sponsors') return;
+    var list = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
+    S.sponLogo = null;
+    var rows = list.length ? list.map(function (s) {
+      return '<div class="cx-row"><span class="cx-av" style="border-radius:11px;background-size:contain;' + (s.logo_url ? "background-image:url('" + esc(s.logo_url) + "')" : '') + '">' + (s.logo_url ? '' : (esc((s.name || '?').slice(0, 1).toUpperCase()))) + '</span>' +
+        '<div class="g"><b>' + esc(s.name || 'Sponsor') + '  <span style="font-size:10px;font-weight:900;color:' + (s.tier === 'title' ? '#9a6a00' : '#1980AD') + '">' + (s.tier === 'title' ? 'TITLE' : 'PARTNER') + '</span></b>' + (s.link_url ? '<span>' + esc(s.link_url) + '</span>' : '') + '</div>' +
+        '<button class="cx-btn sm" onclick="FFPComp.sponRemove(\'' + s.id + '\')">Remove</button></div>';
+    }).join('') : '<div class="cx-empty">No sponsors yet.</div>';
+    c.innerHTML =
+      '<div class="cx-fld"><div class="cx-lab">Sponsors</div><div class="cx-sub" style="margin-bottom:10px">Title sponsor shows as a banner on the app; official partners show as a logo row.</div>' + rows + '</div>' +
+      '<div class="cx-fld"><div class="cx-lab">Add sponsor</div>' +
+        '<div id="cx-spon-up">' + (r && r.error ? '<div class="cx-sub" style="color:#c0392b">Couldn\'t load sponsors — try again.</div>' : '') + '<button type="button" class="cx-btn" onclick="FFPComp.sponPick()"><span class="ms">image</span> Upload logo / banner</button></div>' +
+        '<input id="cx-spon-name" class="cx-in" placeholder="Sponsor name" style="margin-top:10px">' +
+        '<select id="cx-spon-tier" class="cx-sel" style="margin-top:10px;max-width:240px"><option value="partner">Official partner</option><option value="title">Title sponsor</option></select>' +
+        '<input id="cx-spon-link" class="cx-in" placeholder="Link (optional)" style="margin-top:10px">' +
+        '<div><button type="button" class="cx-btn pri" style="margin-top:12px" onclick="FFPComp.sponAdd()"><span class="ms">add</span> Add sponsor</button></div></div>';
+  }
+  function sponPick() {
+    if (!window.FFPUpload) { toast('Upload unavailable', 'error'); return; }
+    FFPUpload.pick({ bucket: 'event-sponsors', key: 'spon-' + S.eventId + '-' + Date.now(), title: 'Sponsor logo or banner', onDone: function (u) { S.sponLogo = u; var el = document.getElementById('cx-spon-up'); if (el) el.innerHTML = '<img src="' + esc(u) + '" style="height:48px;max-width:180px;object-fit:contain;border:1px solid #e6ebf0;border-radius:8px;padding:4px;background:#fff"> <button type="button" class="cx-btn sm" onclick="FFPComp.sponPick()">Change</button>'; } });
+  }
+  async function sponAdd() {
+    var g = function (id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; };
+    var name = g('cx-spon-name');
+    if (!name && !S.sponLogo) { toast('Add a sponsor name or logo', 'error'); return; }
+    var p = { name: name || null, logo_url: S.sponLogo || null, link_url: g('cx-spon-link') || null, tier: g('cx-spon-tier') || 'partner' };
+    var r; try { r = await sb().rpc('event_sponsor_save', { p_scope: 'comp', p_event: S.eventId, p_id: null, p: p }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast((r && r.error && r.error.message) || 'Save failed', 'error'); return; }
+    toast('Sponsor added', 'check'); S.sponLogo = null; renderTab();
+  }
+  async function sponRemove(id) {
+    var r; try { r = await sb().rpc('event_sponsor_remove', { p_id: id }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast('Remove failed', 'error'); return; }
+    renderTab();
   }
   function typeHint(t) { var d = document.getElementById('cw-dir'); if (!d) return; d.value = (t === 'time') ? 'asc' : 'desc'; }
   async function saveWorkout(id) {
@@ -724,7 +753,7 @@
   function tab(t) { S.tab = t; document.querySelectorAll('.cx-editnav button').forEach(function (b) { b.classList.remove('on'); }); var el = document.querySelector('.cx-editnav button[onclick*="\'' + t + '\'"]'); if (el) el.classList.add('on'); renderTab(); }
 
   window.FFPComp = { list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
-    saveDetails: saveDetails, seriesPick: seriesPick, uploadDoc: uploadDoc, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
+    saveDetails: saveDetails, seriesPick: seriesPick, uploadDoc: uploadDoc, sponPick: sponPick, sponAdd: sponAdd, sponRemove: sponRemove, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision,
     editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
