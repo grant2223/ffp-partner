@@ -43,7 +43,7 @@
       '.cx-editnav button.on{color:var(--ffp-blue);border-bottom-color:var(--ffp-blue);}',
       '.cx-seg{display:inline-flex;border:1.5px solid var(--ffp-border-mid);border-radius:10px;overflow:hidden;} .cx-seg button{background:#fff;border:none;padding:8px 13px;font:inherit;font-size:12px;font-weight:800;color:var(--ffp-text-muted);cursor:pointer;} .cx-seg button.on{background:var(--ffp-blue);color:#fff;}',
       '.cx-btn.sm,.cx-in.sm,.cx-sel.sm{padding:7px 10px;font-size:12px;} .cx-in.sm{width:auto;}',
-      '.cx-heath{display:flex;align-items:center;gap:10px;padding:18px 0 8px;border-bottom:2px solid var(--ffp-text);margin-top:6px;} .cx-heath b{font-size:15px;font-weight:900;} .cx-heath .fin{font-size:9.5px;font-weight:900;letter-spacing:.4px;color:#3a2600;background:var(--ffp-yellow,#f2a900);padding:3px 9px;border-radius:20px;} .cx-heath .r{margin-left:auto;display:flex;gap:8px;align-items:center;}',
+      '.cx-heath{display:flex;align-items:center;gap:10px;padding:18px 0 8px;border-bottom:2px solid var(--ffp-text);margin-top:6px;} .cx-heath b{font-size:15px;font-weight:900;} .cx-heath .fin{font-size:9.5px;font-weight:900;letter-spacing:.4px;color:#3a2600;background:linear-gradient(90deg,#f2c14e,#e0a83e);padding:3px 9px;border-radius:20px;} .cx-heath .r{margin-left:auto;display:flex;gap:8px;align-items:center;}',
       '.cx-lrow{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .cx-lrow .ln{width:22px;text-align:center;font-size:13px;font-weight:900;color:var(--ffp-text-muted);} .cx-lrow .pl{font-size:11px;font-weight:900;color:var(--ffp-blue);width:34px;} .cx-lrow b{flex:1;font-size:14px;font-weight:800;} .cx-lrow .cx-sel{width:auto;}',
       '.cx-lrow2{display:grid;grid-template-columns:40px minmax(180px,1fr) minmax(220px,1.3fr);align-items:center;gap:14px;padding:12px 2px;border-bottom:1px solid var(--ffp-border);}',
       '.cx-lrow2 .ln{font-size:15px;font-weight:900;color:var(--ffp-text);text-align:center;}',
@@ -52,6 +52,7 @@
       '.cx-jwrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}',
       '.cx-jchip{display:inline-flex;align-items:center;gap:5px;background:#eef3f7;border:1px solid #dce6ee;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:800;color:#33526a;}',
       '.cx-jchip .x{cursor:pointer;color:#8aa0b2;font-size:14px;line-height:1;}',
+      '.cx-jchip .cx-jpos{border:none;background:transparent;font:inherit;font-size:11px;font-weight:800;color:var(--ffp-blue);padding:0 2px;cursor:pointer;}',
       '.cx-jadd{width:auto;min-width:96px;}',
       '.cx-av{width:32px;height:32px;border-radius:50%;background:#e7ecef center/cover;flex:none;display:flex;align-items:center;justify-content:center;font-weight:900;color:#6a7681;font-size:12px;} .cx-row .g{flex:1;} .cx-row .g b{font-size:14px;font-weight:800;} .cx-row .g span{display:block;font-size:12px;color:var(--ffp-text-muted);font-weight:700;}',
       '.cx-pill{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;}',
@@ -325,7 +326,8 @@
     c.innerHTML = '<div class="cx-head"><div class="cx-sub">Each division is individual or a team of N, and has its OWN events.</div>' +
       '<button class="cx-btn pri sm" onclick="FFPComp.editDivision()"><span class="ms">add</span> Add division</button></div>' +
       (divs.length ? divs.map(function (d, i) {
-        var meta = (d.team_size > 1 ? 'Teams of ' + d.team_size : 'Individual') + (d.gender ? ' · ' + d.gender : '') + ((d.min_age || d.max_age) ? ' · age ' + (d.min_age || 0) + '–' + (d.max_age || '+') : '') + ' · ' + (d.entrants || 0) + ' entered · ' + ((d.workouts || []).length) + ' events';
+        var mix = (d.team_size > 1 && (d.req_male || d.req_female)) ? ' · ' + (d.req_male || 0) + 'M/' + (d.req_female || 0) + 'F' : '';
+        var meta = (d.team_size > 1 ? 'Teams of ' + d.team_size : 'Individual') + mix + (d.gender ? ' · ' + d.gender : '') + ((d.min_age || d.max_age) ? ' · age ' + (d.min_age || 0) + '–' + (d.max_age || '+') : '') + ' · ' + (d.entrants || 0) + ' entered · ' + ((d.workouts || []).length) + ' events';
         return '<div class="cx-row"><div class="cx-av"><span class="ms" style="font-size:18px">military_tech</span></div>' +
           '<div class="g"><b>' + esc(d.name) + '</b><span>' + esc(meta) + '</span></div>' +
           '<button class="cx-btn sm" onclick="FFPComp.moveDivision(\'' + d.id + '\',-1)"' + (i === 0 ? ' disabled' : '') + ' title="Move up"><span class="ms">arrow_upward</span></button>' +
@@ -370,17 +372,39 @@
     var sizes = ''; for (var i = 1; i <= 8; i++) sizes += '<option value="' + i + '"' + ((d.team_size || 1) === i ? ' selected' : '') + '>' + (i === 1 ? 'Individual' : 'Team of ' + i) + '</option>';
     openModal((id ? 'Edit' : 'Add') + ' division',
       '<div class="cx-fld"><div class="cx-lab">Name</div><input id="cd-name" class="cx-in" value="' + esc(d.name || '') + '" placeholder="e.g. RX Women"></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Type</div><select id="cd-size" class="cx-sel">' + sizes + '</select></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Type</div><select id="cd-size" class="cx-sel" onchange="FFPComp.mixHint()">' + sizes + '</select></div>' +
       '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Gender (optional)</div><select id="cd-gender" class="cx-sel"><option value="">Open</option>' +
         (((window.FFP_TAX && window.FFP_TAX.genders) || ['Female', 'Male']).filter(function (g) { return g !== 'Prefer not to say'; })).map(function (x) { return '<option' + (d.gender === x ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
       '<div class="cx-fld"><div class="cx-lab">Scaling (optional)</div><input id="cd-scaling" class="cx-in" value="' + esc(d.scaling || '') + '" placeholder="RX / Scaled"></div></div>' +
+      '<div class="cx-fld" id="cd-mix-wrap" style="' + ((d.team_size || 1) > 1 ? '' : 'display:none;') + '"><div class="cx-sec">Team gender mix</div>' +
+        '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Males required</div><input id="cd-rmale" type="number" min="0" class="cx-in" value="' + (d.req_male ? d.req_male : '') + '" oninput="FFPComp.mixHint()"></div>' +
+        '<div class="cx-fld"><div class="cx-lab">Females required</div><input id="cd-rfemale" type="number" min="0" class="cx-in" value="' + (d.req_female ? d.req_female : '') + '" oninput="FFPComp.mixHint()"></div></div>' +
+        '<div class="cx-sub" id="cd-mix-note" style="margin-top:6px"></div></div>' +
       '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Min age</div><input id="cd-min" type="number" class="cx-in" value="' + (d.min_age != null ? d.min_age : '') + '"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Max age</div><input id="cd-max" type="number" class="cx-in" value="' + (d.max_age != null ? d.max_age : '') + '"></div></div>',
       '<button class="cx-btn" onclick="FFPComp.closeModal()">Cancel</button><button class="cx-btn pri" onclick="FFPComp.saveDivision(\'' + (id || '') + '\')">Save</button>');
+    mixHint();
+  }
+  function mixHint() {
+    var size = +((document.getElementById('cd-size') || {}).value) || 1;
+    var wrap = document.getElementById('cd-mix-wrap'); if (wrap) wrap.style.display = size > 1 ? '' : 'none';
+    var note = document.getElementById('cd-mix-note'); if (!note || size <= 1) return;
+    var rm = +((document.getElementById('cd-rmale') || {}).value) || 0;
+    var rf = +((document.getElementById('cd-rfemale') || {}).value) || 0;
+    if (rm + rf > size) { note.style.color = '#d6353b'; note.textContent = 'Males + females (' + (rm + rf) + ') is more than the team size (' + size + '). Lower them.'; return; }
+    note.style.color = '';
+    var any = size - rm - rf;
+    note.textContent = (rm || rf)
+      ? ('Each team needs ' + rm + ' male + ' + rf + ' female' + (any > 0 ? (' + ' + any + ' any gender') : '') + '.')
+      : ('Any ' + size + ' athletes, any gender. Set males/females to require a mix (e.g. mixed pair = 1 & 1).');
   }
   async function saveDivision(id) {
     var g = function (x) { var e = document.getElementById(x); return e ? e.value : ''; };
-    var p = { name: g('cd-name'), team_size: g('cd-size'), gender: g('cd-gender') || null, scaling: g('cd-scaling') || null, min_age: g('cd-min') || null, max_age: g('cd-max') || null };
+    var size = parseInt(g('cd-size'), 10) || 1;
+    var rm = parseInt(g('cd-rmale'), 10) || 0, rf = parseInt(g('cd-rfemale'), 10) || 0;
+    if (size > 1 && rm + rf > size) { toast('Gender mix is more than the team size'); return; }
+    var p = { name: g('cd-name'), team_size: g('cd-size'), gender: g('cd-gender') || null, scaling: g('cd-scaling') || null, min_age: g('cd-min') || null, max_age: g('cd-max') || null,
+      req_male: size > 1 ? rm : 0, req_female: size > 1 ? rf : 0 };
     if (!p.name) { toast('Name the division'); return; }
     var r; try { r = await sb().rpc('comp_division_save', { p_event: S.eventId, p_id: id || null, p: p }); } catch (e) { r = { error: e }; }
     if (r && !r.error) { toast('Saved', 'check'); closeModal(); reload(); } else { toast('Save failed', 'error'); }
@@ -765,11 +789,16 @@
         return '<option value="' + a.id + '"' + (sel === a.id ? ' selected' : '') + '>' + esc(a.name) + (a.athlete_no ? ' (#' + a.athlete_no + ')' : '') + '</option>';
       }).join('');
     };
+    var positions = (S.detail.event && Array.isArray(S.detail.event.judge_positions)) ? S.detail.event.judge_positions : [];
+    var posOpts = function (sel) {
+      return '<option value="">No position</option>' + positions.map(function (p) { return '<option value="' + esc(p) + '"' + (sel === p ? ' selected' : '') + '>' + esc(p) + '</option>'; }).join('');
+    };
     host.innerHTML = heats.map(function (h) {
       var rows = (h.lanes || []).map(function (l) {
         var have = (l.judges || []).map(function (j) { return j.id; });
         var chips = (l.judges || []).map(function (j) {
-          return '<span class="cx-jchip">' + esc(j.name) + '<span class="x" onclick="FFPComp.laneJudgeRemove(\'' + h.id + '\',' + l.lane + ',\'' + j.id + '\')">×</span></span>';
+          var posSel = positions.length ? '<select class="cx-jpos" onchange="FFPComp.laneJudgeAdd(\'' + h.id + '\',' + l.lane + ',\'' + j.id + '\',this.value)">' + posOpts(j.position) + '</select>' : '';
+          return '<span class="cx-jchip">' + esc(j.name) + posSel + '<span class="x" onclick="FFPComp.laneJudgeRemove(\'' + h.id + '\',' + l.lane + ',\'' + j.id + '\')">×</span></span>';
         }).join('');
         var addable = judges.filter(function (j) { return have.indexOf(j.member_id) < 0; });
         var addSel = '<select class="cx-sel sm cx-jadd" onchange="FFPComp.laneJudgeAdd(\'' + h.id + '\',' + l.lane + ',this.value)"><option value="">+ Judge</option>'
@@ -862,6 +891,21 @@
     host.innerHTML = rows.length ? rows.map(function (j) {
       return '<div class="cx-row"><span class="cx-av" style="' + (j.photo ? 'background-image:url(\'' + esc(j.photo) + '\')' : '') + '">' + (j.photo ? '' : esc((j.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(j.name) + '</b><span>' + esc(j.email || '') + ' · official</span></div><span class="ms" style="color:#9aa8b4;cursor:pointer" onclick="FFPComp.removeJudge(\'' + j.member_id + '\')">close</span></div>';
     }).join('') : '<div class="cx-empty">No judges yet.</div>';
+    // Judge positions the organiser defines (used per lane in Heats & lanes)
+    var pos = (S.detail.event && Array.isArray(S.detail.event.judge_positions)) ? S.detail.event.judge_positions : [];
+    var pill = document.createElement('div'); pill.style.marginTop = '30px';
+    pill.innerHTML = '<div class="cx-sec">Judge positions</div>'
+      + '<div class="cx-sub" style="margin:0 0 8px">Optional stations you can assign a judge to on a lane (e.g. Start, Station 1, Station 2, Finish). One per line.</div>'
+      + '<textarea id="cx-jpos" class="cx-in" rows="4" placeholder="Start\nStation 1\nStation 2\nFinish" style="max-width:340px">' + esc(pos.join('\n')) + '</textarea>'
+      + '<div><button class="cx-btn pri sm" style="margin-top:10px" onclick="FFPComp.saveJudgePositions()"><span class="ms">save</span> Save positions</button></div>';
+    c.appendChild(pill);
+  }
+  async function saveJudgePositions() {
+    var raw = ((document.getElementById('cx-jpos') || {}).value || '');
+    var list = raw.split('\n').map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+    var r; try { r = await sb().rpc('comp_set_judge_positions', { p_event: S.eventId, p_positions: JSON.stringify(list) }); } catch (e) { r = { error: e }; }
+    if (r && !r.error) { if (S.detail && S.detail.event) S.detail.event.judge_positions = list; toast('Positions saved', 'check'); }
+    else toast('Save failed', 'error');
   }
   async function addJudge() {
     var em = (document.getElementById('cx-jemail') || {}).value; if (!em) return;
@@ -884,11 +928,11 @@
 
   window.FFPComp = { list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
     saveDetails: saveDetails, seriesPick: seriesPick, saveSetup: saveSetup, suSeriesPick: suSeriesPick, uploadDoc: uploadDoc, sponPick: sponPick, sponAdd: sponAdd, sponRemove: sponRemove, inviteJudge: inviteJudge, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
-    editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision,
+    editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision, mixHint: mixHint,
     editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
     addAthlete: addAthlete, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
-    hmode: hmode, genHeats: genHeats, heatSet: heatSet, laneAssign: laneAssign, laneJudgeAdd: laneJudgeAdd, laneJudgeRemove: laneJudgeRemove, addJudge: addJudge, removeJudge: removeJudge,
+    hmode: hmode, genHeats: genHeats, heatSet: heatSet, laneAssign: laneAssign, laneJudgeAdd: laneJudgeAdd, laneJudgeRemove: laneJudgeRemove, addJudge: addJudge, removeJudge: removeJudge, saveJudgePositions: saveJudgePositions,
     schedEvent: schedEvent, schedHeat: schedHeat,
     publish: publish, finalise: finalise, closeModal: closeModal };
   window.ffpRenderCompetitions = renderList;
