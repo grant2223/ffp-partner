@@ -21,7 +21,8 @@
       '.cx-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap;}',
       '.cx-h1{font-size:20px;font-weight:900;color:var(--ffp-text);}',
       '.cx-sub{font-size:13px;color:var(--ffp-text-muted);font-weight:600;margin-top:2px;}',
-      '.cx-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--ffp-border-mid);background:#fff;border-radius:10px;padding:10px 14px;font:inherit;font-size:13px;font-weight:800;color:var(--ffp-text);cursor:pointer;}',
+      '.cx-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid #cfe0ec;background:#eaf3fa;border-radius:10px;padding:10px 14px;font:inherit;font-size:13px;font-weight:800;color:#1980AD;cursor:pointer;}',
+      '.cx-btn:hover{background:#dfeef8;}',
       '.cx-btn .ms{font-size:18px;}',
       '.cx-btn.pri{background:var(--ffp-blue);border-color:var(--ffp-blue);color:#fff;}',
       '.cx-btn.gold{background:linear-gradient(180deg,#ffd15a,#f2a900);border:none;color:#3a2600;}',
@@ -47,7 +48,7 @@
       '.cx-av{width:32px;height:32px;border-radius:50%;background:#e7ecef center/cover;flex:none;display:flex;align-items:center;justify-content:center;font-weight:900;color:#6a7681;font-size:12px;} .cx-row .g{flex:1;} .cx-row .g b{font-size:14px;font-weight:800;} .cx-row .g span{display:block;font-size:12px;color:var(--ffp-text-muted);font-weight:700;}',
       '.cx-pill{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;}',
       '.cx-pill.live{background:#fdeaea;color:#d6353b;} .cx-pill.open{background:#e3f6ec;color:#0a8f5f;} .cx-pill.draft{background:#eef2f5;color:#5b6b75;} .cx-pill.final{background:#eef2f5;color:#5b6b75;}',
-      '.cx-lab{font-size:12px;font-weight:800;color:#43525c;margin:0 0 6px;}',
+      '.cx-lab{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#8a97a2;margin:0 0 7px;}',
       '.cx-in,.cx-sel{width:100%;padding:10px 12px;border:1px solid #d7dee5;border-radius:10px;font:inherit;box-sizing:border-box;background:#fff;color:#12232f;}',
       '.cx-fld{margin-bottom:14px;} .cx-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}',
       '.cx-seg{display:inline-flex;border:1.5px solid var(--ffp-border-mid);border-radius:10px;overflow:hidden;}',
@@ -56,6 +57,10 @@
       '.cx-sw{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #d7dee5;cursor:pointer;display:inline-block;margin-right:8px;}',
       '.cx-sw.on{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--ffp-text);}',
       '.cx-row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--ffp-border);}',
+      '.cx-drow{cursor:default;border-radius:8px;transition:background .12s,box-shadow .12s;}',
+      '.cx-drow .cx-drag{color:#b6c2cc;cursor:grab;font-size:20px;flex:none;}',
+      '.cx-drow.dragging{opacity:.4;}',
+      '.cx-drow.dragover{background:#eaf3fa;box-shadow:inset 0 2px 0 #1980AD;}',
       '.cx-row .g{flex:1;min-width:0;} .cx-row .g b{font-size:14px;font-weight:800;color:var(--ffp-text);} .cx-row .g span{display:block;font-size:12px;color:var(--ffp-text-muted);font-weight:700;margin-top:1px;text-transform:capitalize;}',
       '.cx-av{width:32px;height:32px;border-radius:50%;flex:none;background:#e7ecef center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#6a7681;}',
       '.cx-empty{padding:34px 16px;text-align:center;color:var(--ffp-text-muted);font-weight:600;font-size:13.5px;}',
@@ -285,16 +290,25 @@
     var r; try { r = await sb().rpc('comp_divisions_reorder', { p_event: S.eventId, p_ids: ids }); } catch (e) { r = { error: e }; }
     if (!r || r.error) { toast('Reorder failed', 'error'); reload(); }
   }
-  async function moveWorkout(id, dir) {
+  // Drag-to-reorder events (desktop console). HTML5 DnD; persists via comp_workouts_reorder.
+  function wDragStart(e, id) { S.dragWid = id; try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', id); } catch (_) {} var row = e.target.closest ? e.target.closest('.cx-drow') : null; if (row) setTimeout(function () { row.classList.add('dragging'); }, 0); }
+  function wDragOver(e, id) { e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch (_) {} var row = e.currentTarget; if (row && id !== S.dragWid) row.classList.add('dragover'); }
+  function wDragLeave(e) { if (e.currentTarget) e.currentTarget.classList.remove('dragover'); }
+  function wDragEnd() { S.dragWid = null; Array.prototype.forEach.call(document.querySelectorAll('.cx-drow'), function (r) { r.classList.remove('dragging'); r.classList.remove('dragover'); }); }
+  async function wDrop(e, targetId) {
+    e.preventDefault();
+    var from = S.dragWid; wDragEnd();
+    if (!from || from === targetId) return;
     var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; }); if (!div) return;
     var wods = (div.workouts || []).slice();
-    var i = wods.findIndex(function (x) { return x.id === id; });
-    var j = i + dir;
-    if (i < 0 || j < 0 || j >= wods.length) return;
-    var tmp = wods[i]; wods[i] = wods[j]; wods[j] = tmp;
+    var fi = wods.findIndex(function (x) { return x.id === from; });
+    var ti = wods.findIndex(function (x) { return x.id === targetId; });
+    if (fi < 0 || ti < 0) return;
+    var moved = wods.splice(fi, 1)[0];
+    wods.splice(ti, 0, moved);
     div.workouts = wods; renderTab();
     var ids = wods.map(function (x) { return x.id; });
-    var r; try { r = await sb().rpc('comp_workouts_reorder', { p_division: S.divId, p_ids: ids }); } catch (e) { r = { error: e }; }
+    var r; try { r = await sb().rpc('comp_workouts_reorder', { p_division: S.divId, p_ids: ids }); } catch (e2) { r = { error: e2 }; }
     if (!r || r.error) { toast('Reorder failed', 'error'); reload(); } else { toast('Order updated', 'check'); }
   }
   function editDivision(id) {
@@ -326,13 +340,13 @@
       (div ? '<button class="cx-btn pri sm" onclick="FFPComp.editWorkout()"><span class="ms">add</span> Add event</button>' : '') + '</div>' +
       (!div ? '' : (wods.length ? wods.map(function (w, i) {
         var meta = w.score_type + ' · ' + (w.direction === 'asc' ? 'lower wins' : 'higher wins') + (w.cap_seconds ? ' · cap ' + Math.floor(w.cap_seconds / 60) + ':' + ('' + (w.cap_seconds % 60)).padStart(2, '0') : '');
-        var up = i > 0 ? '<button class="cx-btn sm" title="Move up" onclick="FFPComp.moveWorkout(\'' + w.id + '\',-1)"><span class="ms" style="font-size:16px">arrow_upward</span></button>' : '';
-        var down = i < wods.length - 1 ? '<button class="cx-btn sm" title="Move down" onclick="FFPComp.moveWorkout(\'' + w.id + '\',1)"><span class="ms" style="font-size:16px">arrow_downward</span></button>' : '';
-        return '<div class="cx-row"><div class="cx-av"><span class="ms" style="font-size:18px">fitness_center</span></div>' +
+        return '<div class="cx-row cx-drow" draggable="true" data-wid="' + w.id + '"' +
+          ' ondragstart="FFPComp.wDragStart(event,\'' + w.id + '\')" ondragover="FFPComp.wDragOver(event,\'' + w.id + '\')" ondragleave="FFPComp.wDragLeave(event)" ondrop="FFPComp.wDrop(event,\'' + w.id + '\')" ondragend="FFPComp.wDragEnd(event)">' +
+          '<span class="ms cx-drag" title="Drag to reorder">drag_indicator</span>' +
+          '<div class="cx-av"><span class="ms" style="font-size:18px">fitness_center</span></div>' +
           '<div class="g"><b>Event ' + (i + 1) + ' · ' + esc(w.name) + '</b><span>' + esc(meta) + '</span></div>' +
-          up + down +
           '<button class="cx-btn sm" onclick="FFPComp.editWorkout(\'' + w.id + '\')">Edit</button></div>';
-      }).join('') : '<div class="cx-empty">No events in this division yet.</div>'));
+      }).join('') + '<div class="cx-sub" style="margin-top:8px">Drag <span class="ms" style="font-size:14px;vertical-align:-2px">drag_indicator</span> to reorder events.</div>' : '<div class="cx-empty">No events in this division yet.</div>'));
   }
   function editWorkout(id) {
     var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; }); if (!div) return;
@@ -695,7 +709,7 @@
   window.FFPComp = { list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
     saveDetails: saveDetails, seriesPick: seriesPick, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision,
-    editWorkout: editWorkout, saveWorkout: saveWorkout, moveWorkout: moveWorkout, typeHint: typeHint,
+    editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
     addAthlete: addAthlete, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
     hmode: hmode, genHeats: genHeats, heatMove: heatMove, heatSet: heatSet, addJudge: addJudge, removeJudge: removeJudge,
