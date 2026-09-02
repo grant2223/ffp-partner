@@ -45,6 +45,14 @@
       '.cx-btn.sm,.cx-in.sm,.cx-sel.sm{padding:7px 10px;font-size:12px;} .cx-in.sm{width:auto;}',
       '.cx-heath{display:flex;align-items:center;gap:10px;padding:18px 0 8px;border-bottom:2px solid var(--ffp-text);margin-top:6px;} .cx-heath b{font-size:15px;font-weight:900;} .cx-heath .fin{font-size:9.5px;font-weight:900;letter-spacing:.4px;color:#3a2600;background:var(--ffp-yellow,#f2a900);padding:3px 9px;border-radius:20px;} .cx-heath .r{margin-left:auto;display:flex;gap:8px;align-items:center;}',
       '.cx-lrow{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .cx-lrow .ln{width:22px;text-align:center;font-size:13px;font-weight:900;color:var(--ffp-text-muted);} .cx-lrow .pl{font-size:11px;font-weight:900;color:var(--ffp-blue);width:34px;} .cx-lrow b{flex:1;font-size:14px;font-weight:800;} .cx-lrow .cx-sel{width:auto;}',
+      '.cx-lrow2{display:grid;grid-template-columns:40px minmax(180px,1fr) minmax(220px,1.3fr);align-items:center;gap:14px;padding:12px 2px;border-bottom:1px solid var(--ffp-border);}',
+      '.cx-lrow2 .ln{font-size:15px;font-weight:900;color:var(--ffp-text);text-align:center;}',
+      '.cx-lrow2 .cx-lslot .cx-slab{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ffp-text-muted);margin-bottom:4px;}',
+      '.cx-lrow2 .cx-lslot .cx-sel{width:100%;}',
+      '.cx-jwrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}',
+      '.cx-jchip{display:inline-flex;align-items:center;gap:5px;background:#eef3f7;border:1px solid #dce6ee;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:800;color:#33526a;}',
+      '.cx-jchip .x{cursor:pointer;color:#8aa0b2;font-size:14px;line-height:1;}',
+      '.cx-jadd{width:auto;min-width:96px;}',
       '.cx-av{width:32px;height:32px;border-radius:50%;background:#e7ecef center/cover;flex:none;display:flex;align-items:center;justify-content:center;font-weight:900;color:#6a7681;font-size:12px;} .cx-row .g{flex:1;} .cx-row .g b{font-size:14px;font-weight:800;} .cx-row .g span{display:block;font-size:12px;color:var(--ffp-text-muted);font-weight:700;}',
       '.cx-pill{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;}',
       '.cx-pill.live{background:#fdeaea;color:#d6353b;} .cx-pill.open{background:#e3f6ec;color:#0a8f5f;} .cx-pill.draft{background:#eef2f5;color:#5b6b75;} .cx-pill.final{background:#eef2f5;color:#5b6b75;}',
@@ -749,15 +757,28 @@
     var hr; try { hr = await sb().rpc('comp_heats_view', { p_workout: S.wodId }); } catch (e) { hr = { error: e }; }
     var heats = (hr && hr.data) || [];
     var jr = await sb().rpc('comp_judges_list', { p_event: S.eventId }); var judges = (jr && jr.data) || [];
+    var rr = await sb().rpc('comp_roster', { p_division: S.divId }); var roster = (rr && Array.isArray(rr.data)) ? rr.data : [];
     var host = document.getElementById('cx-heats');
     if (!heats.length) { host.innerHTML = '<div class="cx-empty">No heats yet — set lanes and Generate.</div>'; return; }
-    var jOpts = function (sel) { return '<option value="">Judge…</option>' + judges.map(function (j) { return '<option value="' + j.member_id + '"' + (sel === j.member_id ? ' selected' : '') + '>' + esc(j.name) + '</option>'; }).join(''); };
+    var athOpts = function (sel) {
+      return '<option value="">— Empty —</option>' + roster.map(function (a) {
+        return '<option value="' + a.id + '"' + (sel === a.id ? ' selected' : '') + '>' + esc(a.name) + (a.athlete_no ? ' (#' + a.athlete_no + ')' : '') + '</option>';
+      }).join('');
+    };
     host.innerHTML = heats.map(function (h) {
-      var laneOpts = function (cur) { var o = ''; for (var i = 1; i <= lanes; i++) o += '<option value="' + i + '"' + (i === cur ? ' selected' : '') + '>Lane ' + i + '</option>'; return o; };
       var rows = (h.lanes || []).map(function (l) {
-        return '<div class="cx-lrow"><span class="ln">' + l.lane + '</span><span class="pl">' + (l.pos != null ? '#' + l.pos : '') + '</span><b>' + esc(l.name || 'Athlete') + '</b>'
-          + '<select class="cx-sel sm" onchange="FFPComp.heatMove(\'' + h.id + '\',\'' + l.entrant_id + '\',this.value)">' + laneOpts(l.lane) + '</select>'
-          + '<select class="cx-sel sm cx-ljudge" title="Judge for this lane" onchange="FFPComp.laneJudge(\'' + h.id + '\',' + l.lane + ',this.value)">' + jOpts(l.judge_id) + '</select></div>';
+        var have = (l.judges || []).map(function (j) { return j.id; });
+        var chips = (l.judges || []).map(function (j) {
+          return '<span class="cx-jchip">' + esc(j.name) + '<span class="x" onclick="FFPComp.laneJudgeRemove(\'' + h.id + '\',' + l.lane + ',\'' + j.id + '\')">×</span></span>';
+        }).join('');
+        var addable = judges.filter(function (j) { return have.indexOf(j.member_id) < 0; });
+        var addSel = '<select class="cx-sel sm cx-jadd" onchange="FFPComp.laneJudgeAdd(\'' + h.id + '\',' + l.lane + ',this.value)"><option value="">+ Judge</option>'
+          + addable.map(function (j) { return '<option value="' + j.member_id + '">' + esc(j.name) + '</option>'; }).join('') + '</select>';
+        return '<div class="cx-lrow2">'
+          + '<span class="ln">' + l.lane + '</span>'
+          + '<div class="cx-lslot"><div class="cx-slab">Athlete</div><select class="cx-sel sm" onchange="FFPComp.laneAssign(\'' + h.id + '\',' + l.lane + ',this.value)">' + athOpts(l.entrant_id) + '</select></div>'
+          + '<div class="cx-lslot"><div class="cx-slab">Judges</div><div class="cx-jwrap">' + chips + addSel + '</div></div>'
+          + '</div>';
       }).join('');
       return '<div class="cx-heath" data-h="' + h.id + '"><b>' + esc(h.name) + '</b>' + (h.ord === heats.length ? '<span class="fin">FINAL</span>' : '') + '</div>' + rows;
     }).join('');
@@ -769,8 +790,9 @@
     var r; try { r = await sb().rpc('comp_heats_generate', { p_workout: S.wodId, p_lanes: lanes, p_mode: mode }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not generate', 'error'); return; } toast((r.data || 0) + ' heats created', 'success'); renderTab();
   }
-  async function heatMove(heat, entrant, lane) { await sb().rpc('comp_heat_lane_move', { p_heat: heat, p_lane: +lane, p_entrant: entrant }); renderTab(); }
-  async function laneJudge(heat, lane, jid) { await sb().rpc('comp_heat_lane_set_judge', { p_heat: heat, p_lane: +lane, p_judge: jid || null }); toast('Judge saved', 'check'); }
+  async function laneAssign(heat, lane, entrant) { await sb().rpc('comp_lane_assign', { p_heat: heat, p_lane: +lane, p_entrant: entrant || null }); renderTab(); }
+  async function laneJudgeAdd(heat, lane, jid) { if (!jid) { renderTab(); return; } await sb().rpc('comp_lane_judge_add', { p_heat: heat, p_lane: +lane, p_judge: jid }); renderTab(); }
+  async function laneJudgeRemove(heat, lane, jid) { await sb().rpc('comp_lane_judge_remove', { p_heat: heat, p_lane: +lane, p_judge: jid }); renderTab(); }
   async function heatSet(heat) {
     // Heats & lanes tab now only assigns the JUDGE — heat start times are set in the Schedule tab (no double-up).
     var row = document.querySelector('.cx-heath[data-h="' + heat + '"]'); if (!row) return;
@@ -866,7 +888,7 @@
     editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
     addAthlete: addAthlete, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
-    hmode: hmode, genHeats: genHeats, heatMove: heatMove, heatSet: heatSet, laneJudge: laneJudge, addJudge: addJudge, removeJudge: removeJudge,
+    hmode: hmode, genHeats: genHeats, heatSet: heatSet, laneAssign: laneAssign, laneJudgeAdd: laneJudgeAdd, laneJudgeRemove: laneJudgeRemove, addJudge: addJudge, removeJudge: removeJudge,
     schedEvent: schedEvent, schedHeat: schedHeat,
     publish: publish, finalise: finalise, closeModal: closeModal };
   window.ffpRenderCompetitions = renderList;
