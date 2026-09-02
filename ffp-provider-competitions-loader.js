@@ -756,10 +756,10 @@
       var laneOpts = function (cur) { var o = ''; for (var i = 1; i <= lanes; i++) o += '<option value="' + i + '"' + (i === cur ? ' selected' : '') + '>Lane ' + i + '</option>'; return o; };
       var rows = (h.lanes || []).map(function (l) {
         return '<div class="cx-lrow"><span class="ln">' + l.lane + '</span><span class="pl">' + (l.pos != null ? '#' + l.pos : '') + '</span><b>' + esc(l.name || 'Athlete') + '</b>'
-          + '<select class="cx-sel sm" onchange="FFPComp.heatMove(\'' + h.id + '\',\'' + l.entrant_id + '\',this.value)">' + laneOpts(l.lane) + '</select></div>';
+          + '<select class="cx-sel sm" onchange="FFPComp.heatMove(\'' + h.id + '\',\'' + l.entrant_id + '\',this.value)">' + laneOpts(l.lane) + '</select>'
+          + '<select class="cx-sel sm cx-ljudge" title="Judge for this lane" onchange="FFPComp.laneJudge(\'' + h.id + '\',' + l.lane + ',this.value)">' + jOpts(l.judge_id) + '</select></div>';
       }).join('');
-      return '<div class="cx-heath" data-h="' + h.id + '"><b>' + esc(h.name) + '</b>' + (h.ord === heats.length ? '<span class="fin">FINAL</span>' : '')
-        + '<span class="r"><select class="cx-sel sm cx-hjudge" onchange="FFPComp.heatSet(\'' + h.id + '\')">' + jOpts(h.judge_id) + '</select></span></div>' + rows;
+      return '<div class="cx-heath" data-h="' + h.id + '"><b>' + esc(h.name) + '</b>' + (h.ord === heats.length ? '<span class="fin">FINAL</span>' : '') + '</div>' + rows;
     }).join('');
   }
   function hmode(btn) { document.querySelectorAll('#cx-hmode button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); S._heatMode = btn.getAttribute('data-v'); }
@@ -770,6 +770,7 @@
     if (r.error) { toast('Could not generate', 'error'); return; } toast((r.data || 0) + ' heats created', 'success'); renderTab();
   }
   async function heatMove(heat, entrant, lane) { await sb().rpc('comp_heat_lane_move', { p_heat: heat, p_lane: +lane, p_entrant: entrant }); renderTab(); }
+  async function laneJudge(heat, lane, jid) { await sb().rpc('comp_heat_lane_set_judge', { p_heat: heat, p_lane: +lane, p_judge: jid || null }); toast('Judge saved', 'check'); }
   async function heatSet(heat) {
     // Heats & lanes tab now only assigns the JUDGE — heat start times are set in the Schedule tab (no double-up).
     var row = document.querySelector('.cx-heath[data-h="' + heat + '"]'); if (!row) return;
@@ -865,7 +866,7 @@
     editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
     addAthlete: addAthlete, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
-    hmode: hmode, genHeats: genHeats, heatMove: heatMove, heatSet: heatSet, addJudge: addJudge, removeJudge: removeJudge,
+    hmode: hmode, genHeats: genHeats, heatMove: heatMove, heatSet: heatSet, laneJudge: laneJudge, addJudge: addJudge, removeJudge: removeJudge,
     schedEvent: schedEvent, schedHeat: schedHeat,
     publish: publish, finalise: finalise, closeModal: closeModal };
   window.ffpRenderCompetitions = renderList;
