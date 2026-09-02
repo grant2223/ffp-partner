@@ -257,6 +257,18 @@
     var r; try { r = await sb().rpc('comp_divisions_reorder', { p_event: S.eventId, p_ids: ids }); } catch (e) { r = { error: e }; }
     if (!r || r.error) { toast('Reorder failed', 'error'); reload(); }
   }
+  async function moveWorkout(id, dir) {
+    var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; }); if (!div) return;
+    var wods = (div.workouts || []).slice();
+    var i = wods.findIndex(function (x) { return x.id === id; });
+    var j = i + dir;
+    if (i < 0 || j < 0 || j >= wods.length) return;
+    var tmp = wods[i]; wods[i] = wods[j]; wods[j] = tmp;
+    div.workouts = wods; renderTab();
+    var ids = wods.map(function (x) { return x.id; });
+    var r; try { r = await sb().rpc('comp_workouts_reorder', { p_division: S.divId, p_ids: ids }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast('Reorder failed', 'error'); reload(); } else { toast('Order updated', 'check'); }
+  }
   function editDivision(id) {
     var d = (S.detail.divisions || []).find(function (x) { return x.id === id; }) || {};
     var sizes = ''; for (var i = 1; i <= 8; i++) sizes += '<option value="' + i + '"' + ((d.team_size || 1) === i ? ' selected' : '') + '>' + (i === 1 ? 'Individual' : 'Team of ' + i) + '</option>';
@@ -286,8 +298,11 @@
       (div ? '<button class="cx-btn pri sm" onclick="FFPComp.editWorkout()"><span class="ms">add</span> Add event</button>' : '') + '</div>' +
       (!div ? '' : (wods.length ? wods.map(function (w, i) {
         var meta = w.score_type + ' · ' + (w.direction === 'asc' ? 'lower wins' : 'higher wins') + (w.cap_seconds ? ' · cap ' + Math.floor(w.cap_seconds / 60) + ':' + ('' + (w.cap_seconds % 60)).padStart(2, '0') : '');
+        var up = i > 0 ? '<button class="cx-btn sm" title="Move up" onclick="FFPComp.moveWorkout(\'' + w.id + '\',-1)"><span class="ms" style="font-size:16px">arrow_upward</span></button>' : '';
+        var down = i < wods.length - 1 ? '<button class="cx-btn sm" title="Move down" onclick="FFPComp.moveWorkout(\'' + w.id + '\',1)"><span class="ms" style="font-size:16px">arrow_downward</span></button>' : '';
         return '<div class="cx-row"><div class="cx-av"><span class="ms" style="font-size:18px">fitness_center</span></div>' +
           '<div class="g"><b>Event ' + (i + 1) + ' · ' + esc(w.name) + '</b><span>' + esc(meta) + '</span></div>' +
+          up + down +
           '<button class="cx-btn sm" onclick="FFPComp.editWorkout(\'' + w.id + '\')">Edit</button></div>';
       }).join('') : '<div class="cx-empty">No events in this division yet.</div>'));
   }
@@ -307,6 +322,9 @@
       '<div class="cx-fld"><div class="cx-lab">Copy this event to other divisions</div><div id="cw-copy" style="display:flex;flex-direction:column;gap:8px">' +
         others.map(function (d) { return '<label style="display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px;color:#12232f;cursor:pointer"><input type="checkbox" value="' + d.id + '" style="width:18px;height:18px">' + esc(d.name) + (d.team_size > 1 ? ' (teams of ' + d.team_size + ')' : '') + '</label>'; }).join('') +
         '</div><div class="cx-sub" style="margin-top:6px">Ticked divisions get their own copy of this event (name + details above). Save your edits and the copies in one go.</div></div>' : '';
+    // transient media/sponsor state for this modal
+    S.cw = { banner: w.banner_url || '', imgs: (Array.isArray(w.image_urls) ? w.image_urls.slice() : []), sponLogo: w.sponsor_logo_url || '' };
+    var pw = (w.points_weight != null && Number(w.points_weight) !== 1) ? w.points_weight : '';
     openModal((id ? 'Edit' : 'Add') + ' event — ' + esc(div.name),
       '<div class="cx-fld"><div class="cx-lab">Name</div><input id="cw-name" class="cx-in" value="' + esc(w.name || '') + '" placeholder="e.g. Fran"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Description (optional)</div><textarea id="cw-desc" class="cx-in" rows="3" placeholder="Movements, reps, standards…">' + esc(w.description || '') + '</textarea></div>' +
@@ -315,14 +333,51 @@
       '<div class="cx-fld"><div class="cx-lab">Winner</div><select id="cw-dir" class="cx-sel">' +
         '<option value="asc"' + (w.direction === 'asc' ? ' selected' : '') + '>Lower wins (time)</option>' +
         '<option value="desc"' + (w.direction === 'desc' ? ' selected' : '') + '>Higher wins (reps/weight)</option></select></div></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Time cap minutes (optional)</div><input id="cw-cap" type="number" class="cx-in" value="' + cap + '" style="max-width:160px"></div>' + multi + copy,
+      '<div class="cx-fld"><div class="cx-lab">Time cap minutes (optional)</div><input id="cw-cap" type="number" class="cx-in" value="' + cap + '" style="max-width:160px"></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Points weighting (optional)</div><input id="cw-pw" type="number" step="0.1" class="cx-in" value="' + pw + '" placeholder="1" style="max-width:160px"><div class="cx-sub" style="margin-top:6px">Multiplies this event\'s points (e.g. 2 = worth double). Leave blank for normal.</div></div>' +
+      '<div id="cw-media">' + cwMediaHtml() + '</div>' +
+      '<div class="cx-fld"><div class="cx-lab">Explainer video link (optional)</div><input id="cw-video" class="cx-in" value="' + esc(w.video_url || '') + '" placeholder="YouTube / Vimeo link"></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Event sponsor (optional)</div><input id="cw-spon-name" class="cx-in" value="' + esc(w.sponsor_name || '') + '" placeholder="Sponsor name" style="margin-bottom:8px">' +
+        '<div id="cw-spon-media">' + cwSponHtml() + '</div>' +
+        '<input id="cw-spon-url" class="cx-in" value="' + esc(w.sponsor_url || '') + '" placeholder="Sponsor link (optional)" style="margin-top:8px"></div>' +
+      multi + copy,
       '<button class="cx-btn" onclick="FFPComp.closeModal()">Cancel</button><button class="cx-btn pri" onclick="FFPComp.saveWorkout(\'' + (id || '') + '\')">Save</button>');
   }
+  // ---- event media (banner + gallery) + sponsor logo, rendered from S.cw ----
+  function cwMediaHtml() {
+    var cw = S.cw || { banner: '', imgs: [] };
+    var banner = cw.banner
+      ? '<div style="height:120px;border-radius:12px;background:#eef2f5 center/cover no-repeat;background-image:url(\'' + esc(cw.banner) + '\');position:relative"><button class="cx-btn sm" style="position:absolute;top:8px;right:8px" onclick="FFPComp.cwBanner()">Change</button></div>'
+      : '<button class="cx-btn" onclick="FFPComp.cwBanner()"><span class="ms">image</span> Add banner</button>';
+    var imgs = (cw.imgs || []).map(function (u, i) {
+      return '<div style="position:relative;flex:none"><img src="' + esc(u) + '" style="width:84px;height:64px;object-fit:cover;border-radius:9px"><button onclick="FFPComp.cwRmImg(' + i + ')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:#e0553f;color:#fff;font-weight:900;cursor:pointer">&times;</button></div>';
+    }).join('');
+    return '<div class="cx-fld"><div class="cx-lab">Event banner (optional)</div>' + banner + '<div class="cx-sub" style="margin-top:6px">The hero image at the top of the event in the app. Clean landscape, no text.</div></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Description images (optional)</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' + imgs +
+        '<button class="cx-btn sm" onclick="FFPComp.cwAddImg()"><span class="ms">add_photo_alternate</span> Add</button></div></div>';
+  }
+  function cwSponHtml() {
+    var cw = S.cw || {};
+    return cw.sponLogo
+      ? '<div style="display:flex;align-items:center;gap:10px"><img src="' + esc(cw.sponLogo) + '" style="height:44px;max-width:150px;object-fit:contain;background:#fff;border:1px solid #eef2f5;border-radius:8px;padding:4px"><button class="cx-btn sm" onclick="FFPComp.cwSpon()">Change</button><button class="cx-btn sm" onclick="FFPComp.cwRmSpon()">Remove</button></div>'
+      : '<button class="cx-btn sm" onclick="FFPComp.cwSpon()"><span class="ms">image</span> Add sponsor logo</button>';
+  }
+  function _cwRefresh() { var m = document.getElementById('cw-media'); if (m) m.innerHTML = cwMediaHtml(); var s = document.getElementById('cw-spon-media'); if (s) s.innerHTML = cwSponHtml(); }
+  function cwBanner() { if (!window.FFPUpload) { toast('Upload unavailable', 'error'); return; } FFPUpload.pick({ bucket: 'listing-covers', key: 'cw-ban-' + S.eventId + '-' + Date.now(), title: 'Event banner', onDone: function (u) { S.cw.banner = u; _cwRefresh(); } }); }
+  function cwAddImg() { if (!window.FFPUpload) { toast('Upload unavailable', 'error'); return; } FFPUpload.pick({ bucket: 'listing-covers', key: 'cw-img-' + S.eventId + '-' + Date.now(), title: 'Description image', onDone: function (u) { S.cw.imgs = (S.cw.imgs || []); S.cw.imgs.push(u); _cwRefresh(); } }); }
+  function cwRmImg(i) { S.cw.imgs.splice(i, 1); _cwRefresh(); }
+  function cwSpon() { if (!window.FFPUpload) { toast('Upload unavailable', 'error'); return; } FFPUpload.pick({ bucket: 'event-sponsors', key: 'cw-spon-' + S.eventId + '-' + Date.now(), title: 'Sponsor logo', onDone: function (u) { S.cw.sponLogo = u; _cwRefresh(); } }); }
+  function cwRmSpon() { S.cw.sponLogo = ''; _cwRefresh(); }
   function typeHint(t) { var d = document.getElementById('cw-dir'); if (!d) return; d.value = (t === 'time') ? 'asc' : 'desc'; }
   async function saveWorkout(id) {
     var g = function (x) { var e = document.getElementById(x); return e ? e.value : ''; };
     var capMin = parseInt(g('cw-cap'), 10);
-    var p = { name: g('cw-name'), description: g('cw-desc') || null, score_type: g('cw-type'), direction: g('cw-dir'), cap_seconds: isNaN(capMin) ? null : capMin * 60 };
+    var pwv = parseFloat(g('cw-pw'));
+    var cw = S.cw || {};
+    var p = { name: g('cw-name'), description: g('cw-desc') || null, score_type: g('cw-type'), direction: g('cw-dir'), cap_seconds: isNaN(capMin) ? null : capMin * 60,
+      points_weight: (isNaN(pwv) || pwv <= 0) ? 1 : pwv,
+      banner_url: cw.banner || null, image_urls: (cw.imgs || []), video_url: g('cw-video') || null,
+      sponsor_name: g('cw-spon-name') || null, sponsor_logo_url: cw.sponLogo || null, sponsor_url: g('cw-spon-url') || null };
     if (!p.name) { toast('Name the event'); return; }
     // New event can be allocated to multiple divisions at once
     var targets = [S.divId];
@@ -612,7 +667,8 @@
   window.FFPComp = { list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
     saveDetails: saveDetails, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision,
-    editWorkout: editWorkout, saveWorkout: saveWorkout, typeHint: typeHint,
+    editWorkout: editWorkout, saveWorkout: saveWorkout, moveWorkout: moveWorkout, typeHint: typeHint,
+    cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
     addAthlete: addAthlete, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
     hmode: hmode, genHeats: genHeats, heatMove: heatMove, heatSet: heatSet, addJudge: addJudge, removeJudge: removeJudge,
     publish: publish, finalise: finalise, closeModal: closeModal };
