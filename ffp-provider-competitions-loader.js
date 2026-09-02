@@ -128,7 +128,7 @@
   function renderEditor() {
     var el = root(); if (!el || !S.detail) return;
     var ev = S.detail.event || {};
-    var tabs = [['details', 'Details'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['heats', 'Heats & lanes'], ['judges', 'Judges'], ['scores', 'Scores'], ['standings', 'Standings']];
+    var tabs = [['details', 'Details'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['heats', 'Heats & lanes'], ['judges', 'Judges'], ['scores', 'Scores'], ['standings', 'Standings'], ['sponsors', 'Sponsors']];
     if (ev.club_mode) tabs.push(['clubs', 'Clubs']);
     el.innerHTML = '<div class="cx-wrap">' +
       '<div class="cx-head"><div style="display:flex;align-items:center;gap:12px;">' +
@@ -158,6 +158,7 @@
     if (S.tab === 'judges') return renderJudges(c);
     if (S.tab === 'scores') return renderScores(c);
     if (S.tab === 'standings') return renderStandings(c);
+    if (S.tab === 'sponsors') return (window.FFPSponsors ? window.FFPSponsors.render(c, { scope: 'comp', eventId: S.eventId }) : (c.innerHTML = '<div class="cx-empty">Sponsor editor unavailable.</div>'));
     if (S.tab === 'clubs') return renderClubs(c);
   }
 
@@ -300,6 +301,12 @@
       '<div class="cx-fld"><div class="cx-lab">Add this event to</div><div id="cw-divs" style="display:flex;flex-direction:column;gap:8px">' +
         allDivs.map(function (d) { return '<label style="display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px;color:#12232f;cursor:pointer"><input type="checkbox" value="' + d.id + '"' + (d.id === S.divId ? ' checked' : '') + ' style="width:18px;height:18px">' + esc(d.name) + '</label>'; }).join('') +
         '</div><div class="cx-sub" style="margin-top:6px">Tick every division this event runs in — it\'s added to each. Scores are still entered per division.</div></div>' : '';
+    // Editing: let the organiser COPY this event into other divisions (a fresh copy each — scores stay per division).
+    var others = allDivs.filter(function (d) { return d.id !== S.divId; });
+    var copy = id && others.length ?
+      '<div class="cx-fld"><div class="cx-lab">Copy this event to other divisions</div><div id="cw-copy" style="display:flex;flex-direction:column;gap:8px">' +
+        others.map(function (d) { return '<label style="display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px;color:#12232f;cursor:pointer"><input type="checkbox" value="' + d.id + '" style="width:18px;height:18px">' + esc(d.name) + (d.team_size > 1 ? ' (teams of ' + d.team_size + ')' : '') + '</label>'; }).join('') +
+        '</div><div class="cx-sub" style="margin-top:6px">Ticked divisions get their own copy of this event (name + details above). Save your edits and the copies in one go.</div></div>' : '';
     openModal((id ? 'Edit' : 'Add') + ' event — ' + esc(div.name),
       '<div class="cx-fld"><div class="cx-lab">Name</div><input id="cw-name" class="cx-in" value="' + esc(w.name || '') + '" placeholder="e.g. Fran"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Description (optional)</div><textarea id="cw-desc" class="cx-in" rows="3" placeholder="Movements, reps, standards…">' + esc(w.description || '') + '</textarea></div>' +
@@ -308,7 +315,7 @@
       '<div class="cx-fld"><div class="cx-lab">Winner</div><select id="cw-dir" class="cx-sel">' +
         '<option value="asc"' + (w.direction === 'asc' ? ' selected' : '') + '>Lower wins (time)</option>' +
         '<option value="desc"' + (w.direction === 'desc' ? ' selected' : '') + '>Higher wins (reps/weight)</option></select></div></div>' +
-      '<div class="cx-fld"><div class="cx-lab">Time cap minutes (optional)</div><input id="cw-cap" type="number" class="cx-in" value="' + cap + '" style="max-width:160px"></div>' + multi,
+      '<div class="cx-fld"><div class="cx-lab">Time cap minutes (optional)</div><input id="cw-cap" type="number" class="cx-in" value="' + cap + '" style="max-width:160px"></div>' + multi + copy,
       '<button class="cx-btn" onclick="FFPComp.closeModal()">Cancel</button><button class="cx-btn pri" onclick="FFPComp.saveWorkout(\'' + (id || '') + '\')">Save</button>');
   }
   function typeHint(t) { var d = document.getElementById('cw-dir'); if (!d) return; d.value = (t === 'time') ? 'asc' : 'desc'; }
@@ -331,7 +338,22 @@
       var r; try { r = await sb().rpc('comp_workout_save', { p_division: targets[i], p_id: id || null, p: p }); } catch (e) { r = { error: e }; }
       if (!r || r.error) ok = false;
     }
-    if (ok) { toast(targets.length > 1 ? 'Added to ' + targets.length + ' divisions' : 'Saved', 'check'); closeModal(); reload(); } else { toast('Save failed', 'error'); }
+    // Editing: also COPY into any ticked other divisions (fresh event each, p_id null)
+    var copied = 0;
+    if (id) {
+      var cbox = document.getElementById('cw-copy');
+      if (cbox) {
+        var copyTargets = Array.prototype.slice.call(cbox.querySelectorAll('input:checked')).map(function (c) { return c.value; });
+        for (var j = 0; j < copyTargets.length; j++) {
+          var rc; try { rc = await sb().rpc('comp_workout_save', { p_division: copyTargets[j], p_id: null, p: p }); } catch (e) { rc = { error: e }; }
+          if (!rc || rc.error) ok = false; else copied++;
+        }
+      }
+    }
+    if (ok) {
+      var msg = copied ? ('Saved · copied to ' + copied + ' division' + (copied === 1 ? '' : 's')) : (targets.length > 1 ? 'Added to ' + targets.length + ' divisions' : 'Saved');
+      toast(msg, 'check'); closeModal(); reload();
+    } else { toast('Save failed', 'error'); }
   }
 
   // Athletes (roster) per division
