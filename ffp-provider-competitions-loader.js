@@ -52,7 +52,20 @@
       '.cx-jwrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}',
       '.cx-jchip{display:inline-flex;align-items:center;gap:5px;background:#eef3f7;border:1px solid #dce6ee;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:800;color:#33526a;}',
       '.cx-jchip .x{cursor:pointer;color:#8aa0b2;font-size:14px;line-height:1;}',
-      '.cx-jchip .cx-jpos{border:none;background:transparent;font:inherit;font-size:11px;font-weight:800;color:var(--ffp-blue);padding:0 2px;cursor:pointer;}',
+      '.cx-jchip .cx-jpos-t{font-size:11px;font-weight:900;color:var(--ffp-blue);cursor:pointer;padding:0 2px;}',
+      '.cx-jaddbtn{display:inline-flex;align-items:center;gap:5px;border:1px dashed #c4ced5;background:#fff;border-radius:20px;padding:6px 12px;font:inherit;font-size:12.5px;font-weight:800;color:var(--ffp-blue);cursor:pointer;} .cx-jaddbtn .ms{font-size:16px;}',
+      '.cx-pop{position:fixed;z-index:1000;width:270px;max-height:320px;overflow-y:auto;background:#fff;border:1px solid var(--ffp-border);border-radius:13px;box-shadow:0 14px 34px rgba(15,34,48,.20);}',
+      '.cx-popsearch{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--ffp-border);} .cx-popsearch .ms{color:#9aa8b4;} .cx-popsearch input{border:none;outline:none;font:inherit;font-size:14px;flex:1;background:transparent;}',
+      '.cx-popr{display:flex;align-items:center;gap:9px;padding:10px 13px;border-bottom:1px solid #f0f3f6;cursor:pointer;font-size:13.5px;} .cx-popr:last-child{border-bottom:none;} .cx-popr:hover{background:#f6f9fb;} .cx-popr b{font-weight:800;}',
+      '.cx-popav{width:26px;height:26px;border-radius:50%;background:#dfeaf2;display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--ffp-blue);font-size:12px;}',
+      '.cx-popnote{padding:11px 13px;font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);}',
+      '.cx-jsched-j{padding:14px 2px;border-bottom:1px solid var(--ffp-border);}',
+      '.cx-jsched-who{display:flex;align-items:center;gap:10px;font-weight:900;font-size:14.5px;margin-bottom:6px;} .cx-jsched-who .cx-av{width:28px;height:28px;font-size:12px;}',
+      '.cx-jsrow{display:flex;align-items:center;gap:12px;padding:7px 0 7px 38px;font-size:13px;} .cx-jsrow .tm{font-weight:900;width:56px;} .cx-jsrow .ev{flex:1;color:#3a4a55;font-weight:700;} .cx-jsrow .stn{font-weight:900;color:var(--ffp-blue);}',
+      '.cx-heatbox{border:1.5px dashed transparent;border-radius:10px;padding:4px 2px;min-height:20px;} .cx-heatbox.drop{border-color:var(--ffp-blue);background:rgba(25,128,173,.05);}',
+      '.cx-mrow{display:flex;align-items:center;gap:10px;padding:11px 8px;border-bottom:1px solid var(--ffp-border);background:#fff;cursor:grab;} .cx-mrow b{flex:1;font-size:14px;font-weight:800;} .cx-mrow .drag{color:#b7c2cb;font-size:20px;} .cx-mrow .rm{color:#c4ced5;cursor:pointer;font-size:18px;}',
+      '.cx-massmt{padding:16px 8px;color:var(--ffp-text-muted);font-weight:700;font-size:13px;text-align:center;}',
+      '.cx-massjudges{display:flex;align-items:center;gap:10px;padding:10px 4px 16px;flex-wrap:wrap;} .cx-massjudges .cx-slab{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ffp-text-muted);}',
       '.cx-jadd{width:auto;min-width:96px;}',
       '.cx-av{width:32px;height:32px;border-radius:50%;background:#e7ecef center/cover;flex:none;display:flex;align-items:center;justify-content:center;font-weight:900;color:#6a7681;font-size:12px;} .cx-row .g{flex:1;} .cx-row .g b{font-size:14px;font-weight:800;} .cx-row .g span{display:block;font-size:12px;color:var(--ffp-text-muted);font-weight:700;}',
       '.cx-pill{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;}',
@@ -772,11 +785,22 @@
     var w = wods.find(function (x) { return x.id === S.wodId; });
     var lanes = (w && w.lanes) || S._lanes || 8;
     var mode = S._heatMode || 'position';
+    var useLanes = (S._fmt != null) ? (S._fmt === 'lanes') : (w ? (w.use_lanes !== false) : true);
+    var interval = (w && w.heat_interval_min != null) ? w.heat_interval_min : 20;
+    var firstStart = (w && w.heat_first_start) ? _dtLocal(w.heat_first_start) : '';
+    var pick = (w && w.heat_pick) || 'assign';
+    var lbl = 'font-size:12px;font-weight:800;color:#43525c';
     c.innerHTML = '<div class="cx-toolbar">' + divPickerHtml('FFPComp.setDiv(this.value)') + wodSel + '</div>'
       + (!S.wodId ? '<div class="cx-empty">Add an event to this division first.</div>'
-        : '<div class="cx-toolbar"><span style="font-size:12px;font-weight:800;color:#43525c">Lanes</span><input class="cx-in" id="cx-lanes" value="' + lanes + '" style="width:60px">'
-          + '<span style="font-size:12px;font-weight:800;color:#43525c;margin-left:6px">Seed by</span><div class="cx-seg" id="cx-hmode"><button data-v="position" class="' + (mode === 'position' ? 'on' : '') + '" onclick="FFPComp.hmode(this)">Current position</button><button data-v="random" class="' + (mode === 'random' ? 'on' : '') + '" onclick="FFPComp.hmode(this)">Random</button></div>'
-          + '<span style="flex:1"></span><button class="cx-btn pri sm" onclick="FFPComp.genHeats()"><span class="ms">auto_awesome</span> Generate</button></div><div id="cx-heats"><div class="cx-empty">Loading…</div></div>');
+        : '<div class="cx-toolbar"><span style="' + lbl + '">Format</span><div class="cx-seg" id="cx-fmt"><button data-v="lanes" class="' + (useLanes ? 'on' : '') + '" onclick="FFPComp.fmtPick(this)">Lanes</button><button data-v="mass" class="' + (!useLanes ? 'on' : '') + '" onclick="FFPComp.fmtPick(this)">Mass / wave</button></div>'
+          + '<span style="' + lbl + '">Per heat</span><input class="cx-in" id="cx-lanes" value="' + lanes + '" style="width:56px">'
+          + '<span style="' + lbl + '">First heat</span><input class="cx-in" id="cx-first" type="datetime-local" value="' + firstStart + '" style="width:200px">'
+          + '<span style="' + lbl + '">Interval</span><input class="cx-in" id="cx-int" value="' + interval + '" style="width:52px"><span style="' + lbl + '">min</span></div>'
+        + '<div class="cx-toolbar"><span style="' + lbl + '">Seed by</span><div class="cx-seg" id="cx-hmode"><button data-v="position" class="' + (mode === 'position' ? 'on' : '') + '" onclick="FFPComp.hmode(this)">Current position</button><button data-v="random" class="' + (mode === 'random' ? 'on' : '') + '" onclick="FFPComp.hmode(this)">Random</button></div>'
+          + '<span style="' + lbl + ';margin-left:6px">Heat selection</span><div class="cx-seg" id="cx-pick"><button data-v="assign" class="' + (pick === 'assign' ? 'on' : '') + '" onclick="FFPComp.heatPickSet(\'assign\',this)">Organiser assigns</button><button data-v="choose" class="' + (pick === 'choose' ? 'on' : '') + '" onclick="FFPComp.heatPickSet(\'choose\',this)">Athletes choose</button></div>'
+          + '<span style="flex:1"></span><button class="cx-btn pri sm" onclick="FFPComp.genHeats()"><span class="ms">auto_awesome</span> Generate heats</button></div>'
+        + '<div class="cx-sub" style="margin:2px 0 8px">' + (useLanes ? 'Athletes are seeded into lanes.' : 'Mass / wave start — no lanes, just a start time + a list. Drag anyone into another heat.') + ' Heats stagger from the first start by the interval.</div>'
+        + '<div id="cx-heats"><div class="cx-empty">Loading…</div></div>');
     if (!S.wodId) return;
     var hr; try { hr = await sb().rpc('comp_heats_view', { p_workout: S.wodId }); } catch (e) { hr = { error: e }; }
     var heats = (hr && hr.data) || [];
@@ -790,34 +814,111 @@
       }).join('');
     };
     var positions = (S.detail.event && Array.isArray(S.detail.event.judge_positions)) ? S.detail.event.judge_positions : [];
-    var posOpts = function (sel) {
-      return '<option value="">No position</option>' + positions.map(function (p) { return '<option value="' + esc(p) + '"' + (sel === p ? ' selected' : '') + '>' + esc(p) + '</option>'; }).join('');
+    S._judges = judges; S._heatsData = heats; S._cap = lanes;   // for popovers + drag
+    var stationChips = function (h) {
+      return (h.station_judges || []).map(function (j) {
+        var pos = positions.length ? '<span class="cx-jpos-t" onclick="FFPComp.lanePosOpen(\'' + h.id + '\',0,\'' + j.id + '\',event)">' + (j.position ? esc(j.position) : '+ station') + '</span>' : '';
+        return '<span class="cx-jchip">' + esc(j.name) + pos + '<span class="x" onclick="FFPComp.laneJudgeRemove(\'' + h.id + '\',0,\'' + j.id + '\')">×</span></span>';
+      }).join('') + '<button class="cx-jaddbtn" onclick="FFPComp.laneJudgeOpen(\'' + h.id + '\',0,event)"><span class="ms">add</span> Add judge</button>';
     };
     host.innerHTML = heats.map(function (h) {
+      if (!useLanes) {
+        var occ = (h.lanes || []).filter(function (l) { return l.entrant_id; });
+        var mrows = occ.length ? occ.map(function (l) {
+          return '<div class="cx-mrow" draggable="true" ondragstart="FFPComp.hDragStart(event,\'' + l.entrant_id + '\')"><span class="ms drag">drag_indicator</span><b>' + esc(l.name || 'Athlete') + '</b><span class="ms rm" onclick="FFPComp.laneAssign(\'' + h.id + '\',' + l.lane + ',\'\')">close</span></div>';
+        }).join('') : '<div class="cx-massmt">Drop athletes here</div>';
+        return '<div class="cx-heath" data-h="' + h.id + '"><b>' + esc(h.name) + '</b><small style="color:#8a99a8;font-weight:800;margin-left:8px">' + occ.length + ' / ' + lanes + '</small>' + (h.ord === heats.length ? '<span class="fin">FINAL</span>' : '') + '</div>'
+          + '<div class="cx-heatbox" data-heat="' + h.id + '" ondragover="FFPComp.hDragOver(event)" ondragleave="FFPComp.hDragLeave(event)" ondrop="FFPComp.hDrop(event,\'' + h.id + '\')">' + mrows + '</div>'
+          + '<div class="cx-massjudges"><span class="cx-slab">Judges (stations)</span><div class="cx-jwrap">' + stationChips(h) + '</div></div>';
+      }
       var rows = (h.lanes || []).map(function (l) {
-        var have = (l.judges || []).map(function (j) { return j.id; });
         var chips = (l.judges || []).map(function (j) {
-          var posSel = positions.length ? '<select class="cx-jpos" onchange="FFPComp.laneJudgeAdd(\'' + h.id + '\',' + l.lane + ',\'' + j.id + '\',this.value)">' + posOpts(j.position) + '</select>' : '';
-          return '<span class="cx-jchip">' + esc(j.name) + posSel + '<span class="x" onclick="FFPComp.laneJudgeRemove(\'' + h.id + '\',' + l.lane + ',\'' + j.id + '\')">×</span></span>';
+          var pos = positions.length
+            ? '<span class="cx-jpos-t" onclick="FFPComp.lanePosOpen(\'' + h.id + '\',' + l.lane + ',\'' + j.id + '\',event)">' + (j.position ? esc(j.position) : '+ position') + '</span>'
+            : '';
+          return '<span class="cx-jchip">' + esc(j.name) + pos + '<span class="x" onclick="FFPComp.laneJudgeRemove(\'' + h.id + '\',' + l.lane + ',\'' + j.id + '\')">×</span></span>';
         }).join('');
-        var addable = judges.filter(function (j) { return have.indexOf(j.member_id) < 0; });
-        var addSel = '<select class="cx-sel sm cx-jadd" onchange="FFPComp.laneJudgeAdd(\'' + h.id + '\',' + l.lane + ',this.value)"><option value="">+ Judge</option>'
-          + addable.map(function (j) { return '<option value="' + j.member_id + '">' + esc(j.name) + '</option>'; }).join('') + '</select>';
+        var addBtn = '<button class="cx-jaddbtn" onclick="FFPComp.laneJudgeOpen(\'' + h.id + '\',' + l.lane + ',event)"><span class="ms">add</span> Add judge</button>';
         return '<div class="cx-lrow2">'
           + '<span class="ln">' + l.lane + '</span>'
           + '<div class="cx-lslot"><div class="cx-slab">Athlete</div><select class="cx-sel sm" onchange="FFPComp.laneAssign(\'' + h.id + '\',' + l.lane + ',this.value)">' + athOpts(l.entrant_id) + '</select></div>'
-          + '<div class="cx-lslot"><div class="cx-slab">Judges</div><div class="cx-jwrap">' + chips + addSel + '</div></div>'
+          + '<div class="cx-lslot"><div class="cx-slab">Judges</div><div class="cx-jwrap">' + chips + addBtn + '</div></div>'
           + '</div>';
       }).join('');
       return '<div class="cx-heath" data-h="' + h.id + '"><b>' + esc(h.name) + '</b>' + (h.ord === heats.length ? '<span class="fin">FINAL</span>' : '') + '</div>' + rows;
     }).join('');
   }
+  // ---- add-judge / position popovers (search + tap; NO dropdowns) ----
+  function _closePop() { var p = document.getElementById('cx-pop'); if (p) p.remove(); document.removeEventListener('mousedown', _popOutside, true); }
+  function _popOutside(e) { var p = document.getElementById('cx-pop'); if (p && !p.contains(e.target)) _closePop(); }
+  function _pop(ev, html) {
+    _closePop();
+    var p = document.createElement('div'); p.id = 'cx-pop'; p.className = 'cx-pop'; p.innerHTML = html; document.body.appendChild(p);
+    var x = (ev && ev.clientX) || 200, y = (ev && ev.clientY) || 200;
+    p.style.left = Math.max(10, Math.min(x, window.innerWidth - p.offsetWidth - 12)) + 'px';
+    p.style.top = Math.min(y + 8, window.innerHeight - p.offsetHeight - 12) + 'px';
+    setTimeout(function () { document.addEventListener('mousedown', _popOutside, true); }, 0);
+  }
+  function laneJudgeOpen(heat, lane, ev) {
+    if (ev) ev.stopPropagation();
+    var h = (S._heatsData || []).find(function (x) { return x.id === heat; }) || {};
+    var l = (+lane === 0) ? { judges: (h.station_judges || []) } : ((h.lanes || []).find(function (x) { return x.lane === lane; }) || {});
+    var have = (l.judges || []).map(function (j) { return j.id; });
+    var addable = (S._judges || []).filter(function (j) { return have.indexOf(j.member_id) < 0; });
+    var rows = addable.length ? addable.map(function (j) {
+      return '<div class="cx-popr" data-nm="' + esc((j.name || '').toLowerCase()) + '" onclick="FFPComp.laneJudgePick(\'' + heat + '\',' + lane + ',\'' + j.member_id + '\')"><span class="cx-popav">' + esc((j.name || '?').slice(0, 1)) + '</span><b>' + esc(j.name) + '</b><span class="ms" style="margin-left:auto;color:#1980AD">add_circle</span></div>';
+    }).join('') : '<div class="cx-popnote">All your judges are on this lane. Add more in the Judges tab.</div>';
+    _pop(ev, '<div class="cx-popsearch"><span class="ms">search</span><input id="cx-popq" placeholder="Search judges…" oninput="FFPComp.judgePickFilter(this.value)"></div><div id="cx-poprows">' + rows + '</div>');
+    var q = document.getElementById('cx-popq'); if (q) q.focus();
+  }
+  function judgePickFilter(v) {
+    v = (v || '').toLowerCase();
+    Array.prototype.forEach.call(document.querySelectorAll('#cx-poprows .cx-popr'), function (r) { r.style.display = r.getAttribute('data-nm').indexOf(v) < 0 ? 'none' : ''; });
+  }
+  async function laneJudgePick(heat, lane, jid) { _closePop(); await sb().rpc('comp_lane_judge_add', { p_heat: heat, p_lane: +lane, p_judge: jid, p_position: null }); renderTab(); }
+  function lanePosOpen(heat, lane, jid, ev) {
+    if (ev) ev.stopPropagation();
+    var positions = (S.detail.event && Array.isArray(S.detail.event.judge_positions)) ? S.detail.event.judge_positions : [];
+    var h = (S._heatsData || []).find(function (x) { return x.id === heat; }) || {};
+    var l = (+lane === 0) ? { judges: (h.station_judges || []) } : ((h.lanes || []).find(function (x) { return x.lane === lane; }) || {});
+    var j = (l.judges || []).find(function (x) { return x.id === jid; }) || {};
+    var rows = positions.map(function (p) {
+      var on = j.position === p;
+      return '<div class="cx-popr" onclick="FFPComp.lanePosPick(\'' + heat + '\',' + lane + ',\'' + jid + '\',\'' + esc(p) + '\')"><b' + (on ? ' style="color:#1980AD"' : '') + '>' + esc(p) + '</b><span class="ms" style="margin-left:auto;color:' + (on ? '#1980AD' : '#c4ced5') + '">' + (on ? 'check_circle' : 'radio_button_unchecked') + '</span></div>';
+    }).join('');
+    rows += '<div class="cx-popr" onclick="FFPComp.lanePosPick(\'' + heat + '\',' + lane + ',\'' + jid + '\',\'\')"><b style="color:#8a99a8">No position</b></div>';
+    _pop(ev, '<div class="cx-popsearch" style="font-weight:800;color:#12232f">Position on the lane</div><div>' + rows + '</div>');
+  }
+  async function lanePosPick(heat, lane, jid, pos) { _closePop(); await sb().rpc('comp_lane_judge_add', { p_heat: heat, p_lane: +lane, p_judge: jid, p_position: pos || null }); renderTab(); }
   function hmode(btn) { document.querySelectorAll('#cx-hmode button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); S._heatMode = btn.getAttribute('data-v'); }
+  function fmtPick(btn) { document.querySelectorAll('#cx-fmt button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); S._fmt = btn.getAttribute('data-v'); }
+  async function heatPickSet(pick, btn) {
+    document.querySelectorAll('#cx-pick button').forEach(function (b) { b.classList.remove('on'); }); if (btn) btn.classList.add('on');
+    try { await sb().rpc('comp_set_heat_pick', { p_workout: S.wodId, p_pick: pick }); toast(pick === 'choose' ? 'Athletes choose their heat' : 'Organiser assigns heats', 'check'); } catch (e) { toast('Save failed', 'error'); }
+  }
   async function genHeats() {
     var lanes = +((document.getElementById('cx-lanes') || {}).value) || 8;
     var mode = S._heatMode || 'position'; S._lanes = lanes;
-    var r; try { r = await sb().rpc('comp_heats_generate', { p_workout: S.wodId, p_lanes: lanes, p_mode: mode }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not generate', 'error'); return; } toast((r.data || 0) + ' heats created', 'success'); renderTab();
+    var fmtOn = document.querySelector('#cx-fmt button.on'); var useLanes = fmtOn ? (fmtOn.getAttribute('data-v') === 'lanes') : true;
+    var fv = (document.getElementById('cx-first') || {}).value; var first = fv ? new Date(fv).toISOString() : null;
+    var interval = +((document.getElementById('cx-int') || {}).value) || 20;
+    var r; try { r = await sb().rpc('comp_heats_generate', { p_workout: S.wodId, p_lanes: lanes, p_mode: mode, p_first_start: first, p_interval_min: interval, p_use_lanes: useLanes }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not generate', 'error'); return; } toast((r.data || 0) + ' heats created', 'success'); S._fmt = null; renderTab();
+  }
+  // drag athletes between heats (mass / wave start)
+  function hDragStart(ev, entrant) { S._dragEnt = entrant; if (ev && ev.dataTransfer) { ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', entrant); } }
+  function hDragOver(ev) { ev.preventDefault(); if (ev.currentTarget) ev.currentTarget.classList.add('drop'); }
+  function hDragLeave(ev) { if (ev.currentTarget) ev.currentTarget.classList.remove('drop'); }
+  async function hDrop(ev, heat) {
+    ev.preventDefault(); if (ev.currentTarget) ev.currentTarget.classList.remove('drop');
+    var ent = S._dragEnt || (ev.dataTransfer && ev.dataTransfer.getData('text/plain')); if (!ent) return;
+    var h = (S._heatsData || []).find(function (x) { return x.id === heat; }) || {};
+    var cap = S._cap || 8; var taken = {};
+    (h.lanes || []).forEach(function (l) { if (l.entrant_id && l.entrant_id !== ent) taken[l.lane] = 1; });
+    var slot = 0; for (var i = 1; i <= cap; i++) { if (!taken[i]) { slot = i; break; } }
+    if (!slot) { toast('Heat is full', 'error'); return; }
+    S._dragEnt = null;
+    await sb().rpc('comp_lane_assign', { p_heat: heat, p_lane: slot, p_entrant: ent }); renderTab();
   }
   async function laneAssign(heat, lane, entrant) { await sb().rpc('comp_lane_assign', { p_heat: heat, p_lane: +lane, p_entrant: entrant || null }); renderTab(); }
   async function laneJudgeAdd(heat, lane, jid) { if (!jid) { renderTab(); return; } await sb().rpc('comp_lane_judge_add', { p_heat: heat, p_lane: +lane, p_judge: jid }); renderTab(); }
@@ -899,6 +1000,24 @@
       + '<textarea id="cx-jpos" class="cx-in" rows="4" placeholder="Start\nStation 1\nStation 2\nFinish" style="max-width:340px">' + esc(pos.join('\n')) + '</textarea>'
       + '<div><button class="cx-btn pri sm" style="margin-top:10px" onclick="FFPComp.saveJudgePositions()"><span class="ms">save</span> Save positions</button></div>';
     c.appendChild(pill);
+    // Judge schedule overview — where each judge needs to be through the day
+    var sch = document.createElement('div'); sch.style.marginTop = '30px'; sch.id = 'cx-jsched';
+    sch.innerHTML = '<div class="cx-sec">Judge schedule</div><div class="cx-sub" style="margin:-4px 0 8px">Where each judge needs to be, from your lane / station assignments.</div><div id="cx-jsched-body"><div class="cx-empty">Loading…</div></div>';
+    c.appendChild(sch);
+    var sr; try { sr = await sb().rpc('comp_judge_schedule', { p_event: S.eventId }); } catch (e) { sr = { error: e }; }
+    var js = (sr && Array.isArray(sr.data)) ? sr.data : [];
+    var body = document.getElementById('cx-jsched-body'); if (!body) return;
+    if (!js.length) { body.innerHTML = '<div class="cx-empty">No judge assignments yet — assign judges to lanes in Heats &amp; lanes.</div>'; return; }
+    body.innerHTML = js.map(function (j) {
+      var av = j.photo ? '<span class="cx-av" style="background-image:url(\'' + esc(j.photo) + '\')"></span>' : '<span class="cx-av">' + esc((j.judge || '?').slice(0, 1).toUpperCase()) + '</span>';
+      var asg = (j.assignments || []).map(function (a) {
+        var t = a.start_at ? new Date(a.start_at) : null;
+        var tv = t ? (('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2)) : 'TBA';
+        var where = a.position ? a.position : (a.lane != null ? ('Lane ' + a.lane) : 'Anywhere');
+        return '<div class="cx-jsrow"><span class="tm">' + tv + '</span><span class="ev">' + esc(a.workout || '') + (a.division ? ' · ' + esc(a.division) : '') + (a.heat ? ' · ' + esc(a.heat) : '') + '</span><span class="stn">' + esc(where) + '</span></div>';
+      }).join('');
+      return '<div class="cx-jsched-j"><div class="cx-jsched-who">' + av + '<b>' + esc(j.judge) + '</b></div>' + asg + '</div>';
+    }).join('');
   }
   async function saveJudgePositions() {
     var raw = ((document.getElementById('cx-jpos') || {}).value || '');
@@ -932,7 +1051,7 @@
     editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
     addAthlete: addAthlete, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
-    hmode: hmode, genHeats: genHeats, heatSet: heatSet, laneAssign: laneAssign, laneJudgeAdd: laneJudgeAdd, laneJudgeRemove: laneJudgeRemove, addJudge: addJudge, removeJudge: removeJudge, saveJudgePositions: saveJudgePositions,
+    hmode: hmode, fmtPick: fmtPick, heatPickSet: heatPickSet, hDragStart: hDragStart, hDragOver: hDragOver, hDragLeave: hDragLeave, hDrop: hDrop, genHeats: genHeats, heatSet: heatSet, laneAssign: laneAssign, laneJudgeRemove: laneJudgeRemove, laneJudgeOpen: laneJudgeOpen, judgePickFilter: judgePickFilter, laneJudgePick: laneJudgePick, lanePosOpen: lanePosOpen, lanePosPick: lanePosPick, addJudge: addJudge, removeJudge: removeJudge, saveJudgePositions: saveJudgePositions,
     schedEvent: schedEvent, schedHeat: schedHeat,
     publish: publish, finalise: finalise, closeModal: closeModal };
   window.ffpRenderCompetitions = renderList;
