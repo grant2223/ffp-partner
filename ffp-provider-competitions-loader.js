@@ -794,12 +794,12 @@
       + (!S.wodId ? '<div class="cx-empty">Add an event to this division first.</div>'
         : '<div class="cx-toolbar"><span style="' + lbl + '">Format</span><div class="cx-seg" id="cx-fmt"><button data-v="lanes" class="' + (useLanes ? 'on' : '') + '" onclick="FFPComp.fmtPick(this)">Lanes</button><button data-v="mass" class="' + (!useLanes ? 'on' : '') + '" onclick="FFPComp.fmtPick(this)">Mass / wave</button></div>'
           + '<span style="' + lbl + '">Per heat</span><input class="cx-in" id="cx-lanes" value="' + lanes + '" style="width:56px">'
-          + '<span style="' + lbl + '">First heat</span><input class="cx-in" id="cx-first" type="datetime-local" value="' + firstStart + '" style="width:200px">'
-          + '<span style="' + lbl + '">Interval</span><input class="cx-in" id="cx-int" value="' + interval + '" style="width:52px"><span style="' + lbl + '">min</span></div>'
+          + '<span id="cx-wavefields" style="display:' + (useLanes ? 'none' : 'inline-flex') + ';align-items:center;gap:12px"><span style="' + lbl + '">First heat</span><input class="cx-in" id="cx-first" type="datetime-local" value="' + firstStart + '" style="width:200px">'
+          + '<span style="' + lbl + '">Interval</span><input class="cx-in" id="cx-int" value="' + interval + '" style="width:52px"><span style="' + lbl + '">min</span></span></div>'
         + '<div class="cx-toolbar"><span style="' + lbl + '">Seed by</span><div class="cx-seg" id="cx-hmode"><button data-v="position" class="' + (mode === 'position' ? 'on' : '') + '" onclick="FFPComp.hmode(this)">Current position</button><button data-v="random" class="' + (mode === 'random' ? 'on' : '') + '" onclick="FFPComp.hmode(this)">Random</button></div>'
           + '<span style="' + lbl + ';margin-left:6px">Heat selection</span><div class="cx-seg" id="cx-pick"><button data-v="assign" class="' + (pick === 'assign' ? 'on' : '') + '" onclick="FFPComp.heatPickSet(\'assign\',this)">Organiser assigns</button><button data-v="choose" class="' + (pick === 'choose' ? 'on' : '') + '" onclick="FFPComp.heatPickSet(\'choose\',this)">Athletes choose</button></div>'
           + '<span style="flex:1"></span><button class="cx-btn pri sm" onclick="FFPComp.genHeats()"><span class="ms">auto_awesome</span> Generate heats</button></div>'
-        + '<div class="cx-sub" style="margin:2px 0 8px">' + (useLanes ? 'Athletes are seeded into lanes.' : 'Mass / wave start — no lanes, just a start time + a list. Drag anyone into another heat.') + ' Heats stagger from the first start by the interval.</div>'
+        + '<div class="cx-sub" style="margin:2px 0 8px">' + (useLanes ? 'Athletes are seeded into lanes. Set each heat\'s start time in the Schedule tab — Heat 1 is when the event begins.' : 'Mass / wave start — no lanes, just a start time + a list. Drag anyone into another heat. Heats auto-stagger from the first start by the interval.') + '</div>'
         + '<div id="cx-heats"><div class="cx-empty">Loading…</div></div>');
     if (!S.wodId) return;
     var hr; try { hr = await sb().rpc('comp_heats_view', { p_workout: S.wodId }); } catch (e) { hr = { error: e }; }
@@ -814,7 +814,7 @@
       }).join('');
     };
     var positions = (S.detail.event && Array.isArray(S.detail.event.judge_positions)) ? S.detail.event.judge_positions : [];
-    S._judges = judges; S._heatsData = heats; S._cap = lanes;   // for popovers + drag
+    S._judges = judges.filter(function (j) { return (j.status || 'confirmed') === 'confirmed'; }); S._heatsData = heats; S._cap = lanes;   // only confirmed judges are assignable
     var stationChips = function (h) {
       return (h.station_judges || []).map(function (j) {
         var pos = positions.length ? '<span class="cx-jpos-t" onclick="FFPComp.lanePosOpen(\'' + h.id + '\',0,\'' + j.id + '\',event)">' + (j.position ? esc(j.position) : '+ station') + '</span>' : '';
@@ -827,7 +827,7 @@
         var mrows = occ.length ? occ.map(function (l) {
           return '<div class="cx-mrow" draggable="true" ondragstart="FFPComp.hDragStart(event,\'' + l.entrant_id + '\')"><span class="ms drag">drag_indicator</span><b>' + esc(l.name || 'Athlete') + '</b><span class="ms rm" onclick="FFPComp.laneAssign(\'' + h.id + '\',' + l.lane + ',\'\')">close</span></div>';
         }).join('') : '<div class="cx-massmt">Drop athletes here</div>';
-        return '<div class="cx-heath" data-h="' + h.id + '"><b>' + esc(h.name) + '</b><small style="color:#8a99a8;font-weight:800;margin-left:8px">' + occ.length + ' / ' + lanes + '</small>' + (h.ord === heats.length ? '<span class="fin">FINAL</span>' : '') + '</div>'
+        return '<div class="cx-heath" data-h="' + h.id + '"><b>' + esc(h.name) + '</b><small style="color:#8a99a8;font-weight:800;margin-left:8px">' + occ.length + ' / ' + lanes + '</small></div>'
           + '<div class="cx-heatbox" data-heat="' + h.id + '" ondragover="FFPComp.hDragOver(event)" ondragleave="FFPComp.hDragLeave(event)" ondrop="FFPComp.hDrop(event,\'' + h.id + '\')">' + mrows + '</div>'
           + '<div class="cx-massjudges"><span class="cx-slab">Judges (stations)</span><div class="cx-jwrap">' + stationChips(h) + '</div></div>';
       }
@@ -845,7 +845,7 @@
           + '<div class="cx-lslot"><div class="cx-slab">Judges</div><div class="cx-jwrap">' + chips + addBtn + '</div></div>'
           + '</div>';
       }).join('');
-      return '<div class="cx-heath" data-h="' + h.id + '"><b>' + esc(h.name) + '</b>' + (h.ord === heats.length ? '<span class="fin">FINAL</span>' : '') + '</div>' + rows;
+      return '<div class="cx-heath" data-h="' + h.id + '"><b>' + esc(h.name) + '</b></div>' + rows;
     }).join('');
   }
   // ---- add-judge / position popovers (search + tap; NO dropdowns) ----
@@ -891,7 +891,7 @@
   }
   async function lanePosPick(heat, lane, jid, pos) { _closePop(); await sb().rpc('comp_lane_judge_add', { p_heat: heat, p_lane: +lane, p_judge: jid, p_position: pos || null }); renderTab(); }
   function hmode(btn) { document.querySelectorAll('#cx-hmode button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); S._heatMode = btn.getAttribute('data-v'); }
-  function fmtPick(btn) { document.querySelectorAll('#cx-fmt button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); S._fmt = btn.getAttribute('data-v'); }
+  function fmtPick(btn) { document.querySelectorAll('#cx-fmt button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); S._fmt = btn.getAttribute('data-v'); var wf = document.getElementById('cx-wavefields'); if (wf) wf.style.display = (S._fmt === 'mass') ? 'inline-flex' : 'none'; }
   async function heatPickSet(pick, btn) {
     document.querySelectorAll('#cx-pick button').forEach(function (b) { b.classList.remove('on'); }); if (btn) btn.classList.add('on');
     try { await sb().rpc('comp_set_heat_pick', { p_workout: S.wodId, p_pick: pick }); toast(pick === 'choose' ? 'Athletes choose their heat' : 'Organiser assigns heats', 'check'); } catch (e) { toast('Save failed', 'error'); }
@@ -990,7 +990,13 @@
     var r; try { r = await sb().rpc('comp_judges_list', { p_event: S.eventId }); } catch (e) { r = { error: e }; }
     var rows = (r && r.data) || []; var host = document.getElementById('cx-judges');
     host.innerHTML = rows.length ? rows.map(function (j) {
-      return '<div class="cx-row"><span class="cx-av" style="' + (j.photo ? 'background-image:url(\'' + esc(j.photo) + '\')' : '') + '">' + (j.photo ? '' : esc((j.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(j.name) + '</b><span>' + esc(j.email || '') + ' · official</span></div><span class="ms" style="color:#9aa8b4;cursor:pointer" onclick="FFPComp.removeJudge(\'' + j.member_id + '\')">close</span></div>';
+      var av = '<span class="cx-av" style="' + (j.photo ? 'background-image:url(\'' + esc(j.photo) + '\')' : '') + '">' + (j.photo ? '' : esc((j.name || '?').slice(0, 1))) + '</span>';
+      if (j.status === 'applied') {
+        return '<div class="cx-row">' + av + '<div class="g"><b>' + esc(j.name) + '</b><span style="color:#e0a83e;font-weight:800">Applied to judge</span></div>'
+          + '<button class="cx-btn pri sm" onclick="FFPComp.judgeDecide(\'' + j.member_id + '\',true)">Approve</button>'
+          + '<button class="cx-btn sm" style="margin-left:6px" onclick="FFPComp.judgeDecide(\'' + j.member_id + '\',false)">Decline</button></div>';
+      }
+      return '<div class="cx-row">' + av + '<div class="g"><b>' + esc(j.name) + '</b><span>' + esc(j.email || '') + ' · official</span></div><span class="ms" style="color:#9aa8b4;cursor:pointer" onclick="FFPComp.removeJudge(\'' + j.member_id + '\')">close</span></div>';
     }).join('') : '<div class="cx-empty">No judges yet.</div>';
     // Judge positions the organiser defines (used per lane in Heats & lanes)
     var pos = (S.detail.event && Array.isArray(S.detail.event.judge_positions)) ? S.detail.event.judge_positions : [];
@@ -1039,6 +1045,7 @@
     catch (e) { window.prompt('Copy this invite link for your judge:', link); }
   }
   async function removeJudge(mid) { await sb().rpc('comp_judge_remove', { p_event: S.eventId, p_member: mid }); renderTab(); }
+  async function judgeDecide(mid, accept) { await sb().rpc('comp_judge_decide', { p_event: S.eventId, p_member: mid, p_accept: !!accept }); toast(accept ? 'Judge approved' : 'Application declined', 'check'); renderTab(); }
 
   // actions
   function setDiv(v) { S.divId = v; S.wodId = null; renderTab(); }
@@ -1051,7 +1058,7 @@
     editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
     addAthlete: addAthlete, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
-    hmode: hmode, fmtPick: fmtPick, heatPickSet: heatPickSet, hDragStart: hDragStart, hDragOver: hDragOver, hDragLeave: hDragLeave, hDrop: hDrop, genHeats: genHeats, heatSet: heatSet, laneAssign: laneAssign, laneJudgeRemove: laneJudgeRemove, laneJudgeOpen: laneJudgeOpen, judgePickFilter: judgePickFilter, laneJudgePick: laneJudgePick, lanePosOpen: lanePosOpen, lanePosPick: lanePosPick, addJudge: addJudge, removeJudge: removeJudge, saveJudgePositions: saveJudgePositions,
+    hmode: hmode, fmtPick: fmtPick, heatPickSet: heatPickSet, hDragStart: hDragStart, hDragOver: hDragOver, hDragLeave: hDragLeave, hDrop: hDrop, genHeats: genHeats, heatSet: heatSet, laneAssign: laneAssign, laneJudgeRemove: laneJudgeRemove, laneJudgeOpen: laneJudgeOpen, judgePickFilter: judgePickFilter, laneJudgePick: laneJudgePick, lanePosOpen: lanePosOpen, lanePosPick: lanePosPick, addJudge: addJudge, removeJudge: removeJudge, judgeDecide: judgeDecide, saveJudgePositions: saveJudgePositions,
     schedEvent: schedEvent, schedHeat: schedHeat,
     publish: publish, finalise: finalise, closeModal: closeModal };
   window.ffpRenderCompetitions = renderList;
