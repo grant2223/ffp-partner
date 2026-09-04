@@ -464,7 +464,8 @@
     var flds = '<div class="f"><label>Round</label><input class="lg-in fe-r" type="number" value="' + (f.round || 1) + '" style="width:90px"></div>';
     if (!isBye) flds += '<div class="f"><label>Date</label><input class="lg-in fe-d" type="date" value="' + fxDateVal(f) + '"></div>'
       + '<div class="f"><label>Time</label><input class="lg-in fe-t" type="time" value="' + (f.scheduled_at ? fmtTime(new Date(f.scheduled_at)) : '') + '"></div>'
-      + '<div class="f" style="flex:1;min-width:160px"><label>Venue / surface</label><select class="lg-sel fe-f" style="width:100%">' + surfaceOpts(S._fields, f.field_id) + '</select></div>';
+      + '<div class="f" style="flex:1;min-width:160px"><label>Venue / surface</label><select class="lg-sel fe-f" style="width:100%">' + surfaceOpts(S._fields, f.field_id) + '</select></div>'
+      + '<div class="f" style="flex:1;min-width:100%"><label>Livestream link</label><input class="lg-in fe-s" type="url" placeholder="YouTube, Twitch, Facebook…" value="' + esc(f.stream_url || '') + '"></div>';
     return '<div class="lg-maed" data-id="' + f.id + '"><div class="ttl">Edit ' + (isBye ? 'bye' : 'fixture') + '</div>'
       + '<div class="edrow"><select class="lg-sel fe-h" style="flex:1;min-width:150px">' + entOpts(teamH) + '</select>'
       + (isBye ? '<span class="vv">bye</span>' : '<span class="vv">v</span><select class="lg-sel fe-a" style="flex:1;min-width:150px">' + entOpts(teamA) + '</select>') + '</div>'
@@ -493,6 +494,8 @@
       var dv = (box.querySelector('.fe-d') || {}).value, tv = (box.querySelector('.fe-t') || {}).value, fid = (box.querySelector('.fe-f') || {}).value || null;
       var when = (dv || tv) ? new Date((dv || new Date().toISOString().slice(0, 10)) + 'T' + (tv || '00:00') + ':00').toISOString() : null;
       try { await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null }); } catch (e) { /* non-blocking */ }
+      var su = (box.querySelector('.fe-s') || {}).value;
+      try { await sb().rpc('lt_match_set_stream', { p_scope: 'league', p_match: id, p_url: (su && su.trim()) ? su.trim() : null }); } catch (e) { /* non-blocking */ }
     }
     S.editFx = null; toast('Fixture saved', 'success'); renderTab();
   }
