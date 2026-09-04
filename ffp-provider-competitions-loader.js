@@ -693,6 +693,8 @@
   // score formatting/parsing by event type (time = m:ss)
   function _scFmt(raw, t) { if (raw == null || raw === '') return ''; if (t === 'time') { var s = Math.round(Number(raw)), m = Math.floor(s / 60), ss = s % 60; return m + ':' + (ss < 10 ? '0' : '') + ss; } return String(raw); }
   function _dtLocal(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d.getTime())) return ''; var p = function (n) { return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+  function _dateOnly(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d.getTime())) return ''; var p = function (n) { return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+  function _timeOnly(iso) { if (!iso) return '00:00'; var d = new Date(iso); if (isNaN(d.getTime())) return '00:00'; var p = function (n) { return (n < 10 ? '0' : '') + n; }; return p(d.getHours()) + ':' + p(d.getMinutes()); }
   function _scParse(val, t) { val = (val == null ? '' : String(val)).trim(); if (val === '') return null; if (t === 'time') { if (val.indexOf(':') > -1) { var p = val.split(':'); return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0); } var n = parseFloat(val); return isNaN(n) ? null : n; } var x = parseFloat(val); return isNaN(x) ? null : x; }
   async function saveScores() {
     var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; });
@@ -935,14 +937,14 @@
     var divs = S.detail.divisions || [];
     var anyEvents = divs.some(function (d) { return (d.workouts || []).length; });
     if (!anyEvents) { c.innerHTML = '<div class="cx-empty">Add divisions and events first — then set their start times here.</div>'; return; }
-    var html = '<div class="cx-sub" style="margin:0 0 6px">The running order for the whole competition. Set each event\'s start time and each heat\'s start time — these show to athletes in the FFP App. Lane assignments &amp; judges are set in Heats &amp; lanes.</div>';
+    var html = '<div class="cx-sub" style="margin:0 0 6px">The running order for the whole competition. Set each event\'s <b>date</b>, then each <b>heat\'s start time</b> — Heat 1\'s time is when the event begins. These show to athletes in the FFP App. Lane assignments &amp; judges are set in Heats &amp; lanes.</div>';
     divs.forEach(function (d) {
       var wods = d.workouts || []; if (!wods.length) return;
       html += '<div class="cx-schdiv">' + esc(d.name) + '</div>';
       wods.forEach(function (w, i) {
         html += '<div class="cx-schev">'
           + '<div><span class="k">Event ' + (i + 1) + '</span><span class="ttl">' + esc(w.name) + '</span></div>'
-          + '<div class="cx-schtime"><label>Starts</label><input type="datetime-local" value="' + _dtLocal(w.start_at) + '" onchange="FFPComp.schedEvent(\'' + d.id + '\',\'' + w.id + '\',this.value)"></div>'
+          + '<div class="cx-schtime"><label>Date</label><input type="date" value="' + _dateOnly(w.start_at) + '" onchange="FFPComp.schedEvent(\'' + d.id + '\',\'' + w.id + '\',this.value)"></div>'
           + '</div>'
           + '<div id="cx-schheats-' + w.id + '"><div class="cx-sub" style="padding:8px 6px">Loading heats…</div></div>';
       });
@@ -965,21 +967,47 @@
         + '<input type="time" class="cx-in sm" value="' + tv + '" data-heat="' + h.id + '" data-judge="' + (h.judge_id || '') + '" onchange="FFPComp.schedHeat(\'' + h.id + '\',this)"></div>';
     }).join('');
   }
-  async function schedEvent(divId, wid, val) {
-    var iso = val ? new Date(val).toISOString() : null;
+  async function schedEvent(divId, wid, dateVal) {
+    // Event carries the DATE only — the TIME comes from the heats (Heat 1 = when the event begins).
+    var cur = null;
+    (S.detail.divisions || []).forEach(function (d) { (d.workouts || []).forEach(function (w) { if (w.id === wid) cur = w; }); });
+    var timePart = cur ? _timeOnly(cur.start_at) : '00:00';
+    var iso = dateVal ? new Date(dateVal + 'T' + timePart + ':00').toISOString() : null;
     var r; try { r = await sb().rpc('comp_workout_save', { p_division: divId, p_id: wid, p: { start_at: iso } }); } catch (e) { r = { error: e }; }
-    if (r && !r.error) { toast('Event time saved', 'check'); (S.detail.divisions || []).forEach(function (d) { (d.workouts || []).forEach(function (w) { if (w.id === wid) w.start_at = iso; }); }); }
-    else toast('Save failed', 'error');
+    if (!r || r.error) { toast('Save failed', 'error'); return; }
+    if (cur) cur.start_at = iso;
+    toast('Event date saved', 'check');
+    // Move any existing heats onto the new date (keep their times)
+    if (dateVal) {
+      try {
+        var hr = await sb().rpc('comp_heats_view', { p_workout: wid });
+        var heats = (hr && hr.data) || [];
+        for (var i = 0; i < heats.length; i++) {
+          var h = heats[i];
+          if (!h.start_at) continue;
+          var when = new Date(dateVal + 'T' + _timeOnly(h.start_at) + ':00').toISOString();
+          await sb().rpc('comp_heat_set', { p_heat: h.id, p_start: when, p_judge: h.judge_id || null });
+        }
+        loadSchedHeats(wid, iso);
+      } catch (e) { /* non-blocking */ }
+    }
   }
   async function schedHeat(heatId, el) {
-    // Derive the date from the event's own start date if set, else the competition start; preserve the judge.
-    var wStart = null;
-    (S.detail.divisions || []).forEach(function (d) { (d.workouts || []).forEach(function (w) { var host = document.getElementById('cx-schheats-' + w.id); if (host && host.contains(el) && w.start_at) wStart = w.start_at; }); });
+    // The heat's date comes from the event's date; only the TIME is entered here. Preserve the judge.
+    var wid = null, divId = null, wStart = null, host = null;
+    (S.detail.divisions || []).forEach(function (d) { (d.workouts || []).forEach(function (w) { var hh = document.getElementById('cx-schheats-' + w.id); if (hh && hh.contains(el)) { wid = w.id; divId = d.id; host = hh; if (w.start_at) wStart = w.start_at; } }); });
     var base = (wStart || (S.detail.event && S.detail.event.starts_at) || new Date().toISOString()).slice(0, 10);
     var when = el.value ? new Date(base + 'T' + el.value + ':00').toISOString() : null;
     var jid = el.getAttribute('data-judge') || null;
     var r; try { r = await sb().rpc('comp_heat_set', { p_heat: heatId, p_start: when, p_judge: jid }); } catch (e) { r = { error: e }; }
-    if (r && !r.error) toast('Heat time saved', 'check'); else toast('Save failed', 'error');
+    if (!r || r.error) { toast('Save failed', 'error'); return; }
+    toast('Heat time saved', 'check');
+    // Heat 1's time is when the event begins → keep the event's start time in sync so the FFP App shows it.
+    var rows = host ? host.querySelectorAll('.cx-schrow') : [];
+    var isFirst = rows.length && rows[0].contains(el);
+    if (isFirst && when && wid && divId) {
+      try { await sb().rpc('comp_workout_save', { p_division: divId, p_id: wid, p: { start_at: when } }); (S.detail.divisions || []).forEach(function (d) { (d.workouts || []).forEach(function (w) { if (w.id === wid) w.start_at = when; }); }); } catch (e) { /* non-blocking */ }
+    }
   }
 
   // ---------- JUDGES ----------
