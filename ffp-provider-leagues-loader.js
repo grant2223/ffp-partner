@@ -55,9 +55,10 @@
       /* schedule v2 */
       '.lg-srow2{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-srow2 .s-match b{font-size:15px;font-weight:800;} .lg-srow2 .s-match small{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;margin-top:3px;} .lg-srow2 .s-when{display:flex;gap:8px;margin-top:11px;} .lg-srow2 .s-when .lg-in{padding:8px 9px;font-size:13px;} .lg-srow2 .s-right{display:flex;flex-direction:column;gap:9px;} .lg-srow2 .fl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;} .lg-srow2 .st-f{padding:9px 10px;font-size:13px;}',
       '.lg-offlist{display:flex;flex-direction:column;gap:6px;} .lg-offtag{display:flex;align-items:center;gap:9px;font-size:13px;padding:7px 10px;border:1px solid var(--ffp-border-mid);border-radius:9px;background:#fbfcfd;} .lg-offtag .role{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ffp-blue);} .lg-offtag .nm{font-weight:700;} .lg-offtag .sp{flex:1;} .lg-offtag .x{color:#c0cad2;cursor:pointer;font-size:16px;} .lg-assign{display:flex;gap:7px;align-items:center;} .lg-assign .lg-sel{padding:7px 9px;font-size:12.5px;flex:1;} .lg-btn.sm{padding:7px 11px;font-size:12px;}',
-      '.lg-maed{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px;margin-bottom:14px;}',
-      /* match centre */
-      '.lg-fx2{grid-template-columns:1fr auto 1fr 34px;} .lg-mcbtn{border:none;background:none;color:#9aa8b4;cursor:pointer;padding:4px;border-radius:8px;} .lg-mcbtn:hover{color:var(--ffp-blue);background:#f4f7f9;} .lg-mcbtn .ms{font-size:20px;}',
+      '.lg-maed{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:14px 16px;margin-bottom:14px;} .lg-maed .ttl{font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:#8a99a6;margin-bottom:12px;} .lg-maed .fe-byetog{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#43525c;cursor:pointer;} .lg-maed .fe-byetog input{width:16px;height:16px;}',
+      '.edrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;} .edrow .lg-sel{flex:1;min-width:150px;} .edrow .vv{font-weight:800;color:#8a99a6;} .edrow2{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:11px;} .edrow2 .f{display:flex;flex-direction:column;gap:5px;} .edrow2 .f label{font-size:11px;font-weight:800;color:#43525c;} .edrow2 .f .lg-in,.edrow2 .f .lg-sel{padding:8px 10px;font-size:13px;} .edfoot{display:flex;align-items:center;gap:10px;margin-top:14px;} .edfoot .sp{flex:1;}',
+      /* match centre + per-fixture actions */
+      '.lg-fx2{grid-template-columns:1fr auto 1fr auto;} .lg-fx2 .acts{display:flex;align-items:center;gap:0;} .lg-mcbtn{border:none;background:none;color:#9aa8b4;cursor:pointer;padding:4px;border-radius:8px;} .lg-mcbtn:hover{color:var(--ffp-blue);background:#f4f7f9;} .lg-mcbtn.del:hover{color:var(--ffp-red);background:#fdeff0;} .lg-mcbtn .ms{font-size:20px;} .lg-bye .acts{margin-left:auto;display:flex;align-items:center;}',
       '.lg-mchd{display:flex;align-items:center;justify-content:center;gap:16px;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-mchd .tm{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800;} .lg-mchd .tm.a{flex-direction:row-reverse;} .lg-mchd .scr{font-size:26px;font-weight:900;color:var(--ffp-text);min-width:80px;text-align:center;}',
       '.lg-mcadd{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px 2px;border-bottom:1px solid var(--ffp-border);} .lg-mcadd .lg-sel{width:auto;flex:1;min-width:120px;padding:8px 10px;font-size:13px;} .lg-mcadd .lg-in{padding:8px 10px;font-size:13px;}',
       '.lg-mcrow{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid #f0f3f6;font-size:13px;} .lg-mcrow .mn{width:34px;font-weight:800;color:#9aa8b4;} .lg-mcrow .kd{font-size:10px;font-weight:900;letter-spacing:.04em;padding:3px 8px;border-radius:6px;background:#eef2f5;color:#5b6b75;} .lg-mcrow .kd.try{background:#e3f0ff;color:#0b4a8f;} .lg-mcrow .kd.penalty,.lg-mcrow .kd.drop_goal{background:#fff1e3;color:#b45309;} .lg-mcrow .kd.yellow_card{background:#fff7d6;color:#8a6d00;} .lg-mcrow .kd.red_card{background:#ffe0e0;color:#a11111;} .lg-mcrow .pl{font-weight:700;} .lg-mcrow .tn{color:#8a99a6;font-weight:600;} .lg-mcrow .rs{margin-left:auto;font-weight:900;} .lg-mcrow .x{color:#c0cad2;cursor:pointer;font-size:17px;}',
@@ -65,7 +66,10 @@
       '.lg-mcfields{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:6px;} .lg-mcf{display:flex;flex-direction:column;gap:5px;} .lg-mcf label{font-size:12px;font-weight:800;color:#43525c;} .lg-mcf .lg-in{padding:9px 11px;}',
       '.lg-livebtn{color:#d6353b;border-color:#f3c6c6;background:#fdeff0;} .lg-mcstat.final{font-size:12px;font-weight:800;color:#5b6b75;background:#eef2f5;padding:8px 12px;border-radius:10px;}',
       '.lg-teamstat .hd{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;padding:8px 2px 12px;border-bottom:1px solid var(--ffp-border);} .lg-teamstat .hd span{font-size:13px;font-weight:800;text-align:center;} .lg-teamstat .hd span:first-child{text-align:left;} .lg-teamstat .hd span:last-child{text-align:right;}',
-      '.lg-tsrow{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #f0f3f6;} .lg-tsrow .lab{text-align:center;font-size:12.5px;font-weight:700;color:#43525c;} .lg-tsrow .lg-in{padding:8px 10px;text-align:center;}'
+      '.lg-tsrow{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #f0f3f6;} .lg-tsrow .lab{text-align:center;font-size:12.5px;font-weight:700;color:#43525c;} .lg-tsrow .lg-in{padding:8px 10px;text-align:center;}',
+      '.lg-trk{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:14px 16px;margin-bottom:18px;} .lg-trk-clock{display:flex;align-items:center;gap:12px;margin-bottom:14px;} .lg-trk-clock .t{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ffp-text);} .lg-trk-clock .sp{flex:1;}',
+      '.lg-trk-grp{margin-bottom:12px;} .lg-trk-lab{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8a99a6;margin-bottom:6px;} .lg-trk-btns{display:flex;gap:10px;} .lg-trk-b{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:11px 10px;font:inherit;font-size:13.5px;font-weight:800;color:var(--ffp-text);cursor:pointer;} .lg-trk-b span{font-size:12px;font-weight:900;color:#8a99a6;} .lg-trk-b.on{border-color:var(--ffp-blue);background:#eaf4fb;color:var(--ffp-blue);} .lg-trk-b.on span{color:var(--ffp-blue);}',
+      '.lg-trk-apply{display:flex;align-items:center;gap:12px;margin-top:4px;flex-wrap:wrap;} .lg-trk-apply .sum{flex:1;font-size:12.5px;font-weight:700;color:var(--ffp-text-muted);min-width:180px;}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -118,7 +122,7 @@
     var ev = S.detail.event || {};
     el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(' · ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPLeague.back()">' + ic('arrow_back') + 'All leagues</button></div>'
-      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('schedule', 'Schedule') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
+      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('schedule', 'Schedule') + tabBtn('sponsors', 'Sponsors') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
     renderTab();
   }
   function tabBtn(id, label) { return '<button class="' + (S.tab === id ? 'on' : '') + '" onclick="FFPLeague.tab(\'' + id + '\')">' + label + '</button>'; }
@@ -131,7 +135,12 @@
     if (S.tab === 'venues') return renderVenues(host);
     if (S.tab === 'officials') return renderOfficials(host);
     if (S.tab === 'schedule') return renderSchedule(host);
+    if (S.tab === 'sponsors') return renderSponsors(host);
     if (S.tab === 'table') return renderTable(host);
+  }
+  function renderSponsors(host) {
+    if (window.FFPSponsors) window.FFPSponsors.render(host, { scope: 'league', eventId: S.eventId });
+    else host.innerHTML = '<div style="padding:20px;color:#8a99a8;">Sponsor editor unavailable.</div>';
   }
 
   // ---------- shared helpers (rounds / logos / venues) ----------
@@ -419,6 +428,7 @@
         : '<button class="lg-btn" onclick="FFPLeague.confirmGen()">' + ic('autorenew') + 'Regenerate</button>')
       : '<button class="lg-btn" onclick="FFPLeague.doGen()">' + ic('auto_awesome') + 'Auto-generate fixtures</button>';
     await loadEntrants();
+    var ffr; try { ffr = await sb().rpc('lt_fields_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { ffr = null; } S._fields = (ffr && ffr.data) || [];
     host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPLeague.setDiv(this.value,\'fixtures\')">' + divOpts() + '</select><span class="sp"></span><button class="lg-btn" onclick="FFPLeague.addMatch(\'fixtures\')">' + ic('add') + 'Add match</button>' + genBtn + '<button class="lg-btn pri" onclick="FFPLeague.saveResults()">' + ic('check') + 'Save results</button></div>'
       + (S.addMatch === 'fixtures' ? matchEditor() : '') + '<div id="lg-fixlist"></div>';
     var host2 = document.getElementById('lg-fixlist');
@@ -428,36 +438,97 @@
     order.sort(function (a, b) { return a - b; });
     host2.innerHTML = order.map(function (rd) {
       var list = byRound[rd]; var games = list.filter(function (f) { return !f.bye; });
-      return roundHead('Round ' + rd, games.length, roundRange(games)) + '<div class="lg-rbody">' + list.map(function (f) {
-        if (f.bye) return '<div class="lg-bye">' + crest(f.home) + '<b>' + esc((f.home && f.home.name) || '') + '</b><span class="tag">BYE</span><span class="msg">no match this round</span></div>';
-        var day = f.scheduled_at ? '<div class="fxday">' + fmtDay(new Date(f.scheduled_at)) + ' · ' + fmtTime(new Date(f.scheduled_at)) + '</div>' : '';
-        return '<div class="lg-fx2" data-id="' + f.id + '"><div class="tm a">' + esc((f.home && f.home.name) || 'TBD') + crest(f.home) + '</div>'
-          + '<div class="mid">' + day + '<div class="sc"><input type="number" class="lg-hs" value="' + (f.home_score != null ? f.home_score : '') + '" placeholder="–"><span class="v">v</span><input type="number" class="lg-as" value="' + (f.away_score != null ? f.away_score : '') + '" placeholder="–"></div></div>'
-          + '<div class="tm">' + crest(f.away) + esc((f.away && f.away.name) || 'TBD') + '</div>'
-          + '<button class="lg-mcbtn" title="Match centre — timeline &amp; scorers" onclick="FFPLeague.openMatch(\'' + f.id + '\')">' + ic('scoreboard') + '</button></div>';
-      }).join('') + '</div>';
+      return roundHead('Round ' + rd, games.length, roundRange(games)) + '<div class="lg-rbody">' + list.map(fxRow).join('') + '</div>';
     }).join('');
   }
-  function matchEditor() {
-    return '<div class="lg-edit lg-maed"><select class="lg-sel" id="lg-mm-h" style="flex:1;min-width:150px">' + entOpts(null) + '</select>'
-      + '<span style="font-weight:800;color:#8a99a6">v</span><select class="lg-sel" id="lg-mm-a" style="flex:1;min-width:150px">' + entOpts(null) + '</select>'
-      + '<input class="lg-in" id="lg-mm-r" type="number" placeholder="Round" value="1" style="width:96px">'
-      + '<button class="lg-btn pri" onclick="FFPLeague.saveMatch()">' + ic('check') + 'Add</button>'
-      + '<button class="lg-btn ghost" onclick="FFPLeague.cancelMatch()">Cancel</button></div>';
+  // A computed (auto) bye is virtual (id "bye-…") — not editable/removable. A stored bye is a real row (stage='bye').
+  function isVirtualBye(f) { return f.bye && typeof f.id === 'string' && f.id.indexOf('bye-') === 0; }
+  function fxDateVal(f) { if (!f.scheduled_at) return ''; var d = new Date(f.scheduled_at); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function delBtns(id) {
+    if (S.delFx === id) return '<button class="lg-mcbtn del" title="Confirm delete" onclick="FFPLeague.delFx(\'' + id + '\')" style="color:var(--ffp-red)">' + ic('delete_forever') + '</button><button class="lg-mcbtn" title="Keep" onclick="FFPLeague.delCancel()">' + ic('close') + '</button>';
+    return '<button class="lg-mcbtn del" title="Delete fixture" onclick="FFPLeague.delAsk(\'' + id + '\')">' + ic('delete') + '</button>';
   }
-  function addMatch(tab) { S.addMatch = tab; renderTab(); }
-  function cancelMatch() { S.addMatch = null; renderTab(); }
+  function fxRow(f) {
+    if (S.editFx === f.id) return fxEdit(f);
+    if (isVirtualBye(f)) return '<div class="lg-bye">' + crest(f.home) + '<b>' + esc((f.home && f.home.name) || '') + '</b><span class="tag">BYE</span><span class="msg">no match this round</span></div>';
+    if (f.bye) return '<div class="lg-bye" data-id="' + f.id + '">' + crest(f.home) + '<b>' + esc((f.home && f.home.name) || '') + '</b><span class="tag">BYE</span><div class="acts"><button class="lg-mcbtn" title="Edit bye" onclick="FFPLeague.editFx(\'' + f.id + '\')">' + ic('edit') + '</button>' + delBtns(f.id) + '</div></div>';
+    var day = f.scheduled_at ? '<div class="fxday">' + fmtDay(new Date(f.scheduled_at)) + ' · ' + fmtTime(new Date(f.scheduled_at)) + '</div>' : '';
+    return '<div class="lg-fx2" data-id="' + f.id + '"><div class="tm a">' + esc((f.home && f.home.name) || 'TBD') + crest(f.home) + '</div>'
+      + '<div class="mid">' + day + '<div class="sc"><input type="number" class="lg-hs" value="' + (f.home_score != null ? f.home_score : '') + '" placeholder="–"><span class="v">v</span><input type="number" class="lg-as" value="' + (f.away_score != null ? f.away_score : '') + '" placeholder="–"></div></div>'
+      + '<div class="tm">' + crest(f.away) + esc((f.away && f.away.name) || 'TBD') + '</div>'
+      + '<div class="acts"><button class="lg-mcbtn" title="Edit fixture" onclick="FFPLeague.editFx(\'' + f.id + '\')">' + ic('edit') + '</button>' + delBtns(f.id)
+      + '<button class="lg-mcbtn" title="Match centre — enter scorers &amp; stats" onclick="FFPLeague.openMatch(\'' + f.id + '\')">' + ic('scoreboard') + '</button></div></div>';
+  }
+  function fxEdit(f) {
+    var isBye = f.bye, teamH = (f.home && f.home.id) || '', teamA = (f.away && f.away.id) || '';
+    var flds = '<div class="f"><label>Round</label><input class="lg-in fe-r" type="number" value="' + (f.round || 1) + '" style="width:90px"></div>';
+    if (!isBye) flds += '<div class="f"><label>Date</label><input class="lg-in fe-d" type="date" value="' + fxDateVal(f) + '"></div>'
+      + '<div class="f"><label>Time</label><input class="lg-in fe-t" type="time" value="' + (f.scheduled_at ? fmtTime(new Date(f.scheduled_at)) : '') + '"></div>'
+      + '<div class="f" style="flex:1;min-width:160px"><label>Venue / surface</label><select class="lg-sel fe-f" style="width:100%">' + surfaceOpts(S._fields, f.field_id) + '</select></div>';
+    return '<div class="lg-maed" data-id="' + f.id + '"><div class="ttl">Edit ' + (isBye ? 'bye' : 'fixture') + '</div>'
+      + '<div class="edrow"><select class="lg-sel fe-h" style="flex:1;min-width:150px">' + entOpts(teamH) + '</select>'
+      + (isBye ? '<span class="vv">bye</span>' : '<span class="vv">v</span><select class="lg-sel fe-a" style="flex:1;min-width:150px">' + entOpts(teamA) + '</select>') + '</div>'
+      + '<div class="edrow2">' + flds + '</div>'
+      + '<div class="edfoot"><span class="sp"></span><button class="lg-btn ghost" onclick="FFPLeague.cancelEditFx()">Cancel</button><button class="lg-btn pri" onclick="FFPLeague.saveFx(\'' + f.id + '\',' + (isBye ? 'true' : 'false') + ')">' + ic('check') + 'Save</button></div></div>';
+  }
+  function editFx(id) { S.editFx = id; S.delFx = null; renderTab(); }
+  function cancelEditFx() { S.editFx = null; renderTab(); }
+  function delAsk(id) { S.delFx = id; renderTab(); }
+  function delCancel() { S.delFx = null; renderTab(); }
+  async function delFx(id) {
+    var r; try { r = await sb().rpc('lt_match_remove', { p_scope: 'league', p_match: id }); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not delete', 'error'); return; }
+    S.delFx = null; if (S.editFx === id) S.editFx = null; toast('Fixture deleted', 'success'); renderTab();
+  }
+  async function saveFx(id, isBye) {
+    var box = document.querySelector('.lg-maed[data-id="' + id + '"]'); if (!box) return;
+    var h = (box.querySelector('.fe-h') || {}).value || null;
+    var a = isBye ? null : ((box.querySelector('.fe-a') || {}).value || null);
+    var rd = +((box.querySelector('.fe-r') || {}).value) || 1;
+    if (!isBye && (!h || !a || h === a)) { toast('Pick two different teams', 'error'); return; }
+    if (isBye && !h) { toast('Pick a team', 'error'); return; }
+    var r; try { r = await sb().rpc('lt_match_update', { p_scope: 'league', p_match: id, p_home: h, p_away: a, p_round: rd }); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Save failed', 'error'); return; }
+    if (!isBye) {
+      var dv = (box.querySelector('.fe-d') || {}).value, tv = (box.querySelector('.fe-t') || {}).value, fid = (box.querySelector('.fe-f') || {}).value || null;
+      var when = (dv || tv) ? new Date((dv || new Date().toISOString().slice(0, 10)) + 'T' + (tv || '00:00') + ':00').toISOString() : null;
+      try { await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null }); } catch (e) { /* non-blocking */ }
+    }
+    S.editFx = null; toast('Fixture saved', 'success'); renderTab();
+  }
+  function matchEditor() {
+    var bye = S.addBye;
+    return '<div class="lg-maed"><div class="ttl">Add ' + (bye ? 'a bye' : 'a fixture') + '</div>'
+      + '<label class="fe-byetog"><input type="checkbox" id="lg-mm-bye" ' + (bye ? 'checked' : '') + ' onchange="FFPLeague.toggleBye(this.checked)"> This is a bye (team sits out this round)</label>'
+      + '<div class="edrow" style="margin-top:11px"><select class="lg-sel" id="lg-mm-h" style="flex:1;min-width:150px">' + entOpts(null) + '</select>'
+      + (bye ? '' : '<span class="vv">v</span><select class="lg-sel" id="lg-mm-a" style="flex:1;min-width:150px">' + entOpts(null) + '</select>') + '</div>'
+      + '<div class="edrow2"><div class="f"><label>Round</label><input class="lg-in" id="lg-mm-r" type="number" value="1" style="width:90px"></div>'
+      + (bye ? '' : '<div class="f"><label>Date</label><input class="lg-in" id="lg-mm-d" type="date"></div><div class="f"><label>Time</label><input class="lg-in" id="lg-mm-t" type="time"></div><div class="f" style="flex:1;min-width:160px"><label>Venue / surface</label><select class="lg-sel" id="lg-mm-f" style="width:100%">' + surfaceOpts(S._fields, null) + '</select></div>')
+      + '</div>'
+      + '<div class="edfoot"><span class="sp"></span><button class="lg-btn ghost" onclick="FFPLeague.cancelMatch()">Cancel</button><button class="lg-btn pri" onclick="FFPLeague.saveMatch()">' + ic('check') + (bye ? 'Add bye' : 'Add fixture') + '</button></div></div>';
+  }
+  function addMatch(tab) { S.addMatch = tab; S.addBye = false; renderTab(); }
+  function cancelMatch() { S.addMatch = null; S.addBye = false; renderTab(); }
+  function toggleBye(v) { S.addBye = v; renderTab(); }
   async function saveMatch() {
-    var h = (document.getElementById('lg-mm-h') || {}).value || null, a = (document.getElementById('lg-mm-a') || {}).value || null, rd = +((document.getElementById('lg-mm-r') || {}).value) || 1;
+    var h = (document.getElementById('lg-mm-h') || {}).value || null, rd = +((document.getElementById('lg-mm-r') || {}).value) || 1;
+    if (S.addBye) {
+      if (!h) { toast('Pick a team', 'error'); return; }
+      var rb; try { rb = await sb().rpc('lt_match_add', { p_scope: 'league', p_division: S.divId, p_round: rd, p_home: h, p_away: null, p_when: null, p_field: null, p_stage: 'bye' }); } catch (e) { rb = { error: e }; }
+      if (rb.error) { toast('Could not add', 'error'); return; } S.addMatch = null; S.addBye = false; toast('Bye added', 'success'); renderTab(); return;
+    }
+    var a = (document.getElementById('lg-mm-a') || {}).value || null;
     if (!h || !a || h === a) { toast('Pick two different teams', 'error'); return; }
-    var r; try { r = await sb().rpc('lt_match_add', { p_scope: 'league', p_division: S.divId, p_round: rd, p_home: h, p_away: a, p_when: null, p_field: null, p_stage: 'regular' }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not add', 'error'); return; } S.addMatch = null; toast('Match added', 'success'); renderTab();
+    var dv = (document.getElementById('lg-mm-d') || {}).value, tv = (document.getElementById('lg-mm-t') || {}).value, fid = (document.getElementById('lg-mm-f') || {}).value || null;
+    var when = (dv || tv) ? new Date((dv || new Date().toISOString().slice(0, 10)) + 'T' + (tv || '00:00') + ':00').toISOString() : null;
+    var r; try { r = await sb().rpc('lt_match_add', { p_scope: 'league', p_division: S.divId, p_round: rd, p_home: h, p_away: a, p_when: when, p_field: fid, p_stage: 'regular' }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not add', 'error'); return; } S.addMatch = null; toast('Fixture added', 'success'); renderTab();
   }
   // ---------- MATCH CENTRE (organiser enters the scoring timeline) ----------
   var KIND_PTS = { try: 5, conversion: 2, penalty: 3, drop_goal: 3, goal: 1, point: 1, yellow_card: 0, red_card: 0 };
   var KIND_LBL = { try: 'Try', conversion: 'Conversion', penalty: 'Penalty', drop_goal: 'Drop goal', goal: 'Goal', point: 'Point', yellow_card: 'Yellow card', red_card: 'Red card' };
-  function openMatch(id) { S.matchOpen = id; S.mcTab = 'timeline'; S._mcDiv = null; S.mcStatPlayer = null; renderMatchCentre(); }
-  function closeMatch() { S.matchOpen = null; renderTab(); }
+  function openMatch(id) { S.matchOpen = id; S.mcTab = 'timeline'; S._mcDiv = null; S.mcStatPlayer = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = null; renderMatchCentre(); }
+  function closeMatch() { S.matchOpen = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } renderTab(); }
   async function renderMatchCentre() {
     var host = document.getElementById('lg-tab'); if (!host) return;
     host.innerHTML = '<div class="lg-empty">Loading match…</div>';
@@ -515,11 +586,59 @@
     var saved = (gr && gr.data) || {};
     var hv = saved[m.home.id] || {}, av = saved[m.away.id] || {};
     if (!S._mcDiv) { try { var dr = await sb().from('league_fixtures').select('division_id').eq('id', S.matchOpen).single(); S._mcDiv = dr.data && dr.data.division_id; } catch (e) {} }
-    host.innerHTML = '<div class="lg-teamstat"><div class="hd"><span>' + esc(m.home.name) + '</span><span class="lab"></span><span>' + esc(m.away.name) + '</span></div>'
+    var hasPoss = fields.some(function (f) { return f.key === 'possession'; }), hasTerr = fields.some(function (f) { return f.key === 'territory'; });
+    host.innerHTML = (hasPoss || hasTerr ? trkHtml(m, hasTerr) : '')
+      + '<div class="lg-teamstat"><div class="hd"><span>' + esc(m.home.name) + '</span><span class="lab"></span><span>' + esc(m.away.name) + '</span></div>'
       + fields.map(function (f) {
         return '<div class="lg-tsrow" data-key="' + esc(f.key) + '"><input class="lg-in ts-h" type="number" value="' + (hv[f.key] != null ? hv[f.key] : '') + '" placeholder="0"><span class="lab">' + esc(f.label) + (f.pct ? ' %' : '') + '</span><input class="lg-in ts-a" type="number" value="' + (av[f.key] != null ? av[f.key] : '') + '" placeholder="0"></div>';
       }).join('')
       + '</div><button class="lg-btn pri" style="margin-top:12px" onclick="FFPLeague.saveTeamStats()">' + ic('check') + 'Save team stats</button>';
+    if (hasPoss || hasTerr) { trkRefresh(); if (_trk().running && !S._trkInt) S._trkInt = setInterval(trkTick, 1000); }
+  }
+  // ---- live possession / territory tracker (manual start/stop; fills the % fields) ----
+  function _trk() { if (!S._tracker) S._tracker = { running: false, poss: null, half: null, ph: 0, pa: 0, hh: 0, ha: 0, total: 0 }; return S._tracker; }
+  function fmtClock(s) { s = s || 0; var m = Math.floor(s / 60), ss = s % 60; return (m < 10 ? '0' : '') + m + ':' + (ss < 10 ? '0' : '') + ss; }
+  function trkPct(a, b) { var s = a + b; return s ? Math.round(a / s * 100) : 0; }
+  function trkHtml(m, hasTerr) {
+    var t = _trk();
+    var terr = hasTerr ? '<div class="lg-trk-grp"><div class="lg-trk-lab">Field position — which half the ball is in</div><div class="lg-trk-btns">'
+      + '<button class="lg-trk-b" data-half="home" onclick="FFPLeague.trkHalf(\'home\')">' + esc(m.home.name) + ' half</button>'
+      + '<button class="lg-trk-b" data-half="away" onclick="FFPLeague.trkHalf(\'away\')">' + esc(m.away.name) + ' half</button></div></div>' : '';
+    return '<div class="lg-trk"><div class="lg-trk-clock"><div class="t" id="trk-clock">' + fmtClock(t.total) + '</div><span class="sp"></span>'
+      + '<button class="lg-btn" id="trk-toggle" onclick="FFPLeague.trkToggle()">Start</button>'
+      + '<button class="lg-btn ghost" onclick="FFPLeague.trkReset()">Reset</button></div>'
+      + '<div class="lg-trk-grp"><div class="lg-trk-lab">Possession — who has the ball</div><div class="lg-trk-btns">'
+      + '<button class="lg-trk-b" data-poss="home" onclick="FFPLeague.trkPoss(\'home\')">' + esc(m.home.name) + ' <span>0%</span></button>'
+      + '<button class="lg-trk-b" data-poss="away" onclick="FFPLeague.trkPoss(\'away\')">' + esc(m.away.name) + ' <span>0%</span></button></div></div>'
+      + terr
+      + '<div class="lg-trk-apply"><span class="sum" id="trk-sum"></span><button class="lg-btn pri" onclick="FFPLeague.trkApply()">' + ic('done_all') + 'Apply to fields</button></div></div>';
+  }
+  function trkRefresh() {
+    var t = _trk();
+    var clk = document.getElementById('trk-clock'); if (!clk) return;
+    clk.textContent = fmtClock(t.total);
+    var tog = document.getElementById('trk-toggle'); if (tog) { tog.textContent = t.running ? 'Stop' : 'Start'; tog.classList.toggle('pri', !t.running); tog.classList.toggle('lg-livebtn', t.running); }
+    var pHome = trkPct(t.ph, t.pa), pAway = (t.ph + t.pa) ? 100 - pHome : 0;
+    document.querySelectorAll('.lg-trk-b[data-poss]').forEach(function (b) {
+      var s = b.getAttribute('data-poss'); b.classList.toggle('on', t.poss === s);
+      var sp = b.querySelector('span'); if (sp) sp.textContent = (s === 'home' ? pHome : pAway) + '%';
+    });
+    document.querySelectorAll('.lg-trk-b[data-half]').forEach(function (b) { b.classList.toggle('on', t.half === b.getAttribute('data-half')); });
+    // territory = time in the OPPONENT's half: home territory = time in away half (t.ha)
+    var teH = trkPct(t.ha, t.hh), teA = (t.hh + t.ha) ? 100 - teH : 0;
+    var sum = document.getElementById('trk-sum'); if (sum) sum.textContent = 'Possession ' + pHome + '–' + pAway + '   ·   Territory ' + teH + '–' + teA;
+  }
+  function trkTick() { var t = _trk(); if (!t.running) return; t.total++; if (t.poss === 'home') t.ph++; else if (t.poss === 'away') t.pa++; if (t.half === 'home') t.hh++; else if (t.half === 'away') t.ha++; trkRefresh(); }
+  function trkToggle() { var t = _trk(); t.running = !t.running; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } if (t.running) S._trkInt = setInterval(trkTick, 1000); trkRefresh(); }
+  function trkReset() { if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = { running: false, poss: null, half: null, ph: 0, pa: 0, hh: 0, ha: 0, total: 0 }; renderMatchCentre(); }
+  function trkPoss(s) { var t = _trk(); t.poss = s; trkRefresh(); }
+  function trkHalf(s) { var t = _trk(); t.half = s; trkRefresh(); }
+  function trkApply() {
+    var t = _trk();
+    var setRow = function (key, hVal, aVal) { var row = document.querySelector('.lg-tsrow[data-key="' + key + '"]'); if (!row) return; row.querySelector('.ts-h').value = hVal; row.querySelector('.ts-a').value = aVal; };
+    if (t.ph + t.pa > 0) { var pH = trkPct(t.ph, t.pa); setRow('possession', pH, 100 - pH); }
+    if (t.hh + t.ha > 0) { var teH = trkPct(t.ha, t.hh); setRow('territory', teH, 100 - teH); }
+    toast('Applied — tap Save team stats to store', 'success');
   }
   async function saveTeamStats() {
     var m = S._mc || {}; var rows = Array.prototype.slice.call(document.querySelectorAll('.lg-tsrow')); var n = 0;
@@ -680,12 +799,14 @@
     addEntrant: addEntrant, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     confirmGen: confirmGen, cancelGen: cancelGen, doGen: doGen, saveResults: saveResults,
     addOfficial: addOfficial, removeOfficial: removeOfficial, autoplan: autoplan, schedSet: schedSet,
-    togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch,
+    togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch, toggleBye: toggleBye,
+    editFx: editFx, cancelEditFx: cancelEditFx, saveFx: saveFx, delAsk: delAsk, delCancel: delCancel, delFx: delFx,
     addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
     addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface,
     offAdd: offAdd, offRemove: offRemove,
     openMatch: openMatch, closeMatch: closeMatch, addEvent: addEvent, removeEvent: removeEvent, saveResultFromEvents: saveResultFromEvents,
     mcTab: mcTab, mcPickStatPlayer: mcPickStatPlayer, saveStats: saveStats, setLive: setLive, saveTeamStats: saveTeamStats, saveStream: saveStream,
+    trkToggle: trkToggle, trkReset: trkReset, trkPoss: trkPoss, trkHalf: trkHalf, trkApply: trkApply,
     addCustomStat: addCustomStat, removeCustomStat: removeCustomStat
   };
   window.ffpRenderLeagues = function () { S.view = 'list'; S.creating = false; renderList(); };
