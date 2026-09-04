@@ -55,6 +55,7 @@
       /* schedule v2 */
       '.lg-srow2{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-srow2 .s-match b{font-size:15px;font-weight:800;} .lg-srow2 .s-match small{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;margin-top:3px;} .lg-srow2 .s-when{display:flex;gap:8px;margin-top:11px;} .lg-srow2 .s-when .lg-in{padding:8px 9px;font-size:13px;} .lg-srow2 .s-right{display:flex;flex-direction:column;gap:9px;} .lg-srow2 .fl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;} .lg-srow2 .st-f{padding:9px 10px;font-size:13px;}',
       '.lg-offlist{display:flex;flex-direction:column;gap:6px;} .lg-offtag{display:flex;align-items:center;gap:9px;font-size:13px;padding:7px 10px;border:1px solid var(--ffp-border-mid);border-radius:9px;background:#fbfcfd;} .lg-offtag .role{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ffp-blue);} .lg-offtag .nm{font-weight:700;} .lg-offtag .sp{flex:1;} .lg-offtag .x{color:#c0cad2;cursor:pointer;font-size:16px;} .lg-assign{display:flex;gap:7px;align-items:center;} .lg-assign .lg-sel{padding:7px 9px;font-size:12.5px;flex:1;} .lg-btn.sm{padding:7px 11px;font-size:12px;}',
+      '.lg-scpill{display:inline-block;font-size:9px;font-weight:900;letter-spacing:.05em;color:#0a8f5f;background:#e3f6ec;padding:2px 7px;border-radius:20px;vertical-align:middle;margin-left:6px;}',
       '.lg-maed{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:14px 16px;margin-bottom:14px;} .lg-maed .ttl{font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:#8a99a6;margin-bottom:12px;} .lg-maed .fe-byetog{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#43525c;cursor:pointer;} .lg-maed .fe-byetog input{width:16px;height:16px;}',
       '.edrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;} .edrow .lg-sel{flex:1;min-width:150px;} .edrow .vv{font-weight:800;color:#8a99a6;} .edrow2{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:11px;} .edrow2 .f{display:flex;flex-direction:column;gap:5px;} .edrow2 .f label{font-size:11px;font-weight:800;color:#43525c;} .edrow2 .f .lg-in,.edrow2 .f .lg-sel{padding:8px 10px;font-size:13px;} .edfoot{display:flex;align-items:center;gap:10px;margin-top:14px;} .edfoot .sp{flex:1;}',
       /* match centre + per-fixture actions */
@@ -190,19 +191,25 @@
 
   // ---------- OFFICIALS ----------
   async function renderOfficials(host) {
-    host.innerHTML = '<div class="lg-sub" style="margin-bottom:12px">Officials can enter results from their own login. Add by FFP email to link their account.</div>'
-      + '<div class="lg-edit"><input class="lg-in" id="lg-ofname" placeholder="Name" style="max-width:200px"><input class="lg-in" id="lg-ofemail" placeholder="FFP email (optional)"><button class="lg-btn pri" onclick="FFPLeague.addOfficial()">' + ic('add') + 'Add official</button></div>'
+    var roleSel = '<select class="lg-sel" id="lg-ofrole" style="max-width:180px">' + ROLES.map(function (r) { return '<option' + (r === 'Scorer' ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select>';
+    host.innerHTML = '<div class="lg-sub" style="margin-bottom:12px">Add each official and their role. <b>Only Scorers</b> can enter scores from their own FFP App — add a Scorer by their <b>FFP email</b> so their account links.</div>'
+      + '<div class="lg-edit"><input class="lg-in" id="lg-ofname" placeholder="Name" style="max-width:180px">' + roleSel + '<input class="lg-in" id="lg-ofemail" placeholder="FFP email (for scorers)"><button class="lg-btn pri" onclick="FFPLeague.addOfficial()">' + ic('add') + 'Add official</button></div>'
       + '<div id="lg-oflist"><div class="lg-empty">Loading…</div></div>';
     var r; try { r = await sb().rpc('lt_officials_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { r = { error: e }; }
     var rows = (r && r.data) || []; var h2 = document.getElementById('lg-oflist');
     h2.innerHTML = rows.length ? rows.map(function (o) {
-      return '<div class="lg-row"><span class="lg-av" style="' + (o.photo ? 'background-image:url(\'' + esc(o.photo) + '\')' : '') + '">' + (o.photo ? '' : esc((o.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(o.name || o.email || 'Official') + '</b><span>' + (o.member_id ? 'FFP account linked · can score' : (o.email ? esc(o.email) + ' · not linked' : 'Manual')) + '</span></div><span class="ms act" onclick="FFPLeague.removeOfficial(\'' + o.id + '\')">close</span></div>';
+      var role = o.role || 'Official'; var isScorer = String(role).toLowerCase() === 'scorer';
+      var meta = isScorer
+        ? (o.member_id ? 'Scorer · can score in the app' : (o.email ? 'Scorer · ' + esc(o.email) + ' · needs an FFP account to score' : 'Scorer · add their FFP email to enable scoring'))
+        : (esc(role) + (o.member_id ? ' · FFP linked' : (o.email ? ' · ' + esc(o.email) : '')));
+      return '<div class="lg-row"><span class="lg-av" style="' + (o.photo ? 'background-image:url(\'' + esc(o.photo) + '\')' : '') + '">' + (o.photo ? '' : esc((o.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(o.name || o.email || 'Official') + (isScorer ? ' <span class="lg-scpill">SCORER</span>' : '') + '</b><span>' + meta + '</span></div><span class="ms act" onclick="FFPLeague.removeOfficial(\'' + o.id + '\')">close</span></div>';
     }).join('') : '<div class="lg-empty">No officials yet.</div>';
   }
   async function addOfficial() {
-    var nm = (document.getElementById('lg-ofname') || {}).value, em = (document.getElementById('lg-ofemail') || {}).value;
+    var nm = (document.getElementById('lg-ofname') || {}).value, em = (document.getElementById('lg-ofemail') || {}).value, role = (document.getElementById('lg-ofrole') || {}).value || 'Scorer';
     if (!nm && !em) return;
-    var r; try { r = await sb().rpc('lt_official_add', { p_scope: 'league', p_event: S.eventId, p_member: null, p_name: nm, p_email: em }); } catch (e) { r = { error: e }; }
+    if (String(role).toLowerCase() === 'scorer' && !em) { toast('A Scorer needs their FFP email to link their account', 'error'); return; }
+    var r; try { r = await sb().rpc('lt_official_add', { p_scope: 'league', p_event: S.eventId, p_member: null, p_name: nm, p_email: em, p_role: role }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not add', 'error'); return; } toast('Added', 'success'); renderTab();
   }
   async function removeOfficial(id) { await sb().rpc('lt_official_remove', { p_id: id }); renderTab(); }
