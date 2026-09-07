@@ -31,7 +31,9 @@
       '.lg-lab{font-size:12px;font-weight:800;color:#43525c;margin:0 0 6px;} .lg-in,.lg-sel{width:100%;padding:10px 12px;border:1px solid #d7dee5;border-radius:10px;font:inherit;box-sizing:border-box;background:#fff;color:#12232f;} .lg-fld{margin-bottom:16px;} .lg-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;} .lg-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}',
       '.lg-seg{display:inline-flex;border:1.5px solid var(--ffp-border-mid);border-radius:10px;overflow:hidden;} .lg-seg button{background:#fff;border:none;padding:9px 15px;font:inherit;font-size:12.5px;font-weight:800;color:var(--ffp-text-muted);cursor:pointer;} .lg-seg button.on{background:var(--ffp-blue);color:#fff;}',
       '.lg-row{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--ffp-border);} .lg-row .drag{color:#c0cad2;font-size:20px;cursor:grab;} .lg-row .g{flex:1;min-width:0;} .lg-row .g b{font-size:14.5px;font-weight:800;color:var(--ffp-text);} .lg-row .g span{font-size:12.5px;color:var(--ffp-text-muted);font-weight:700;} .lg-row .act{color:#9aa8b4;font-size:20px;cursor:pointer;padding:4px;} .lg-row .act:hover{color:var(--ffp-blue);}',
-      '.lg-av{width:34px;height:34px;border-radius:8px;flex:none;background:#e7ecef center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#6a7681;}',
+      '.lg-av{position:relative;width:34px;height:34px;border-radius:8px;flex:none;background:#e7ecef center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#6a7681;}',
+      '.lg-avedit{cursor:pointer;}',
+      '.lg-avplus{position:absolute;right:-5px;bottom:-5px;width:17px;height:17px;border-radius:50%;background:var(--ffp-blue,#2ba8e0);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1.5px solid #fff;}',
       '.lg-empty{padding:40px 16px;text-align:center;color:var(--ffp-text-muted);font-weight:600;font-size:13.5px;}',
       '.lg-tool{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;} .lg-tool .lg-sel{width:auto;min-width:180px;} .lg-tool .sp{flex:1;}',
       '.lg-edit{display:flex;align-items:center;gap:10px;padding:12px 2px;border-bottom:1px solid var(--ffp-border);flex-wrap:wrap;} .lg-edit .lg-in{width:auto;flex:1;min-width:160px;}',
@@ -420,7 +422,12 @@
       var flag = en.nationality ? ' · ' + esc(en.nationality) : '';
       var isTeam = en.kind !== 'individual';
       var sqBtn = isTeam ? '<button class="lg-btn sm" onclick="FFPLeague.sqToggle(\'' + en.id + '\')">' + ic('groups') + 'Squad (' + squadFor(en.id).length + ')</button>' : '';
-      var row = '<div class="lg-row"><span class="lg-av" style="' + (en.logo ? 'background-image:url(\'' + esc(en.logo) + '\')' : '') + '">' + (en.logo ? '' : esc((en.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(en.name) + '</b> <span>· ' + esc(en.status) + (en.kind === 'individual' ? flag : '') + '</span></div>' + sqBtn + (isTeam ? '<span class="ms act" title="Team logo" onclick="FFPLeague.entLogo(\'' + en.id + '\')">add_a_photo</span>' : '') + '</div>';
+      var initial = en.logo ? '' : esc((en.name || '?').slice(0, 1));
+      var bg = en.logo ? 'background-image:url(\'' + esc(en.logo) + '\')' : '';
+      var crest = isTeam
+        ? '<span class="lg-av lg-avedit" title="Add / change logo" onclick="FFPLeague.entLogo(\'' + en.id + '\')" style="' + bg + '">' + initial + '<span class="lg-avplus ms">add</span></span>'
+        : '<span class="lg-av" style="' + bg + '">' + initial + '</span>';
+      var row = '<div class="lg-row">' + crest + '<div class="g"><b>' + esc(en.name) + '</b> <span>· ' + esc(en.status) + (en.kind === 'individual' ? flag : '') + '</span></div>' + sqBtn + '</div>';
       return row + (isTeam && S.sqOpen === en.id ? '<div class="lg-sq" id="lg-sq-' + en.id + '"><div class="lg-sqsrch">' + ic('search') + '<input id="lg-sqq-' + en.id + '" placeholder="Search FFP or type a name" value="' + esc((S._sqQ || {})[en.id] || '') + '" oninput="FFPLeague.sqSearch(\'' + en.id + '\',this.value)"></div><div id="lg-sqres-' + en.id + '">' + sqResHtml(en.id) + '</div></div>' : '');
     }).join('') : '<div class="lg-empty">No entrants yet. Members self-register in the app, or add them here.</div>';
   }
@@ -456,10 +463,17 @@
   function bulkAthletes() {
     var divs = ((S.detail && S.detail.divisions) || []).map(function (d) { return { id: d.id, name: d.name }; });
     if (!divs.length) { toast('Add a division first', 'error'); return; }
-    if (!window.FFPBulkAthletes) { toast('Still loading — try again', 'error'); return; }
-    FFPBulkAthletes.open({ scope: 'league', eventId: S.eventId, eventName: (S.detail && S.detail.event && S.detail.event.name) || '', divisions: divs, divisionId: S.divId,
-      teams: (S._entrants || []).map(function (e) { return { id: e.id, name: e.team_name || e.name || 'Team' }; }),
-      onDone: function () { renderEntrants(root()); } });
+    _ensureBulkTool(function () {
+      FFPBulkAthletes.open({ scope: 'league', eventId: S.eventId, eventName: (S.detail && S.detail.event && S.detail.event.name) || '', divisions: divs, divisionId: S.divId,
+        teams: (S._entrants || []).map(function (e) { return { id: e.id, name: e.team_name || e.name || 'Team' }; }),
+        defaultMode: 'team',
+        onDone: function () { renderEntrants(root()); } });
+    });
+  }
+  function _ensureBulkTool(cb) {
+    if (window.FFPBulkAthletes) return cb();
+    var ex = document.getElementById('ffp-bulk-js'); if (ex) { ex.addEventListener('load', cb); return; }
+    var sc = document.createElement('script'); sc.id = 'ffp-bulk-js'; sc.src = 'ffp-bulk-athletes.js?v=3'; sc.onload = cb; sc.onerror = function () { toast('Could not load bulk tool', 'error'); }; document.head.appendChild(sc);
   }
   function cancelEntrant() { S.entAdd = false; renderTab(); }
   async function saveEntrant() {
