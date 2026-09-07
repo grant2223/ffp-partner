@@ -630,6 +630,7 @@
     var m = (r && r.data) || null;
     if (!m) { host.innerHTML = '<div class="lg-empty">Could not load.</div>'; return; }
     S._mc = m;
+    if (mcIsSet(m)) { S._sets = (Array.isArray(m.sets) && m.sets.length) ? m.sets.map(function (s) { return [s[0], s[1]]; }) : [['', ''], ['', ''], ['', '']]; return renderSetCentre(m, host); }
     var ev = m.events || []; var last = ev.length ? ev[ev.length - 1] : null; var score = last ? last.rs : '0–0';
     var teamOpts = '<option value="' + m.home.id + '">' + esc(m.home.name) + '</option><option value="' + m.away.id + '">' + esc(m.away.name) + '</option>';
     var kinds = mcScoringKinds();
@@ -662,6 +663,37 @@
     else if (tab === 'stats') { renderMcStats(); }
     else { renderMcTeam(); }
   }
+  // ---------- RACKET set-by-set (padel, tennis, pickleball, table tennis, badminton, squash, volleyball) ----------
+  var SET_SPORTS = ['padel', 'tennis', 'racket', 'volleyball'];
+  function mcIsSet(m) { return SET_SPORTS.indexOf((m || {}).sport_key) > -1; }
+  function setsWon(sets, side) { var n = 0; (sets || []).forEach(function (s) { if (s[0] === '' || s[1] === '' || s[0] == null || s[1] == null) return; if (side === 0 ? +s[0] > +s[1] : +s[1] > +s[0]) n++; }); return n; }
+  function renderSetCentre(m, host) {
+    var wonH = setsWon(S._sets, 0), wonA = setsWon(S._sets, 1);
+    var liveBtn = m.status === 'final' ? '<span class="lg-mcstat final">Full time</span>'
+      : (m.status === 'live' ? '<button class="lg-btn lg-livebtn" onclick="FFPTourn.setLive(\'scheduled\')">● LIVE</button>'
+        : '<button class="lg-btn" onclick="FFPTourn.setLive(\'live\')">' + ic('sensors') + 'Go live</button>');
+    var rows = S._sets.map(function (s, i) {
+      return '<div style="display:flex;align-items:center;gap:10px;margin:6px 0"><span style="width:58px;font-weight:800;color:#4a5b66">Set ' + (i + 1) + '</span>'
+        + '<input class="lg-in" type="number" inputmode="numeric" style="width:74px;text-align:center;font-weight:800" value="' + esc(s[0] === '' || s[0] == null ? '' : String(s[0])) + '" oninput="FFPTourn.setCell(' + i + ',0,this.value)">'
+        + '<span style="color:#8a949c;font-weight:800">–</span>'
+        + '<input class="lg-in" type="number" inputmode="numeric" style="width:74px;text-align:center;font-weight:800" value="' + esc(s[1] === '' || s[1] == null ? '' : String(s[1])) + '" oninput="FFPTourn.setCell(' + i + ',1,this.value)"></div>';
+    }).join('');
+    host.innerHTML =
+      '<div class="lg-tool"><button class="lg-btn" onclick="FFPTourn.closeMatch()">' + ic('arrow_back') + 'Back</button><span class="sp"></span>' + liveBtn
+        + '<button class="lg-btn" onclick="FFPTourn.saveSetsLive()">' + ic('save') + 'Save (live)</button>'
+        + '<button class="lg-btn pri" onclick="FFPTourn.finishSets()">' + ic('check') + 'Finish · save result</button></div>'
+      + '<div class="lg-mchd"><div class="tm">' + crest(m.home) + '<b>' + esc(m.home.name) + '</b></div><div class="scr" id="mc-setscore">' + wonH + '–' + wonA + '</div><div class="tm a"><b>' + esc(m.away.name) + '</b>' + crest(m.away) + '</div></div>'
+      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:10px 0"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPTourn.saveStream()">' + ic('live_tv') + 'Save stream</button></div>'
+      + '<div class="lg-sub" style="margin:2px 0 8px">Enter each set — ' + esc(m.home.name) + ' – ' + esc(m.away.name) + '. Sets won update the result. Point-by-point live scoring is on the FFP App (open the match → Scorer).</div>'
+      + '<div>' + rows + '</div>'
+      + '<button class="lg-btn" style="margin-top:10px" onclick="FFPTourn.mcAddSet()">' + ic('add') + 'Add a set</button>';
+  }
+  function setCell(i, side, v) { if (!S._sets[i]) S._sets[i] = ['', '']; S._sets[i][side] = v === '' ? '' : (parseInt(v, 10) || 0); var el = document.getElementById('mc-setscore'); if (el) el.textContent = setsWon(S._sets, 0) + '–' + setsWon(S._sets, 1); }
+  function mcAddSet() { S._sets.push(['', '']); renderSetCentre(S._mc, document.getElementById('tg-tab')); }
+  function collectSets() { return (S._sets || []).filter(function (s) { return s[0] !== '' && s[1] !== '' && s[0] != null && s[1] != null; }).map(function (s) { return [+s[0], +s[1]]; }); }
+  async function saveSetsLive() { var sets = collectSets(); try { await sb().rpc('lt_match_save_sets', { p_scope: 'tourn', p_match: S.matchOpen, p_sets: sets, p_home: setsWon(sets, 0), p_away: setsWon(sets, 1) }); toast('Saved — live for followers', 'check'); renderMatchCentre(); } catch (e) { toast('Could not save', 'error'); } }
+  async function finishSets() { var sets = collectSets(); if (!sets.length) { toast('Enter at least one set', 'error'); return; } try { await sb().rpc('tourn_result_save', { p_match: S.matchOpen, p_home: setsWon(sets, 0), p_away: setsWon(sets, 1), p_sets: sets, p_status: 'final' }); toast('Result saved', 'success'); renderMatchCentre(); } catch (e) { toast('Could not save result', 'error'); } }
+
   async function saveStream() {
     var el = document.getElementById('mc-stream'); if (!el) return;
     try { await sb().rpc('lt_match_set_stream', { p_scope: 'tourn', p_match: S.matchOpen, p_url: el.value.trim() }); toast('Stream link saved', 'success'); }
@@ -798,15 +830,28 @@
     if (t.hh + t.ha > 0) { var teH = trkPct(t.ha, t.hh); setRow('territory', teH, 100 - teH); }
     toast('Applied — tap Save team stats to store', 'success');
   }
+  function mcPeriods(m) {
+    var q = ['netball', 'basketball', 'afl'].indexOf((m || {}).sport_key) > -1;
+    return q
+      ? [['pre', 'Not started', false], ['q1', '1st quarter', true], ['qt1', 'Quarter-time', false], ['q2', '2nd quarter', true], ['ht', 'Half-time', false], ['q3', '3rd quarter', true], ['qt3', '3-quarter time', false], ['q4', '4th quarter', true], ['ft', 'Full time', false]]
+      : [['pre', 'Not started', false], ['h1', '1st half', true], ['ht', 'Half-time', false], ['h2', '2nd half', true], ['ft', 'Full time', false]];
+  }
   function mcPeriodHtml(m) {
-    var period = (S._mc && S._mc.status === 'final') ? 'ft' : ((S._mc && S._mc.period) || 'pre');
-    var P = { pre: ['Not started', ''], h1: ['1st half', 'live'], ht: ['Half-time', 'ht'], h2: ['2nd half', 'live'], ft: ['Full time', 'ft'] };
-    var N = { pre: ['h1', 'Kick off', 'pri'], h1: ['ht', 'Half-time', 'gold'], ht: ['h2', 'Start 2nd half', 'pri'], h2: ['ft', 'Full-time', 'red'] };
-    var pi = P[period] || P.pre, adv = N[period];
+    var seq = mcPeriods(m); var period = (S._mc && S._mc.status === 'final') ? 'ft' : ((S._mc && S._mc.period) || 'pre');
+    var idx = 0; for (var i = 0; i < seq.length; i++) { if (seq[i][0] === period) { idx = i; break; } }
+    var cur = seq[idx], next = seq[idx + 1];
+    var chip = period === 'pre' ? '' : (cur[2] ? 'live' : (period === 'ft' ? 'ft' : 'ht'));
     var st = (S._mcSetTime == null ? '40:00' : S._mcSetTime);
-    var btn = adv ? '<button class="lg-btn ' + (adv[2] === 'red' ? '' : adv[2]) + '"' + (adv[2] === 'red' ? ' style="background:#d6353b;border-color:#d6353b;color:#fff"' : '') + ' onclick="FFPTourn.mcSetPeriod(\'' + adv[0] + '\')">' + esc(adv[1]) + '</button>' : '';
-    return '<div class="lg-per"><span class="lg-perchip ' + pi[1] + '">' + (pi[1] === 'live' ? '<span class="d"></span>' : '') + esc(pi[0]) + '</span><span class="sp"></span>' + btn + '</div>'
-      + (period === 'ht' ? '<div class="lg-perset"><span>Resume clock at</span><input class="lg-in" id="mc-settime" value="' + esc(st) + '" onchange="FFPTourn._mcSetTime(this.value)" style="width:110px"></div>' : '');
+    var btn = '';
+    if (next) {
+      var nk = next[0], nlab = next[1], nplay = next[2];
+      var label = nk === 'ft' ? 'Full-time' : (nplay ? (idx === 0 ? 'Kick off' : 'Start ' + nlab) : nlab);
+      var cls = nk === 'ft' ? 'red' : (nplay ? 'pri' : 'gold');
+      btn = '<button class="lg-btn ' + (cls === 'red' ? '' : cls) + '"' + (cls === 'red' ? ' style="background:#d6353b;border-color:#d6353b;color:#fff"' : '') + ' onclick="FFPTourn.mcSetPeriod(\'' + nk + '\')">' + esc(label) + '</button>';
+    }
+    var showSet = !cur[2] && period !== 'pre' && period !== 'ft';
+    return '<div class="lg-per"><span class="lg-perchip ' + chip + '">' + (chip === 'live' ? '<span class="d"></span>' : '') + esc(cur[1]) + '</span><span class="sp"></span>' + btn + '</div>'
+      + (showSet ? '<div class="lg-perset"><span>Resume clock at</span><input class="lg-in" id="mc-settime" value="' + esc(st) + '" onchange="FFPTourn._mcSetTime(this.value)" style="width:110px"></div>' : '');
   }
   function _mcSetTime(v) { S._mcSetTime = v; }
   function mcSaveHalf(half, key, hv, av) {
@@ -830,14 +875,17 @@
     }
   }
   async function mcSetPeriod(p) {
-    var t = _trk(), m = S._mc || {};
-    if (p === 'h1') { if (!t.running) trkToggle(); }
-    else if (p === 'ht') { if (t.running) trkToggle(); mcSaveHalves(1); }
-    else if (p === 'h2') { var q = String(S._mcSetTime || '40:00').split(':'); t.total = (parseInt(q[0] || '0', 10) * 60) + (parseInt(q[1] || '0', 10) || 0); if (!t.running) trkToggle(); }
+    var t = _trk(), m = S._mc || {}; var seq = mcPeriods(m);
+    var inf = null, firstPlay = ''; for (var i = 0; i < seq.length; i++) { if (seq[i][2] && !firstPlay) firstPlay = seq[i][0]; if (seq[i][0] === p) inf = seq[i]; }
+    var isPlay = inf && inf[2];
+    if (p === 'ht') { if (t.running) trkToggle(); mcSaveHalves(1); }
     else if (p === 'ft') { if (t.running) trkToggle(); mcSaveHalves(2); }
+    else if (isPlay && p === firstPlay) { if (!t.running) trkToggle(); }
+    else if (isPlay) { var q = String(S._mcSetTime || '40:00').split(':'); t.total = (parseInt(q[0] || '0', 10) * 60) + (parseInt(q[1] || '0', 10) || 0); if (!t.running) trkToggle(); }
+    else if (p !== 'ft') { if (t.running) trkToggle(); }
     try { await sb().rpc('lt_match_set_period', { p_scope: 'tourn', p_match: S.matchOpen, p_period: p }); } catch (e) {}
-    if (p === 'h1') { try { await sb().rpc('lt_match_status', { p_scope: 'tourn', p_match: S.matchOpen, p_status: 'live' }); } catch (e) {} }
     if (p === 'ft') { if ((m.events || []).length) { try { await saveResultFromEvents(); } catch (e) {} } else { try { await sb().rpc('lt_match_status', { p_scope: 'tourn', p_match: S.matchOpen, p_status: 'final' }); } catch (e) {} } }
+    else { try { await sb().rpc('lt_match_status', { p_scope: 'tourn', p_match: S.matchOpen, p_status: p === 'pre' ? 'scheduled' : 'live' }); } catch (e) {} }
     if (S._mc) S._mc.period = p;
     renderMatchCentre();
   }
@@ -912,7 +960,8 @@
     openMatch: openMatch, closeMatch: closeMatch, addEvent: addEvent, removeEvent: removeEvent, saveResultFromEvents: saveResultFromEvents, addSub: addSub, removeSub: removeSub,
     trkToggle: trkToggle, trkReset: trkReset, trkPoss: trkPoss, trkHalf: trkHalf, trkApply: trkApply, mcSetPeriod: mcSetPeriod, _mcSetTime: _mcSetTime,
     mcTab: mcTab, mcPickStatPlayer: mcPickStatPlayer, saveStats: saveStats, setLive: setLive, saveTeamStats: saveTeamStats, saveStream: saveStream,
-    addCustomStat: addCustomStat, removeCustomStat: removeCustomStat
+    addCustomStat: addCustomStat, removeCustomStat: removeCustomStat,
+    setCell: setCell, mcAddSet: mcAddSet, saveSetsLive: saveSetsLive, finishSets: finishSets
   };
   window.ffpRenderTournaments = function () { S.view = 'list'; S.creating = false; renderList(); };
 })();
