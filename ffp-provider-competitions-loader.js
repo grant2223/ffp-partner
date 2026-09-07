@@ -586,7 +586,8 @@
   // Athletes (roster) per division
   async function renderAthletes(c) {
     c.innerHTML = '<div class="cx-toolbar">' + divPickerHtml('FFPComp.setDiv(this.value)') +
-      (S.divId ? '<button class="cx-btn pri sm" onclick="FFPComp.addAthlete()"><span class="ms">person_add</span> Add manually</button>' : '') + '</div><div id="cx-roster"><div class="cx-empty">Loading…</div></div>';
+      (S.divId ? '<button class="cx-btn pri sm" onclick="FFPComp.addAthlete()"><span class="ms">person_add</span> Add manually</button>' : '') +
+      (S.divId ? '<button class="cx-btn sm" onclick="FFPComp.bulkAthletes()"><span class="ms">upload_file</span> Bulk add</button>' : '') + '</div><div id="cx-roster"><div class="cx-empty">Loading…</div></div>';
     if (!S.divId) { document.getElementById('cx-roster').innerHTML = ''; return; }
     var r; try { r = await sb().rpc('comp_roster', { p_division: S.divId }); } catch (e) { r = { error: e }; }
     var rows = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
@@ -1078,6 +1079,13 @@
   // actions
   function setDiv(v) { S.divId = v; S.wodId = null; renderTab(); }
   function setWod(v) { S.wodId = v; renderTab(); }
+  function bulkAthletes() {
+    var divs = ((S.detail && S.detail.divisions) || []).map(function (d) { return { id: d.id, name: d.name }; });
+    if (!divs.length) { toast('Add a division first', 'error'); return; }
+    if (!window.FFPBulkAthletes) { toast('Still loading — try again', 'error'); return; }
+    FFPBulkAthletes.open({ scope: 'comp', eventId: S.eventId, eventName: (S.detail && S.detail.event && S.detail.event.name) || '', divisions: divs, divisionId: S.divId,
+      onDone: function () { var box = document.getElementById('cx-roster'); if (box && box.parentNode) renderAthletes(box.parentNode); } });
+  }
   function tab(t) { S.tab = t; document.querySelectorAll('.cx-editnav button').forEach(function (b) { b.classList.remove('on'); }); var el = document.querySelector('.cx-editnav button[onclick*="\'' + t + '\'"]'); if (el) el.classList.add('on'); renderTab(); }
 
   window.FFPComp = { list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
@@ -1085,7 +1093,7 @@
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision, mixHint: mixHint,
     editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
-    addAthlete: addAthlete, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
+    addAthlete: addAthlete, bulkAthletes: bulkAthletes, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
     hmode: hmode, fmtPick: fmtPick, heatPickSet: heatPickSet, hDragStart: hDragStart, hDragOver: hDragOver, hDragLeave: hDragLeave, hDrop: hDrop, genHeats: genHeats, heatSet: heatSet, laneAssign: laneAssign, laneJudgeRemove: laneJudgeRemove, laneJudgeOpen: laneJudgeOpen, judgePickFilter: judgePickFilter, laneJudgePick: laneJudgePick, lanePosOpen: lanePosOpen, lanePosPick: lanePosPick, addJudge: addJudge, removeJudge: removeJudge, judgeDecide: judgeDecide, saveJudgePositions: saveJudgePositions,
     schedEvent: schedEvent, schedHeat: schedHeat,
     publish: publish, finalise: finalise, closeModal: closeModal };
