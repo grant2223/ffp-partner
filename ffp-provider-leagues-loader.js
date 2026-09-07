@@ -584,7 +584,7 @@
     var m = (r && r.data) || null;
     if (!m) { host.innerHTML = '<div class="lg-empty">Could not load.</div>'; return; }
     S._mc = m;
-    if (mcIsSet(m)) { S._sets = (Array.isArray(m.sets) && m.sets.length) ? m.sets.map(function (s) { return [s[0], s[1]]; }) : [['', ''], ['', ''], ['', '']]; return renderSetCentre(m, host); }
+    if (mcIsSet(m)) { S._cfg = pbpCfg(m); pbpInit(m); return renderPBP(m, host); }
     var ev = m.events || [];
     var last = ev.length ? ev[ev.length - 1] : null;
     var score = last ? last.rs : '0–0';
@@ -630,36 +630,78 @@
     } else if (tab === 'stats') { renderMcStats(); }
     else { renderMcTeam(); }
   }
-  // ---------- RACKET set-by-set (padel, tennis, pickleball, table tennis, badminton, squash, volleyball) ----------
+  // ---------- RACKET PLAY-BY-PLAY (point-by-point) — padel/tennis + rally sports ----------
   var SET_SPORTS = ['padel', 'tennis', 'racket', 'volleyball'];
   function mcIsSet(m) { return SET_SPORTS.indexOf((m || {}).sport_key) > -1; }
-  function setsWon(sets, side) { var n = 0; (sets || []).forEach(function (s) { if (s[0] === '' || s[1] === '' || s[0] == null || s[1] == null) return; if (side === 0 ? +s[0] > +s[1] : +s[1] > +s[0]) n++; }); return n; }
-  function renderSetCentre(m, host) {
-    var wonH = setsWon(S._sets, 0), wonA = setsWon(S._sets, 1);
-    var liveBtn = m.status === 'final' ? '<span class="lg-mcstat final">Full time</span>'
-      : (m.status === 'live' ? '<button class="lg-btn lg-livebtn" onclick="FFPLeague.setLive(\'scheduled\')">● LIVE</button>'
-        : '<button class="lg-btn" onclick="FFPLeague.setLive(\'live\')">' + ic('sensors') + 'Go live</button>');
-    var rows = S._sets.map(function (s, i) {
-      return '<div style="display:flex;align-items:center;gap:10px;margin:6px 0"><span style="width:58px;font-weight:800;color:#4a5b66">Set ' + (i + 1) + '</span>'
-        + '<input class="lg-in" type="number" inputmode="numeric" style="width:74px;text-align:center;font-weight:800" value="' + esc(s[0] === '' || s[0] == null ? '' : String(s[0])) + '" oninput="FFPLeague.setCell(' + i + ',0,this.value)">'
-        + '<span style="color:#8a949c;font-weight:800">–</span>'
-        + '<input class="lg-in" type="number" inputmode="numeric" style="width:74px;text-align:center;font-weight:800" value="' + esc(s[1] === '' || s[1] == null ? '' : String(s[1])) + '" oninput="FFPLeague.setCell(' + i + ',1,this.value)"></div>';
-    }).join('');
-    host.innerHTML =
-      '<div class="lg-tool"><button class="lg-btn" onclick="FFPLeague.closeMatch()">' + ic('arrow_back') + 'Back to fixtures</button><span class="sp"></span>' + liveBtn
-        + '<button class="lg-btn" onclick="FFPLeague.saveSetsLive()">' + ic('save') + 'Save (live)</button>'
-        + '<button class="lg-btn pri" onclick="FFPLeague.finishSets()">' + ic('check') + 'Finish · save result</button></div>'
-      + '<div class="lg-mchd"><div class="tm">' + crest(m.home) + '<b>' + esc(m.home.name) + '</b></div><div class="scr" id="mc-setscore">' + wonH + '–' + wonA + '</div><div class="tm a"><b>' + esc(m.away.name) + '</b>' + crest(m.away) + '</div></div>'
-      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:10px 0"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPLeague.saveStream()">' + ic('live_tv') + 'Save stream</button></div>'
-      + '<div class="lg-sub" style="margin:2px 0 8px">Enter each set — ' + esc(m.home.name) + ' – ' + esc(m.away.name) + '. Sets won update the result. Point-by-point live scoring is on the FFP App (open the match → Scorer).</div>'
-      + '<div>' + rows + '</div>'
-      + '<button class="lg-btn" style="margin-top:10px" onclick="FFPLeague.mcAddSet()">' + ic('add') + 'Add a set</button>';
+  function setsWon(sets, side) { var n = 0; (sets || []).forEach(function (s) { if (s[0] == null || s[1] == null) return; if (side === 0 ? s[0] > s[1] : s[1] > s[0]) n++; }); return n; }
+  function pbpCfg(m) {
+    var a = ((m && m.activity) || '').toLowerCase(), sk = (m && m.sport_key) || '';
+    if (sk === 'padel' || a.indexOf('padel') > -1) return { engine: 'tennis', golden: true, needSets: 2 };
+    if (a.indexOf('table') > -1) return { engine: 'rally', target: 11, needGames: 3 };
+    if (a.indexOf('badminton') > -1) return { engine: 'rally', target: 21, needGames: 2 };
+    if (a.indexOf('squash') > -1) return { engine: 'rally', target: 11, needGames: 3, squash: true };
+    if (a.indexOf('pickle') > -1) return { engine: 'rally', target: 11, needGames: 2 };
+    if (a.indexOf('racquet') > -1 || a.indexOf('racket') > -1) return { engine: 'rally', target: 15, needGames: 2 };
+    if (a.indexOf('volley') > -1) return { engine: 'rally', target: 25, needGames: 3 };
+    if (sk === 'tennis' || a.indexOf('tennis') > -1) return { engine: 'tennis', golden: false, needSets: 2 };
+    return { engine: 'rally', target: 11, needGames: 2 };
   }
-  function setCell(i, side, v) { if (!S._sets[i]) S._sets[i] = ['', '']; S._sets[i][side] = v === '' ? '' : (parseInt(v, 10) || 0); var el = document.getElementById('mc-setscore'); if (el) el.textContent = setsWon(S._sets, 0) + '–' + setsWon(S._sets, 1); }
-  function mcAddSet() { S._sets.push(['', '']); renderSetCentre(S._mc, document.getElementById('lg-tab')); }
-  function collectSets() { return (S._sets || []).filter(function (s) { return s[0] !== '' && s[1] !== '' && s[0] != null && s[1] != null; }).map(function (s) { return [+s[0], +s[1]]; }); }
-  async function saveSetsLive() { var sets = collectSets(); try { await sb().rpc('lt_match_save_sets', { p_scope: 'league', p_match: S.matchOpen, p_sets: sets, p_home: setsWon(sets, 0), p_away: setsWon(sets, 1) }); toast('Saved — live for followers', 'check'); renderMatchCentre(); } catch (e) { toast('Could not save', 'error'); } }
-  async function finishSets() { var sets = collectSets(); if (!sets.length) { toast('Enter at least one set', 'error'); return; } try { await sb().rpc('league_result_save', { p_fixture: S.matchOpen, p_home: setsWon(sets, 0), p_away: setsWon(sets, 1), p_sets: sets, p_status: 'final' }); toast('Result saved', 'success'); renderMatchCentre(); } catch (e) { toast('Could not save result', 'error'); } }
+  function ptL(x, y, tb, golden) { if (tb) return String(x); if (golden && x >= 3 && y >= 3) return '40'; if (x >= 3 && y >= 3) return x === y ? '40' : (x > y ? 'Ad' : '40'); return ['0', '15', '30', '40'][Math.min(x, 3)]; }
+  function pbpInit(m) {
+    var L = m.live, sets = Array.isArray(m.sets) ? m.sets.map(function (s) { return [s[0], s[1]]; }) : [];
+    var b = { sets: sets, gh: 0, ga: 0, ph: 0, pa: 0, tb: false, server: 'home', done: m.status === 'final' };
+    if (L && typeof L.ph === 'number') { b.gh = L.gh || 0; b.ga = L.ga || 0; b.ph = L.ph || 0; b.pa = L.pa || 0; b.tb = !!L.tb; b.server = L.server === 'away' ? 'away' : 'home'; if (Array.isArray(L.sets) && L.sets.length >= sets.length) b.sets = L.sets.map(function (s) { return [s[0], s[1]]; }); }
+    S._live = b; S._lhist = [];
+  }
+  function pbpPersist() {
+    clearTimeout(S._lTmr);
+    S._lTmr = setTimeout(function () { var t = S._live; sb().rpc('lt_match_save_sets', { p_scope: 'league', p_match: S.matchOpen, p_sets: t.sets, p_home: setsWon(t.sets, 0), p_away: setsWon(t.sets, 1), p_live: { gh: t.gh, ga: t.ga, ph: t.ph, pa: t.pa, tb: t.tb, server: t.server, sets: t.sets } }); }, 350);
+  }
+  function pbpSnap() { S._lhist.push(JSON.stringify(S._live)); if (S._lhist.length > 300) S._lhist.shift(); }
+  function pbpDone() { var need = S._cfg.engine === 'rally' ? S._cfg.needGames : S._cfg.needSets; if (setsWon(S._live.sets, 0) >= need || setsWon(S._live.sets, 1) >= need) S._live.done = true; }
+  function pbpAward(side) {
+    var t = S._live, cfg = S._cfg; if (t.done) return; pbpSnap();
+    if (cfg.engine === 'rally') {
+      var me = side === 'home' ? 'ph' : 'pa', op = side === 'home' ? 'pa' : 'ph';
+      t[me]++; if (t[me] >= cfg.target && t[me] - t[op] >= 2) { t.sets.push([t.ph, t.pa]); t.ph = 0; t.pa = 0; pbpDone(); }
+    } else {
+      var g = cfg.golden, m2 = side === 'home' ? 'ph' : 'pa', o2 = side === 'home' ? 'pa' : 'ph', gm = side === 'home' ? 'gh' : 'ga', go = side === 'home' ? 'ga' : 'gh';
+      t[m2]++;
+      if (t.tb) { if (t[m2] >= 7 && t[m2] - t[o2] >= 2) { t.sets.push(side === 'home' ? [7, 6] : [6, 7]); t.gh = 0; t.ga = 0; t.ph = 0; t.pa = 0; t.tb = false; pbpDone(); } }
+      else if (t[m2] >= 4 && (t[m2] - t[o2] >= 2 || (g && t[o2] >= 3))) { t[gm]++; t.ph = 0; t.pa = 0; t.server = t.server === 'home' ? 'away' : 'home'; if (t[gm] >= 6 && t[gm] - t[go] >= 2) { t.sets.push([t.gh, t.ga]); t.gh = 0; t.ga = 0; pbpDone(); } else if (t.gh === 6 && t.ga === 6) { t.tb = true; } }
+    }
+    pbpPersist(); renderPBP(S._mc, document.getElementById('lg-tab'));
+  }
+  function pbpUndo() { var h = S._lhist.pop(); if (h) { S._live = JSON.parse(h); pbpPersist(); renderPBP(S._mc, document.getElementById('lg-tab')); } }
+  function pbpServer() { S._live.server = S._live.server === 'home' ? 'away' : 'home'; pbpPersist(); renderPBP(S._mc, document.getElementById('lg-tab')); }
+  function pbpDecide(k) { if (k === 'let') return; var srv = S._live.server; pbpAward(k === 'stroke' ? srv : (srv === 'home' ? 'away' : 'home')); }
+  async function pbpFinish() { var t = S._live; try { await sb().rpc('league_result_save', { p_fixture: S.matchOpen, p_home: setsWon(t.sets, 0), p_away: setsWon(t.sets, 1), p_sets: t.sets, p_status: 'final' }); toast('Result saved', 'success'); renderMatchCentre(); } catch (e) { toast('Could not save result', 'error'); } }
+  var PBP_CSS = ".pbp-board{background:linear-gradient(158deg,#1c3e52,#0d1e2a);color:#fff;border-radius:16px;padding:16px 18px;margin-bottom:16px;max-width:660px}.pbp-hd{display:flex;align-items:center;padding:0 2px 8px;border-bottom:1px solid rgba(255,255,255,.12)}.pbp-hd .sp{flex:1}.pbp-hd .lb{width:60px;text-align:center;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.5)}.pbp-hd .lb.g{width:52px}.pbp-hd .lb.p{width:60px}.pbp-r{display:flex;align-items:center;padding:12px 2px}.pbp-r+.pbp-r{border-top:1px solid rgba(255,255,255,.08)}.pbp-r .clr{width:5px;height:34px;border-radius:3px;margin-right:12px}.pbp-r.home .clr{background:linear-gradient(180deg,#25a6d8,#12557a)}.pbp-r.away .clr{background:linear-gradient(180deg,#6a7e8c,#243645)}.pbp-r .who{flex:1;min-width:0}.pbp-r .who b{font-size:16px;font-weight:800}.pbp-r .who .srv{display:block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#7bf0bd;margin-top:2px}.pbp-r .cells{width:60px;display:flex;gap:8px;justify-content:center;font-size:15px;font-weight:700;color:rgba(255,255,255,.5)}.pbp-r .cells .w{color:#fff}.pbp-r .gm{width:52px;text-align:center;font-size:19px;font-weight:800}.pbp-r .pt{width:60px;text-align:center;font-size:34px;font-weight:900;line-height:1}.pbp-flags{text-align:center;margin-top:10px}.pbp-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:20px;background:rgba(242,169,0,.22);color:#ffe2a0}.pbp-serve{text-align:center;font-size:12px;font-weight:700;color:rgba(255,255,255,.82);margin-top:9px}.pbp-serve .ms{font-size:15px;vertical-align:-3px;color:#ffce4d;margin-right:4px}.pbp-clab{max-width:660px;text-align:center;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#6b7f8b;margin:0 0 12px}.pbp-btns{max-width:660px;display:flex;gap:14px;margin-bottom:12px}.pbp-pb{flex:1;border:0;border-radius:18px;color:#fff;cursor:pointer;padding:26px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 10px 24px rgba(15,34,48,.18)}.pbp-pb.home{background:linear-gradient(160deg,#25a6d8,#0f5578)}.pbp-pb.away{background:linear-gradient(160deg,#4a6172,#243645)}.pbp-pb:active{filter:brightness(1.07)}.pbp-pb:disabled{opacity:.5;cursor:default}.pbp-pb .pl{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.9;display:flex;align-items:center;gap:6px}.pbp-pb .pl .ms{font-size:20px}.pbp-pb .nm{font-size:22px;font-weight:900}.pbp-decide{max-width:660px;display:flex;gap:10px;margin-bottom:12px}.pbp-decide button{flex:1;border:0;border-radius:12px;padding:13px;font:inherit;font-weight:800;cursor:pointer}.pbp-decide .let{background:rgba(25,128,173,.14);color:#1980AD}.pbp-decide .stroke{background:rgba(242,169,0,.2);color:#c47f00}.pbp-decide .nolet{background:#eef2f5;color:#5b6b75}.pbp-srow{max-width:660px;display:flex;gap:10px}.pbp-srow button{flex:1;border:1px solid var(--ffp-border-mid);background:#fff;border-radius:12px;padding:12px;font:inherit;font-weight:800;color:var(--ffp-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}.pbp-srow button .ms{font-size:19px;color:#c47f00}";
+  function renderPBP(m, host) {
+    if (!document.getElementById('pbp-css')) { var st = document.createElement('style'); st.id = 'pbp-css'; st.textContent = PBP_CSS; document.head.appendChild(st); }
+    var t = S._live, cfg = S._cfg, rally = cfg.engine === 'rally';
+    var wonH = setsWon(t.sets, 0), wonA = setsWon(t.sets, 1);
+    var dH = rally ? { c: t.sets.map(function (s) { return s[0]; }), gm: wonH, pt: t.ph } : { c: t.sets.map(function (s) { return s[0]; }), gm: t.gh, pt: ptL(t.ph, t.pa, t.tb, cfg.golden) };
+    var dA = rally ? { c: t.sets.map(function (s) { return s[1]; }), gm: wonA, pt: t.pa } : { c: t.sets.map(function (s) { return s[1]; }), gm: t.ga, pt: ptL(t.pa, t.ph, t.tb, cfg.golden) };
+    var flag = t.tb ? 'Tiebreak' : (!rally && t.ph >= 3 && t.pa >= 3 ? (cfg.golden ? 'Golden point' : (t.ph === t.pa ? 'Deuce' : 'Advantage')) : '');
+    var serveName = t.server === 'home' ? m.home.name : m.away.name;
+    var liveBtn = m.status === 'final' ? '<span class="lg-mcstat final">Full time</span>' : (m.status === 'live' ? '<button class="lg-btn lg-livebtn" onclick="FFPLeague.setLive(\'scheduled\')">● LIVE</button>' : '<button class="lg-btn" onclick="FFPLeague.setLive(\'live\')">' + ic('sensors') + 'Go live</button>');
+    function row(side, d, nm, sv) { var cells = d.c.map(function (v, i) { return '<span class="' + (i === d.c.length - 1 ? 'w' : '') + '">' + v + '</span>'; }).join(''); return '<div class="pbp-r ' + side + '"><span class="clr"></span><span class="who"><b>' + esc(nm) + '</b>' + (sv ? '<span class="srv">● Serving</span>' : '') + '</span><span class="cells">' + cells + '</span><span class="gm">' + d.gm + '</span><span class="pt">' + d.pt + '</span></div>'; }
+    var decide = cfg.squash ? '<div class="pbp-decide"><button class="let" onclick="FFPLeague.pbpDecide(\'let\')">Let</button><button class="stroke" onclick="FFPLeague.pbpDecide(\'stroke\')">Stroke</button><button class="nolet" onclick="FFPLeague.pbpDecide(\'nolet\')">No let</button></div>' : '';
+    host.innerHTML =
+      '<div class="lg-tool"><button class="lg-btn" onclick="FFPLeague.closeMatch()">' + ic('arrow_back') + 'Back</button><span class="sp"></span>' + liveBtn + '<button class="lg-btn pri" onclick="FFPLeague.pbpFinish()">' + ic('check') + 'Finish · save result</button></div>'
+      + '<div class="pbp-board"><div class="pbp-hd"><span class="sp"></span><span class="lb">Sets</span><span class="lb g">' + (rally ? 'Games' : 'Gm') + '</span><span class="lb p">Pts</span></div>'
+      + row('away', dA, m.away.name, t.server === 'away') + row('home', dH, m.home.name, t.server === 'home')
+      + (flag ? '<div class="pbp-flags"><span class="pbp-tag">' + flag + '</span></div>' : '')
+      + '<div class="pbp-serve">' + ic('sports_tennis') + esc(serveName) + ' to serve</div></div>'
+      + '<div class="pbp-clab">Tap who won the ' + (rally ? 'rally' : 'point') + '</div>'
+      + '<div class="pbp-btns"><button class="pbp-pb away" ' + (t.done ? 'disabled' : '') + ' onclick="FFPLeague.pbpAward(\'away\')"><span class="pl">' + ic('add') + 'Point</span><span class="nm">' + esc(m.away.name) + '</span></button>'
+      + '<button class="pbp-pb home" ' + (t.done ? 'disabled' : '') + ' onclick="FFPLeague.pbpAward(\'home\')"><span class="pl">' + ic('add') + 'Point</span><span class="nm">' + esc(m.home.name) + '</span></button></div>'
+      + decide
+      + '<div class="pbp-srow"><button onclick="FFPLeague.pbpUndo()">' + ic('undo') + 'Undo</button><button onclick="FFPLeague.pbpServer()">' + ic('swap_horiz') + 'Change server</button></div>'
+      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:14px 0 0;max-width:660px"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPLeague.saveStream()">' + ic('live_tv') + 'Save stream</button></div>'
+      + '<div class="lg-sub" style="margin:10px 0 0">Point-by-point — every tap streams live to followers. Same board as the FFP App scorer.</div>';
+  }
 
   async function saveStream() {
     var el = document.getElementById('mc-stream'); if (!el) return;
@@ -996,7 +1038,7 @@
     mcTab: mcTab, mcPickStatPlayer: mcPickStatPlayer, saveStats: saveStats, setLive: setLive, saveTeamStats: saveTeamStats, saveStream: saveStream,
     trkToggle: trkToggle, trkReset: trkReset, trkPoss: trkPoss, trkHalf: trkHalf, trkApply: trkApply, mcSetPeriod: mcSetPeriod, _mcSetTime: _mcSetTime,
     addCustomStat: addCustomStat, removeCustomStat: removeCustomStat,
-    setCell: setCell, mcAddSet: mcAddSet, saveSetsLive: saveSetsLive, finishSets: finishSets
+    pbpAward: pbpAward, pbpUndo: pbpUndo, pbpServer: pbpServer, pbpDecide: pbpDecide, pbpFinish: pbpFinish
   };
   window.ffpRenderLeagues = function () { S.view = 'list'; S.creating = false; renderList(); };
 })();
