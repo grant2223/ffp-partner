@@ -206,6 +206,7 @@
       mode: 'ind', onDone: opts.onDone, rows: []
     };
     var canTeam = S.scope !== 'comp' && S.teams.length > 0;
+    if (canTeam && opts.defaultMode === 'team') S.mode = 'team';   // L/T entrants tab → bulk into a team's squad
     close();
     var root = document.createElement('div'); root.id = 'fba-root'; root.className = 'fba-bk';
     root.innerHTML =
@@ -214,8 +215,8 @@
       '<div><h1>Bulk add</h1><div class="sub">' + (esc(S.eventName) || 'Add many at once') + '</div></div></div>' +
       '<div class="fba-body">' +
       (canTeam ? '<div class="fba-modes">' +
-        '<button class="fba-mode on" data-m="ind" onclick="FFPBulkAthletes._mode(\'ind\')"><span class="ms">person_add</span>Individual entrants</button>' +
-        '<button class="fba-mode" data-m="team" onclick="FFPBulkAthletes._mode(\'team\')"><span class="ms">groups</span>Into a team</button></div>' : '') +
+        '<button class="fba-mode' + (S.mode === 'ind' ? ' on' : '') + '" data-m="ind" onclick="FFPBulkAthletes._mode(\'ind\')"><span class="ms">person_add</span>Individual entrants</button>' +
+        '<button class="fba-mode' + (S.mode === 'team' ? ' on' : '') + '" data-m="team" onclick="FFPBulkAthletes._mode(\'team\')"><span class="ms">groups</span>Into a team</button></div>' : '') +
       '<div id="fba-picker">' + pickerHtml() + '</div>' +
       '<div class="fba-sec mt">Upload your list</div>' +
       '<div class="fba-row2"><div style="font-size:13px;font-weight:600;color:#6a7c8a">Columns: <b style="color:#12232f">Given name, Surname, Email</b></div>' +
