@@ -127,7 +127,7 @@
     var ev = S.detail.event || {};
     el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(' · ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPLeague.back()">' + ic('arrow_back') + 'All leagues</button></div>'
-      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('schedule', 'Schedule') + tabBtn('sponsors', 'Sponsors') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
+      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('sponsors', 'Sponsors') + tabBtn('schedule', 'Schedule') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
     renderTab();
   }
   function tabBtn(id, label) { return '<button class="' + (S.tab === id ? 'on' : '') + '" onclick="FFPLeague.tab(\'' + id + '\')">' + label + '</button>'; }
@@ -325,7 +325,7 @@
     order.sort(function (a, b) { return a - b; });
     host2.innerHTML = order.map(function (rd) {
       var list = byRound[rd];
-      return roundHead('Round ' + rd, list.length, roundRange(list)) + '<div class="lg-rbody">' + list.map(schedRow).join('') + '</div>';
+      return roundHead(roundLabel(rd), list.length, roundRange(list)) + '<div class="lg-rbody">' + list.map(schedRow).join('') + '</div>';
     }).join('');
   }
   function schedRow(f) {
@@ -338,7 +338,7 @@
     }).join('');
     var roleOpts = '<option value="">Role…</option>' + ROLES.map(function (r) { return '<option>' + r + '</option>'; }).join('');
     var offOpts = '<option value="">Official…</option>' + (S._offs || []).map(function (x) { return '<option value="' + x.id + '">' + esc(x.name || x.email) + '</option>'; }).join('');
-    return '<div class="lg-srow2" data-id="' + f.id + '"><div class="s-match"><b>' + esc((f.home && f.home.name) || 'TBD') + ' v ' + esc((f.away && f.away.name) || 'TBD') + '</b><small>Round ' + f.round + '</small>'
+    return '<div class="lg-srow2" data-id="' + f.id + '"><div class="s-match"><b>' + esc((f.home && f.home.name) || 'TBD') + ' v ' + esc((f.away && f.away.name) || 'TBD') + '</b><small>' + roundLabel(f.round) + '</small>'
       + '<div class="s-when"><input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"><input class="lg-in st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"></div></div>'
       + '<div class="s-right"><div class="fl">Surface</div><select class="lg-sel st-f" onchange="FFPLeague.schedSet(\'' + f.id + '\')">' + surfaceOpts(S._fields, f.field_id) + '</select>'
       + '<div class="fl">Officials</div>' + (tags ? '<div class="lg-offlist">' + tags + '</div>' : '')
@@ -556,7 +556,7 @@
     order.sort(function (a, b) { return a - b; });
     host2.innerHTML = order.map(function (rd) {
       var list = byRound[rd]; var games = list.filter(function (f) { return !f.bye; });
-      return roundHead('Round ' + rd, games.length, roundRange(games)) + '<div class="lg-rbody">' + list.map(fxRow).join('') + '</div>';
+      return roundHead(roundLabel(rd), games.length, roundRange(games)) + '<div class="lg-rbody">' + list.map(fxRow).join('') + '</div>';
     }).join('');
   }
   // A computed (auto) bye is virtual (id "bye-…") — not editable/removable. A stored bye is a real row (stage='bye').
@@ -618,19 +618,21 @@
     S.editFx = null; toast('Fixture saved', 'success'); renderTab();
   }
   function matchEditor() {
-    var bye = S.addBye;
-    return '<div class="lg-maed"><div class="ttl">Add ' + (bye ? 'a bye' : 'a fixture') + '</div>'
+    var bye = S.addBye, pre = S.addPre && !bye;
+    return '<div class="lg-maed"><div class="ttl">Add ' + (bye ? 'a bye' : (pre ? 'a preseason match' : 'a fixture')) + '</div>'
+      + '<label class="fe-byetog"><input type="checkbox" id="lg-mm-pre" ' + (pre ? 'checked' : '') + ' onchange="FFPLeague.togglePre(this.checked)"> Preseason / friendly (doesn\'t count towards the table)</label>'
       + '<label class="fe-byetog"><input type="checkbox" id="lg-mm-bye" ' + (bye ? 'checked' : '') + ' onchange="FFPLeague.toggleBye(this.checked)"> This is a bye (team sits out this round)</label>'
       + '<div class="edrow" style="margin-top:11px"><select class="lg-sel" id="lg-mm-h" style="flex:1;min-width:150px">' + entOpts(null) + '</select>'
       + (bye ? '' : '<span class="vv">v</span><select class="lg-sel" id="lg-mm-a" style="flex:1;min-width:150px">' + entOpts(null) + '</select>') + '</div>'
-      + '<div class="edrow2"><div class="f"><label>Round</label><input class="lg-in" id="lg-mm-r" type="number" value="1" style="width:90px"></div>'
+      + '<div class="edrow2">' + (pre ? '' : '<div class="f"><label>Round</label><input class="lg-in" id="lg-mm-r" type="number" value="1" style="width:90px"></div>')
       + (bye ? '' : '<div class="f"><label>Date</label><input class="lg-in" id="lg-mm-d" type="date"></div><div class="f"><label>Time</label><input class="lg-in" id="lg-mm-t" type="time"></div><div class="f" style="flex:1;min-width:160px"><label>Venue / surface</label><select class="lg-sel" id="lg-mm-f" style="width:100%">' + surfaceOpts(S._fields, null) + '</select></div>')
       + '</div>'
-      + '<div class="edfoot"><span class="sp"></span><button class="lg-btn ghost" onclick="FFPLeague.cancelMatch()">Cancel</button><button class="lg-btn pri" onclick="FFPLeague.saveMatch()">' + ic('check') + (bye ? 'Add bye' : 'Add fixture') + '</button></div></div>';
+      + '<div class="edfoot"><span class="sp"></span><button class="lg-btn ghost" onclick="FFPLeague.cancelMatch()">Cancel</button><button class="lg-btn pri" onclick="FFPLeague.saveMatch()">' + ic('check') + (bye ? 'Add bye' : (pre ? 'Add preseason match' : 'Add fixture')) + '</button></div></div>';
   }
-  function addMatch(tab) { S.addMatch = tab; S.addBye = false; renderTab(); }
-  function cancelMatch() { S.addMatch = null; S.addBye = false; renderTab(); }
-  function toggleBye(v) { S.addBye = v; renderTab(); }
+  function addMatch(tab) { S.addMatch = tab; S.addBye = false; S.addPre = false; renderTab(); }
+  function cancelMatch() { S.addMatch = null; S.addBye = false; S.addPre = false; renderTab(); }
+  function toggleBye(v) { S.addBye = v; if (v) S.addPre = false; renderTab(); }
+  function togglePre(v) { S.addPre = v; if (v) S.addBye = false; renderTab(); }
   async function saveMatch() {
     var h = (document.getElementById('lg-mm-h') || {}).value || null, rd = +((document.getElementById('lg-mm-r') || {}).value) || 1;
     if (S.addBye) {
@@ -638,13 +640,15 @@
       var rb; try { rb = await sb().rpc('lt_match_add', { p_scope: 'league', p_division: S.divId, p_round: rd, p_home: h, p_away: null, p_when: null, p_field: null, p_stage: 'bye' }); } catch (e) { rb = { error: e }; }
       if (rb.error) { toast('Could not add', 'error'); return; } S.addMatch = null; S.addBye = false; toast('Bye added', 'success'); renderTab(); return;
     }
+    var pre = S.addPre;
     var a = (document.getElementById('lg-mm-a') || {}).value || null;
     if (!h || !a || h === a) { toast('Pick two different teams', 'error'); return; }
     var dv = (document.getElementById('lg-mm-d') || {}).value, tv = (document.getElementById('lg-mm-t') || {}).value, fid = (document.getElementById('lg-mm-f') || {}).value || null;
     var when = (dv || tv) ? new Date((dv || new Date().toISOString().slice(0, 10)) + 'T' + (tv || '00:00') + ':00').toISOString() : null;
-    var r; try { r = await sb().rpc('lt_match_add', { p_scope: 'league', p_division: S.divId, p_round: rd, p_home: h, p_away: a, p_when: when, p_field: fid, p_stage: 'regular' }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not add', 'error'); return; } S.addMatch = null; toast('Fixture added', 'success'); renderTab();
+    var r; try { r = await sb().rpc('lt_match_add', { p_scope: 'league', p_division: S.divId, p_round: pre ? 0 : rd, p_home: h, p_away: a, p_when: when, p_field: fid, p_stage: pre ? 'preseason' : 'regular' }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not add', 'error'); return; } S.addMatch = null; S.addPre = false; toast(pre ? 'Preseason match added' : 'Fixture added', 'success'); renderTab();
   }
+  function roundLabel(rd) { return (+rd === 0) ? 'Preseason' : 'Round ' + rd; }
   // ---------- MATCH CENTRE (organiser enters the scoring timeline) ----------
   var KIND_PTS = { try: 5, conversion: 2, penalty: 3, drop_goal: 3, goal: 1, point: 1, yellow_card: 0, red_card: 0 };
   var KIND_LBL = { try: 'Try', conversion: 'Conversion', penalty: 'Penalty', drop_goal: 'Drop goal', goal: 'Goal', point: 'Point', yellow_card: 'Yellow card', red_card: 'Red card' };
@@ -1103,7 +1107,7 @@
     sqToggle: sqToggle, sqSearch: sqSearch, sqAddMember: sqAddMember, sqNameOnly: sqNameOnly, sqInvite: sqInvite, sqRemove: sqRemove,
     confirmGen: confirmGen, cancelGen: cancelGen, doGen: doGen, saveResults: saveResults,
     addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap, autoplan: autoplan, schedSet: schedSet,
-    togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch, toggleBye: toggleBye,
+    togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch, toggleBye: toggleBye, togglePre: togglePre,
     editFx: editFx, cancelEditFx: cancelEditFx, saveFx: saveFx, delAsk: delAsk, delCancel: delCancel, delFx: delFx,
     addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
     addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface,
