@@ -66,52 +66,62 @@
   function selectHtml(id, v) { return '<select id="' + id + '" style="' + inCss + '"><option value="">Select a category…</option>' + CATS.map(function (c) { return '<option value="' + esc(c.value) + '"' + (c.value === v ? ' selected' : '') + '>' + esc(c.label) + '</option>'; }).join('') + '</select>'; }
   function tierRow(key, label, v) { return field(label + ' benefit', inp('po-tier-' + key, 'e.g. 10% off 1 class', 'text', v || '')) + '<div style="font-size:11px;color:#8a99a8;margin:-8px 0 12px;">Leave blank = not available to ' + label + ' tier.</div>'; }
 
-  var inCss = 'width:100%;padding:12px 13px;border:1.5px solid #c3cfd8;border-radius:10px;font-family:inherit;font-size:14px;box-sizing:border-box;background:#f2f6f8;color:#12232f;';
-  function field(label, inner) { return '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;font-weight:700;color:#43525c;margin-bottom:5px;">' + esc(label) + '</label>' + inner + '</div>'; }
+  // Filled fields, NO resting stroke (focus ring only). One style everywhere.
+  var inCss = 'width:100%;padding:14px 15px;border:none;border-radius:12px;font-family:inherit;font-size:15px;font-weight:600;box-sizing:border-box;background:#eef2f5;color:#12232f;';
+  function field(label, inner) { return '<div style="margin-bottom:18px;"><label style="display:block;font-size:12.5px;font-weight:700;color:#6c7c87;margin-bottom:8px;letter-spacing:.1px;">' + esc(label) + '</label>' + inner + '</div>'; }
   function inp(id, ph, type, v) { return '<input id="' + id + '" type="' + (type || 'text') + '" value="' + esc(v || '') + '" placeholder="' + esc(ph || '') + '" style="' + inCss + '">'; }
-  function ta(id, ph, v) { return '<textarea id="' + id + '" placeholder="' + esc(ph || '') + '" rows="2" style="' + inCss + ';resize:vertical">' + esc(v || '') + '</textarea>'; }
+  function ta(id, ph, v) { return '<textarea id="' + id + '" placeholder="' + esc(ph || '') + '" rows="2" style="' + inCss + ';min-height:120px;line-height:1.55;resize:vertical">' + esc(v || '') + '</textarea>'; }
+  function secT(t) { return '<div class="po-sec">' + esc(t) + '</div>'; }
   function val(id) { var e = document.getElementById(id); return e ? String(e.value || '').trim() : ''; }
   function closeModal() { var b = document.getElementById('po-modal'); if (b) b.remove(); }
 
   // Full-bleed modal (shared openModalShell) + a REQUIRED offer image (no words on the image).
   async function openForm(o) {
     o = o || {}; editingId = o.id || null;
-    await providerInfo();
+    var pinfo = await providerInfo();
+    var cityName = (pinfo && pinfo.city) || prov().city || 'your city';
     var incomplete = !profileComplete();
     injectOfferCss();
     var T = o.tiers || {};
     var typ = (o.deal_type === 'perk') ? 'perk' : 'bogo';
     var benefit = T.member || '';
     var body =
-      (incomplete ? '<div style="background:#fff8e6;border:1px solid #f2e2a8;border-radius:10px;padding:11px 13px;margin:-2px 0 12px;color:#7a5c00;font-size:12.5px;line-height:1.5;">You can <b>save this as a draft</b> now. To <b>submit it for review</b>, first add your ' + esc(profileMissing().join(', ')) + ' to your business profile.</div>' : '') +
+      (incomplete ? '<div style="background:#fff8e6;border-radius:12px;padding:12px 14px;margin:0 0 14px;color:#7a5c00;font-size:12.5px;line-height:1.5;">You can <b>save this as a draft</b> now. To <b>submit it for review</b>, first add your ' + esc(profileMissing().join(', ')) + ' to your business profile.</div>' : '') +
       '<div id="po-form" data-type="' + typ + '">' +
-      '<label style="display:block;font-size:12px;font-weight:800;color:#43525c;margin:2px 0 6px;">Offer type</label>' +
+      '<div class="po-sec" style="margin-top:2px">Offer type</div>' +
       '<div class="po-typerow">' +
-        '<button type="button" class="po-typebtn' + (typ === 'bogo' ? ' on' : '') + '" data-t="bogo" onclick="ffpOffers.setType(\'bogo\')"><b>Signature Deal</b><span>2-for-1, $20+ saving. One-time hook.</span></button>' +
-        '<button type="button" class="po-typebtn' + (typ === 'perk' ? ' on' : '') + '" data-t="perk" onclick="ffpOffers.setType(\'perk\')"><b>Member Perk</b><span>Always-on discount, shown by Passport.</span></button>' +
+        '<button type="button" class="po-typebtn' + (typ === 'bogo' ? ' on' : '') + '" data-t="bogo" onclick="ffpOffers.setType(\'bogo\')"><span class="ic sym">local_offer</span><span class="ct"><b>Signature Deal</b><span>2-for-1, one-time. $20+ saving.</span></span><span class="tk"><span class="sym">check</span></span></button>' +
+        '<button type="button" class="po-typebtn' + (typ === 'perk' ? ' on' : '') + '" data-t="perk" onclick="ffpOffers.setType(\'perk\')"><span class="ic sym">verified</span><span class="ct"><b>Member Perk</b><span>Always-on discount, shown by Passport.</span></span><span class="tk"><span class="sym">check</span></span></button>' +
       '</div>' +
+      secT('The offer') +
       field('Category', selectHtml('po-category', o.category)) +
-      field('Offer title', inp('po-title', 'e.g. 2-for-1 reformer class', 'text', o.title)) +
-      field('What members get', inp('po-benefit', 'e.g. Buy one class, get one free', 'text', benefit)) +
-      '<div class="only-bogo">' +
-        '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
-          '<div style="flex:1;min-width:150px">' + field('Member\'s saving ($)', inp('po-saving', '20', 'number', o.saving_amount != null ? o.saving_amount : '')) + '<div id="po-savehint" style="font-size:11.5px;font-weight:700;color:#8a99a8;margin:-8px 0 12px;">Minimum $20 saving for a Signature Deal.</div></div>' +
+      field('What members get', inp('po-benefit', 'e.g. Buy one main meal and get the second free', 'text', benefit)) +
+      '<div class="only-bogo">' + secT('Signature Deal') +
+        '<div style="display:flex;gap:24px;flex-wrap:wrap;">' +
+          '<div style="width:150px">' + field('Member\'s saving ($)', inp('po-saving', '20', 'number', o.saving_amount != null ? o.saving_amount : '')) + '<div id="po-savehint" style="font-size:12px;font-weight:700;color:#8a99a8;margin:-10px 0 0;">Minimum $20 saving.</div></div>' +
           '<div style="width:150px">' + field('Uses per member', inp('po-limit', '1', 'number', o.per_member_limit != null ? o.per_member_limit : 1)) + '</div>' +
         '</div>' +
-        field('How members redeem', ta('po-redeem', 'Your way — show the confirmation to staff, tell them the code, or scan at the desk', o.redeem_info)) +
       '</div>' +
-      '<div class="only-perk"><div style="background:#eef7fb;border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;gap:11px;align-items:flex-start;"><span style="font-size:12px;font-weight:800;color:#155e96;line-height:1.5;">Verified by Golden Passport — members show their live Passport in-store to claim. No code, use it every visit. You honour the discount at the till.</span></div></div>' +
-      field('Description', ta('po-desc', 'Short description shown to members', o.description)) +
-      field('Terms / fine print', ta('po-terms', 'e.g. One per member, dine-in only', o.terms)) +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
-        '<div style="flex:1;min-width:150px">' + field('Valid from', inp('po-from', '', 'date', o.valid_from)) + '</div>' +
-        '<div style="flex:1;min-width:150px">' + field('Valid to', inp('po-to', '', 'date', o.valid_to)) + '</div>' +
+      '<div class="only-perk">' + secT('Member Perk') + '<div style="background:#eef7fb;border-radius:12px;padding:14px 16px;font-size:12.5px;font-weight:600;color:#155e96;line-height:1.5;">Verified by Golden Passport — members show their live Passport in-store to claim. No code, use it every visit. You honour the discount at the till.</div></div>' +
+      secT('Fine print') +
+      field('Terms (optional)', ta('po-terms', 'e.g. One per member. Dine-in only. Not valid on public holidays.', o.terms)) +
+      secT('When it runs') +
+      '<div style="display:flex;gap:24px;flex-wrap:wrap;">' +
+        '<div style="width:220px">' + field('Valid from', inp('po-from', '', 'date', o.valid_from)) + '</div>' +
+        '<div style="width:220px">' + field('Valid to', inp('po-to', '', 'date', o.valid_to)) + '</div>' +
       '</div>' +
-      '<div style="margin-top:4px;"><label style="display:block;font-size:12px;font-weight:700;color:#43525c;margin-bottom:5px;">Offer image <span style="color:#e04b3a;">*</span></label>' +
-        '<div id="listing-photo-slot"></div>' +
-        '<div style="font-size:12px;color:#8a99a8;margin-top:6px;line-height:1.5;">Required. A clean photo of the offer — <b>no words or text on the image.</b></div>' +
+      secT('Photo') +
+      '<div id="listing-photo-slot"></div>' +
+      '<div style="font-size:12px;color:#8a99a8;margin-top:8px;line-height:1.5;">A clean photo of the offer — <b>no words or text on the image.</b></div>' +
+      '<div class="po-feat">' +
+        '<div class="fx"><span class="kick"><span class="sym">star</span> Featured placement</span>' +
+        '<h3>Be the first offer members see in ' + esc(cityName) + '</h3>' +
+        '<div class="sub">Top of the Offers page all month — in front of every active member in your area.</div>' +
+        '<span class="urg"><span class="sym">bolt</span> Only 1 spot left this month</span></div>' +
+        '<div class="fbuy"><div class="price"><b>$99</b><span>/month</span></div>' +
+        '<button type="button" class="fbtn" onclick="ffpOffers.feature()">Feature my offer</button>' +
+        '<span class="paynote">Pay now, live instantly</span></div>' +
       '</div>' +
-      '<label class="po-feature"><input type="checkbox" id="po-featured"' + (o.featured ? ' checked' : '') + '><span><b>Feature this offer</b> — paid placement at the top of the Offers page (seen first, in your area).</span></label>' +
       '</div>';
     var foot =
       '<button class="btn po-cancel" onclick="closeModal()">Cancel</button>' +
@@ -143,31 +153,57 @@
     if (document.getElementById('ffp-offer-css')) return;
     var s = document.createElement('style'); s.id = 'ffp-offer-css';
     s.textContent = '#po-form[data-type=perk] .only-bogo{display:none}#po-form[data-type=bogo] .only-perk{display:none}'
-      + '.po-typerow{display:flex;gap:10px;margin-bottom:14px}'
-      + '.po-typebtn{flex:1;background:#f2f6f8;border:2px solid #c3cfd8;border-radius:12px;padding:12px 13px;text-align:left;font:inherit;cursor:pointer}'
-      + '.po-typebtn.on{border-color:#1980AD;background:#f2f9fc}'
-      + '.po-typebtn b{display:block;font-size:14px;font-weight:900;color:#12232f}'
-      + '.po-typebtn span{display:block;font-size:11px;color:#8a99a8;font-weight:700;margin-top:2px;line-height:1.35}'
-      + '.po-feature{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:12px 14px;background:#fff8e6;border-radius:10px;cursor:pointer}'
-      + '.po-feature input{margin-top:2px}.po-feature span{font-size:12.5px;color:#6a5100;font-weight:600;line-height:1.45}'
-      + '#po-form input::placeholder,#po-form textarea::placeholder{color:#9aa8b4;font-weight:500}'
-      + '#po-form input:focus,#po-form select:focus,#po-form textarea:focus{border-color:#1980AD;background:#fff;box-shadow:0 0 0 3px rgba(25,128,173,.14)}'
-      + '#po-form select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%238a99a8%27 stroke-width=%272.5%27><polyline points=%276 9 12 15 18 9%27/></svg>");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px}'
-      /* Footer buttons — always look like BUTTONS, never like a field. Cancel=outline, Save draft=gold, Submit=blue. */
-      + '.po-cancel,.po-draft,.po-submit{height:46px;border-radius:12px;font-weight:800;letter-spacing:.4px;text-transform:none;border:none;cursor:pointer}'
-      + '.po-cancel{background:#fff;border:1.5px solid #c3cfd8;color:#4a5a66}'
-      + '.po-cancel:hover{border-color:#9fb0bd;background:#f6f9fb}'
-      + '.po-draft{background:linear-gradient(180deg,#ffd24a,#f2a900);color:#3a2600;box-shadow:0 4px 12px rgba(242,169,0,.34)}'
+      /* section title: bold dark, dominant over labels */
+      + '.po-sec{font-size:18px;font-weight:900;color:#0e2531;letter-spacing:-.2px;margin:30px 0 16px}'
+      /* offer-type selector: grey filled unselected, bold BLUE fill selected (white text), no strokes */
+      + '.po-typerow{display:flex;gap:14px;margin-bottom:6px;flex-wrap:wrap}'
+      + '.po-typebtn{flex:1;min-width:220px;display:flex;gap:13px;align-items:flex-start;text-align:left;background:#e3eaf0;border:none;border-radius:15px;box-shadow:0 3px 10px rgba(15,37,49,.09);padding:18px;cursor:pointer;font-family:inherit;position:relative;transition:.15s}'
+      + '.po-typebtn:hover{background:#d8e1e9}'
+      + '.po-typebtn.on{background:linear-gradient(135deg,#2aa2d2 0%,#1a83b3 48%,#0f6088 100%);box-shadow:0 14px 30px -8px rgba(20,110,155,.6)}'
+      + '.po-typebtn .ic{font-size:25px;color:#8494a0;flex:none;margin-top:1px}'
+      + '.po-typebtn.on .ic{color:#fff}'
+      + '.po-typebtn .ct{flex:1;min-width:0}'
+      + '.po-typebtn .ct b{display:block;font-size:16px;font-weight:900;color:#12232f;letter-spacing:-.2px}'
+      + '.po-typebtn .ct span{display:block;font-size:12.5px;color:#5a6a75;font-weight:600;margin-top:4px;line-height:1.4}'
+      + '.po-typebtn.on .ct b{color:#fff}.po-typebtn.on .ct span{color:rgba(255,255,255,.88)}'
+      + '.po-typebtn .tk{position:absolute;top:16px;right:16px;width:22px;height:22px;border-radius:50%;background:#fff;color:#1980AD;display:none;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.25)}'
+      + '.po-typebtn .tk .sym{font-size:15px}.po-typebtn.on .tk{display:flex}'
+      /* fields: fill only, focus ring (no resting stroke) */
+      + '#po-form input::placeholder,#po-form textarea::placeholder{color:#a2b0bb;font-weight:500}'
+      + '#po-form input:focus,#po-form select:focus,#po-form textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 4px rgba(25,128,173,.17)}'
+      + '#po-form select{appearance:none;-webkit-appearance:none;color:#12232f;background-image:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 width=%2713%27 height=%2713%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2393a1ad%27 stroke-width=%272.5%27><polyline points=%276 9 12 15 18 9%27/></svg>");background-repeat:no-repeat;background-position:right 15px center;padding-right:40px}'
+      /* premium featured panel — navy + gold, sells the $99 spot */
+      + '.po-feat{position:relative;overflow:hidden;border-radius:20px;padding:28px 30px;display:flex;align-items:center;gap:26px;flex-wrap:wrap;margin-top:36px;background:radial-gradient(130% 150% at 88% -10%,#1f608a 0%,#123f5c 46%,#0b2a40 100%);box-shadow:0 20px 44px -18px rgba(11,42,64,.75)}'
+      + '.po-feat::after{content:"star";font-family:\'Material Symbols Rounded\';position:absolute;right:-24px;bottom:-52px;font-size:210px;line-height:1;color:rgba(255,204,0,.10);pointer-events:none}'
+      + '.po-feat .fx{flex:1;min-width:240px;position:relative;z-index:1}'
+      + '.po-feat .kick{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:#FFCC00}'
+      + '.po-feat .kick .sym{font-size:16px}'
+      + '.po-feat h3{margin:9px 0 6px;font-size:23px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1.12}'
+      + '.po-feat .sub{font-size:13px;font-weight:600;color:rgba(255,255,255,.74);line-height:1.45;max-width:360px}'
+      + '.po-feat .urg{display:inline-flex;align-items:center;gap:6px;margin-top:14px;background:rgba(255,204,0,.15);color:#ffdc55;font-size:12px;font-weight:800;padding:6px 13px;border-radius:20px}'
+      + '.po-feat .urg .sym{font-size:15px}'
+      + '.po-feat .fbuy{flex:none;position:relative;z-index:1;display:flex;flex-direction:column;align-items:flex-end;gap:13px}'
+      + '.po-feat .price{color:#fff;line-height:1;display:flex;align-items:baseline;gap:4px}'
+      + '.po-feat .price b{font-size:44px;font-weight:900;letter-spacing:-1.5px}'
+      + '.po-feat .price span{font-size:15px;font-weight:700;color:rgba(255,255,255,.7)}'
+      + '.po-feat .fbtn{height:52px;padding:0 30px;border:none;border-radius:14px;font-family:inherit;font-weight:900;font-size:14.5px;cursor:pointer;background:linear-gradient(135deg,#ffe488 0%,#f7c02a 45%,#e59000 100%);color:#3a2600;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.6),0 9px 22px rgba(230,150,0,.55)}'
+      + '.po-feat .fbtn:hover{filter:brightness(1.05)}'
+      + '.po-feat .paynote{font-size:11.5px;font-weight:700;color:rgba(255,255,255,.6)}'
+      /* footer buttons (approved) — dimensional gradient, never flat */
+      + '.po-cancel,.po-draft,.po-submit{height:48px;padding:0 26px;border-radius:13px;font-weight:800;letter-spacing:.2px;font-size:13.5px;text-transform:none;border:none;cursor:pointer}'
+      + '.po-cancel{background:#fff;box-shadow:inset 0 0 0 1.5px #c9d3db;color:#516069}'
+      + '.po-cancel:hover{box-shadow:inset 0 0 0 1.5px #9fb0bd;background:#f6f9fb}'
+      + '.po-draft{background:linear-gradient(135deg,#ffe488,#fac52f 45%,#e59000);color:#3a2600;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.6),0 7px 18px rgba(230,150,0,.45)}'
       + '.po-draft:hover{filter:brightness(1.05)}'
-      + '.po-submit{background:linear-gradient(180deg,#2296c4,#1980AD);color:#fff;box-shadow:0 4px 12px rgba(25,128,173,.34)}'
-      + '.po-submit:hover{filter:brightness(1.05)}';
+      + '.po-submit{background:linear-gradient(135deg,#40b8e4,#1e8cbb 45%,#0e6188);color:#fff;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.35),0 7px 18px rgba(20,110,155,.5)}'
+      + '.po-submit:hover{filter:brightness(1.06)}';
     document.head.appendChild(s);
   }
   async function save(mode) {
     mode = (mode === 'draft') ? 'draft' : 'pending';
     if (!prov().id) { toast('Provider not ready — reload.', 'error'); return; }
     var info = await providerInfo();
-    if (!val('po-title')) { toast('Offer title is required', 'error'); return; }
+    if (!val('po-benefit')) { toast('Add what members get', 'error'); return; }
     var typ = currentType();
     var benefit = val('po-benefit') || null;
     var tiers = { member: benefit, supporter: null, ambassador: null };
@@ -190,13 +226,12 @@
       image_url: imgUrl,
       category: val('po-category') || null,
       tiers: tiers,
-      title: val('po-title'),
-      description: val('po-desc') || null,
-      redeem_info: typ === 'perk' ? 'Show your Golden Passport in-store' : (val('po-redeem') || null),
+      title: val('po-benefit'),
+      description: null,
+      redeem_info: typ === 'perk' ? 'Show your Golden Passport in-store' : null,
       terms: val('po-terms') || null,
       deal_type: typ,
       saving_amount: saving,
-      featured: !!(document.getElementById('po-featured') && document.getElementById('po-featured').checked),
       valid_from: val('po-from') || null,
       valid_to: val('po-to') || null,
       per_member_limit: perLimit,
@@ -257,7 +292,8 @@
     } catch (e) { el.innerHTML = '<div style="padding:16px;color:#d9534f;">Couldn’t load offers: ' + esc(e.message || '') + '</div>'; }
   }
 
-  window.ffpOffers = { add: function () { openForm(); }, edit: function (o) { openForm(o); }, save: save, setType: setType, savingHint: savingHint, setStatus: setStatus, remove: remove, _close: closeModal };
+  function feature() { toast('Save your offer first, then feature it for $99/month — featured checkout is being set up.', 'success'); }
+  window.ffpOffers = { add: function () { openForm(); }, edit: function (o) { openForm(o); }, save: save, setType: setType, savingHint: savingHint, setStatus: setStatus, remove: remove, feature: feature, _close: closeModal };
   window.ffpRenderOffers = render;
   loadCats();
   try { render(); } catch (e) {}
