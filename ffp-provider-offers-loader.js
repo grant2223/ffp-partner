@@ -90,8 +90,8 @@
       '<div id="po-form" data-type="' + typ + '">' +
       '<div class="po-sec" style="margin-top:2px">Offer type</div>' +
       '<div class="po-typerow">' +
-        '<button type="button" class="po-typebtn' + (typ === 'bogo' ? ' on' : '') + '" data-t="bogo" onclick="ffpOffers.setType(\'bogo\')"><span class="ic sym">local_offer</span><span class="ct"><b>Signature Deal</b><span>2-for-1, one-time. $20+ saving.</span></span><span class="tk"><span class="sym">check</span></span></button>' +
-        '<button type="button" class="po-typebtn' + (typ === 'perk' ? ' on' : '') + '" data-t="perk" onclick="ffpOffers.setType(\'perk\')"><span class="ic sym">verified</span><span class="ct"><b>Member Perk</b><span>Always-on discount, shown by Passport.</span></span><span class="tk"><span class="sym">check</span></span></button>' +
+        '<button type="button" class="po-typebtn' + (typ === 'bogo' ? ' on' : '') + '" data-t="bogo" onclick="ffpOffers.setType(\'bogo\')"><span class="ic ms">local_offer</span><span class="ct"><b>Signature Deal</b><span>2-for-1, one-time. $20+ saving.</span></span><span class="tk"><span class="ms">check</span></span></button>' +
+        '<button type="button" class="po-typebtn' + (typ === 'perk' ? ' on' : '') + '" data-t="perk" onclick="ffpOffers.setType(\'perk\')"><span class="ic ms">verified</span><span class="ct"><b>Member Perk</b><span>Always-on discount, shown by Passport.</span></span><span class="tk"><span class="ms">check</span></span></button>' +
       '</div>' +
       secT('The offer') +
       field('Category', selectHtml('po-category', o.category)) +
@@ -114,10 +114,10 @@
       '<div id="listing-photo-slot"></div>' +
       '<div style="font-size:12px;color:#8a99a8;margin-top:8px;line-height:1.5;">A clean photo of the offer — <b>no words or text on the image.</b></div>' +
       '<div class="po-feat">' +
-        '<div class="fx"><span class="kick"><span class="sym">star</span> Featured placement</span>' +
+        '<div class="fx"><span class="kick"><span class="ms">star</span> Featured placement</span>' +
         '<h3>Be the first offer members see in ' + esc(cityName) + '</h3>' +
         '<div class="sub">Top of the Offers page all month — in front of every active member in your area.</div>' +
-        '<span class="urg"><span class="sym">bolt</span> Only 1 spot left this month</span></div>' +
+        '<span class="urg"><span class="ms">bolt</span> Only 1 spot left this month</span></div>' +
         '<div class="fbuy"><div class="price"><b>$99</b><span>/month</span></div>' +
         '<button type="button" class="fbtn" onclick="ffpOffers.feature()">Feature my offer</button>' +
         '<span class="paynote">Pay now, live instantly</span></div>' +
@@ -167,21 +167,21 @@
       + '.po-typebtn .ct span{display:block;font-size:12.5px;color:#5a6a75;font-weight:600;margin-top:4px;line-height:1.4}'
       + '.po-typebtn.on .ct b{color:#fff}.po-typebtn.on .ct span{color:rgba(255,255,255,.88)}'
       + '.po-typebtn .tk{position:absolute;top:16px;right:16px;width:22px;height:22px;border-radius:50%;background:#fff;color:#1980AD;display:none;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.25)}'
-      + '.po-typebtn .tk .sym{font-size:15px}.po-typebtn.on .tk{display:flex}'
+      + '.po-typebtn .tk .ms{font-size:15px}.po-typebtn.on .tk{display:flex}'
       /* fields: fill only, focus ring (no resting stroke) */
       + '#po-form input::placeholder,#po-form textarea::placeholder{color:#a2b0bb;font-weight:500}'
       + '#po-form input:focus,#po-form select:focus,#po-form textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 4px rgba(25,128,173,.17)}'
       + '#po-form select{appearance:none;-webkit-appearance:none;color:#12232f;background-image:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 width=%2713%27 height=%2713%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2393a1ad%27 stroke-width=%272.5%27><polyline points=%276 9 12 15 18 9%27/></svg>");background-repeat:no-repeat;background-position:right 15px center;padding-right:40px}'
       /* premium featured panel — navy + gold, sells the $99 spot */
       + '.po-feat{position:relative;overflow:hidden;border-radius:20px;padding:28px 30px;display:flex;align-items:center;gap:26px;flex-wrap:wrap;margin-top:36px;background:radial-gradient(130% 150% at 88% -10%,#1f608a 0%,#123f5c 46%,#0b2a40 100%);box-shadow:0 20px 44px -18px rgba(11,42,64,.75)}'
-      + '.po-feat::after{content:"star";font-family:\'Material Symbols Rounded\';position:absolute;right:-24px;bottom:-52px;font-size:210px;line-height:1;color:rgba(255,204,0,.10);pointer-events:none}'
+      + '.po-feat::after{content:"star";font-family:\'Material Symbols Outlined\';position:absolute;right:-24px;bottom:-52px;font-size:210px;line-height:1;color:rgba(255,204,0,.10);pointer-events:none}'
       + '.po-feat .fx{flex:1;min-width:240px;position:relative;z-index:1}'
       + '.po-feat .kick{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:#FFCC00}'
-      + '.po-feat .kick .sym{font-size:16px}'
+      + '.po-feat .kick .ms{font-size:16px}'
       + '.po-feat h3{margin:9px 0 6px;font-size:23px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1.12}'
       + '.po-feat .sub{font-size:13px;font-weight:600;color:rgba(255,255,255,.74);line-height:1.45;max-width:360px}'
       + '.po-feat .urg{display:inline-flex;align-items:center;gap:6px;margin-top:14px;background:rgba(255,204,0,.15);color:#ffdc55;font-size:12px;font-weight:800;padding:6px 13px;border-radius:20px}'
-      + '.po-feat .urg .sym{font-size:15px}'
+      + '.po-feat .urg .ms{font-size:15px}'
       + '.po-feat .fbuy{flex:none;position:relative;z-index:1;display:flex;flex-direction:column;align-items:flex-end;gap:13px}'
       + '.po-feat .price{color:#fff;line-height:1;display:flex;align-items:baseline;gap:4px}'
       + '.po-feat .price b{font-size:44px;font-weight:900;letter-spacing:-1.5px}'
