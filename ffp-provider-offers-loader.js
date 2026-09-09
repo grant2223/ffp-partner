@@ -78,27 +78,40 @@
     o = o || {}; editingId = o.id || null;
     await providerInfo();
     var incomplete = !profileComplete();
+    injectOfferCss();
     var T = o.tiers || {};
+    var typ = (o.deal_type === 'perk') ? 'perk' : 'bogo';
+    var benefit = T.member || '';
     var body =
       (incomplete ? '<div style="background:#fff8e6;border:1px solid #f2e2a8;border-radius:10px;padding:11px 13px;margin:-2px 0 12px;color:#7a5c00;font-size:12.5px;line-height:1.5;">You can <b>save this as a draft</b> now. To <b>submit it for review</b>, first add your ' + esc(profileMissing().join(', ')) + ' to your business profile.</div>' : '') +
-      '<div style="font-size:12.5px;color:#8a99a8;margin:-2px 0 14px;">Shown to Passport members at your venue — the benefit can vary by tier.</div>' +
+      '<div id="po-form" data-type="' + typ + '">' +
+      '<label style="display:block;font-size:12px;font-weight:800;color:#43525c;margin:2px 0 6px;">Offer type</label>' +
+      '<div class="po-typerow">' +
+        '<button type="button" class="po-typebtn' + (typ === 'bogo' ? ' on' : '') + '" data-t="bogo" onclick="ffpOffers.setType(\'bogo\')"><b>Signature Deal</b><span>2-for-1, $20+ saving. One-time hook.</span></button>' +
+        '<button type="button" class="po-typebtn' + (typ === 'perk' ? ' on' : '') + '" data-t="perk" onclick="ffpOffers.setType(\'perk\')"><b>Member Perk</b><span>Always-on discount, shown by Passport.</span></button>' +
+      '</div>' +
       field('Category', selectHtml('po-category', o.category)) +
-      field('Offer title', inp('po-title', 'e.g. Meal discount', 'text', o.title)) +
+      field('Offer title', inp('po-title', 'e.g. 2-for-1 reformer class', 'text', o.title)) +
+      field('What members get', inp('po-benefit', 'e.g. Buy one class, get one free', 'text', benefit)) +
+      '<div class="only-bogo">' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+          '<div style="flex:1;min-width:150px">' + field('Member\'s saving ($)', inp('po-saving', '20', 'number', o.saving_amount != null ? o.saving_amount : '')) + '<div id="po-savehint" style="font-size:11.5px;font-weight:700;color:#8a99a8;margin:-8px 0 12px;">Minimum $20 saving for a Signature Deal.</div></div>' +
+          '<div style="width:150px">' + field('Uses per member', inp('po-limit', '1', 'number', o.per_member_limit != null ? o.per_member_limit : 1)) + '</div>' +
+        '</div>' +
+        field('How members redeem', ta('po-redeem', 'Your way — show the confirmation to staff, tell them the code, or scan at the desk', o.redeem_info)) +
+      '</div>' +
+      '<div class="only-perk"><div style="background:#eef7fb;border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;gap:11px;align-items:flex-start;"><span style="font-size:12px;font-weight:800;color:#155e96;line-height:1.5;">Verified by Golden Passport — members show their live Passport in-store to claim. No code, use it every visit. You honour the discount at the till.</span></div></div>' +
       field('Description', ta('po-desc', 'Short description shown to members', o.description)) +
-      '<div style="font-size:12px;font-weight:800;color:#43525c;margin:8px 0 6px;">Benefit by tier</div>' +
-      tierRow('member', 'Member', T.member) +
-      tierRow('supporter', 'Supporter', T.supporter) +
-      tierRow('ambassador', 'Ambassador', T.ambassador) +
-      field('How members redeem', ta('po-redeem', 'Your way — e.g. show the confirmation to staff, tell them the code, or scan at the desk', o.redeem_info)) +
       field('Terms / fine print', ta('po-terms', 'e.g. One per member, dine-in only', o.terms)) +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
         '<div style="flex:1;min-width:150px">' + field('Valid from', inp('po-from', '', 'date', o.valid_from)) + '</div>' +
         '<div style="flex:1;min-width:150px">' + field('Valid to', inp('po-to', '', 'date', o.valid_to)) + '</div>' +
-        '<div style="width:150px">' + field('Per-member limit', inp('po-limit', '1', 'number', o.per_member_limit != null ? o.per_member_limit : 1)) + '</div>' +
       '</div>' +
       '<div style="margin-top:4px;"><label style="display:block;font-size:12px;font-weight:700;color:#43525c;margin-bottom:5px;">Offer image <span style="color:#e04b3a;">*</span></label>' +
         '<div id="listing-photo-slot"></div>' +
         '<div style="font-size:12px;color:#8a99a8;margin-top:6px;line-height:1.5;">Required. A clean photo of the offer — <b>no words or text on the image.</b></div>' +
+      '</div>' +
+      '<label class="po-feature"><input type="checkbox" id="po-featured"' + (o.featured ? ' checked' : '') + '><span><b>Feature this offer</b> — paid placement at the top of the Offers page (seen first, in your area).</span></label>' +
       '</div>';
     var foot =
       '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>' +
@@ -110,20 +123,52 @@
     if (typeof window.renderListingUploader === 'function') {
       try { window.renderListingUploader(o.image_url || ''); } catch (e) {}
     }
+    var sv = document.getElementById('po-saving'); if (sv) { sv.oninput = savingHint; savingHint(); }
   }
 
+  function currentType() { var f = document.getElementById('po-form'); return (f && f.dataset.type === 'perk') ? 'perk' : 'bogo'; }
+  function setType(t) {
+    var f = document.getElementById('po-form'); if (!f) return;
+    f.dataset.type = (t === 'perk') ? 'perk' : 'bogo';
+    Array.prototype.forEach.call(document.querySelectorAll('.po-typebtn'), function (b) { b.classList.toggle('on', b.getAttribute('data-t') === f.dataset.type); });
+  }
+  function savingHint() {
+    var el = document.getElementById('po-savehint'); if (!el) return;
+    var s = parseFloat(val('po-saving'));
+    if (!s) { el.style.color = '#8a99a8'; el.textContent = 'Minimum $20 saving for a Signature Deal.'; }
+    else if (s < 20) { el.style.color = '#c0392b'; el.textContent = 'A Signature Deal needs at least a $20 saving.'; }
+    else { el.style.color = '#0a8f5f'; el.textContent = '✓ Meets the $20 minimum saving.'; }
+  }
+  function injectOfferCss() {
+    if (document.getElementById('ffp-offer-css')) return;
+    var s = document.createElement('style'); s.id = 'ffp-offer-css';
+    s.textContent = '#po-form[data-type=perk] .only-bogo{display:none}#po-form[data-type=bogo] .only-perk{display:none}'
+      + '.po-typerow{display:flex;gap:10px;margin-bottom:14px}'
+      + '.po-typebtn{flex:1;background:#fff;border:2px solid #d7dee5;border-radius:12px;padding:12px 13px;text-align:left;font:inherit;cursor:pointer}'
+      + '.po-typebtn.on{border-color:#1980AD;background:#f2f9fc}'
+      + '.po-typebtn b{display:block;font-size:14px;font-weight:900;color:#12232f}'
+      + '.po-typebtn span{display:block;font-size:11px;color:#8a99a8;font-weight:700;margin-top:2px;line-height:1.35}'
+      + '.po-feature{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:12px 14px;background:#fff8e6;border-radius:10px;cursor:pointer}'
+      + '.po-feature input{margin-top:2px}.po-feature span{font-size:12.5px;color:#6a5100;font-weight:600;line-height:1.45}';
+    document.head.appendChild(s);
+  }
   async function save(mode) {
     mode = (mode === 'draft') ? 'draft' : 'pending';
     if (!prov().id) { toast('Provider not ready — reload.', 'error'); return; }
     var info = await providerInfo();
     if (!val('po-title')) { toast('Offer title is required', 'error'); return; }
-    var tiers = { member: val('po-tier-member') || null, supporter: val('po-tier-supporter') || null, ambassador: val('po-tier-ambassador') || null };
+    var typ = currentType();
+    var benefit = val('po-benefit') || null;
+    var tiers = { member: benefit, supporter: null, ambassador: null };
+    var saving = typ === 'bogo' ? (parseFloat(val('po-saving')) || null) : null;
+    var perLimit = typ === 'perk' ? 0 : (parseInt(val('po-limit') || '1', 10) || 1);
     var slot = document.getElementById('listing-photo-slot');
     var imgUrl = slot ? (slot.dataset.url || '') : '';
     // Full checks only when SUBMITTING for review. Drafts save with just a title.
     if (mode === 'pending') {
       if (!profileComplete()) { toast('Add your ' + profileMissing().join(', ') + ' to your profile to submit — or Save draft for now.', 'error'); return; }
-      if (!tiers.member && !tiers.supporter && !tiers.ambassador) { toast('Add a benefit for at least one tier to submit', 'error'); return; }
+      if (!benefit) { toast('Add what members get to submit', 'error'); return; }
+      if (typ === 'bogo' && (!saving || saving < 20)) { toast('A Signature Deal needs at least a $20 saving', 'error'); return; }
       if (!imgUrl) { toast('Add an offer image to submit (no words on the image)', 'error'); return; }
     }
     var row = {
@@ -136,12 +181,14 @@
       tiers: tiers,
       title: val('po-title'),
       description: val('po-desc') || null,
-      redeem_info: val('po-redeem') || null,
+      redeem_info: typ === 'perk' ? 'Show your Golden Passport in-store' : (val('po-redeem') || null),
       terms: val('po-terms') || null,
-      deal_type: 'bogo',
+      deal_type: typ,
+      saving_amount: saving,
+      featured: !!(document.getElementById('po-featured') && document.getElementById('po-featured').checked),
       valid_from: val('po-from') || null,
       valid_to: val('po-to') || null,
-      per_member_limit: parseInt(val('po-limit') || '1', 10) || 1,
+      per_member_limit: perLimit,
       source: 'partner',
       updated_at: new Date().toISOString()
     };
@@ -199,7 +246,7 @@
     } catch (e) { el.innerHTML = '<div style="padding:16px;color:#d9534f;">Couldn’t load offers: ' + esc(e.message || '') + '</div>'; }
   }
 
-  window.ffpOffers = { add: function () { openForm(); }, edit: function (o) { openForm(o); }, save: save, setStatus: setStatus, remove: remove, _close: closeModal };
+  window.ffpOffers = { add: function () { openForm(); }, edit: function (o) { openForm(o); }, save: save, setType: setType, savingHint: savingHint, setStatus: setStatus, remove: remove, _close: closeModal };
   window.ffpRenderOffers = render;
   loadCats();
   try { render(); } catch (e) {}
