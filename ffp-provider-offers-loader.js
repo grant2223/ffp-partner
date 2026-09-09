@@ -114,9 +114,9 @@
       '<label class="po-feature"><input type="checkbox" id="po-featured"' + (o.featured ? ' checked' : '') + '><span><b>Feature this offer</b> — paid placement at the top of the Offers page (seen first, in your area).</span></label>' +
       '</div>';
     var foot =
-      '<button class="btn btn-sec" onclick="closeModal()">Cancel</button>' +
-      '<button class="btn btn-sec" onclick="ffpOffers.save(\'draft\')">Save draft</button>' +
-      '<button class="btn btn-pri" onclick="ffpOffers.save(\'pending\')">Submit for review</button>';
+      '<button class="btn po-cancel" onclick="closeModal()">Cancel</button>' +
+      '<button class="btn po-draft" onclick="ffpOffers.save(\'draft\')">Save draft</button>' +
+      '<button class="btn po-submit" onclick="ffpOffers.save(\'pending\')">Submit for review</button>';
     if (typeof window.openModalShell === 'function') {
       window.openModalShell('lg', (editingId ? 'Edit offer' : 'Add offer'), body, foot);
     }
@@ -152,7 +152,15 @@
       + '.po-feature input{margin-top:2px}.po-feature span{font-size:12.5px;color:#6a5100;font-weight:600;line-height:1.45}'
       + '#po-form input::placeholder,#po-form textarea::placeholder{color:#9aa8b4;font-weight:500}'
       + '#po-form input:focus,#po-form select:focus,#po-form textarea:focus{border-color:#1980AD;background:#fff;box-shadow:0 0 0 3px rgba(25,128,173,.14)}'
-      + '#po-form select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%238a99a8%27 stroke-width=%272.5%27><polyline points=%276 9 12 15 18 9%27/></svg>");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px}';
+      + '#po-form select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%238a99a8%27 stroke-width=%272.5%27><polyline points=%276 9 12 15 18 9%27/></svg>");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px}'
+      /* Footer buttons — always look like BUTTONS, never like a field. Cancel=outline, Save draft=gold, Submit=blue. */
+      + '.po-cancel,.po-draft,.po-submit{height:46px;border-radius:12px;font-weight:800;letter-spacing:.4px;text-transform:none;border:none;cursor:pointer}'
+      + '.po-cancel{background:#fff;border:1.5px solid #c3cfd8;color:#4a5a66}'
+      + '.po-cancel:hover{border-color:#9fb0bd;background:#f6f9fb}'
+      + '.po-draft{background:linear-gradient(180deg,#ffd24a,#f2a900);color:#3a2600;box-shadow:0 4px 12px rgba(242,169,0,.34)}'
+      + '.po-draft:hover{filter:brightness(1.05)}'
+      + '.po-submit{background:linear-gradient(180deg,#2296c4,#1980AD);color:#fff;box-shadow:0 4px 12px rgba(25,128,173,.34)}'
+      + '.po-submit:hover{filter:brightness(1.05)}';
     document.head.appendChild(s);
   }
   async function save(mode) {
