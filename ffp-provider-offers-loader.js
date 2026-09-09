@@ -66,7 +66,7 @@
   function selectHtml(id, v) { return '<select id="' + id + '" style="' + inCss + '"><option value="">Select a category…</option>' + CATS.map(function (c) { return '<option value="' + esc(c.value) + '"' + (c.value === v ? ' selected' : '') + '>' + esc(c.label) + '</option>'; }).join('') + '</select>'; }
   function tierRow(key, label, v) { return field(label + ' benefit', inp('po-tier-' + key, 'e.g. 10% off 1 class', 'text', v || '')) + '<div style="font-size:11px;color:#8a99a8;margin:-8px 0 12px;">Leave blank = not available to ' + label + ' tier.</div>'; }
 
-  var inCss = 'width:100%;padding:10px 12px;border:1px solid #d7dee5;border-radius:10px;font:inherit;box-sizing:border-box;background:#fff;color:#12232f;';
+  var inCss = 'width:100%;padding:12px 13px;border:1.5px solid #c3cfd8;border-radius:10px;font-family:inherit;font-size:14px;box-sizing:border-box;background:#f2f6f8;color:#12232f;';
   function field(label, inner) { return '<div style="margin-bottom:12px;"><label style="display:block;font-size:12px;font-weight:700;color:#43525c;margin-bottom:5px;">' + esc(label) + '</label>' + inner + '</div>'; }
   function inp(id, ph, type, v) { return '<input id="' + id + '" type="' + (type || 'text') + '" value="' + esc(v || '') + '" placeholder="' + esc(ph || '') + '" style="' + inCss + '">'; }
   function ta(id, ph, v) { return '<textarea id="' + id + '" placeholder="' + esc(ph || '') + '" rows="2" style="' + inCss + ';resize:vertical">' + esc(v || '') + '</textarea>'; }
@@ -114,8 +114,8 @@
       '<label class="po-feature"><input type="checkbox" id="po-featured"' + (o.featured ? ' checked' : '') + '><span><b>Feature this offer</b> — paid placement at the top of the Offers page (seen first, in your area).</span></label>' +
       '</div>';
     var foot =
-      '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>' +
-      '<button class="btn btn-ghost" onclick="ffpOffers.save(\'draft\')">Save draft</button>' +
+      '<button class="btn btn-sec" onclick="closeModal()">Cancel</button>' +
+      '<button class="btn btn-sec" onclick="ffpOffers.save(\'draft\')">Save draft</button>' +
       '<button class="btn btn-pri" onclick="ffpOffers.save(\'pending\')">Submit for review</button>';
     if (typeof window.openModalShell === 'function') {
       window.openModalShell('lg', (editingId ? 'Edit offer' : 'Add offer'), body, foot);
@@ -144,12 +144,15 @@
     var s = document.createElement('style'); s.id = 'ffp-offer-css';
     s.textContent = '#po-form[data-type=perk] .only-bogo{display:none}#po-form[data-type=bogo] .only-perk{display:none}'
       + '.po-typerow{display:flex;gap:10px;margin-bottom:14px}'
-      + '.po-typebtn{flex:1;background:#fff;border:2px solid #d7dee5;border-radius:12px;padding:12px 13px;text-align:left;font:inherit;cursor:pointer}'
+      + '.po-typebtn{flex:1;background:#f2f6f8;border:2px solid #c3cfd8;border-radius:12px;padding:12px 13px;text-align:left;font:inherit;cursor:pointer}'
       + '.po-typebtn.on{border-color:#1980AD;background:#f2f9fc}'
       + '.po-typebtn b{display:block;font-size:14px;font-weight:900;color:#12232f}'
       + '.po-typebtn span{display:block;font-size:11px;color:#8a99a8;font-weight:700;margin-top:2px;line-height:1.35}'
       + '.po-feature{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:12px 14px;background:#fff8e6;border-radius:10px;cursor:pointer}'
-      + '.po-feature input{margin-top:2px}.po-feature span{font-size:12.5px;color:#6a5100;font-weight:600;line-height:1.45}';
+      + '.po-feature input{margin-top:2px}.po-feature span{font-size:12.5px;color:#6a5100;font-weight:600;line-height:1.45}'
+      + '#po-form input::placeholder,#po-form textarea::placeholder{color:#9aa8b4;font-weight:500}'
+      + '#po-form input:focus,#po-form select:focus,#po-form textarea:focus{border-color:#1980AD;background:#fff;box-shadow:0 0 0 3px rgba(25,128,173,.14)}'
+      + '#po-form select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%238a99a8%27 stroke-width=%272.5%27><polyline points=%276 9 12 15 18 9%27/></svg>");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px}';
     document.head.appendChild(s);
   }
   async function save(mode) {
