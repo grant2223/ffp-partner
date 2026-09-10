@@ -1,11 +1,11 @@
-/*  FFP PROVIDER LOYALTY LOADER · v1
+/*  FFP PROVIDER LOYALTY LOADER · v2 (card image + reward expiry, editable)
     Desktop panel: set up a stamp OR points loyalty card + a live 6-digit staff code
     that rotates every 60 seconds (authenticator-style). Members enter the code at the
     till to earn a stamp/points; they can't add their own. Renders into #loy-root.
     Exposes window.ffpRenderLoyalty (panel hook) + window.FFPLoyalty (actions).       */
 (function () {
   'use strict';
-  var S = { prog: null, timer: null, type: 'stamp' };
+  var S = { prog: null, timer: null, type: 'stamp', image: '' };
 
   function root() { return document.getElementById('loy-root'); }
   function provId() {
@@ -41,30 +41,60 @@
       '.loy-code .hint{position:relative;z-index:2;font-size:12.5px;font-weight:600;color:#c3d2dc;margin-top:14px;line-height:1.5;}',
       '.loy-code .glow{position:absolute;right:-40px;top:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,204,0,.3),transparent 68%);}',
       '.loy-codewait{border:1.5px dashed var(--ffp-border,#e7ecf0);border-radius:20px;padding:26px;text-align:center;color:var(--ffp-text-muted,#7c8a91);font-weight:700;font-size:13.5px;line-height:1.6;}',
+      '.loy-drop{border:2px dashed var(--ffp-border,#e7ecf0);border-radius:16px;height:150px;background:linear-gradient(150deg,#173f5b,#0e2d43);display:flex;align-items:flex-end;justify-content:center;cursor:pointer;overflow:hidden;margin-bottom:16px;}',
+      '.loy-drop .chg{margin-bottom:12px;background:rgba(255,255,255,.92);color:#0e2531;font-size:11.5px;font-weight:800;padding:7px 14px;border-radius:20px;}',
       '.loy-foot{margin-top:32px;display:flex;justify-content:flex-end;}'
     ].join('');
     document.head.appendChild(s);
   }
 
+  function dropHtml() {
+    var img = S.image || '';
+    var st = img ? ' style="background:#12405c url(\'' + esc(img) + '\') center/cover no-repeat"' : '';
+    return '<div class="loy-drop" id="loy-drop"' + st + ' onclick="FFPLoyalty.pickImg()"><span class="chg">' + (img ? 'Change image' : 'Add card image') + '</span></div>';
+  }
+  function validHtml() {
+    var p = S.prog || {};
+    return '<div class="loy-uf"><label>Reward valid until</label><input id="loy-valid" type="date" value="' + esc((p.valid_to || '')).slice(0, 10) + '"></div>';
+  }
   function fieldsHtml() {
     var p = S.prog || {};
     var t = S.type;
     var reward = esc(p.reward || '');
     if (t === 'stamp') {
       return '' +
+        dropHtml() +
         '<div class="loy-uf"><label>Card type</label>' + typeSelect() + '</div>' +
         '<div class="loy-u2">' +
           '<div class="loy-uf"><label>Stamps to earn</label><input id="loy-stamps" type="number" min="2" max="30" value="' + (p.stamps_required || 9) + '"></div>' +
-          '<div class="loy-uf"><label>Reward</label><input id="loy-reward" type="text" placeholder="Free coffee" value="' + reward + '"></div>' +
-        '</div>';
+          validHtml() +
+        '</div>' +
+        '<div class="loy-uf"><label>Reward</label><input id="loy-reward" type="text" placeholder="Free coffee" value="' + reward + '"></div>';
     }
     return '' +
+      dropHtml() +
       '<div class="loy-uf"><label>Card type</label>' + typeSelect() + '</div>' +
       '<div class="loy-u2">' +
         '<div class="loy-uf"><label>Points per $1</label><input id="loy-ppc" type="number" min="0" step="0.1" value="' + (p.points_per_currency || 1) + '"></div>' +
         '<div class="loy-uf"><label>Points for reward</label><input id="loy-thr" type="number" min="1" value="' + (p.points_threshold || 100) + '"></div>' +
       '</div>' +
-      '<div class="loy-uf"><label>Reward</label><input id="loy-reward" type="text" placeholder="$10 off" value="' + reward + '"></div>';
+      '<div class="loy-u2">' +
+        '<div class="loy-uf"><label>Reward</label><input id="loy-reward" type="text" placeholder="$10 off" value="' + reward + '"></div>' +
+        validHtml() +
+      '</div>';
+  }
+  function pickImg() {
+    if (!window.FFPUpload || !FFPUpload.pick) { toast('Upload unavailable'); return; }
+    var pid = provId();
+    FFPUpload.pick({
+      bucket: 'loyalty-cards', key: 'card-' + pid + '-' + Date.now(), aspect: 1, outW: 800, outH: 800, title: 'Card image',
+      onDone: function (url) {
+        S.image = url;
+        var d = document.getElementById('loy-drop');
+        if (d) { d.style.background = "#12405c url('" + url + "') center/cover no-repeat"; var c = d.querySelector('.chg'); if (c) c.textContent = 'Change image'; }
+      },
+      onError: function () { toast('Couldn’t upload'); }
+    });
   }
   function typeSelect() {
     return '<select id="loy-type" onchange="FFPLoyalty.setType(this.value)">' +
@@ -77,7 +107,7 @@
       return '<div class="loy-codewait">Save your card to activate the staff code.<br>It refreshes every 60 seconds — staff read it to the customer at the till.</div>';
     }
     return '<div class="loy-code"><div class="glow"></div>' +
-      '<div class="k">Staff code · read at the till</div>' +
+      '<div class="k">Staff code — read at the till</div>' +
       '<div class="digits" id="loy-digits">••• •••</div>' +
       '<div class="cd"><i id="loy-cd" style="width:100%"></i></div>' +
       '<div class="hint">Changes every 60 seconds, like an authenticator. Customers can’t add their own — staff read the live code.</div>' +
@@ -93,7 +123,7 @@
         '<div>' + fieldsHtml() + '</div>' +
         '<div>' + codeHtml() + '</div>' +
       '</div>' +
-      '<div class="loy-foot"><button class="btn btn-pri" onclick="FFPLoyalty.save()">Save loyalty card</button></div>';
+      '<div class="loy-foot"><button class="btn btn-pri" onclick="FFPLoyalty.save()">Save changes</button></div>';
     startCode();
   }
 
@@ -102,7 +132,8 @@
   async function save() {
     var pid = provId();
     if (!pid) { toast('No provider'); return; }
-    var p = { type: S.type, reward: (document.getElementById('loy-reward') || {}).value || '' };
+    var p = { type: S.type, reward: (document.getElementById('loy-reward') || {}).value || '',
+      image_url: S.image || null, valid_to: (document.getElementById('loy-valid') || {}).value || null };
     if (S.type === 'stamp') {
       p.stamps_required = parseInt((document.getElementById('loy-stamps') || {}).value, 10) || 9;
     } else {
@@ -115,6 +146,7 @@
       toast('Loyalty card saved');
       S.prog = await rpc('loyalty_program_get', { p_provider: pid });
       S.type = (S.prog && S.prog.type) || S.type;
+      S.image = (S.prog && S.prog.image_url) || '';
       draw();
     } catch (e) { toast('Couldn’t save'); }
   }
@@ -145,9 +177,10 @@
     try { S.prog = await rpc('loyalty_program_get', { p_provider: pid }); }
     catch (e) { S.prog = { exists: false }; }
     S.type = (S.prog && S.prog.exists && S.prog.type) || 'stamp';
+    S.image = (S.prog && S.prog.image_url) || '';
     draw();
   }
 
   window.ffpRenderLoyalty = load;
-  window.FFPLoyalty = { save: save, setType: setType };
+  window.FFPLoyalty = { save: save, setType: setType, pickImg: pickImg };
 })();
