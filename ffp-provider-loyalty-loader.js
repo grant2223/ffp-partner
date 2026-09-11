@@ -26,13 +26,14 @@
     var s = document.createElement('style'); s.id = 'loy-css';
     s.textContent = [
       '#loy-root{max-width:1000px;--ink:#16242b;--muted:#5f727c;--faint:#93a4ad;--line:#e4eaee;--blue:#1980AD;--gold:#f2a900;}',
+      "#loy-root .sym{font-family:'Material Symbols Outlined','Material Symbols Rounded';font-weight:400;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-feature-settings:'liga';font-feature-settings:'liga';-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle;user-select:none;}",
       '#loy-root .pc-h1{font-size:26px;font-weight:900;letter-spacing:-.6px;margin:0;color:var(--ink);}',
       '#loy-root .pc-sub{font-size:14px;font-weight:600;color:var(--muted);margin:6px 0 0;max-width:640px;}',
       '#loy-root .pc-sec{font-size:12px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint);margin:34px 0 16px;padding-bottom:10px;border-bottom:1px solid var(--line);}',
       '#loy-root .pc-field{margin-bottom:20px;}',
       '#loy-root .pc-field label{display:block;font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}',
       '#loy-root .pc-field label .opt{color:var(--faint);font-weight:700;text-transform:none;letter-spacing:0;}',
-      '#loy-root .pc-input,#loy-root .pc-select{width:100%;border:1.5px solid #cfd8de;border-radius:12px;padding:13px 14px;font-family:inherit;font-size:15px;font-weight:600;color:var(--ink);background:#fff;outline:none;transition:.14s;}',
+      '#loy-root .pc-input,#loy-root .pc-select{width:100%;border:1.5px solid #cfd8de;border-radius:12px;padding:13px 14px;font-family:inherit;font-size:15px!important;font-weight:600;line-height:1.2;color:var(--ink);background:#fff;outline:none;transition:.14s;}',
       '#loy-root .pc-input:focus,#loy-root .pc-select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(25,128,173,.14);}',
       "#loy-root .pc-select{appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' fill='%235f727c'%3E%3Cpath d='M6 9l5 5 5-5z'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 12px center;cursor:pointer;}",
       '#loy-root .pc-hint{font-size:12px;font-weight:600;color:var(--faint);margin-top:7px;}',
