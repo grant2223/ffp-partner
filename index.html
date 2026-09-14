@@ -2308,19 +2308,16 @@ a { color: var(--ffp-blue); text-decoration: none; }
         </div>
         <div class="field">
           <div class="label">Category <span class="req">*</span></div>
+          <!-- Options are replaced at load from the admin taxonomy (list_key 'category'); these are
+               only the fallback if that lookup fails. Keep them in step with Admin → Taxonomies. -->
           <select class="select" id="ap-category">
             <option value="">Choose category</option>
-            <option>Fitness studio</option>
-            <option>Wellness centre</option>
-            <option>Padel club</option>
-            <option>Pilates / Yoga</option>
-            <option>Climbing</option>
-            <option>Combat sports</option>
-            <option>Recovery / Spa</option>
-            <option>Performance lab</option>
-            <option>Nutrition / Cafe</option>
-            <option>Adventure / Outdoor</option>
-            <option>Coach / Trainer</option>
+            <option>Fitness</option>
+            <option>Wellness</option>
+            <option>Yoga &amp; Pilates</option>
+            <option>Recovery</option>
+            <option>Adventure</option>
+            <option>Sports Club</option>
             <option>Retail</option>
             <option>Other</option>
           </select>
@@ -3435,7 +3432,7 @@ function toggleNavSection(sec) {
 
 // v12: load a panel's data loader the first time that panel is opened.
 // Overview/identity loaders stay eager; only clearly panel-scoped ones defer.
-var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=25', 'members': 'ffp-provider-members-loader.js?v=11', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15', 'offers': 'ffp-provider-offers-loader.js?v=11', 'competitions': 'ffp-provider-competitions-loader.js?v=29', 'leagues': 'ffp-provider-leagues-loader.js?v=34', 'tournaments': 'ffp-provider-tournaments-loader.js?v=32', 'loyalty': 'ffp-provider-loyalty-loader.js?v=1' };
+var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=25', 'members': 'ffp-provider-members-loader.js?v=11', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15', 'offers': 'ffp-provider-offers-loader.js?v=11', 'competitions': 'ffp-provider-competitions-loader.js?v=29', 'leagues': 'ffp-provider-leagues-loader.js?v=34', 'tournaments': 'ffp-provider-tournaments-loader.js?v=32', 'loyalty': 'ffp-provider-loyalty-loader.js?v=4' };
 var _provLoaded = {};
 function _loadScriptOnce(src) {
   if (_provLoaded[src]) return;
@@ -6465,6 +6462,37 @@ document.addEventListener('DOMContentLoaded', () => {
 (function(){ if(!(window.FFP_TAX&&window.FFP_TAX.phoneCodes))return;
   document.querySelectorAll('select.phone-cc').forEach(function(sel){ if(sel.options.length)return;
     window.FFP_TAX.phoneCodes.forEach(function(c){ var o=document.createElement('option'); o.value=c.code; o.textContent=(c.flag?c.flag+' ':'')+c.code; sel.appendChild(o); }); });  // v18: uniform flag + + + digits
+})();
+</script>
+<script>
+/* Partner APPLICATION form — category list comes from Admin → Taxonomies → Provider Categories
+   (taxonomy_items, list_key 'category'), so adding or renaming a category in Admin reaches the
+   signup form. It used to be 13 options hardcoded in this file that matched nothing in the
+   taxonomy, which is how partners ended up filed under "Wellness centre" and "Fitness studio" —
+   values no admin list contained. The markup above stays as the fallback. */
+(function(){
+  function fill(){
+    var sel = document.getElementById('ap-category');
+    if (!sel || !window.supabase || sel.getAttribute('data-tax') === '1') return;
+    window.supabase.from('taxonomy_items').select('label')
+      .eq('list_key','category').eq('active', true).order('sort_order',{ascending:true})
+      .then(function(r){
+        var items = (r && Array.isArray(r.data)) ? r.data : [];
+        if (!items.length) return;                    // never empty the field on a failed lookup
+        var keep = sel.value;
+        sel.innerHTML = '<option value="">Choose category</option>' +
+          items.map(function(it){
+            var l = String(it.label == null ? '' : it.label)
+              .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            return '<option value="' + l + '">' + l + '</option>';
+          }).join('');
+        if (keep) sel.value = keep;
+        sel.setAttribute('data-tax','1');
+      }, function(e){ console.error('[Apply] category taxonomy:', e); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fill); else fill();
+  // the client may be injected after this script runs; retry briefly, then give up quietly
+  var n = 0, t = setInterval(function(){ if (++n > 20) return clearInterval(t); if (window.supabase) { fill(); clearInterval(t); } }, 400);
 })();
 </script>
 <script>window.ffpOpenMap=function(id){var el=document.getElementById(id);var v=el?(el.value||'').trim():'';if(v)window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v),'_blank');};</script>
