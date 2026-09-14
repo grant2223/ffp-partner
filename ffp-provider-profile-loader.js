@@ -50,22 +50,42 @@
   };
   var INT_TO_DAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  // Refined option lists — businesses/organizations, not individuals
-  var CATEGORIES = [
-    'Fitness studio',
-    'Wellness centre',
-    'Padel club',
-    'Pilates / Yoga',
-    'Climbing',
-    'Combat sports',
-    'Recovery / Spa',
-    'Performance lab',
-    'Nutrition / Cafe',
-    'Adventure / Outdoor',
-    'Personal Training',
-    'Retail',
-    'Other'
-  ];
+  // Category comes from the admin taxonomy (`category`), NOT from a list in this file.
+  // It used to be hardcoded here, which is why the partner portal offered "Fitness studio /
+  // Wellness centre / Padel club…" while Admin → Taxonomies → Provider Categories said
+  // "Fitness / Wellness / Yoga & Pilates / Recovery / Adventure / Sports Club / Retail / Other".
+  // Two lists, neither aware of the other, so adding a category in Admin changed nothing here.
+  // These are only a fallback for the instant before the taxonomy responds (or if it fails).
+  var CATEGORIES = ['Fitness', 'Wellness', 'Yoga & Pilates', 'Recovery', 'Adventure', 'Sports Club', 'Retail', 'Other'];
+
+  // Paint the category <select>. `keep` is whatever this partner already has saved: if it is not in
+  // the taxonomy (they were onboarded under the old hardcoded list — "Wellness centre", "Fitness
+  // studio"…) it is added at the bottom and stays selected, so simply opening the profile can never
+  // silently change or blank a partner's category. They re-pick at their own pace.
+  function paintCategories(labels, keep) {
+    var sel = document.getElementById('pf-category'); if (!sel) return;
+    var list = (labels || []).slice();
+    var has = keep && list.some(function (c) { return String(c).toLowerCase() === String(keep).toLowerCase(); });
+    var html = '<option value="">Choose category</option>' +
+      list.map(function (c) { return '<option value="' + escText(c) + '">' + escText(c) + '</option>'; }).join('');
+    if (keep && !has) html += '<option value="' + escText(keep) + '">' + escText(keep) + ' (current)</option>';
+    sel.innerHTML = html;
+    if (keep) sel.value = keep;
+  }
+
+  // Single source of truth: Admin → Taxonomies → Provider Categories (list_key 'category').
+  async function loadCategoryOptions() {
+    var sel = document.getElementById('pf-category'); if (!sel) return;
+    try {
+      var r = await window.supabase.from('taxonomy_items')
+        .select('label').eq('list_key', 'category').eq('active', true)
+        .order('sort_order', { ascending: true });
+      var items = Array.isArray(r.data) ? r.data : [];
+      if (!items.length) return;                       // keep the fallback rather than empty the field
+      paintCategories(items.map(function (it) { return it.label; }),
+                      sel.value || (window.FFP_PROVIDER && window.FFP_PROVIDER.category) || '');
+    } catch (e) { console.error('[Profile] category taxonomy:', e); }
+  }
 
   var UAE_CITIES = [
     'Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman',
@@ -148,13 +168,12 @@
       sub.innerHTML = 'For <b>businesses and organizations</b> only. Individual trainers and coaches should join as a member instead. Changes go to admin for review before going live.';
     }
 
-    // Replace category options
+    // Replace category options — fallback first so the field is never empty, then the real taxonomy.
     var catSel = document.getElementById('pf-category');
     if (catSel) {
       var current = catSel.value;
-      catSel.innerHTML = '<option value="">Choose category</option>' +
-        CATEGORIES.map(function (c) { return '<option value="' + escText(c) + '">' + escText(c) + '</option>'; }).join('');
-      if (current) catSel.value = current;
+      paintCategories(CATEGORIES, current);
+      loadCategoryOptions();
     }
 
     // Timezone options — full IANA list (shared FFPTime helper), searchable picker
@@ -847,7 +866,7 @@
     var f = document.createElement('div'); f.className = 'field full'; f.id = 'pf-brand-field';
     f.innerHTML =
       '<div class="label">Account type <span class="label-hint">— pick one; if you’re more than one, set up a separate account for each</span></div>' +
-      '<select id="pf-acct-type" class="select"><option value="venue">Venue / provider</option><option value="brand">Product brand</option><option value="organizer">Event organizer</option></select>' +
+      '<select id="pf-acct-type" class="select"><option value="venue">Partner / Provider</option><option value="brand">Product brand</option><option value="organizer">Event organizer</option></select>' +
       '<div class="label-hint" style="margin:6px 0 2px;line-height:1.5;">Venues can also run events, leagues, tournaments &amp; competitions. Brands and event organizers don’t need a venue, so the venue/business fields are hidden.</div>' +
       '<div class="pf-brand-body" id="pf-brand-body" style="display:none;">' +
         '<div class="label" style="margin-top:2px;">Product type <span class="label-hint">— how members find you under Explore → Brands</span></div>' +
