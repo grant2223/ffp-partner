@@ -113,6 +113,7 @@
       activity: row.activity || '',
       category: row.category || '',
       intensity: row.fitness_level || 'Social',
+      event_type: row.event_type || '',
       event_date: d || '',
       event_time: t,
       end_date: ed[0] || '',
@@ -160,7 +161,7 @@
     var providerId = window.FFP_PROVIDER.id;
     var res = await window.supabase
       .from('events')
-      .select('id, provider_id, title, description, about, activity, category, fitness_level, group_filter, hero_image_url, gallery, country, city, venue, area, setting, starts_at, ends_at, capacity, price_aed, cost, parking, facilities, bring, who_for, status, featured, highlights, what_included, what_not_included, meeting_point, meeting_lat, meeting_lng, not_allowed, know_before, languages, min_age, wheelchair_accessible, accessibility_notes, free_cancellation_hours, cancellation_policy, pay_requirement, created_at, updated_at')
+      .select('id, provider_id, title, description, about, activity, category, event_type, fitness_level, group_filter, hero_image_url, gallery, country, city, venue, area, setting, starts_at, ends_at, capacity, price_aed, cost, parking, facilities, bring, who_for, status, featured, highlights, what_included, what_not_included, meeting_point, meeting_lat, meeting_lng, not_allowed, know_before, languages, min_age, wheelchair_accessible, accessibility_notes, free_cancellation_hours, cancellation_policy, pay_requirement, created_at, updated_at')
       .eq('provider_id', providerId)
       .order('starts_at', { ascending: true });
     if (res.error) {
@@ -210,6 +211,35 @@
     }
   }
 
+  async function saveEventType(eventId) {
+    var sel = document.getElementById('em-event-type');
+    if (!eventId || !sel) return;
+    try {
+      var r = await window.supabase.rpc('provider_set_event_type', {
+        p_provider: (window.FFP_PROVIDER || {}).id, p_event: eventId, p_type: sel.value || null });
+      if (r && r.data === 'unknown_type') toast('That event type is no longer available — pick another.', 'error');
+    } catch (e) { console.error('[FFP Provider Events] save event_type:', e); }
+  }
+
+  // Event types come from the admin taxonomy so adding one in Admin reaches every partner.
+  async function loadEventTypeOptions() {
+    var sel = document.getElementById('em-event-type');
+    if (!sel) return;
+    try {
+      var r = await window.supabase.from('taxonomy_items').select('value,label')
+        .eq('list_key', 'event_type').eq('active', true)
+        .order('sort_order', { ascending: true });
+      var items = (r && Array.isArray(r.data)) ? r.data : [];
+      if (!items.length) return;                       // leave the placeholder rather than empty it
+      var keep = sel.value;
+      sel.innerHTML = '<option value="">Choose type…</option>' + items.map(function (it) {
+        return '<option value="' + escHtmlSafe(it.value) + '">' + escHtmlSafe(it.label) + '</option>';
+      }).join('');
+      if (keep) sel.value = keep;
+      if (window.FFPSelect) { var m = document.querySelector('.modal'); if (m) window.FFPSelect.enhance(m); }
+    } catch (e) { console.error('[FFP Provider Events] event_type taxonomy:', e); }
+  }
+
   // Replace the category <select> with an activity picker button
   function swapCategoryForPicker(currentActivity, currentCategory) {
     var sel = document.getElementById('em-category');
@@ -234,6 +264,21 @@
 
     // Replace the select element
     sel.parentNode.replaceChild(btn, sel);
+
+    /* EVENT TYPE — what KIND of gathering this is (Race / Workshop / Community / Expo...).
+       Separate from Activity, which is the sport. Activity says "Running"; type says whether it is
+       a marathon or a run club. Members filter on the type, so without it a 5,000-person race and a
+       12-person workshop look identical in the app. Options come from Admin -> Taxonomies -> Event
+       types (list_key 'event_type'), never a list hardcoded here. */
+    if (!document.getElementById('em-event-type')) {
+      var tf = document.createElement('div');
+      tf.className = 'field';
+      tf.innerHTML = '<div class="label">Event type <span class="req">*</span>' +
+        ' <span class="label-hint">&mdash; how people search for it</span></div>' +
+        '<select class="select" id="em-event-type"><option value="">Choose type…</option></select>';
+      fieldDiv.parentNode.insertBefore(tf, fieldDiv.nextSibling);
+      loadEventTypeOptions();
+    }
 
     // Initialize state
     if (currentActivity) {
@@ -338,6 +383,12 @@
 
     swapCategoryForPicker(currentActivity, currentCategory);
     fillEventLocation(existing);
+
+    // carry the saved type back into the field when editing
+    (function () {
+      var t = document.getElementById('em-event-type');
+      if (t && existing && existing.event_type) t.value = existing.event_type;
+    })();
 
     // Remove "Who is this for?" field — every event is for FFP members anyway
     var whoEl = document.getElementById('em-who');
@@ -473,6 +524,7 @@
       activity: activity,
       category: category || null,
       fitness_level: get('intensity') || null,
+      event_type: get('event-type') || null,
       starts_at: startsAt,
       ends_at: endsAt,
       country: country || null,
@@ -518,6 +570,7 @@
         if (upd.error) throw upd.error;
         if (!upd.data) throw new Error('Update failed — not found or not permitted');
         await saveEventTickets(id);
+        await saveEventType(id);
         toast('Event updated', 'success');
         if (typeof window.closeModal === 'function') window.closeModal();
       } else {
@@ -525,6 +578,7 @@
         if (ins.error) throw ins.error;
         if (!ins.data) throw new Error('Submit failed — please try again');
         await saveEventTickets(ins.data);
+        await saveEventType(ins.data);
         if (typeof window.closeModal === 'function') window.closeModal();
         if (typeof window.showSubmittedModal === 'function') {
           try { window.showSubmittedModal('event'); } catch (e) {}
@@ -547,14 +601,14 @@
     var doDelete = async function () {
       try {
         var res = await window.supabase.rpc('provider_delete_listing', { p_kind: 'event', p_provider: (window.FFP_PROVIDER||{}).id, p_id: id });
-        if (!res.error && res.data !== 'deleted') throw new Error('Delete failed — not found or not permitted');
+        if (!res.error && res.data !== 'deleted' && res.data !== 'archived') throw new Error('Archive failed — not found or not permitted');
         if (res.error) throw res.error;
-        toast('Event deleted', 'success');
+        toast('Event archived', 'success');
         if (typeof window.closeModal === 'function') window.closeModal();
         await refresh();
       } catch (e) {
         console.error('[FFP Provider Events] delete:', e);
-        toast(e.message || 'Delete failed', 'error');
+        toast(e.message || 'Archive failed', 'error');
       }
     };
     if (typeof window.openConfirm === 'function') {
