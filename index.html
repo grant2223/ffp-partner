@@ -1,4 +1,12 @@
-<!-- FFP PROVIDER DASHBOARD — v73 (2026-09-17)
+<!-- FFP PROVIDER DASHBOARD — v74 (2026-09-17)
+     v74: Scrubbed the last of the demo email. The in-page sign-in screen still had
+          value="bookings@forgefitness.ae" pre-filled on #auth-email-input and a hardcoded
+          "Demo: enter any 6 digits." line. That screen is DEAD — the live sign-in is the
+          separate /login page and ffp-provider-auth.js redirects there before it renders —
+          so nobody saw it, but it carried another facility's address in the markup. Value
+          removed, demo line removed, submitEmail() marked dead so it isn't built on.
+     ----
+     v73 (2026-09-17)
      v73: The rest of SETTINGS is real. (1) The four notification checkboxes were hardcoded
           `checked` and saved nothing; they now load from providers.notify_prefs via
           provider_get_notify_prefs and save on change via provider_save_notify_prefs
@@ -2299,7 +2307,7 @@ a { color: var(--ffp-blue); text-decoration: none; }
       <div class="auth-sub">Enter the email tied to your partner account. We'll send a 6-digit code that's valid for 10 minutes.</div>
       <div class="field">
         <div class="label">Email <span class="req">*</span></div>
-        <input class="input" type="email" id="auth-email-input" placeholder="bookings@yourbusiness.ae" value="bookings@forgefitness.ae" autocomplete="email">
+        <input class="input" type="email" id="auth-email-input" placeholder="you@yourbusiness.com" autocomplete="email">
       </div>
       <button class="btn btn-pri auth-cta" style="margin-top: 18px;" onclick="submitEmail()">
         <span class="ms">send</span> Send sign-in code
@@ -2312,7 +2320,7 @@ a { color: var(--ffp-blue); text-decoration: none; }
         <span class="ms">arrow_back</span> Back
       </button>
       <div class="auth-title">Enter your code</div>
-      <div class="auth-sub">We sent a 6-digit code to <b id="auth-code-email">bookings@forgefitness.ae</b>.<br>Demo: enter any 6 digits.</div>
+      <div class="auth-sub">We sent a 6-digit code to <b id="auth-code-email"></b>.</div>
       <div class="otp-boxes" id="otp-boxes">
         <input class="otp-box" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
         <input class="otp-box" inputmode="numeric" maxlength="1">
@@ -6683,6 +6691,9 @@ function setAuthState(state) {
   }, 50);
 }
 
+// DEAD CODE — the live sign-in is the separate /login page; ffp-provider-auth.js
+// redirects there before this screen can render. Kept only so the markup below
+// still has its handlers. Do not build on it.
 function submitEmail() {
   const email = document.getElementById('auth-email-input').value.trim();
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
