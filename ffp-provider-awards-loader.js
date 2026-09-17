@@ -33,7 +33,15 @@ function _awErr(e) {
     not_on_this_panel: 'You are not on this panel',
     score_out_of_range: 'That score is above the maximum for the criterion',
     pitch_required: 'The entry needs its written case before it can be submitted',
-    evidence_required: 'At least one piece of evidence is needed'
+    evidence_required: 'At least one piece of evidence is needed',
+    region_scope_is_ffp_only: 'Regional awards are run by FFP. Yours can cover a city or a country.',
+    multi_country_is_ffp_only: 'A partner programme covers one country. FFP runs the multi-country ones.',
+    city_required_for_city_scope: 'Choose the city this covers',
+    country_required_for_country_scope: 'Choose the country this covers',
+    region_required_for_region_scope: 'Choose the region this covers',
+    activity_not_in_taxonomy: 'Pick the activity from the list',
+    city_not_in_taxonomy: 'Pick the city from the list',
+    country_not_in_taxonomy: 'Pick the country from the list'
   };
   for (var k in friendly) { if (m.indexOf(k) > -1) return friendly[k]; }
   return m;
@@ -153,25 +161,96 @@ function _awStageLabel(s) {
             shortlist: 'Shortlist', finals: 'Finals', winners: 'Winners announced', closed: 'Closed' })[s] || s;
 }
 
+// TAXONOMY, never free text: activity, category, city and country all come from
+// window.FFP_TAX (hydrated from taxonomy_items). The database rejects anything
+// off-list too, so a stale cached list cannot write a bad value.
+var _awRegions = null;
+async function _awTaxReady() {
+  try { if (window.FFP_TAX_READY) await window.FFP_TAX_READY; } catch (e) {}
+  return window.FFP_TAX || {};
+}
+// FFP_TAX keys cities BY COUNTRY and has no country array of its own, so the
+// country list is those keys. Region is a newer taxonomy list the shared file
+// does not hydrate yet, so read it straight from taxonomy_items.
+function _awCountries(T) {
+  try { return Object.keys(T.cities || {}).sort(function (a, b) { return a.localeCompare(b); }); }
+  catch (e) { return []; }
+}
+async function _awRegionList() {
+  if (_awRegions) return _awRegions;
+  try {
+    var r = await window.supabase.from('taxonomy_items')
+      .select('value,label,sort_order').eq('list_key', 'region').eq('active', true)
+      .order('sort_order');
+    _awRegions = (r.data || []).map(function (x) { return x.label || x.value; });
+  } catch (e) { _awRegions = []; }
+  return _awRegions;
+}
+function _awOpts(list, sel, placeholder) {
+  var h = '<option value="">' + (placeholder || 'Select') + '</option>';
+  (list || []).forEach(function (v) {
+    var val = (v && v.n) ? v.n : v;
+    h += '<option value="' + _awEsc(val) + '"' + (sel === val ? ' selected' : '') + '>' + _awEsc(val) + '</option>';
+  });
+  return h;
+}
+
+// Scope: a governing body runs their own city or country. Anything spanning
+// countries is FFP's to run, so Region is only offered on an official programme
+// and the database refuses it either way.
+var _awOfficial = false;
+function awScopeChanged() {
+  var v = (document.getElementById('aw-np-scope') || {}).value || 'city';
+  ['city', 'country', 'region'].forEach(function (k) {
+    var row = document.getElementById('aw-np-' + k + '-row');
+    if (row) row.style.display = (v === k) ? '' : 'none';
+  });
+}
+
 async function awNewProgramme() {
+  var T = await _awTaxReady();
+  var cities = (typeof T.allCities === 'function') ? T.allCities() : [];
+  var regions = _awOfficial ? await _awRegionList() : [];
+  var countries = _awCountries(T);
   var body =
     '<div class="field"><div class="label">Programme name</div>' +
     '<input class="input" id="aw-np-name" placeholder="Padel Awards 2026" autocomplete="off"></div>' +
-    '<div class="field"><div class="label">City</div>' +
-    '<input class="input" id="aw-np-city" placeholder="Dubai" autocomplete="off"></div>' +
-    '<div class="psub" style="margin:12px 0 0;">You can set categories, criteria and dates next. Nothing is visible to members until you publish it.</div>';
+    '<div class="field"><div class="label">Activity</div>' +
+    '<select class="input" id="aw-np-activity">' + _awOpts(T.activities, '', 'Select an activity') + '</select></div>' +
+    '<div class="field"><div class="label">Category</div>' +
+    '<select class="input" id="aw-np-category">' + _awOpts(T.categories, '', 'Select a category') + '</select></div>' +
+    '<div class="field"><div class="label">How wide is it</div>' +
+    '<select class="input" id="aw-np-scope" onchange="awScopeChanged()">' +
+      '<option value="city">One city</option>' +
+      '<option value="country">A whole country</option>' +
+      (_awOfficial ? '<option value="region">A region, several countries</option>' : '') +
+    '</select></div>' +
+    '<div class="field" id="aw-np-city-row"><div class="label">City</div>' +
+    '<select class="input" id="aw-np-city">' + _awOpts(cities, '', 'Select a city') + '</select></div>' +
+    '<div class="field" id="aw-np-country-row" style="display:none;"><div class="label">Country</div>' +
+    '<select class="input" id="aw-np-country">' + _awOpts(countries, '', 'Select a country') + '</select></div>' +
+    '<div class="field" id="aw-np-region-row" style="display:none;"><div class="label">Region</div>' +
+    '<select class="input" id="aw-np-region">' + _awOpts(regions, '', 'Select a region') + '</select></div>' +
+    '<div class="psub" style="margin:12px 0 0;">' +
+      (_awOfficial ? 'Categories, criteria and dates come next.'
+                   : 'A partner programme covers one city or one country. Regional awards are run by FFP.') +
+    ' Nothing is visible to members until you publish it.</div>';
   openModalShell('sm', 'New awards programme', body,
     '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
     '<button class="btn btn-pri" onclick="awCreateProgramme()">Create</button>');
 }
 
 async function awCreateProgramme() {
-  var name = ((document.getElementById('aw-np-name') || {}).value || '').trim();
-  var city = ((document.getElementById('aw-np-city') || {}).value || '').trim();
+  var g = function (x) { return ((document.getElementById(x) || {}).value || '').trim(); };
+  var name = g('aw-np-name');
   if (!name) { showToast('Give the programme a name', 'error'); return; }
   try {
     var r = await window.supabase.rpc('award_programme_save',
-      { p_programme: null, p_provider: _awPid(), p_patch: { name: name, city: city, year: new Date().getFullYear() } });
+      { p_programme: null, p_provider: _awPid(), p_patch: {
+          name: name, scope: g('aw-np-scope') || 'city',
+          city: g('aw-np-city'), country: g('aw-np-country'), region: g('aw-np-region'),
+          activity: g('aw-np-activity'), category: g('aw-np-category'),
+          year: new Date().getFullYear() } });
     if (r.error) throw r.error;
     closeModal();
     showToast('Programme created', 'success');
@@ -298,6 +377,7 @@ async function _awCategoryModal(id) {
       crit = rc.data || [];
     } catch (e) {}
   }
+  var T = await _awTaxReady();
   var v = function (k, d) { return cat && cat[k] != null ? cat[k] : (d == null ? '' : d); };
   var body =
     '<div class="field"><div class="label">Category name</div>' +
@@ -307,6 +387,13 @@ async function _awCategoryModal(id) {
       '<option value="committee"' + (v('decided_by', 'committee') === 'committee' ? ' selected' : '') + '>Committee scores it</option>' +
       '<option value="members"' + (v('decided_by') === 'members' ? ' selected' : '') + '>Members vote</option>' +
       '<option value="data"' + (v('decided_by') === 'data' ? ' selected' : '') + '>Platform data, automatic</option>' +
+    '</select></div>' +
+    '<div class="field"><div class="label">Activity</div>' +
+    '<select class="input" id="aw-c-activity">' + _awOpts(T.activities, v('activity'), 'Any activity') + '</select></div>' +
+    '<div class="field"><div class="label">Mystery visits count toward the result</div>' +
+    '<select class="input" id="aw-c-ms">' +
+      '<option value="true"' + (v('mystery_counts', true) !== false ? ' selected' : '') + '>Yes, they are scored in</option>' +
+      '<option value="false"' + (v('mystery_counts', true) === false ? ' selected' : '') + '>No, advisory only</option>' +
     '</select></div>' +
     '<div class="field"><div class="label">Shortlist size</div>' +
     '<input class="input" id="aw-c-sl" type="number" min="1" value="' + _awEsc(v('shortlist_size', 6)) + '"></div>' +
@@ -326,6 +413,8 @@ async function awSaveCategory(id) {
   var patch = {
     name: g('aw-c-name').trim(),
     decided_by: g('aw-c-by'),
+    activity: g('aw-c-activity'),
+    mystery_counts: g('aw-c-ms') === 'true',
     shortlist_size: parseInt(g('aw-c-sl'), 10) || null,
     finals_size: parseInt(g('aw-c-fn'), 10) || null
   };
