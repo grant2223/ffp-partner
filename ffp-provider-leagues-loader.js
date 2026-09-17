@@ -10,7 +10,7 @@
   function root() { return document.getElementById('lg-root'); }
   function ic(n) { return '<span class="ms">' + n + '</span>'; }
 
-  var S = { view: 'list', eventId: null, detail: null, tab: 'details', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, fxConfirm: false };
+  var S = { view: 'list', eventId: null, detail: null, tab: 'details', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, fxConfirm: false };
 
   function injectCss() {
     if (document.getElementById('lgx-css')) return;
@@ -37,6 +37,7 @@
       '.lg-empty{padding:40px 16px;text-align:center;color:var(--ffp-text-muted);font-weight:600;font-size:13.5px;}',
       '.lg-tool{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;} .lg-tool .lg-sel{width:auto;min-width:180px;} .lg-tool .sp{flex:1;}',
       '.lg-edit{display:flex;align-items:center;gap:10px;padding:12px 2px;border-bottom:1px solid var(--ffp-border);flex-wrap:wrap;} .lg-edit .lg-in{width:auto;flex:1;min-width:160px;}',
+      '.lg-entform{align-items:flex-end;gap:12px;padding:16px 2px;} .lg-entform .crest{align-self:flex-end;padding-bottom:5px;} .lg-entform .f{display:flex;flex-direction:column;gap:5px;min-width:0;} .lg-entform .f label{height:14px;line-height:14px;} .lg-entform .f label{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#7c8b97;} .lg-entform .f.gr{flex:1 1 200px;} .lg-entform .f.sm{flex:0 0 84px;} .lg-entform .f .lg-in,.lg-entform .f .lg-sel{width:100%;padding:9px 11px;height:42px;} .lg-entform .f .ro{height:42px;display:flex;align-items:center;font-size:14.5px;font-weight:800;color:var(--ffp-text);} .lg-entform .acts{display:flex;align-items:center;gap:9px;flex:1 1 100%;margin-top:4px;} .lg-entform .acts .sp{flex:1;} .lg-entform .lg-btn.danger{color:#c0392b;} .lg-entform .lg-btn.danger:hover{background:#fdf1ef;} .lg-entform .lg-btn.danger.solid{background:#c0392b;border-color:#c0392b;color:#fff;} .lg-entform .delq{font-size:13px;font-weight:800;color:var(--ffp-text);} .lg-entform .note{flex:1 1 100%;font-size:12.5px;font-weight:600;color:#7c8b97;margin-top:2px;} .lg-entform .msg{flex:1 1 100%;font-size:12.5px;font-weight:700;color:#c0392b;} @media(max-width:760px){.lg-entform .f.gr,.lg-entform .f{flex:1 1 100%;}}',
       '.lg-fx{display:grid;grid-template-columns:1fr 128px 1fr;align-items:center;gap:8px;padding:11px 2px;border-bottom:1px solid var(--ffp-border);} .lg-fx .t{font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .lg-fx .t.a{text-align:right;} .lg-fx .sc{display:flex;gap:6px;justify-content:center;} .lg-fx .sc input{width:46px;padding:8px;border:1.5px solid #d7dee5;border-radius:8px;font:inherit;font-weight:800;text-align:center;}',
       '.lg-rndlab{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:var(--ffp-text-muted);margin:16px 0 4px;}',
       '.lg-tb{display:grid;grid-template-columns:26px 1fr 30px 30px 30px 44px 40px;align-items:center;gap:6px;padding:10px 6px;border-bottom:1px solid var(--ffp-border);font-size:13px;} .lg-tb span{text-align:center;} .lg-tb .nm{text-align:left;font-weight:800;} .lg-tb.head{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--ffp-text-muted);} .lg-tb .pts{font-weight:900;color:var(--ffp-blue);}',
@@ -97,7 +98,7 @@
     var list = (r && r.data) || [];
     var cards = list.map(function (ev) {
       var cov = ev.cover_url || ev.logo_url;
-      return '<div class="lg-card" onclick="FFPLeague.open(\'' + ev.id + '\')"><div class="lg-cover" style="' + (cov ? 'background-image:url(\'' + esc(cov) + '\')' : '') + '"><div class="scr"></div><div class="bd ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</div></div><div class="lg-cbody"><b>' + esc(ev.name) + '</b><span>' + esc([ev.city, ev.sport].filter(Boolean).join(' · ')) + '</span></div></div>';
+      return '<div class="lg-card" onclick="FFPLeague.open(\'' + ev.id + '\')"><div class="lg-cover" style="' + (cov ? 'background-image:url(\'' + esc(cov) + '\')' : '') + '"><div class="scr"></div><div class="bd ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</div></div><div class="lg-cbody"><b>' + esc(ev.name) + '</b><span>' + esc([ev.city, ev.sport].filter(Boolean).join(', ')) + '</span></div></div>';
     }).join('');
     var newCard = S.creating
       ? '<div class="lg-card" style="cursor:default"><div class="lg-cover"><div class="scr"></div></div><div class="lg-cbody"><input class="lg-in" id="lg-newname" placeholder="League name" autofocus onkeydown="if(event.key===\'Enter\')FFPLeague.doCreate()"><div style="display:flex;gap:8px;margin-top:8px"><button class="lg-btn pri" onclick="FFPLeague.doCreate()">Create</button><button class="lg-btn ghost" onclick="FFPLeague.cancelCreate()">Cancel</button></div></div></div>'
@@ -125,7 +126,7 @@
   function renderEditor() {
     injectCss(); var el = root(); if (!el || !S.detail) return;
     var ev = S.detail.event || {};
-    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(' · ')) + '</div></div>'
+    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(', ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPLeague.back()">' + ic('arrow_back') + 'All leagues</button></div>'
       + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('sponsors', 'Sponsors') + tabBtn('schedule', 'Schedule') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
     renderTab();
@@ -167,10 +168,10 @@
     if (!ds.length) return 'Not scheduled';
     var mn = new Date(Math.min.apply(null, ds)), mx = new Date(Math.max.apply(null, ds));
     var sameDay = mn.toDateString() === mx.toDateString();
-    if (sameDay) return fmtDay(mn) + ' · 1 day';
+    if (sameDay) return fmtDay(mn) + ', 1 day';
     var days = Math.round((new Date(mx.getFullYear(), mx.getMonth(), mx.getDate()) - new Date(mn.getFullYear(), mn.getMonth(), mn.getDate())) / 86400000) + 1;
     var span = (mn.getMonth() === mx.getMonth()) ? (mn.getDate() + '–' + mx.getDate() + ' ' + MON[mx.getMonth()]) : (mn.getDate() + ' ' + MON[mn.getMonth()] + ' – ' + mx.getDate() + ' ' + MON[mx.getMonth()]);
-    return span + ' · ' + days + ' days';
+    return span + ', ' + days + ' days';
   }
   function surfaceOpts(fields, selId) {
     var groups = {}; var order = [];
@@ -208,7 +209,7 @@
     h2.innerHTML = rows.length ? rows.map(function (o) {
       var role = String(o.role || 'official').toLowerCase(); var sc = isScorerRole(role);
       var meta = sc
-        ? (o.member_id ? 'Can score in the app' : (o.email ? esc(o.email) + ' · needs an FFP account to score' : 'Add their FFP email to enable scoring'))
+        ? (o.member_id ? 'Can score in the app' : (o.email ? esc(o.email) + ', needs an FFP account to score' : 'Add their FFP email to enable scoring'))
         : (o.member_id ? 'FFP linked' : (o.email ? esc(o.email) : 'Match official'));
       return '<div class="lg-row"><span class="lg-av" style="' + (o.photo ? 'background-image:url(\'' + esc(o.photo) + '\')' : '') + '">' + (o.photo ? '' : esc((o.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(o.name || o.email || 'Official') + (sc ? ' <span class="lg-scpill">SCORER</span>' : '') + '</b><span>' + meta + '</span></div><select class="lg-sel lg-ocap" onchange="FFPLeague.setOfficialCap(\'' + o.id + '\',this.value)">' + capOpts(role) + '</select><span class="ms act" onclick="FFPLeague.removeOfficial(\'' + o.id + '\')">close</span></div>';
     }).join('') : '<div class="lg-empty">No officials yet.</div>';
@@ -261,7 +262,7 @@
       var surfaces = (v.surfaces || []).map(function (s) {
         return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name) + '<span class="sp"></span><span class="ms x" onclick="FFPLeague.removeSurface(\'' + s.id + '\')">delete</span></div>';
       }).join('');
-      var vmeta = [v.city, (v.maps_url ? '<a class="lg-maplink" href="' + esc(v.maps_url) + '" target="_blank" rel="noopener">' + ic('map') + 'Map</a>' : '')].filter(Boolean).join(' · ');
+      var vmeta = [v.city, (v.maps_url ? '<a class="lg-maplink" href="' + esc(v.maps_url) + '" target="_blank" rel="noopener">' + ic('map') + 'Map</a>' : '')].filter(Boolean).join(', ');
       var addS = (S.surfAdd === v.id)
         ? '<div class="lg-edit" style="margin-left:44px;border:none;padding-top:8px"><input class="lg-in" id="lg-sfname" placeholder="Pitch / court / oval name" style="max-width:260px" onkeydown="if(event.key===\'Enter\')FFPLeague.saveSurface(\'' + v.id + '\')"><button class="lg-btn pri" onclick="FFPLeague.saveSurface(\'' + v.id + '\')">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPLeague.cancelSurface()">Cancel</button></div>'
         : '<div class="lg-addsurf"><button class="lg-btn ghostb" onclick="FFPLeague.addSurface(\'' + v.id + '\')">' + ic('add') + 'Add surface</button></div>';
@@ -427,7 +428,7 @@
     var divs = S.detail.divisions || [];
     var rows = divs.map(function (d) {
       if (S.divEdit === d.id) return divEditor(d);
-      return '<div class="lg-row">' + '<span class="ms drag">drag_indicator</span>' + '<div class="g"><b>' + esc(d.name) + '</b> <span>· ' + (d.kind === 'individual' ? 'Individual' : 'Team') + ' · ' + (d.entrant_count || 0) + ' in</span></div>' + '<span class="ms act" onclick="FFPLeague.editDivision(\'' + d.id + '\')">edit</span></div>';
+      return '<div class="lg-row">' + '<span class="ms drag">drag_indicator</span>' + '<div class="g"><b>' + esc(d.name) + '</b> <span>' + (d.kind === 'individual' ? 'Individual' : 'Team') + ', ' + (d.entrant_count || 0) + ' in</span></div>' + '<span class="ms act" onclick="FFPLeague.editDivision(\'' + d.id + '\')">edit</span></div>';
     }).join('');
     var adder = S.divEdit === 'new' ? divEditor(null) : '<button class="lg-btn" style="margin-top:12px" onclick="FFPLeague.editDivision(\'new\')">' + ic('add') + 'Add division</button>';
     host.innerHTML = rows + adder;
@@ -470,7 +471,7 @@
     try { var sq = await sb().rpc('lt_squad_list', { p_scope: 'league', p_event: S.eventId }); S._squad = (sq && sq.data) || []; } catch (e) { S._squad = []; }
     var rows = (r && r.data) || []; var host2 = document.getElementById('lg-roster');
     host2.innerHTML = rows.length ? rows.map(function (en) {
-      var flag = en.nationality ? ' · ' + esc(en.nationality) : '';
+      var flag = en.nationality ? ', ' + esc(en.nationality) : '';
       var isTeam = en.kind !== 'individual';
       var sqBtn = isTeam ? '<button class="lg-btn sm" onclick="FFPLeague.sqToggle(\'' + en.id + '\')">' + ic('groups') + 'Squad (' + squadFor(en.id).length + ')</button>' : '';
       var initial = en.logo ? '' : esc((en.name || '?').slice(0, 1));
@@ -478,16 +479,101 @@
       var crest = isTeam
         ? '<span class="lg-av lg-avedit" title="Add / change logo" onclick="FFPLeague.entLogo(\'' + en.id + '\')" style="' + bg + '">' + initial + '<span class="lg-avplus ms">add</span></span>'
         : '<span class="lg-av" style="' + bg + '">' + initial + '</span>';
-      var row = '<div class="lg-row">' + crest + '<div class="g"><b>' + esc(en.name) + '</b> <span>· ' + esc(en.status) + (en.kind === 'individual' ? flag : '') + '</span></div>' + sqBtn + '</div>';
+      // Editing replaces the row in place, so the list never jumps.
+      if (S.entEdit === en.id) return entEditHtml(en);
+      var edBtn = '<span class="ms act" title="Edit details" onclick="FFPLeague.editEntrant(\'' + en.id + '\')">edit</span>';
+      var row = '<div class="lg-row">' + crest + '<div class="g"><b>' + esc(en.name) + '</b> <span>' + esc(en.status) + (en.kind === 'individual' ? flag : '') + '</span></div>' + sqBtn + edBtn + '</div>';
       return row + (isTeam && S.sqOpen === en.id ? '<div class="lg-sq" id="lg-sq-' + en.id + '"><div class="lg-sqsrch">' + ic('search') + '<input id="lg-sqq-' + en.id + '" placeholder="Search FFP or type a name" value="' + esc((S._sqQ || {})[en.id] || '') + '" oninput="FFPLeague.sqSearch(\'' + en.id + '\',this.value)"></div><div id="lg-sqres-' + en.id + '">' + sqResHtml(en.id) + '</div></div>' : '');
     }).join('') : '<div class="lg-empty">No entrants yet. Members self-register in the app, or add them here.</div>';
+    S._roster = rows;
+  }
+
+  // ---------- EDIT ONE ENTRANT ----------
+  // An individual entrant is a member's own record, so their name and
+  // nationality come from their FFP profile and are not the organiser's to
+  // rewrite here — only the division, seed and status are.
+  var ENT_STATUS = [['registered', 'Registered'], ['pending', 'Pending'], ['withdrawn', 'Withdrawn']];
+
+  function entEditHtml(en) {
+    var isTeam = en.kind !== 'individual';
+    var opts = (S.detail.divisions || []).map(function (d) {
+      return '<option value="' + d.id + '"' + (d.id === S.divId ? ' selected' : '') + '>' + esc(d.name) + '</option>';
+    }).join('');
+    var stOpts = ENT_STATUS.map(function (x) {
+      return '<option value="' + x[0] + '"' + (x[0] === en.status ? ' selected' : '') + '>' + x[1] + '</option>';
+    }).join('');
+    var initial = en.logo ? '' : esc((en.name || '?').slice(0, 1));
+    var bg = en.logo ? 'background-image:url(\'' + esc(en.logo) + '\')' : '';
+    var crest = isTeam
+      ? '<span class="lg-av lg-avedit" title="Add / change logo" onclick="FFPLeague.entLogo(\'' + en.id + '\')" style="' + bg + '">' + initial + '<span class="lg-avplus ms">add</span></span>'
+      : '<span class="lg-av" style="' + bg + '">' + initial + '</span>';
+    return '<div class="lg-edit lg-entform">' +
+      '<span class="crest">' + crest + '</span>' +
+      (isTeam
+        ? '<div class="f gr"><label>Team name</label><input class="lg-in" id="lg-ee-name" value="' + esc(en.team_name || en.name || '') + '" onkeydown="if(event.key===\'Enter\')FFPLeague.saveEntrantEdit()"></div>'
+        : '<div class="f gr"><label>Player</label><div class="ro">' + esc(en.name) + (en.nationality ? ', ' + esc(en.nationality) : '') + '</div></div>') +
+      '<div class="f"><label>Division</label><select class="lg-sel" id="lg-ee-div">' + opts + '</select></div>' +
+      '<div class="f sm"><label>Seed</label><input class="lg-in" id="lg-ee-seed" type="number" min="1" value="' + (en.seed == null ? '' : en.seed) + '"></div>' +
+      '<div class="f"><label>Status</label><select class="lg-sel" id="lg-ee-status">' + stOpts + '</select></div>' +
+      (S.entDel === en.id
+        ? '<div class="acts"><span class="delq">Remove ' + esc(en.name) + ' from the league?</span>' +
+            '<span class="sp"></span>' +
+            '<button class="lg-btn" onclick="FFPLeague.cancelRemoveEntrant()">Keep them</button>' +
+            '<button class="lg-btn danger solid" onclick="FFPLeague.removeEntrant()">' + ic('delete_forever') + 'Remove</button></div>' +
+          '<div class="note">Anything with fixtures or recorded stats is marked withdrawn instead, so results and the table stay intact.</div>'
+        : '<div class="acts">' +
+            '<button class="lg-btn pri" onclick="FFPLeague.saveEntrantEdit()">' + ic('check') + 'Save</button>' +
+            '<button class="lg-btn ghost" onclick="FFPLeague.cancelEntrantEdit()">Cancel</button>' +
+            '<span class="sp"></span>' +
+            '<button class="lg-btn ghost danger" onclick="FFPLeague.askRemoveEntrant()">' + ic('delete') + 'Remove</button>' +
+          '</div>') +
+      '<div class="msg" id="lg-ee-msg"></div></div>';
+  }
+
+  function editEntrant(id) { S.entEdit = id; S.entDel = null; S.sqOpen = null; renderTab(); }
+  function cancelEntrantEdit() { S.entEdit = null; S.entDel = null; renderTab(); }
+
+  async function saveEntrantEdit() {
+    var id = S.entEdit; if (!id) return;
+    var en = (S._roster || []).find(function (x) { return x.id === id; }) || {};
+    var g = function (k) { var el = document.getElementById(k); return el ? String(el.value || '').trim() : ''; };
+    var msg = document.getElementById('lg-ee-msg');
+    var patch = { division_id: g('lg-ee-div'), seed: g('lg-ee-seed'), status: g('lg-ee-status') };
+    if (en.kind !== 'individual') {
+      var nm = g('lg-ee-name');
+      if (!nm) { if (msg) msg.textContent = 'The team needs a name'; return; }
+      patch.team_name = nm;
+    }
+    var r; try { r = await sb().rpc('league_entrant_update', { p_id: id, p: patch }); } catch (e) { r = { error: e }; }
+    if (r.error) { if (msg) msg.textContent = 'Could not save'; return; }
+    // The move is refused when a schedule already points at this team there,
+    // so say which fixtures are in the way rather than failing silently.
+    if (r.data && r.data.ok === false && r.data.reason === 'has_fixtures') {
+      if (msg) msg.textContent = 'Already has ' + r.data.fixtures + ' fixtures in this division. Delete them first to move the team.';
+      return;
+    }
+    S.entEdit = null; toast('Saved', 'success');
+    S._entrants = null; refreshDetail();
+  }
+
+  function askRemoveEntrant() { S.entDel = S.entEdit; renderTab(); }
+  function cancelRemoveEntrant() { S.entDel = null; renderTab(); }
+
+  async function removeEntrant() {
+    var id = S.entEdit; if (!id) return;
+    var r; try { r = await sb().rpc('league_entrant_remove', { p_id: id }); } catch (e) { r = { error: e }; }
+    if (r.error) { var m = document.getElementById('lg-ee-msg'); if (m) m.textContent = 'Could not remove'; return; }
+    toast((r.data && r.data.action === 'withdrawn')
+      ? 'Marked withdrawn, ' + r.data.fixtures + ' fixtures kept'
+      : 'Removed', 'success');
+    S.entEdit = null; S.entDel = null; S._entrants = null; refreshDetail();
   }
   function squadFor(entId) { return (S._squad || []).filter(function (x) { return x.entrant_id === entId; }); }
   function sqResHtml(entId) {
     var q = ((S._sqQ || {})[entId] || ''); var res = ((S._sqRes || {})[entId] || []);
     var out = '';
     if (res.length) out += '<div class="lg-sqres">' + res.map(function (r) {
-      return '<div class="row"><span class="av" style="' + (r.photo ? 'background-image:url(\'' + esc(r.photo) + '\')' : '') + '"></span><div class="g"><b>' + esc(r.name) + '</b><span>' + esc([r.city, r.email_hint].filter(Boolean).join(' · ')) + '</span></div><button class="lg-btn sm pri" onclick="FFPLeague.sqAddMember(\'' + entId + '\',\'' + r.id + '\')">Add</button></div>';
+      return '<div class="row"><span class="av" style="' + (r.photo ? 'background-image:url(\'' + esc(r.photo) + '\')' : '') + '"></span><div class="g"><b>' + esc(r.name) + '</b><span>' + esc([r.city, r.email_hint].filter(Boolean).join(', ')) + '</span></div><button class="lg-btn sm pri" onclick="FFPLeague.sqAddMember(\'' + entId + '\',\'' + r.id + '\')">Add</button></div>';
     }).join('') + '</div>';
     else if (q.trim().length >= 2) out += '<div class="lg-sqadd2"><button class="lg-btn sm" onclick="FFPLeague.sqInvite(\'' + entId + '\')">' + ic('mail') + 'Invite by email</button><button class="lg-btn sm" onclick="FFPLeague.sqNameOnly(\'' + entId + '\')">' + ic('edit') + 'Add name only</button></div>';
     var list = squadFor(entId);
@@ -570,7 +656,7 @@
     if (S.editFx === f.id) return fxEdit(f);
     if (isVirtualBye(f)) return '<div class="lg-bye">' + crest(f.home) + '<b>' + esc((f.home && f.home.name) || '') + '</b><span class="tag">BYE</span><span class="msg">no match this round</span></div>';
     if (f.bye) return '<div class="lg-bye" data-id="' + f.id + '">' + crest(f.home) + '<b>' + esc((f.home && f.home.name) || '') + '</b><span class="tag">BYE</span><div class="acts"><button class="lg-mcbtn" title="Edit bye" onclick="FFPLeague.editFx(\'' + f.id + '\')">' + ic('edit') + '</button>' + delBtns(f.id) + '</div></div>';
-    var day = f.scheduled_at ? '<div class="fxday">' + fmtDay(new Date(f.scheduled_at)) + ' · ' + fmtTime(new Date(f.scheduled_at)) + '</div>' : '';
+    var day = f.scheduled_at ? '<div class="fxday">' + fmtDay(new Date(f.scheduled_at)) + ', ' + fmtTime(new Date(f.scheduled_at)) + '</div>' : '';
     return '<div class="lg-fx2" data-id="' + f.id + '"><div class="tm a">' + esc((f.home && f.home.name) || 'TBD') + crest(f.home) + '</div>'
       + '<div class="mid">' + day + '<div class="sc"><input type="number" class="lg-hs" value="' + (f.home_score != null ? f.home_score : '') + '" placeholder="–"><span class="v">v</span><input type="number" class="lg-as" value="' + (f.away_score != null ? f.away_score : '') + '" placeholder="–"></div></div>'
       + '<div class="tm">' + crest(f.away) + esc((f.away && f.away.name) || 'TBD') + '</div>'
@@ -684,7 +770,7 @@
           + '<select class="lg-sel" id="mc-team">' + teamOpts + '</select>'
           + '<select class="lg-sel" id="mc-player"></select>'
           + '<button class="lg-btn pri" onclick="FFPLeague.addEvent()">' + ic('add') + 'Add</button></div>'
-          + '<div class="lg-sub" style="margin:6px 0 0">Order: time · action · team · player</div><div id="mc-list"></div>')
+          + '<div class="lg-sub" style="margin:6px 0 0">Order: time, action, team, player</div><div id="mc-list"></div>')
         : tab === 'subs'
         ? ('<div class="lg-mcadd">'
           + '<input class="lg-in" id="sub-min" type="number" placeholder="Min" style="width:70px">'
@@ -692,7 +778,7 @@
           + '<select class="lg-sel" id="sub-off"></select>'
           + '<select class="lg-sel" id="sub-on"></select>'
           + '<button class="lg-btn pri" onclick="FFPLeague.addSub()">' + ic('swap_horiz') + 'Record</button></div>'
-          + '<div class="lg-sub" style="margin:6px 0 0">Player OFF ▼ · Player ON ▲</div><div id="mc-subs"></div>')
+          + '<div class="lg-sub" style="margin:6px 0 0">Player OFF ▼ – Player ON ▲</div><div id="mc-subs"></div>')
         : tab === 'stats' ? '<div id="mc-stats"><div class="lg-empty">Loading…</div></div>'
         : '<div id="mc-team"><div class="lg-empty">Loading…</div></div>');
     if (tab === 'timeline') {
@@ -766,7 +852,7 @@
     function row(side, d, nm, sv) { var cells = d.c.map(function (v, i) { return '<span class="' + (i === d.c.length - 1 ? 'w' : '') + '">' + v + '</span>'; }).join(''); return '<div class="pbp-r ' + side + '"><span class="clr"></span><span class="who"><b>' + esc(nm) + '</b>' + (sv ? '<span class="srv">● Serving</span>' : '') + '</span><span class="cells">' + cells + '</span><span class="gm">' + d.gm + '</span><span class="pt">' + d.pt + '</span></div>'; }
     var decide = cfg.squash ? '<div class="pbp-decide"><button class="let" onclick="FFPLeague.pbpDecide(\'let\')">Let</button><button class="stroke" onclick="FFPLeague.pbpDecide(\'stroke\')">Stroke</button><button class="nolet" onclick="FFPLeague.pbpDecide(\'nolet\')">No let</button></div>' : '';
     host.innerHTML =
-      '<div class="lg-tool"><button class="lg-btn" onclick="FFPLeague.closeMatch()">' + ic('arrow_back') + 'Back</button><span class="sp"></span>' + liveBtn + '<button class="lg-btn pri" onclick="FFPLeague.pbpFinish()">' + ic('check') + 'Finish · save result</button></div>'
+      '<div class="lg-tool"><button class="lg-btn" onclick="FFPLeague.closeMatch()">' + ic('arrow_back') + 'Back</button><span class="sp"></span>' + liveBtn + '<button class="lg-btn pri" onclick="FFPLeague.pbpFinish()">' + ic('check') + 'Finish and save result</button></div>'
       + '<div class="pbp-board"><div class="pbp-hd"><span class="sp"></span><span class="lb">Sets</span><span class="lb g">' + (rally ? 'Games' : 'Gm') + '</span><span class="lb p">Pts</span></div>'
       + row('away', dA, m.away.name, t.server === 'away') + row('home', dH, m.home.name, t.server === 'home')
       + (flag ? '<div class="pbp-flags"><span class="pbp-tag">' + flag + '</span></div>' : '')
@@ -838,7 +924,7 @@
     document.querySelectorAll('.lg-trk-b[data-half]').forEach(function (b) { b.classList.toggle('on', t.half === b.getAttribute('data-half')); });
     // territory = time in the OPPONENT's half: home territory = time in away half (t.ha)
     var teH = trkPct(t.ha, t.hh), teA = (t.hh + t.ha) ? 100 - teH : 0;
-    var sum = document.getElementById('trk-sum'); if (sum) sum.textContent = 'Possession ' + pHome + '–' + pAway + '   ·   Territory ' + teH + '–' + teA;
+    var sum = document.getElementById('trk-sum'); if (sum) sum.textContent = 'Possession ' + pHome + '–' + pAway + '    Territory ' + teH + '–' + teA;
   }
   function trkTick() { var t = _trk(); if (!t.running) return; t.total++; if (t.poss === 'home') t.ph++; else if (t.poss === 'away') t.pa++; if (t.half === 'home') t.hh++; else if (t.half === 'away') t.ha++; trkRefresh(); }
   function trkToggle() { var t = _trk(); t.running = !t.running; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } if (t.running) S._trkInt = setInterval(trkTick, 1000); trkRefresh(); }
@@ -939,7 +1025,7 @@
     var flat = []; squads.forEach(function (g) { g.list.forEach(function (p) { flat.push({ p: p, ent: g.t.id, team: g.t.name }); }); });
     if (!flat.length) { host.innerHTML = '<div class="lg-empty">Add players to the team rosters (Entrants tab) to record detailed stats.</div>'; return; }
     var fields = mcSchemaFields().concat(m.custom_fields || []);
-    var pOpts = flat.map(function (x) { return '<option value="' + x.p.player_id + '">' + esc(x.p.name) + ' · ' + esc(x.team) + '</option>'; }).join('');
+    var pOpts = flat.map(function (x) { return '<option value="' + x.p.player_id + '">' + esc(x.p.name) + ', ' + esc(x.team) + '</option>'; }).join('');
     if (!S.mcStatPlayer) S.mcStatPlayer = flat[0].p.player_id;
     var cur = flat.find(function (x) { return x.p.player_id === S.mcStatPlayer; }) || flat[0];
     var saved = S._mcStats[S.mcStatPlayer] || {};
@@ -1013,7 +1099,7 @@
     if (!subs.length) { host.innerHTML = '<div class="lg-empty">No substitutions yet.</div>'; return; }
     host.innerHTML = subs.map(function (s) {
       var sideName = s.side === 'home' ? m.home.name : m.away.name;
-      return '<div class="lg-mcrow"><span class="mn">' + (s.minute != null ? s.minute + "'" : '') + '</span><span class="kd">▲ ' + esc(s.on || '—') + ' · ▼ ' + esc(s.off || '—') + '</span><span class="tn">' + esc(sideName) + '</span><span class="ms x" onclick="FFPLeague.removeSub(\'' + s.id + '\')">close</span></div>';
+      return '<div class="lg-mcrow"><span class="mn">' + (s.minute != null ? s.minute + "'" : '') + '</span><span class="kd">▲ ' + esc(s.on || '—') + ' – ▼ ' + esc(s.off || '—') + '</span><span class="tn">' + esc(sideName) + '</span><span class="ms x" onclick="FFPLeague.removeSub(\'' + s.id + '\')">close</span></div>';
     }).join('');
   }
   async function removeSub(id) { try { await sb().rpc('lt_sub_remove', { p_id: id }); } catch (e) {} renderMatchCentre(); }
@@ -1099,11 +1185,13 @@
   window.FFPLeague = {
     open: open, startCreate: startCreate, cancelCreate: cancelCreate, doCreate: doCreate,
     back: function () { S.view = 'list'; renderList(); }, tab: function (t) { S.tab = t; S.matchOpen = null; renderEditor(); },
-    setDiv: function (val, tab) { S.divId = val; S.tab = tab; renderTab(); },
+    setDiv: function (val, tab) { S.divId = val; S.tab = tab; S.entEdit = null; S.entDel = null; S.sqOpen = null; renderTab(); },
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
     statusPick: statusPick,
     saveDetails: saveDetails, sportHint: sportHint, pickImg: pickImg, entLogo: entLogo, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, bulkAthletes: bulkAthletes, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
+    editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit,
+    askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
     sqToggle: sqToggle, sqSearch: sqSearch, sqAddMember: sqAddMember, sqNameOnly: sqNameOnly, sqInvite: sqInvite, sqRemove: sqRemove,
     confirmGen: confirmGen, cancelGen: cancelGen, doGen: doGen, saveResults: saveResults,
     addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap, autoplan: autoplan, schedSet: schedSet,
