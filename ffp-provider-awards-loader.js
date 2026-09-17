@@ -52,7 +52,11 @@ function _awErr(e) {
   if (document.getElementById('aw-css')) return;
   var s = document.createElement('style');
   s.id = 'aw-css';
-  s.textContent = [
+  // The modal renders OUTSIDE #panel-awards (openModalShell writes into #modal),
+  // so rules scoped only to the panel silently do not apply inside it — which is
+  // how the mystery report lost its score bars and ran "VISIT TOTAL" into "41 / 50".
+  // Every rule is emitted for both roots.
+  var _rules = [
     '#panel-awards .aw-key{border-radius:16px;padding:24px 28px;display:flex;align-items:center;gap:30px;flex-wrap:wrap;',
     '  background:linear-gradient(128deg,#0e2531 0%,#14475e 62%,#1980AD 100%);box-shadow:0 14px 36px rgba(14,37,49,.26);}',
     '#panel-awards .aw-key .k{font-size:9.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#9fd0e6;}',
@@ -108,6 +112,18 @@ function _awErr(e) {
     '#panel-awards .aw-tot .v u{text-decoration:none;font-size:15px;font-weight:700;color:#8a96a1;}',
     '#panel-awards .aw-empty{padding:30px 0;color:#566069;font-size:13px;font-weight:600;}'
   ].join('\n');
+  s.textContent = _rules.replace(/#panel-awards\s/g, function () { return '#panel-awards '; })
+    .split('\n').map(function (line) {
+      // duplicate each selector line for #modal; leave continuation lines alone
+      if (line.indexOf('#panel-awards ') !== 0) return line;
+      var brace = line.indexOf('{');
+      if (brace < 0) return line;
+      var sel = line.slice(0, brace);
+      var rest = line.slice(brace);
+      var both = sel.split(',').map(function (x) { return x.trim(); }).filter(Boolean)
+        .map(function (x) { return x + ', ' + x.replace('#panel-awards', '#modal'); }).join(', ');
+      return both + rest;
+    }).join('\n');
   document.head.appendChild(s);
 })();
 
@@ -116,6 +132,7 @@ async function renderAwards() {
   var host = document.getElementById('awards-host');
   if (!host) return;
   if (!_awPid()) { host.innerHTML = '<div class="aw-empty">Sign in to manage awards.</div>'; return; }
+  if (_awView === 'mystery') return _awRenderMystery();
   if (_awView === 'entry' && _awEntry) return _awRenderEntry();
   if (_awView === 'judge') return _awRenderJudge();
   if (_awView === 'dash' && _awProg) return _awRenderDash();
@@ -287,6 +304,7 @@ async function _awRenderDash() {
         ? '<button class="btn btn-pri" onclick="awPublish()">Publish programme</button>'
         : '<button class="btn btn-sec" onclick="awAddCategory()"><span class="ms">add</span> Category</button>') +
       '<button class="btn btn-sec" onclick="awOpenJudge()"><span class="ms">gavel</span> Judging</button>' +
+      '<button class="btn btn-sec" onclick="awOpenMystery()"><span class="ms">travel_explore</span> Mystery visits</button>' +
     '</div></div>';
 
   h += '<div class="aw-key" style="margin-top:18px;">' +
@@ -667,6 +685,166 @@ async function awSaveScore() {
     if (r.error) throw r.error;
     showToast('Score saved, ' + (r.data && r.data.total) + ' total', 'success');
   } catch (e) { showToast(_awErr(e), 'error'); }
+}
+
+// ── mystery visits ──────────────────────────────────────────────────────
+// Anonymous assessors. The organizer assigns, the assessor files, and the
+// entrant is never shown any of it — award_can_see_visit enforces that server
+// side, this screen just never offers it.
+var _awVisits = [];
+
+async function awOpenMystery() { _awView = 'mystery'; await _awRenderMystery(); }
+
+async function _awRenderMystery() {
+  var host = document.getElementById('awards-host');
+  host.innerHTML = '<div class="aw-empty">Loading…</div>';
+  try {
+    var r = await window.supabase.rpc('award_mystery_list', { p_programme: _awProg });
+    if (r.error) throw r.error;
+    _awVisits = r.data || [];
+  } catch (e) { host.innerHTML = '<div class="aw-empty">' + _awEsc(_awErr(e)) + '</div>'; return; }
+
+  var filed = _awVisits.filter(function (v) { return v.status === 'submitted'; }).length;
+  var h = '<button class="btn btn-sec btn-sm" onclick="awOpen(\'' + _awProg + '\')"><span class="ms">arrow_back</span> Programme</button>' +
+    '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;">' +
+    '<div><div class="ph" style="margin:10px 0 0;">Mystery visits</div>' +
+    '<div class="psub" style="margin:5px 0 0;">' + filed + ' of ' + _awVisits.length + ' filed. The business never sees the assessor or the report.</div></div>' +
+    '<button class="btn btn-pri" onclick="awAssignMystery()"><span class="ms">add</span> Send an assessor</button></div>';
+
+  if (!_awVisits.length) {
+    h += '<div class="aw-empty">No visits yet. Send an assessor to an entry and their score joins the panel’s.</div>';
+  } else {
+    _awVisits.forEach(function (v) {
+      h += '<div class="aw-row">' +
+        '<div class="bd"><div class="nm">' + _awEsc(v.entrant) + '</div>' +
+        '<div class="mt">' + _awEsc(v.category) + ', ' + _awEsc(v.shopper) +
+        (v.window_from ? ', ' + _awEsc(v.window_from) + ' to ' + _awEsc(v.window_to) : '') + '</div></div>' +
+        '<div class="num' + (v.total == null ? ' dim' : '') + '">' +
+          (v.total == null ? '—' : v.total + (v.max_total ? '<span style="font-size:12px;font-weight:700;color:#8a96a1;"> / ' + v.max_total + '</span>' : '')) +
+        '</div>' +
+        '<div class="by" style="color:' + (v.status === 'submitted' ? '#1f9d57' : v.status === 'declined' ? '#e2483d' : '#c79a2e') + ';">' +
+          _awEsc(v.status === 'submitted' ? 'Filed' : v.status === 'accepted' ? 'Accepted' : v.status === 'declined' ? 'Declined' : 'Assigned') + '</div>' +
+        '<div class="aw-act">' +
+          (v.status === 'submitted'
+            ? '<button class="go" onclick="awMysteryReport(\'' + v.visit_id + '\')">Read report</button>'
+            : '<button disabled style="opacity:.5;">Waiting</button>') +
+        '</div></div>';
+    });
+  }
+  host.innerHTML = h;
+}
+
+async function awAssignMystery() {
+  var entries = [];
+  try {
+    var r = await window.supabase.rpc('award_judge_queue', { p_programme: _awProg, p_category: null });
+    entries = (r.data || []);
+  } catch (e) {}
+  if (!entries.length) { showToast('No submitted entries to visit yet', 'error'); return; }
+
+  var opts = entries.map(function (e) {
+    return '<option value="' + e.entry_id + '">' + _awEsc(e.name) + ' — ' + _awEsc(e.category) + '</option>';
+  }).join('');
+
+  var body =
+    '<div class="psub" style="margin:0 0 14px;">The assessor goes as an ordinary customer. They never appear to the business, and their report is only ever visible to you.</div>' +
+    '<div class="field"><div class="label">Which entry</div>' +
+    '<select class="input" id="aw-ms-entry">' + opts + '</select></div>' +
+    '<div class="field"><div class="label">Assessor</div>' +
+    '<input class="input" id="aw-ms-q" placeholder="Search members by name or email" autocomplete="off" oninput="awMysterySearch()"></div>' +
+    '<div id="aw-ms-results"></div>' +
+    '<input type="hidden" id="aw-ms-member">' +
+    '<div class="field"><div class="label">Visit between</div>' +
+    '<input class="input" id="aw-ms-from" type="date"></div>' +
+    '<div class="field"><div class="label">And</div>' +
+    '<input class="input" id="aw-ms-to" type="date"></div>' +
+    '<div id="aw-ms-msg" class="psub" style="margin:10px 0 0;"></div>';
+  openModalShell('sm', 'Send an assessor', body,
+    '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-pri" onclick="awDoAssignMystery()">Assign</button>');
+}
+
+var _awMsT = null;
+function awMysterySearch() {
+  clearTimeout(_awMsT);
+  _awMsT = setTimeout(async function () {
+    var q = ((document.getElementById('aw-ms-q') || {}).value || '').trim();
+    var box = document.getElementById('aw-ms-results');
+    if (!box) return;
+    if (q.length < 2) { box.innerHTML = ''; return; }
+    try {
+      var r = await window.supabase.rpc('award_member_search', { p_programme: _awProg, p_q: q });
+      var rows = r.data || [];
+      box.innerHTML = rows.length ? rows.map(function (m) {
+        return '<button class="aw-row" style="width:100%;text-align:left;background:none;" ' +
+          'onclick="awPickShopper(\'' + m.id + '\',\'' + _awEsc(m.name).replace(/'/g, "\\'") + '\')">' +
+          '<div class="bd"><div class="nm">' + _awEsc(m.name) + '</div>' +
+          '<div class="mt">' + _awEsc([m.city, m.email_hint].filter(Boolean).join(', ')) + '</div></div></button>';
+      }).join('') : '<div class="psub" style="margin:8px 0 0;">No members match that</div>';
+    } catch (e) {
+      box.innerHTML = '<div class="psub" style="margin:8px 0 0;">' + _awEsc(_awErr(e)) + '</div>';
+    }
+  }, 280);
+}
+
+function awPickShopper(id, name) {
+  var h = document.getElementById('aw-ms-member'); if (h) h.value = id;
+  var q = document.getElementById('aw-ms-q'); if (q) q.value = name;
+  var box = document.getElementById('aw-ms-results'); if (box) box.innerHTML = '';
+}
+
+async function awDoAssignMystery() {
+  var g = function (x) { return ((document.getElementById(x) || {}).value || '').trim(); };
+  var member = g('aw-ms-member');
+  var msg = document.getElementById('aw-ms-msg');
+  if (!member) { if (msg) { msg.textContent = 'Search for the assessor and tap their name'; msg.style.color = 'var(--ffp-red)'; } return; }
+  try {
+    var r = await window.supabase.rpc('award_mystery_assign', {
+      p_entry: g('aw-ms-entry'), p_shopper: member,
+      p_from: g('aw-ms-from') || null, p_to: g('aw-ms-to') || null
+    });
+    if (r.error) throw r.error;
+    closeModal();
+    showToast('Assessor assigned', 'success');
+    _awRenderMystery();
+  } catch (e) {
+    if (msg) { msg.innerHTML = _awEsc(_awErr(e)); msg.style.color = 'var(--ffp-red)'; }
+  }
+}
+
+async function awMysteryReport(visitId) {
+  var d = null;
+  try {
+    var r = await window.supabase.rpc('award_mystery_report', { p_visit: visitId });
+    if (r.error) throw r.error;
+    d = r.data;
+  } catch (e) { showToast(_awErr(e), 'error'); return; }
+  if (!d) return;
+
+  var crit = (d.criteria || []);
+  var tot = crit.reduce(function (a, c) { return a + Number(c.score || 0); }, 0);
+  var max = crit.reduce(function (a, c) { return a + Number(c.max_score || 0); }, 0);
+
+  var body =
+    '<div class="psub" style="margin:0 0 4px;">' + _awEsc(d.entrant) + ', ' + _awEsc(d.category) + '</div>' +
+    '<div style="font-size:13px;font-weight:600;color:var(--ffp-text);line-height:1.65;margin:12px 0 18px;white-space:pre-line;">' +
+      _awEsc(d.report || '') + '</div>' +
+    crit.map(function (c) {
+      var pctv = c.max_score ? Math.round((Number(c.score || 0) / c.max_score) * 100) : 0;
+      return '<div style="padding:12px 0;border-top:1px solid rgba(15,37,49,.10);">' +
+        '<div style="display:flex;align-items:baseline;justify-content:space-between;">' +
+        '<span style="font-size:12px;font-weight:800;color:var(--ffp-text);">' + _awEsc(c.label) + '</span>' +
+        '<span style="font-size:12.5px;font-weight:900;color:var(--ffp-text);">' + (c.score == null ? '—' : c.score) +
+        '<span style="font-size:10.5px;font-weight:700;color:#8a96a1;"> / ' + c.max_score + '</span></span></div>' +
+        '<div class="aw-bar"><b style="width:' + pctv + '%;"></b></div></div>';
+    }).join('') +
+    '<div class="aw-tot"><span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#566069;">Visit total</span>' +
+      '<span class="v">' + tot + '<u> / ' + max + '</u></span></div>' +
+    (d.spend_aed != null ? '<div class="psub" style="margin:12px 0 0;">Spent on the visit: ' + _awEsc(d.spend_aed) + '</div>' : '') +
+    (d.visited_at ? '<div class="psub" style="margin:4px 0 0;">Visited ' + _awEsc(String(d.visited_at).slice(0, 10)) + '</div>' : '');
+
+  openModalShell('sm', 'Mystery visit report', body,
+    '<button class="btn btn-pri" onclick="closeModal()">Close</button>');
 }
 
 window.renderAwards = renderAwards;
