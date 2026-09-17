@@ -3515,7 +3515,9 @@ async function renderPaymentsCard() {
       '<span class="ms" style="color:#d9a400;">hourglass_top</span>' +
       '<div style="flex:1;"><div style="font-weight:700;font-size:13px;color:#d9a400;">Finish setting up payments</div>' +
       '<div class="psub" style="margin:2px 0 0;font-size:12px;">Your Stripe account was started but isn\'t ready to take payments yet — a few details are still needed.</div></div>' +
-      '<button class="btn btn-pri btn-sm" onclick="connectStripe()"><span class="ms">arrow_forward</span> Finish setup</button></div>';
+      '<button class="btn btn-pri btn-sm" onclick="connectStripe()"><span class="ms">arrow_forward</span> Finish setup</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="cancelStripeSetup()">Cancel</button></div>' +
+      '<div class="psub" style="margin:6px 2px 0;font-size:11.5px;">Cancelling only unlinks FFP. Your Stripe account is not changed or deleted.</div>';
   } else if (status === 'disconnected') {
     el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);border-radius:12px;">' +
       '<span class="ms" style="color:#ef4444;">link_off</span>' +
@@ -3529,6 +3531,25 @@ async function renderPaymentsCard() {
       '<div class="psub" style="margin:2px 0 0;font-size:12px;">Connect your Stripe account to charge members for memberships, packs and drop-ins. Money goes straight to you — FFP takes no cut. Takes about a minute if you already have Stripe.</div></div>' +
       '<button class="btn btn-pri" onclick="connectStripe()"><span class="ms">link</span> Connect Stripe</button></div>';
   }
+}
+
+// Abandon the FFP side of setup. Nothing is sent to Stripe and no account is deleted —
+// this just clears our link so the provider can start again, or attach a different account.
+async function cancelStripeSetup() {
+  var pid = (window.FFP_PROVIDER || {}).id;
+  if (!pid) { showToast('Please sign in again', 'error'); return; }
+  if (!confirm('Cancel payment setup?\n\nThis only unlinks FFP. Your Stripe account is not deleted or changed, and you can connect again any time.')) return;
+  try {
+    var r = await supabase.rpc('provider_cancel_payment_setup', { p_provider: pid });
+    if (r && r.error) {
+      showToast(String(r.error.message || '').indexOf('payments_live') > -1
+        ? 'Payments are live on this account — contact FFP to unlink it'
+        : 'Could not cancel — please try again', 'error');
+      return;
+    }
+    showToast('Payment setup cancelled', 'success');
+    renderPaymentsCard();
+  } catch (e) { showToast('Could not cancel — please try again', 'error'); }
 }
 
 async function connectStripe() {
@@ -3556,6 +3577,7 @@ async function connectStripe() {
     if (!s) return;
     var msg = s === 'connected'  ? ['Payments connected ✓', 'success']
             : s === 'incomplete' ? ['Almost there — finish your Stripe details to start taking payments', 'info']
+            : s === 'inuse'      ? ['That Stripe account is already connected to another facility', 'error']
             : s === 'denied'     ? ['Stripe setup cancelled', 'info']
             : ['Stripe setup didn’t finish — please try again', 'error'];
     document.addEventListener('ffp-provider-ready', function () {
