@@ -212,66 +212,35 @@ function _awOpts(list, sel, placeholder) {
   return h;
 }
 
-// Scope: a governing body runs their own city or country. Anything spanning
-// countries is FFP's to run, so Region is only offered on an official programme
-// and the database refuses it either way.
+// Region is only offered on an FFP-official programme; the database refuses it
+// for a partner either way.
 var _awOfficial = false;
-function awScopeChanged() {
-  var v = (document.getElementById('aw-np-scope') || {}).value || 'city';
-  ['city', 'country', 'region'].forEach(function (k) {
-    var row = document.getElementById('aw-np-' + k + '-row');
-    if (row) row.style.display = (v === k) ? '' : 'none';
-  });
-}
 
+// Starting a programme asks for a NAME and nothing else. Everything that shapes
+// it — activity, how wide it runs, dates, look — is set on the programme itself,
+// where there is room for it and it can be changed as the thinking changes.
 async function awNewProgramme() {
-  var T = await _awTaxReady();
-  var cities = (typeof T.allCities === 'function') ? T.allCities() : [];
-  var regions = _awOfficial ? await _awRegionList() : [];
-  var countries = _awCountries(T);
   var body =
-    '<div class="field"><div class="label">Programme name</div>' +
-    '<input class="input" id="aw-np-name" placeholder="Padel Awards 2026" autocomplete="off"></div>' +
-    '<div class="field"><div class="label">Activity</div>' +
-    '<select class="input" id="aw-np-activity">' + _awOpts(T.activities, '', 'Select an activity') + '</select></div>' +
-    '<div class="field"><div class="label">Category</div>' +
-    '<select class="input" id="aw-np-category">' + _awOpts(T.categories, '', 'Select a category') + '</select></div>' +
-    '<div class="field"><div class="label">How wide is it</div>' +
-    '<select class="input" id="aw-np-scope" onchange="awScopeChanged()">' +
-      '<option value="city">One city</option>' +
-      '<option value="country">A whole country</option>' +
-      (_awOfficial ? '<option value="region">A region, several countries</option>' : '') +
-    '</select></div>' +
-    '<div class="field" id="aw-np-city-row"><div class="label">City</div>' +
-    '<select class="input" id="aw-np-city">' + _awOpts(cities, '', 'Select a city') + '</select></div>' +
-    '<div class="field" id="aw-np-country-row" style="display:none;"><div class="label">Country</div>' +
-    '<select class="input" id="aw-np-country">' + _awOpts(countries, '', 'Select a country') + '</select></div>' +
-    '<div class="field" id="aw-np-region-row" style="display:none;"><div class="label">Region</div>' +
-    '<select class="input" id="aw-np-region">' + _awOpts(regions, '', 'Select a region') + '</select></div>' +
-    '<div class="psub" style="margin:12px 0 0;">' +
-      (_awOfficial ? 'Categories, criteria and dates come next.'
-                   : 'A partner programme covers one city or one country. Regional awards are run by FFP.') +
-    ' Nothing is visible to members until you publish it.</div>';
+    '<div class="field"><div class="label">What are these awards called</div>' +
+    '<input class="input" id="aw-np-name" placeholder="Padel Awards 2026" autocomplete="off" ' +
+    'onkeydown="if(event.key===\'Enter\'){event.preventDefault();awCreateProgramme();}"></div>' +
+    '<div class="psub" style="margin:12px 0 0;">You can change this later. Nothing is visible to members until you publish it.</div>';
   openModalShell('sm', 'New awards programme', body,
     '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
     '<button class="btn btn-pri" onclick="awCreateProgramme()">Create</button>');
+  setTimeout(function () { var i = document.getElementById('aw-np-name'); if (i) i.focus(); }, 80);
 }
 
 async function awCreateProgramme() {
-  var g = function (x) { return ((document.getElementById(x) || {}).value || '').trim(); };
-  var name = g('aw-np-name');
+  var name = ((document.getElementById('aw-np-name') || {}).value || '').trim();
   if (!name) { showToast('Give the programme a name', 'error'); return; }
   try {
     var r = await window.supabase.rpc('award_programme_save',
-      { p_programme: null, p_provider: _awPid(), p_patch: {
-          name: name, scope: g('aw-np-scope') || 'city',
-          city: g('aw-np-city'), country: g('aw-np-country'), region: g('aw-np-region'),
-          activity: g('aw-np-activity'), category: g('aw-np-category'),
-          year: new Date().getFullYear() } });
+      { p_programme: null, p_provider: _awPid(), p_patch: { name: name, year: new Date().getFullYear() } });
     if (r.error) throw r.error;
     closeModal();
-    showToast('Programme created', 'success');
     await awOpen(r.data);
+    showToast('Created. Set it up below.', 'success');
   } catch (e) { showToast(_awErr(e), 'error'); }
 }
 
@@ -300,9 +269,10 @@ async function _awRenderDash() {
     '<div class="ph" style="margin:10px 0 0;">' + _awEsc(pr.name) + '</div>' +
     '<div class="psub" style="margin:5px 0 0;">' + (d.categories || []).length + ' categories, ' + total + ' entries</div></div>' +
     '<div style="display:flex;gap:9px;flex-wrap:wrap;">' +
+      '<button class="btn btn-sec" onclick="awSetup()"><span class="ms">tune</span> Setup</button>' +
+      '<button class="btn btn-sec" onclick="awAddCategory()"><span class="ms">add</span> Category</button>' +
       (pr.status !== 'published'
-        ? '<button class="btn btn-pri" onclick="awPublish()">Publish programme</button>'
-        : '<button class="btn btn-sec" onclick="awAddCategory()"><span class="ms">add</span> Category</button>') +
+        ? '<button class="btn btn-pri" onclick="awPublish()">Publish</button>' : '') +
       '<button class="btn btn-sec" onclick="awOpenJudge()"><span class="ms">gavel</span> Judging</button>' +
       '<button class="btn btn-sec" onclick="awOpenMystery()"><span class="ms">travel_explore</span> Mystery visits</button>' +
     '</div></div>';
@@ -845,6 +815,106 @@ async function awMysteryReport(visitId) {
 
   openModalShell('sm', 'Mystery visit report', body,
     '<button class="btn btn-pri" onclick="closeModal()">Close</button>');
+}
+
+// ── setup: everything that shapes the programme, on the programme ───────
+async function awSetup() {
+  var T = await _awTaxReady();
+  var pr = {};
+  try {
+    var r = await window.supabase.from('award_programmes').select('*').eq('id', _awProg).maybeSingle();
+    pr = r.data || {};
+  } catch (e) {}
+  _awOfficial = !!pr.ffp_official;
+
+  var cities = (typeof T.allCities === 'function') ? T.allCities() : [];
+  var countries = _awCountries(T);
+  var regions = _awOfficial ? await _awRegionList() : [];
+  var v = function (k) { return pr[k] == null ? '' : pr[k]; };
+  var dt = function (k) { return pr[k] ? String(pr[k]).slice(0, 10) : ''; };
+
+  var body =
+    '<div class="field"><div class="label">Name</div>' +
+    '<input class="input" id="aw-s-name" value="' + _awEsc(v('name')) + '"></div>' +
+
+    '<div class="field"><div class="label">One line about it</div>' +
+    '<input class="input" id="aw-s-tagline" value="' + _awEsc(v('tagline')) + '" placeholder="Celebrating the clubs that grew the game"></div>' +
+
+    '<div class="aw-h6" style="margin:18px 0 0;">What it covers</div>' +
+    '<div class="field"><div class="label">Activity</div>' +
+    '<select class="input" id="aw-s-activity">' + _awOpts(T.activities, v('activity'), 'Any activity') + '</select></div>' +
+    '<div class="field"><div class="label">Category</div>' +
+    '<select class="input" id="aw-s-category">' + _awOpts(T.categories, v('category'), 'Any category') + '</select></div>' +
+
+    '<div class="field"><div class="label">How wide it runs</div>' +
+    '<select class="input" id="aw-s-scope" onchange="awScopeChanged()">' +
+      '<option value="city"' + (v('scope') === 'city' ? ' selected' : '') + '>One city</option>' +
+      '<option value="country"' + (v('scope') === 'country' ? ' selected' : '') + '>A whole country</option>' +
+      (_awOfficial ? '<option value="region"' + (v('scope') === 'region' ? ' selected' : '') + '>A region, several countries</option>' : '') +
+    '</select></div>' +
+    '<div class="field" id="aw-s-city-row"><div class="label">City</div>' +
+    '<select class="input" id="aw-s-city">' + _awOpts(cities, v('city'), 'Select a city') + '</select></div>' +
+    '<div class="field" id="aw-s-country-row"><div class="label">Country</div>' +
+    '<select class="input" id="aw-s-country">' + _awOpts(countries, v('country'), 'Select a country') + '</select></div>' +
+    '<div class="field" id="aw-s-region-row"><div class="label">Region</div>' +
+    '<select class="input" id="aw-s-region">' + _awOpts(regions, v('region'), 'Select a region') + '</select></div>' +
+    (_awOfficial ? '' : '<div class="psub" style="margin:2px 0 0;">A partner programme covers one city or one country. FFP runs the regional ones.</div>') +
+
+    '<div class="aw-h6" style="margin:18px 0 0;">Key dates</div>' +
+    '<div class="field"><div class="label">Entries close</div>' +
+    '<input class="input" id="aw-s-enter" type="date" value="' + dt('enter_closes_at') + '"></div>' +
+    '<div class="field"><div class="label">Evidence closes</div>' +
+    '<input class="input" id="aw-s-evid" type="date" value="' + dt('evidence_closes_at') + '"></div>' +
+    '<div class="field"><div class="label">Winners announced</div>' +
+    '<input class="input" id="aw-s-announce" type="date" value="' + dt('announce_at') + '"></div>' +
+
+    '<div class="aw-h6" style="margin:18px 0 0;">Look</div>' +
+    '<div class="field"><div class="label">Your logo, shown instead of the FFP mark</div>' +
+    '<input class="input" id="aw-s-logo" value="' + _awEsc(v('logo_url')) + '" placeholder="https://"></div>' +
+    '<div class="field"><div class="label">Cover image</div>' +
+    '<input class="input" id="aw-s-cover" value="' + _awEsc(v('cover_url')) + '" placeholder="https://"></div>' +
+    '<div class="field"><div class="label">Accent colour</div>' +
+    '<input class="input" id="aw-s-accent" value="' + _awEsc(v('accent') || '#F2A900') + '"></div>' +
+    '<div id="aw-s-msg" class="psub" style="margin:12px 0 0;"></div>';
+
+  openModalShell('sm', 'Programme setup', body,
+    '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-pri" onclick="awSaveSetup()">Save</button>');
+  setTimeout(awScopeChanged, 40);
+}
+
+// only the field that matches the chosen width is shown
+function awScopeChanged() {
+  var v = (document.getElementById('aw-s-scope') || {}).value || 'city';
+  ['city', 'country', 'region'].forEach(function (k) {
+    var row = document.getElementById('aw-s-' + k + '-row');
+    if (row) row.style.display = (v === k) ? '' : 'none';
+  });
+}
+
+async function awSaveSetup() {
+  var g = function (x) { return ((document.getElementById(x) || {}).value || '').trim(); };
+  var msg = document.getElementById('aw-s-msg');
+  var patch = {
+    name: g('aw-s-name'), tagline: g('aw-s-tagline'),
+    activity: g('aw-s-activity'), category: g('aw-s-category'),
+    scope: g('aw-s-scope'), city: g('aw-s-city'), country: g('aw-s-country'), region: g('aw-s-region'),
+    logo_url: g('aw-s-logo'), cover_url: g('aw-s-cover'), accent: g('aw-s-accent'),
+    enter_closes_at: g('aw-s-enter') || null,
+    evidence_closes_at: g('aw-s-evid') || null,
+    announce_at: g('aw-s-announce') || null
+  };
+  if (!patch.name) { if (msg) { msg.textContent = 'The programme needs a name'; msg.style.color = 'var(--ffp-red)'; } return; }
+  try {
+    var r = await window.supabase.rpc('award_programme_save',
+      { p_programme: _awProg, p_provider: _awPid(), p_patch: patch });
+    if (r.error) throw r.error;
+    closeModal();
+    showToast('Saved', 'success');
+    _awRenderDash();
+  } catch (e) {
+    if (msg) { msg.innerHTML = _awEsc(_awErr(e)); msg.style.color = 'var(--ffp-red)'; }
+  }
 }
 
 window.renderAwards = renderAwards;
