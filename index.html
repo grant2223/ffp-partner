@@ -1,4 +1,20 @@
-<!-- FFP PROVIDER DASHBOARD — v72 (2026-09-17)
+<!-- FFP PROVIDER DASHBOARD — v73 (2026-09-17)
+     v73: The rest of SETTINGS is real. (1) The four notification checkboxes were hardcoded
+          `checked` and saved nothing; they now load from providers.notify_prefs via
+          provider_get_notify_prefs and save on change via provider_save_notify_prefs
+          (400ms coalesce; the RPC whitelists the four keys, so the client can't write
+          arbitrary json). Defaults live in provider_notify_defaults() so portal and sender
+          agree on what 'unset' means. A failed save re-reads rather than leaving the box
+          showing a state that was never stored. (2) 'Close my partner account' was a toast;
+          it now runs provider_close_account — archives every live/pending/draft Event,
+          Experience and Trip, sets providers.status='archived' + closed_at/closed_reason,
+          unfeatures, then signs out. Nothing is deleted. Gated behind typing CLOSE, and
+          refused while payments_status='connected' so no charge or payout is orphaned.
+          NOTE: it archives the LISTINGS explicitly — most member-facing RPCs filter the
+          listing's status, not the provider's, so flipping the provider alone would have
+          left a closed partner's events still bookable.
+     ----
+     v72 (2026-09-17)
      v72: SETTINGS → Account is real. The login email was hardcoded demo markup —
           value="bookings@forgefitness.ae" (another facility's address!) on a disabled input —
           and "Send reset email" only fired a toast. Now: the field renders FFP_PROVIDER.email
@@ -3173,23 +3189,26 @@ a { color: var(--ffp-blue); text-decoration: none; }
           <div class="form-grid">
             <div class="field full">
               <label class="hours-closed">
-                <input type="checkbox" checked> Email me when a member RSVPs to an event
+                <input type="checkbox" data-notify="event_rsvp" onchange="saveNotifyPrefs()"> Email me when a member RSVPs to an event
               </label>
             </div>
             <div class="field full">
               <label class="hours-closed">
-                <input type="checkbox" checked> Email me when a member applies for an experience
+                <input type="checkbox" data-notify="exp_apply" onchange="saveNotifyPrefs()"> Email me when a member applies for an experience
               </label>
             </div>
             <div class="field full">
               <label class="hours-closed">
-                <input type="checkbox" checked> Email me when admin approves a new listing
+                <input type="checkbox" data-notify="listing_approved" onchange="saveNotifyPrefs()"> Email me when admin approves a new listing
               </label>
             </div>
             <div class="field full">
               <label class="hours-closed">
-                <input type="checkbox"> Weekly performance summary
+                <input type="checkbox" data-notify="weekly_summary" onchange="saveNotifyPrefs()"> Weekly performance summary
               </label>
+            </div>
+            <div class="field full">
+              <div id="notify-state" class="psub" style="margin:2px 0 0;font-size:11.5px;">Loading your preferences…</div>
             </div>
           </div>
         </div>
@@ -3218,9 +3237,10 @@ a { color: var(--ffp-blue); text-decoration: none; }
             </div>
             <div class="field full">
               <div class="label">Danger zone</div>
-              <button class="btn btn-ghost" style="color: var(--ffp-red); border-color: rgba(239,68,68,.3);" onclick="showToast('Contact admin to close your account', 'info')">
+              <button class="btn btn-ghost" style="color: var(--ffp-red); border-color: rgba(239,68,68,.3);" onclick="openCloseAccount()">
                 <span class="ms">delete</span> Close my partner account
               </button>
+              <div class="psub" style="margin:6px 0 0;font-size:11.5px;">Takes your listings down and closes the account. Nothing is deleted — email FFP to reopen it.</div>
             </div>
           </div>
         </div>
@@ -3716,7 +3736,7 @@ function showPanel(id) {
   if (id === 'members' && typeof renderMembers === 'function') renderMembers();
   if (id === 'billing') { if (typeof renderPayments === 'function') renderPayments(); }
   if (id === 'payments') renderPaymentsCard();
-  if (id === 'settings') renderAccountSettings();
+  if (id === 'settings') { renderAccountSettings(); loadNotifyPrefs(); }
   if (id === 'staff' && typeof renderStaff === 'function') renderStaff();
   if (id === 'appointments' && typeof renderAppointments === 'function') renderAppointments();
   if (id === 'plans') _callWhenReady('renderPlans');
@@ -3847,6 +3867,108 @@ async function confirmEmailChange() {
   } catch (e) {
     _ecMsg('Could not reach the server', true);
     if (btn) { btn.disabled = false; btn.textContent = 'Confirm change'; }
+  }
+}
+
+// ── Notification preferences (providers.notify_prefs via RPC) ──
+// Defaults come from the DB (provider_notify_defaults) so the portal and whatever
+// sends the mail can never disagree about what "unset" means.
+async function loadNotifyPrefs() {
+  var boxes = document.querySelectorAll('#panel-settings input[data-notify]');
+  if (!boxes.length) return;
+  var pid = (window.FFP_PROVIDER || {}).id;
+  var state = document.getElementById('notify-state');
+  if (!pid) { if (state) state.textContent = 'Sign in to manage notifications'; return; }
+  try {
+    var r = await supabase.rpc('provider_get_notify_prefs', { p_provider: pid });
+    if (r.error) throw r.error;
+    var pref = r.data || {};
+    boxes.forEach(function (b) { b.checked = !!pref[b.getAttribute('data-notify')]; b.disabled = false; });
+    if (state) state.textContent = 'Saved automatically.';
+  } catch (e) {
+    boxes.forEach(function (b) { b.disabled = true; });
+    if (state) state.textContent = 'Could not load your preferences — reload to try again.';
+  }
+}
+
+var _notifySaveT = null;
+function saveNotifyPrefs() {
+  var state = document.getElementById('notify-state');
+  if (state) state.textContent = 'Saving…';
+  clearTimeout(_notifySaveT);                     // coalesce rapid toggles into one write
+  _notifySaveT = setTimeout(async function () {
+    var pid = (window.FFP_PROVIDER || {}).id;
+    if (!pid) { showToast('Please sign in again', 'error'); return; }
+    var out = {};
+    document.querySelectorAll('#panel-settings input[data-notify]').forEach(function (b) {
+      out[b.getAttribute('data-notify')] = !!b.checked;
+    });
+    try {
+      var r = await supabase.rpc('provider_save_notify_prefs', { p_provider: pid, p_prefs: out });
+      if (r.error) throw r.error;
+      if (state) state.textContent = 'Saved.';
+    } catch (e) {
+      if (state) state.textContent = 'Could not save — your last change was not kept.';
+      showToast('Could not save notification settings', 'error');
+      loadNotifyPrefs();                          // snap the boxes back to what is actually stored
+    }
+  }, 400);
+}
+
+// ── Close my partner account ──
+// Not a delete. Listings come down and the provider goes to status='archived' with
+// closed_at stamped; every row stays in the DB so admin can reopen it.
+function openCloseAccount() {
+  var pid = (window.FFP_PROVIDER || {}).id;
+  if (!pid) { showToast('Please sign in again', 'error'); return; }
+  var body =
+    '<div style="display:flex;gap:10px;padding:12px 14px;margin:0 0 14px;border:1px solid rgba(226,72,61,.35);background:rgba(226,72,61,.07);border-radius:12px;">' +
+      '<span class="ms" style="color:var(--ffp-red);">warning</span>' +
+      '<div class="psub" style="margin:0;">Your Experiences, Events and Trips come off FFP straight away and members can no longer find or book you. ' +
+      'Your data is <b>not</b> deleted — email FFP and we can reopen the account.</div></div>' +
+    '<div class="field"><div class="label">Why are you closing? (optional)</div>' +
+    '<input class="input" id="ca-reason" placeholder="Helps us improve" autocomplete="off"></div>' +
+    '<div class="field"><div class="label">Type CLOSE to confirm</div>' +
+    '<input class="input" id="ca-word" placeholder="CLOSE" autocomplete="off" oninput="_caGate()"></div>' +
+    '<div id="ca-msg" class="psub" style="margin:10px 0 0;"></div>';
+  openModalShell('sm', 'Close my partner account', body,
+    '<button class="btn btn-outline" onclick="closeModal()">Keep my account</button>' +
+    '<button class="btn btn-pri" id="ca-go" style="background:var(--ffp-red);border-color:var(--ffp-red);" disabled onclick="doCloseAccount()">Close account</button>');
+  setTimeout(function () { var i = document.getElementById('ca-word'); if (i) i.focus(); }, 80);
+}
+
+function _caGate() {
+  var w = ((document.getElementById('ca-word') || {}).value || '').trim().toUpperCase();
+  var b = document.getElementById('ca-go');
+  if (b) b.disabled = (w !== 'CLOSE');
+}
+
+async function doCloseAccount() {
+  var pid = (window.FFP_PROVIDER || {}).id;
+  var msg = document.getElementById('ca-msg');
+  var btn = document.getElementById('ca-go');
+  if (btn) { btn.disabled = true; btn.textContent = 'Closing…'; }
+  try {
+    var reason = ((document.getElementById('ca-reason') || {}).value || '').trim();
+    var r = await supabase.rpc('provider_close_account', { p_provider: pid, p_reason: reason || null });
+    if (r.error) {
+      var m = String(r.error.message || '');
+      if (msg) {
+        msg.innerHTML = m.indexOf('payments_connected') > -1
+          ? 'Your Stripe account is still connected. Disconnect it in <b>Connect Payments</b> first, so no charge or payout is left in the air.'
+          : escHtml(m || 'Could not close the account');
+        msg.style.color = 'var(--ffp-red)';
+      }
+      if (btn) { btn.disabled = false; btn.textContent = 'Close account'; }
+      return;
+    }
+    var d = r.data || {};
+    closeModal();
+    showToast('Account closed — ' + ((d.events || 0) + (d.experiences || 0) + (d.trips || 0)) + ' listing(s) taken down', 'success');
+    setTimeout(function () { try { signOut(); } catch (e) { location.href = '/login'; } }, 1800);
+  } catch (e) {
+    if (msg) { msg.textContent = 'Could not reach the server'; msg.style.color = 'var(--ffp-red)'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Close account'; }
   }
 }
 
