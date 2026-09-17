@@ -1,4 +1,24 @@
-<!-- FFP PROVIDER DASHBOARD — v70 (2026-09-17)
+<!-- FFP PROVIDER DASHBOARD — v72 (2026-09-17)
+     v72: SETTINGS → Account is real. The login email was hardcoded demo markup —
+          value="bookings@forgefitness.ae" (another facility's address!) on a disabled input —
+          and "Send reset email" only fired a toast. Now: the field renders FFP_PROVIDER.email
+          (the actual signed-in address) via renderAccountSettings(), the reset button calls the
+          real POST /api/auth/reset, and a Change button runs a two-step verified swap —
+          /api/account/email/change-request emails a 6-digit code to the NEW address, then
+          /api/account/email/change-confirm applies it (backend routes + member_email_changes
+          table). New scoped CSS #panel-settings .acct-email-row stacks under 560px so a long
+          address is fully readable on a phone. STILL FAKE, not yet wired: the four notification
+          checkboxes and "Close my partner account".
+     ----
+     v71 (2026-09-17)
+     v71: Connect Stripe now exists in ONE place only — the Connect Payments panel. Removed the
+          cross-link from Payments & Invoices, and deleted the duplicate connect card + startConnect()
+          from ffp-provider-billing-loader.js (with a do-not-re-add note). Backend's three Stripe
+          redirects repointed ?panel=billing → ?panel=payments, and the bounce-back handler here now
+          opens 'payments' instead of the $99-gated 'billing'. ACCOUNT section reordered:
+          Check-ins / Profile / Connect Payments / Refer & earn / Announcements / Settings.
+     ----
+     v70 (2026-09-17)
      v70: SIDEBAR restructured. (1) "Manage" section renamed ACCOUNT and moved to the top; Profile +
           Settings moved into it (the old bottom "Account" group is gone), so it reads
           Profile / Settings / Connect Payments / Check-ins / Refer & earn / Announcements.
@@ -2512,6 +2532,17 @@ a { color: var(--ffp-blue); text-decoration: none; }
   line-height:1.35;overflow-wrap:break-word;}
 @media (max-width:900px){ #panel-payments .pay-covers{grid-template-columns:repeat(2,minmax(0,1fr));} }
 @media (max-width:520px){ #panel-payments .pay-covers{grid-template-columns:1fr;} }
+
+/* SETTINGS → Account: the login email must be fully readable, so on a phone the
+   Change button drops below instead of squeezing a 26-char address into ~228px.
+   Scoped under #panel-settings — no bare single-class rules. */
+#panel-settings .acct-email-row{display:flex;gap:8px;align-items:center;}
+#panel-settings .acct-email-row .input{flex:1 1 auto;min-width:0;text-overflow:ellipsis;}
+#panel-settings .acct-email-row .btn{flex:0 0 auto;}
+@media (max-width:560px){
+  #panel-settings .acct-email-row{flex-direction:column;align-items:stretch;}
+  #panel-settings .acct-email-row .btn{width:100%;}
+}
 </style>
 
         <div class="pf-tabs" role="tablist">
@@ -2851,7 +2882,7 @@ a { color: var(--ffp-blue); text-decoration: none; }
 
       <section class="panel" id="panel-billing">
         <div class="ph">Payments &amp; Invoices</div>
-        <div class="psub">Charge your members and send invoices — paid into your own account. (Linking your Stripe account lives in <a href="javascript:void(0)" onclick="showPanel('payments')" style="color:var(--ffp-blue);font-weight:700;text-decoration:underline;">Account → Connect Payments</a>.)</div>
+        <div class="psub">Charge your members and send invoices — paid into your own account.</div>
         <div class="biz-tabs">
           <button class="biz-tab active" onclick="bizTab(this,'bil-pay'); if(typeof renderPayments==='function')renderPayments();">Payments</button>
           <button class="biz-tab" onclick="bizTab(this,'bil-inv'); if(typeof renderInvoices==='function')renderInvoices();">Invoices</button>
@@ -3168,11 +3199,16 @@ a { color: var(--ffp-blue); text-decoration: none; }
           <div class="form-grid">
             <div class="field">
               <div class="label">Login email</div>
-              <input class="input" value="bookings@forgefitness.ae" disabled>
+              <div class="acct-email-row">
+                <input class="input" id="set-login-email" value="Loading…" readonly>
+                <button class="btn btn-sec" onclick="openEmailChange()">Change</button>
+              </div>
+              <div class="psub" style="margin:6px 0 0;font-size:11.5px;">This is the email you sign in with. Changing it needs a code sent to the new address.</div>
             </div>
             <div class="field">
               <div class="label">Password</div>
-              <button class="btn btn-sec" onclick="showToast('Password reset email sent', 'success')">Send reset email</button>
+              <button class="btn btn-sec" id="set-reset-btn" onclick="sendMyPasswordReset()">Send reset email</button>
+              <div class="psub" style="margin:6px 0 0;font-size:11.5px;">Sends a fresh sign-in code to your login email above.</div>
             </div>
             <div class="field full">
               <div class="label">Session</div>
@@ -3323,13 +3359,14 @@ const sampleRsvps = [];
 // NAVIGATION
 // ════════════════════════════════════════════════
 const NAV = [
-  // ── Account (your FFP account. Always free — never gated.) ──
-  { id: 'profile',     icon: 'storefront',      label: 'Profile',          section: 'account' },
-  { id: 'settings',    icon: 'settings',        label: 'Settings',         section: 'account' },
-  { id: 'payments',    icon: 'account_balance', label: 'Connect Payments', section: 'account' },
+  // ── Account (your FFP account. Always free — never gated.)
+  //    Order is deliberate: Check-ins first (used daily), Settings last. ──
   { id: 'checkins',    icon: 'qr_code_scanner', label: 'Check-ins',        section: 'account' },
+  { id: 'profile',     icon: 'storefront',      label: 'Profile',          section: 'account' },
+  { id: 'payments',    icon: 'account_balance', label: 'Connect Payments', section: 'account' },
   { id: 'refer',       icon: 'redeem',          label: 'Refer & earn',     section: 'account' },
   { id: 'announcements',icon: 'campaign',       label: 'Announcements',    section: 'account' },
+  { id: 'settings',    icon: 'settings',        label: 'Settings',         section: 'account' },
   // ── Business section (paid $99/mo add-on; admin-granted access. Gated when !FFP_PROVIDER.business_access)
   //    free:true items sit in this section for layout but stay open to every provider. ──
   { id: 'overview',    icon: 'dashboard',       label: 'Overview',            section: 'business', free: true },
@@ -3611,7 +3648,8 @@ async function connectStripe() {
   } catch (e) { showToast('Network error — please try again', 'error'); }
 }
 
-// Bounce-back from Stripe Connect (?stripe=connected|denied|error) → toast + open Billing.
+// Bounce-back from Stripe Connect (?stripe=connected|denied|error) → toast + open Connect Payments.
+// (Not Billing: the card lives in #panel-payments now, and Billing is $99-gated.)
 (function () {
   try {
     var p = new URLSearchParams(window.location.search);
@@ -3623,7 +3661,7 @@ async function connectStripe() {
             : s === 'denied'     ? ['Stripe setup cancelled', 'info']
             : ['Stripe setup didn’t finish — please try again', 'error'];
     document.addEventListener('ffp-provider-ready', function () {
-      setTimeout(function () { try { showToast(msg[0], msg[1]); if (typeof showPanel === 'function') showPanel('billing'); } catch (e) {} }, 500);
+      setTimeout(function () { try { showToast(msg[0], msg[1]); if (typeof showPanel === 'function') showPanel('payments'); } catch (e) {} }, 500);
     });
     p.delete('stripe'); p.delete('panel');
     var qs = p.toString();
@@ -3678,6 +3716,7 @@ function showPanel(id) {
   if (id === 'members' && typeof renderMembers === 'function') renderMembers();
   if (id === 'billing') { if (typeof renderPayments === 'function') renderPayments(); }
   if (id === 'payments') renderPaymentsCard();
+  if (id === 'settings') renderAccountSettings();
   if (id === 'staff' && typeof renderStaff === 'function') renderStaff();
   if (id === 'appointments' && typeof renderAppointments === 'function') renderAppointments();
   if (id === 'plans') _callWhenReady('renderPlans');
@@ -3687,6 +3726,128 @@ function showPanel(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
   // Close mobile sidebar after navigation
   if (window.innerWidth <= 768) closeSidebar();
+}
+
+// ════════════════════════════════════════════════
+// SETTINGS → ACCOUNT  [2026-09-17]
+// This block used to be hardcoded demo markup: the login email was the literal
+// string "bookings@forgefitness.ae" (another facility's address) on a disabled
+// input, and "Send reset email" only fired a toast. Both are real now.
+// ════════════════════════════════════════════════
+const FFP_API_BASE = 'https://ffp-passport-backend.vercel.app';
+
+function _myLoginEmail() { return (window.FFP_PROVIDER || {}).email || ''; }
+
+function renderAccountSettings() {
+  var el = document.getElementById('set-login-email');
+  if (!el) return;
+  var em = _myLoginEmail();
+  el.value = em || 'Not signed in';
+}
+
+// Real password reset — same endpoint the login screen's "send me a code" uses.
+async function sendMyPasswordReset() {
+  var em = _myLoginEmail();
+  if (!em) { showToast('Please sign in again', 'error'); return; }
+  var btn = document.getElementById('set-reset-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  try {
+    var r = await fetch(FFP_API_BASE + '/api/auth/reset', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: em })
+    });
+    var d = await r.json().catch(function () { return {}; });
+    showToast(d.success ? ('New sign-in code sent to ' + em) : (d.error || 'Could not send the email'),
+              d.success ? 'success' : 'error');
+  } catch (e) { showToast('Could not send the email', 'error'); }
+  if (btn) { btn.disabled = false; btn.textContent = 'Send reset email'; }
+}
+
+// ── Change login email: ask, then prove control of the new address ──
+function openEmailChange() {
+  if (!_myLoginEmail()) { showToast('Please sign in again', 'error'); return; }
+  var body =
+    '<div class="psub" style="margin:0 0 12px;">You sign in with <b>' + escHtml(_myLoginEmail()) + '</b>. ' +
+    'Enter the new address and we\'ll send a 6-digit code to it — the change only applies once you enter that code.</div>' +
+    '<div class="field"><div class="label">New login email</div>' +
+    '<input class="input" id="ec-new" type="email" placeholder="you@yourbusiness.com" autocomplete="off"></div>' +
+    '<div id="ec-msg" class="psub" style="margin:10px 0 0;"></div>';
+  openModalShell('sm', 'Change login email', body,
+    '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-pri" id="ec-send" onclick="requestEmailChange()">Send code</button>');
+  setTimeout(function () { var i = document.getElementById('ec-new'); if (i) i.focus(); }, 80);
+}
+
+function _ecMsg(t, bad) {
+  var m = document.getElementById('ec-msg');
+  if (m) { m.innerHTML = t || ''; m.style.color = bad ? 'var(--ffp-red)' : 'var(--ffp-text-muted)'; }
+}
+
+async function requestEmailChange() {
+  var refresh = (window.FFPAuth && FFPAuth.getRefresh && FFPAuth.getRefresh()) || null;
+  if (!refresh) { showToast('Please sign in again', 'error'); return; }
+  var v = (document.getElementById('ec-new') || {}).value || '';
+  var btn = document.getElementById('ec-send');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  _ecMsg('');
+  try {
+    var r = await fetch(FFP_API_BASE + '/api/account/email/change-request', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh: refresh, new_email: v })
+    });
+    var d = await r.json().catch(function () { return {}; });
+    if (!r.ok || !d.success) { _ecMsg(escHtml(d.error || 'Could not send the code'), true);
+      if (btn) { btn.disabled = false; btn.textContent = 'Send code'; } return; }
+    _emailChangeCodeStep(d.sent_to);
+  } catch (e) {
+    _ecMsg('Could not reach the server', true);
+    if (btn) { btn.disabled = false; btn.textContent = 'Send code'; }
+  }
+}
+
+function _emailChangeCodeStep(sentTo) {
+  var body =
+    '<div class="psub" style="margin:0 0 12px;">We sent a 6-digit code to <b>' + escHtml(sentTo) + '</b>. ' +
+    'Enter it to finish. Until you do, you keep signing in with your current email.</div>' +
+    '<div class="field"><div class="label">Code</div>' +
+    '<input class="input" id="ec-code" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code"></div>' +
+    '<div id="ec-msg" class="psub" style="margin:10px 0 0;"></div>';
+  openModalShell('sm', 'Confirm your new email', body,
+    '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn btn-pri" id="ec-ok" onclick="confirmEmailChange()">Confirm change</button>');
+  setTimeout(function () { var i = document.getElementById('ec-code'); if (i) i.focus(); }, 80);
+}
+
+async function confirmEmailChange() {
+  var refresh = (window.FFPAuth && FFPAuth.getRefresh && FFPAuth.getRefresh()) || null;
+  if (!refresh) { showToast('Please sign in again', 'error'); return; }
+  var code = ((document.getElementById('ec-code') || {}).value || '').trim();
+  var btn = document.getElementById('ec-ok');
+  if (btn) { btn.disabled = true; btn.textContent = 'Checking…'; }
+  _ecMsg('');
+  try {
+    var r = await fetch(FFP_API_BASE + '/api/account/email/change-confirm', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh: refresh, code: code })
+    });
+    var d = await r.json().catch(function () { return {}; });
+    if (!r.ok || !d.success) { _ecMsg(escHtml(d.error || 'Could not confirm'), true);
+      if (btn) { btn.disabled = false; btn.textContent = 'Confirm change'; } return; }
+    // Keep the cached identity in step with the DB so the field and any later
+    // API call use the new address without a re-login.
+    if (window.FFP_PROVIDER) FFP_PROVIDER.email = d.email;
+    try {
+      if (window.FFPAuth && FFPAuth.getMember && FFPAuth.setMember) {
+        var m = FFPAuth.getMember() || {}; m.email = d.email; FFPAuth.setMember(m);
+      }
+    } catch (e) {}
+    closeModal();
+    renderAccountSettings();
+    showToast('Login email changed to ' + d.email, 'success');
+  } catch (e) {
+    _ecMsg('Could not reach the server', true);
+    if (btn) { btn.disabled = false; btn.textContent = 'Confirm change'; }
+  }
 }
 
 // Business-profile tabs: Branding / Business info / Activities
