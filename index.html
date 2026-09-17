@@ -1,4 +1,18 @@
-<!-- FFP PROVIDER DASHBOARD — v69 (2026-06-26)
+<!-- FFP PROVIDER DASHBOARD — v70 (2026-09-17)
+     v70: SIDEBAR restructured. (1) "Manage" section renamed ACCOUNT and moved to the top; Profile +
+          Settings moved into it (the old bottom "Account" group is gone), so it reads
+          Profile / Settings / Connect Payments / Check-ins / Refer & earn / Announcements.
+          (2) Overview + Analytics moved into BUSINESS — but carry a new NAV flag `free:true`, so they
+          stay open to every provider: without it Overview (the landing panel) would have gone behind
+          the $99 gate. ffpIsBusinessPanel() and renderNav()'s gate both respect `free`.
+          (3) CONNECT PAYMENTS is now its own panel (#panel-payments, Account section, never gated) —
+          linking Stripe is account-level, it funds every paid listing on FFP, not just the gym's
+          ledger. #facility-payments-card moved out of #panel-billing into it; showPanel('payments')
+          calls renderPaymentsCard(). New scoped CSS #panel-payments .pay-covers/.pay-cov (3→2→1 col).
+          Also fixed: renderPaymentsCard()'s status rows had no flex-wrap, so "Connect Stripe" sat
+          ~138px off-screen on a 375px phone. All six rows now wrap; verified clean at 375/390/430/1180.
+     ----
+     v69 (2026-06-26)
      v69: CHECK-INS panel relaid out — two columns: left "check-in" column (venue QR + session check-in card),
           right side column "Latest check-ins" (the #ci-roster, sticky). New .checkin-layout/.checkin-side CSS;
           collapses to one column under 920px. Venue QR loader → v3 (?v=6): injects into #checkin-left top.
@@ -2475,8 +2489,7 @@ a { color: var(--ffp-blue); text-decoration: none; }
             <span class="ms" id="completion-icon">trending_up</span>
             <div class="completion-text">
               <div class="completion-title">Profile <em><span id="completion-pct">0</span>%</em> complete</div>
-              <div class="completion-sub" id="completion-sub">Complete profiles rank higher in member search and get more engagement.</div>
-            </div>
+              <div class="completion-sub" id="completion-sub">Complete profiles rank higher in member search and get more engagement.</div></div>
           </div>
           <div class="bar-track"><div class="bar-fill yellow" id="completion-bar" style="width: 0%"></div></div>
         </div>
@@ -2488,7 +2501,18 @@ a { color: var(--ffp-blue); text-decoration: none; }
           #panel-profile .pf-tab.active{color:var(--ffp-text,#e8eef4);border-bottom-color:var(--ffp-yellow,#2b3942);}
           #panel-profile .pf-pane{display:none;padding-top:16px;padding-bottom:104px;}
           #panel-profile .pf-pane.active{display:block;}
-        </style>
+        
+/* CONNECT PAYMENTS panel — "What it covers" tiles. Scoped under #panel-payments; no bare
+   single-class rules, so nothing leaks in or out (see the .nav/.bk collision). */
+#panel-payments .pay-covers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px;}
+#panel-payments .pay-cov{display:flex;align-items:center;gap:10px;min-width:0;padding:13px 14px;
+  background:var(--ffp-bg-card);border:1px solid var(--ffp-border-mid);border-radius:var(--r-md);}
+#panel-payments .pay-cov .ms{color:var(--ffp-blue);flex-shrink:0;font-size:20px;}
+#panel-payments .pay-cov>div{min-width:0;font-size:13px;font-weight:700;color:var(--ffp-text);
+  line-height:1.35;overflow-wrap:break-word;}
+@media (max-width:900px){ #panel-payments .pay-covers{grid-template-columns:repeat(2,minmax(0,1fr));} }
+@media (max-width:520px){ #panel-payments .pay-covers{grid-template-columns:1fr;} }
+</style>
 
         <div class="pf-tabs" role="tablist">
           <button class="pf-tab active" data-pftab="info" onclick="showProfileTab('info')"><span class="ms">storefront</span> Business Details</button>
@@ -2509,16 +2533,14 @@ a { color: var(--ffp-blue); text-decoration: none; }
                 <div class="uploader-icon"><span class="ms">image</span></div>
                 <div class="uploader-title">Upload logo</div>
                 <div class="uploader-hint">PNG · square · crop to fit</div>
-              </div>
-            </div>
+              </div></div>
             <div class="field">
               <div class="label">Profile banner <span class="label-hint">— the wide image across the top of your public profile; also the fallback cover for any listing without its own</span></div>
               <div class="uploader" id="up-hero" onclick="pickProviderImage('hero')">
                 <div class="uploader-icon"><span class="ms">image</span></div>
                 <div class="uploader-title">Click or drag to upload</div>
                 <div class="uploader-hint">JPG or PNG · 16:9 · position &amp; crop to fit the banner</div>
-              </div>
-            </div>
+              </div></div>
             <div class="field full">
               <div class="label">Tour video <span class="label-hint">— optional; a short facility tour shown on your public profile. Paste a YouTube, Vimeo or MP4 link.</span></div>
               <input class="input" id="pf-tour-video" type="url" placeholder="https://youtu.be/… or https://vimeo.com/… or https://…/tour.mp4">
@@ -2534,8 +2556,7 @@ a { color: var(--ffp-blue); text-decoration: none; }
             </div>
             <div class="field full">
               <div class="label">What this place has <span class="label-hint">— tap the amenities you offer.</span></div>
-              <div id="pf-amenities-host" class="pf-amen-grid"></div>
-            </div>
+              <div id="pf-amenities-host" class="pf-amen-grid"></div></div>
           </div>
         </div>
 
@@ -2560,13 +2581,11 @@ a { color: var(--ffp-blue); text-decoration: none; }
             <div class="field">
               <div class="label">Timezone <span class="req">*</span></div>
               <select class="select" id="pf-timezone"><option value="">Choose timezone…</option></select>
-              <div class="hint" style="font-size:12px;opacity:.7;margin-top:4px;">Used for all your class, tour, event &amp; trip times.</div>
-            </div>
+              <div class="hint" style="font-size:12px;opacity:.7;margin-top:4px;">Used for all your class, tour, event &amp; trip times.</div></div>
             <div class="field">
               <div class="label">Currency <span class="req">*</span></div>
               <select class="select" id="pf-currency"><option value="">Choose currency</option></select>
-              <div class="hint" style="font-size:12px;opacity:.7;margin-top:4px;">All your prices &amp; member payments use this currency.</div>
-            </div>
+              <div class="hint" style="font-size:12px;opacity:.7;margin-top:4px;">All your prices &amp; member payments use this currency.</div></div>
             <div class="field">
               <div class="label">Area / Neighbourhood</div>
               <input class="input" id="pf-area" placeholder="e.g. Al Quoz, JLT, Dubai Marina">
@@ -2580,8 +2599,7 @@ a { color: var(--ffp-blue); text-decoration: none; }
               <div class="phone-input">
                 <select class="phone-cc" id="pf-phone-cc"></select>
                 <input class="input phone-num" id="pf-phone-num" placeholder="50 123 4567" inputmode="tel">
-              </div>
-            </div>
+              </div></div>
             <div class="field">
               <div class="label">Website</div>
               <input class="input" id="pf-website" placeholder="https://yourbusiness.com">
@@ -2833,8 +2851,7 @@ a { color: var(--ffp-blue); text-decoration: none; }
 
       <section class="panel" id="panel-billing">
         <div class="ph">Payments &amp; Invoices</div>
-        <div class="psub">Charge your members and send invoices — paid into your own account.</div>
-        <div id="facility-payments-card" style="margin:14px 0 6px;"></div>
+        <div class="psub">Charge your members and send invoices — paid into your own account. (Linking your Stripe account lives in <a href="javascript:void(0)" onclick="showPanel('payments')" style="color:var(--ffp-blue);font-weight:700;text-decoration:underline;">Account → Connect Payments</a>.)</div>
         <div class="biz-tabs">
           <button class="biz-tab active" onclick="bizTab(this,'bil-pay'); if(typeof renderPayments==='function')renderPayments();">Payments</button>
           <button class="biz-tab" onclick="bizTab(this,'bil-inv'); if(typeof renderInvoices==='function')renderInvoices();">Invoices</button>
@@ -2857,6 +2874,31 @@ a { color: var(--ffp-blue); text-decoration: none; }
         <div class="biz-pane" id="bil-reports">
           <div class="psub" style="margin:14px 0 4px;">Your money at a glance.</div>
           <div id="bill-reports" style="margin-top:8px;"></div>
+        </div>
+      </section>
+
+      <!-- ════════ CONNECT PAYMENTS ════════
+           Own panel (Account section, never gated): taking money is account-level, not a
+           Business add-on — it covers every paid thing a provider lists on FFP, not just
+           the gym's Payments & Invoices ledger. #facility-payments-card moved here. -->
+      <section class="panel" id="panel-payments">
+        <div class="ph">Connect Payments</div>
+        <div class="psub">Link your Stripe account once. Everything members pay you for across FFP is collected through it, and the money lands in your own bank — FFP takes no cut.</div>
+        <div id="facility-payments-card" style="margin:16px 0 4px;"></div>
+        <div style="margin-top:24px;">
+          <div class="section-title">What it covers</div>
+          <div class="pay-covers">
+            <div class="pay-cov"><span class="ms">card_membership</span><div>Memberships &amp; packages</div></div>
+            <div class="pay-cov"><span class="ms">calendar_month</span><div>Sessions &amp; appointments</div></div>
+            <div class="pay-cov"><span class="ms">tour</span><div>Experiences &amp; classes</div></div>
+            <div class="pay-cov"><span class="ms">event</span><div>Events &amp; trips</div></div>
+            <div class="pay-cov"><span class="ms">confirmation_number</span><div>Day passes &amp; drop-ins</div></div>
+            <div class="pay-cov"><span class="ms">account_balance_wallet</span><div>Payouts to your own bank</div></div>
+          </div>
+          <div class="help-strip" style="margin-top:18px;">
+            <span class="ms">info</span>
+            <div>Already on Stripe? Connecting attaches the account you <b>already have</b> — no new account is created. Your invoice ledger stays in <a href="javascript:void(0)" onclick="showPanel('billing')">Payments &amp; Invoices</a>.</div>
+          </div>
         </div>
       </section>
 
@@ -2981,14 +3023,12 @@ a { color: var(--ffp-blue); text-decoration: none; }
                 <button class="btn btn-ghost" onclick="window.ffpSessionScan&&ffpSessionScan()"><span class="ms">qr_code_scanner</span> Scan QR</button>
                 <button class="btn btn-sec" onclick="window.ffpSessionPickMember&&ffpSessionPickMember()"><span class="ms">groups</span> My members</button>
                 <button class="btn btn-pri" onclick="window.ffpSessionCheckin&&ffpSessionCheckin()"><span class="ms">check</span> Check in</button>
-              </div>
-            </div>
+              </div></div>
           </div>
           <aside class="checkin-side">
             <div class="checkin-card">
               <div class="checkin-title">Latest check-ins</div>
-              <div id="ci-roster"></div>
-            </div>
+              <div id="ci-roster"></div></div>
           </aside>
         </div>
 
@@ -3283,12 +3323,17 @@ const sampleRsvps = [];
 // NAVIGATION
 // ════════════════════════════════════════════════
 const NAV = [
-  { id: 'overview',    icon: 'dashboard',       label: 'Overview',    section: 'manage' },
-  { id: 'analytics',   icon: 'analytics',       label: 'Analytics',   section: 'manage' },
-  { id: 'checkins',    icon: 'qr_code_scanner', label: 'Check-ins',   section: 'manage' },
-  { id: 'refer',       icon: 'redeem',          label: 'Refer & earn', section: 'manage' },
-  { id: 'announcements',icon: 'campaign',       label: 'Announcements', section: 'manage' },
-  // ── Business section (paid $99/mo add-on; admin-granted access. Gated when !FFP_PROVIDER.business_access) ──
+  // ── Account (your FFP account. Always free — never gated.) ──
+  { id: 'profile',     icon: 'storefront',      label: 'Profile',          section: 'account' },
+  { id: 'settings',    icon: 'settings',        label: 'Settings',         section: 'account' },
+  { id: 'payments',    icon: 'account_balance', label: 'Connect Payments', section: 'account' },
+  { id: 'checkins',    icon: 'qr_code_scanner', label: 'Check-ins',        section: 'account' },
+  { id: 'refer',       icon: 'redeem',          label: 'Refer & earn',     section: 'account' },
+  { id: 'announcements',icon: 'campaign',       label: 'Announcements',    section: 'account' },
+  // ── Business section (paid $99/mo add-on; admin-granted access. Gated when !FFP_PROVIDER.business_access)
+  //    free:true items sit in this section for layout but stay open to every provider. ──
+  { id: 'overview',    icon: 'dashboard',       label: 'Overview',            section: 'business', free: true },
+  { id: 'analytics',   icon: 'analytics',       label: 'Analytics',           section: 'business', free: true },
   { id: 'reviews',     icon: 'star',            label: 'Reviews',             section: 'business' },
   { id: 'members',     icon: 'groups',          label: 'Members',             section: 'business' },
   { id: 'plans',       icon: 'card_membership',  label: 'Packages',            section: 'business' },
@@ -3307,17 +3352,14 @@ const NAV = [
   { id: 'offers',      icon: 'local_offer',     label: 'Offers',      section: 'engagement' },
   { id: 'loyalty',     icon: 'loyalty',         label: 'Loyalty',     section: 'engagement' },
   // Deals + Challenges parked — hidden from nav until built (panels remain in code).
-  // ── Account ──
-  { id: 'profile',     icon: 'storefront',      label: 'Profile',     section: 'account' },
-  { id: 'settings',    icon: 'settings',        label: 'Settings',    section: 'account' }
 ];
 
 var _navCollapsed = { business: true };   // section id -> true when collapsed (Business hidden by default)
-const sectionLabels = { manage: 'Manage', business: 'Business', engagement: 'Engagement', account: 'Account' };
+const sectionLabels = { business: 'Business', engagement: 'Engagement', account: 'Account' };
 
 // ── Business section = paid $99/mo add-on, admin-granted (providers.business_access). Free for now: admin toggles it on. ──
 function ffpHasBusinessAccess() { return !!(window.FFP_PROVIDER && window.FFP_PROVIDER.business_access); }
-function ffpIsBusinessPanel(id) { try { var it = NAV.find(function (n) { return n.id === id; }); return !!(it && it.section === 'business'); } catch (e) { return false; } }
+function ffpIsBusinessPanel(id) { try { var it = NAV.find(function (n) { return n.id === id; }); return !!(it && it.section === 'business' && !it.free); } catch (e) { return false; } }
 var _bizAccessChecked = false;
 async function ensureBusinessAccess() {
   if (_bizAccessChecked) return;
@@ -3376,7 +3418,7 @@ function renderNav() {
             '<span class="ms sb-chev">expand_more</span></button>';
     html += '<div class="sb-sec-items' + (isCol ? ' collapsed' : '') + '" data-sec="' + sec + '">';
     groups[sec].forEach(item => {
-      const gated = (item.section === 'business' && !ffpHasBusinessAccess());
+      const gated = (item.section === 'business' && !item.free && !ffpHasBusinessAccess());
       const lockedClass = (item.locked || gated) ? ' locked' : '';
       const onclick = item.locked ? ''
         : (gated ? ' onclick="showBusinessUpgrade()"' : ' onclick="showPanel(\'' + item.id + '\')"');
@@ -3497,37 +3539,37 @@ async function renderPaymentsCard() {
   var reqCount = reqDue ? reqDue.split(',').filter(Boolean).length : 0;
   if (status === 'connected') {
     var payoutWarn = (payouts === false)
-      ? '<div style="display:flex;align-items:center;gap:9px;padding:10px 14px;margin-top:8px;border:1px solid rgba(217,164,0,.4);background:rgba(217,164,0,.08);border-radius:12px;"><span class="ms" style="color:#d9a400;">account_balance_wallet</span><div style="flex:1;"><div style="font-weight:700;font-size:12.5px;color:#d9a400;">Payouts paused</div><div class="psub" style="margin:1px 0 0;font-size:11.5px;">You can take payments, but Stripe isn\'t paying out to your bank yet — finish your payout details in Stripe.</div></div><button class="btn btn-sec btn-sm" onclick="connectStripe()">Resolve</button></div>'
+      ? '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:10px 14px;margin-top:8px;border:1px solid rgba(217,164,0,.4);background:rgba(217,164,0,.08);border-radius:12px;"><span class="ms" style="color:#d9a400;">account_balance_wallet</span><div style="flex:1 1 200px;min-width:0;"><div style="font-weight:700;font-size:12.5px;color:#d9a400;">Payouts paused</div><div class="psub" style="margin:1px 0 0;font-size:11.5px;">You can take payments, but Stripe isn\'t paying out to your bank yet — finish your payout details in Stripe.</div></div><button class="btn btn-sec btn-sm" onclick="connectStripe()">Resolve</button></div>'
       : '';
-    el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(34,197,94,.3);background:rgba(34,197,94,.08);border-radius:12px;">' +
+    el.innerHTML = '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(34,197,94,.3);background:rgba(34,197,94,.08);border-radius:12px;">' +
       '<span class="ms" style="color:#22c55e;">check_circle</span>' +
-      '<div style="flex:1;"><div style="font-weight:700;font-size:13px;color:#22c55e;">Payments connected</div>' +
+      '<div style="flex:1 1 200px;min-width:0;"><div style="font-weight:700;font-size:13px;color:#22c55e;">Payments connected</div>' +
       '<div class="psub" style="margin:2px 0 0;font-size:12px;">Your Stripe account is linked — member payments go straight to your bank, FFP takes no cut.</div></div>' +
       '<a class="btn btn-ghost btn-sm" href="https://dashboard.stripe.com" target="_blank" rel="noopener"><span class="ms">open_in_new</span> Stripe</a></div>' + payoutWarn;
   } else if (status === 'restricted') {
-    el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.08);border-radius:12px;">' +
+    el.innerHTML = '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.08);border-radius:12px;">' +
       '<span class="ms" style="color:#ef4444;">error</span>' +
-      '<div style="flex:1;"><div style="font-weight:700;font-size:13px;color:#ef4444;">Action needed — payments paused</div>' +
+      '<div style="flex:1 1 200px;min-width:0;"><div style="font-weight:700;font-size:13px;color:#ef4444;">Action needed — payments paused</div>' +
       '<div class="psub" style="margin:2px 0 0;font-size:12px;">Stripe has paused your account' + (reqCount ? ' until you provide ' + reqCount + ' more detail' + (reqCount > 1 ? 's' : '') : ' and needs more information') + '. New charges will fail until it\'s resolved.</div></div>' +
       '<button class="btn btn-pri btn-sm" onclick="connectStripe()"><span class="ms">arrow_forward</span> Resolve in Stripe</button></div>';
   } else if (status === 'onboarding') {
-    el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(15,37,49,.35);background:rgba(15,37,49,.08);border-radius:12px;">' +
+    el.innerHTML = '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(15,37,49,.35);background:rgba(15,37,49,.08);border-radius:12px;">' +
       '<span class="ms" style="color:#d9a400;">hourglass_top</span>' +
-      '<div style="flex:1;"><div style="font-weight:700;font-size:13px;color:#d9a400;">Finish setting up payments</div>' +
+      '<div style="flex:1 1 200px;min-width:0;"><div style="font-weight:700;font-size:13px;color:#d9a400;">Finish setting up payments</div>' +
       '<div class="psub" style="margin:2px 0 0;font-size:12px;">Your Stripe account was started but isn\'t ready to take payments yet — a few details are still needed.</div></div>' +
       '<button class="btn btn-pri btn-sm" onclick="connectStripe()"><span class="ms">arrow_forward</span> Finish setup</button>' +
       '<button class="btn btn-ghost btn-sm" onclick="cancelStripeSetup()">Cancel</button></div>' +
       '<div class="psub" style="margin:6px 2px 0;font-size:11.5px;">Cancelling only unlinks FFP. Your Stripe account is not changed or deleted.</div>';
   } else if (status === 'disconnected') {
-    el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);border-radius:12px;">' +
+    el.innerHTML = '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);border-radius:12px;">' +
       '<span class="ms" style="color:#ef4444;">link_off</span>' +
-      '<div style="flex:1;"><div style="font-weight:700;font-size:13px;color:#ef4444;">Stripe disconnected</div>' +
+      '<div style="flex:1 1 200px;min-width:0;"><div style="font-weight:700;font-size:13px;color:#ef4444;">Stripe disconnected</div>' +
       '<div class="psub" style="margin:2px 0 0;font-size:12px;">Reconnect to keep collecting member payments.</div></div>' +
       '<button class="btn btn-pri btn-sm" onclick="connectStripe()"><span class="ms">link</span> Reconnect</button></div>';
   } else {
-    el.innerHTML = '<div style="display:flex;align-items:center;gap:12px;padding:14px;border:1px solid rgba(99,91,255,.35);background:rgba(99,91,255,.06);border-radius:12px;">' +
+    el.innerHTML = '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px;border:1px solid rgba(99,91,255,.35);background:rgba(99,91,255,.06);border-radius:12px;">' +
       '<span class="ms" style="font-size:26px;color:#635bff;">account_balance</span>' +
-      '<div style="flex:1;"><div style="font-weight:700;font-size:13px;">Set up payments</div>' +
+      '<div style="flex:1 1 200px;min-width:0;"><div style="font-weight:700;font-size:13px;">Set up payments</div>' +
       '<div class="psub" style="margin:2px 0 0;font-size:12px;">Connect your Stripe account to charge members for memberships, packs and drop-ins. Money goes straight to you — FFP takes no cut. Takes about a minute if you already have Stripe.</div></div>' +
       '<button class="btn btn-pri" onclick="connectStripe()"><span class="ms">link</span> Connect Stripe</button></div>';
   }
@@ -3634,7 +3676,8 @@ function showPanel(id) {
   if (id === 'analytics') renderAnalytics();
   if (id === 'scheduling' && typeof renderScheduling === 'function') renderScheduling();
   if (id === 'members' && typeof renderMembers === 'function') renderMembers();
-  if (id === 'billing') { if (typeof renderPayments === 'function') renderPayments(); renderPaymentsCard(); }
+  if (id === 'billing') { if (typeof renderPayments === 'function') renderPayments(); }
+  if (id === 'payments') renderPaymentsCard();
   if (id === 'staff' && typeof renderStaff === 'function') renderStaff();
   if (id === 'appointments' && typeof renderAppointments === 'function') renderAppointments();
   if (id === 'plans') _callWhenReady('renderPlans');
