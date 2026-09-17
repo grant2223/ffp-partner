@@ -57,9 +57,17 @@ function _metric(label, val) {
     '<div style="font-size:18px;font-weight:800;color:var(--ffp-text);">' + val + '</div></div>';
 }
 
-// ─── Stripe Connect (accept card bookings on FFP) ──────────────────────────
+// ─── Stripe Connect ────────────────────────────────────────────────────────
+// The payments card is owned by renderPaymentsCard() in index.html, which reads the
+// provider row LIVE. This second card read window.FFP_PROVIDER.payments_status — a copy
+// cached at sign-in — so it showed a duplicate banner AND a stale one: after cancelling
+// setup it still said "Finish connecting payments". One card, one source of truth.
+// startConnect() below is left in place; nothing calls it now.
 var _stripeFlagHandled = false;
 function _connectCardHtml() {
+  return '';
+}
+function _connectCardHtmlLegacy() {
   var st = (window.FFP_PROVIDER && FFP_PROVIDER.payments_status) || 'not_connected';
   if (st === 'connected') {
     return '<div style="background:rgba(18,122,82,.12);border:1px solid rgba(18,122,82,.4);border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">' +
