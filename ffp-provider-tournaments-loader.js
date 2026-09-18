@@ -92,6 +92,20 @@
   function genderNames() { return ((window.FFP_TAX && window.FFP_TAX.genders) || ['Male', 'Female']).filter(function (g) { return g !== 'Prefer not to say'; }); }
   function cityNames() { var t = window.FFP_TAX; return (t && t.allCities) ? t.allCities() : []; }
   function countryNames() { var t = window.FFP_TAX; return t && t.cities ? Object.keys(t.cities) : []; }
+  // A player's grade is their playing standard, and is NOT the division they are
+  // entered in. FFP_TAX exposes no player-grade list, so it is read straight from
+  // taxonomy_items (list_key 'player_grade') and cached for the session.
+  var _grades = null;
+  async function gradeNames() {
+    if (_grades) return _grades;
+    var r;
+    try {
+      r = await sb().from('taxonomy_items').select('value').eq('list_key', 'player_grade')
+             .eq('active', true).order('sort_order');
+    } catch (e) { r = { data: null }; }
+    _grades = ((r && r.data) || []).map(function (x) { return x.value; });
+    return _grades;
+  }
   function dlOpts(arr) { return (arr || []).map(function (x) { return '<option value="' + esc(x) + '">'; }).join(''); }
   function schemaForActivity(act) { var s = (S.sports || []).find(function (x) { return (x.match_activities || []).some(function (a) { return String(a).toLowerCase() === String(act || '').toLowerCase(); }); }); return s ? s.name : 'Generic points'; }
   function sportHint() { var a = (document.getElementById('tg-sport') || {}).value; var h = document.getElementById('tg-sporthint'); if (h) h.textContent = 'Stats set: ' + schemaForActivity(a); }
@@ -570,6 +584,9 @@
     var stOpts = ENT_STATUS.map(function (x) {
       return '<option value="' + x[0] + '"' + (x[0] === en.status ? ' selected' : '') + '>' + x[1] + '</option>';
     }).join('');
+    var grOpts = '<option value="">Not set</option>' + (_grades || []).map(function (x) {
+      return '<option value="' + esc(x) + '"' + (x === en.grade ? ' selected' : '') + '>' + esc(x) + '</option>';
+    }).join('');
     var gl = groupLabels();
     var grpField = gl.length
       ? '<div class="f sm"><label>Group</label><select class="lg-sel" id="tg-ee-group">' +
@@ -590,6 +607,7 @@
         : '<div class="f gr"><label>Player</label><div class="ro">' + esc(en.name) + (en.nationality ? ', ' + esc(en.nationality) : '') + '</div></div>') +
       '<div class="f"><label>Division</label><select class="lg-sel" id="tg-ee-div">' + opts + '</select></div>' +
       '<div class="f sm"><label>Seed</label><input class="lg-in" id="tg-ee-seed" type="number" min="1" value="' + (en.seed == null ? '' : en.seed) + '"></div>' +
+      (isTeam ? '' : '<div class="f"><label>Grade</label><select class="lg-sel" id="tg-ee-grade">' + grOpts + '</select></div>') +
       grpField +
       '<div class="f"><label>Status</label><select class="lg-sel" id="tg-ee-status">' + stOpts + '</select></div>' +
       (S.entDel === en.id
@@ -607,7 +625,14 @@
       '<div class="msg" id="tg-ee-msg"></div></div>';
   }
 
-  function editEntrant(id) { S.entEdit = id; S.entDel = null; S.sqOpen = null; renderTab(); }
+  function editEntrant(id) {
+    S.entEdit = id; S.entDel = null; S.sqOpen = null;
+    // The grade list is fetched once; draw now, then redraw when it lands so the
+    // dropdown is never an empty select.
+    if (_grades) { renderTab(); return; }
+    renderTab();
+    gradeNames().then(function () { if (S.entEdit === id) renderTab(); });
+  }
   function cancelEntrantEdit() { S.entEdit = null; S.entDel = null; renderTab(); }
   function askRemoveEntrant() { S.entDel = S.entEdit; renderTab(); }
   function cancelRemoveEntrant() { S.entDel = null; renderTab(); }
@@ -618,6 +643,7 @@
     var g = function (k) { var el = document.getElementById(k); return el ? String(el.value || '').trim() : ''; };
     var msg = document.getElementById('tg-ee-msg');
     var patch = { division_id: g('tg-ee-div'), seed: g('tg-ee-seed'), status: g('tg-ee-status') };
+    if (document.getElementById('tg-ee-grade')) patch.grade = g('tg-ee-grade');
     if (document.getElementById('tg-ee-group')) patch.group_label = g('tg-ee-group');
     if (en.kind !== 'individual') {
       var nm = g('tg-ee-name');
