@@ -321,12 +321,8 @@
     var host2 = document.getElementById('lg-schedlist');
     if (!fx.length) { host2.innerHTML = '<div class="lg-empty">No fixtures yet — generate them on the Fixtures tab.</div>'; return; }
     S._fields = fields; S._offs = offs;
-    var byRound = {}; var order = [];
-    fx.forEach(function (f) { if (!byRound[f.round]) { byRound[f.round] = []; order.push(f.round); } byRound[f.round].push(f); });
-    order.sort(function (a, b) { return a - b; });
-    host2.innerHTML = order.map(function (rd) {
-      var list = byRound[rd];
-      return roundHead(roundLabel(rd), list.length, roundRange(list)) + '<div class="lg-rbody">' + list.map(schedRow).join('') + '</div>';
+    host2.innerHTML = fxGroups(fx).map(function (g) {
+      return roundHead(g.label, g.list.length, roundRange(g.list)) + '<div class="lg-rbody">' + g.list.map(schedRow).join('') + '</div>';
     }).join('');
   }
   function schedRow(f) {
@@ -339,7 +335,7 @@
     }).join('');
     var roleOpts = '<option value="">Role…</option>' + ROLES.map(function (r) { return '<option>' + r + '</option>'; }).join('');
     var offOpts = '<option value="">Official…</option>' + (S._offs || []).map(function (x) { return '<option value="' + x.id + '">' + esc(x.name || x.email) + '</option>'; }).join('');
-    return '<div class="lg-srow2" data-id="' + f.id + '"><div class="s-match"><b>' + esc((f.home && f.home.name) || 'TBD') + ' v ' + esc((f.away && f.away.name) || 'TBD') + '</b><small>' + roundLabel(f.round) + '</small>'
+    return '<div class="lg-srow2" data-id="' + f.id + '"><div class="s-match"><b>' + esc((f.home && f.home.name) || 'TBD') + ' v ' + esc((f.away && f.away.name) || 'TBD') + '</b><small>' + esc(fxLabel(f)) + '</small>'
       + '<div class="s-when"><input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"><input class="lg-in st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"></div></div>'
       + '<div class="s-right"><div class="fl">Surface</div><select class="lg-sel st-f" onchange="FFPLeague.schedSet(\'' + f.id + '\')">' + surfaceOpts(S._fields, f.field_id) + '</select>'
       + '<div class="fl">Officials</div>' + (tags ? '<div class="lg-offlist">' + tags + '</div>' : '')
@@ -637,12 +633,9 @@
       + (S.addMatch === 'fixtures' ? matchEditor() : '') + '<div id="lg-fixlist"></div>';
     var host2 = document.getElementById('lg-fixlist');
     if (!fx.length) { host2.innerHTML = '<div class="lg-empty">No fixtures yet — auto-generate the round-robin, or add one manually.</div>'; return; }
-    var byRound = {}; var order = [];
-    fx.forEach(function (f) { if (!byRound[f.round]) { byRound[f.round] = []; order.push(f.round); } byRound[f.round].push(f); });
-    order.sort(function (a, b) { return a - b; });
-    host2.innerHTML = order.map(function (rd) {
-      var list = byRound[rd]; var games = list.filter(function (f) { return !f.bye; });
-      return roundHead(roundLabel(rd), games.length, roundRange(games)) + '<div class="lg-rbody">' + list.map(fxRow).join('') + '</div>';
+    host2.innerHTML = fxGroups(fx).map(function (g) {
+      var games = g.list.filter(function (f) { return !f.bye; });
+      return roundHead(g.label, games.length, roundRange(games)) + '<div class="lg-rbody">' + g.list.map(fxRow).join('') + '</div>';
     }).join('');
   }
   // A computed (auto) bye is virtual (id "bye-…") — not editable/removable. A stored bye is a real row (stage='bye').
@@ -734,7 +727,36 @@
     var r; try { r = await sb().rpc('lt_match_add', { p_scope: 'league', p_division: S.divId, p_round: pre ? 0 : rd, p_home: h, p_away: a, p_when: when, p_field: fid, p_stage: pre ? 'preseason' : 'regular' }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not add', 'error'); return; } S.addMatch = null; S.addPre = false; toast(pre ? 'Preseason match added' : 'Fixture added', 'success'); renderTab();
   }
-  function roundLabel(rd) { return (+rd === 0) ? 'Preseason' : 'Round ' + rd; }
+  // A pre-season friendly is not part of the round-robin, so it gets its own
+  // section ahead of Round 1 and is never captioned "Round 1". The stage decides;
+  // the round number is only a tiebreak inside a stage.
+  function fxLabel(f) {
+    if (f && f.round_label) return f.round_label;          // the RPC says so
+    var st = String((f && f.stage) || 'regular').toLowerCase();
+    if (st === 'preseason') return 'Pre-season';
+    if (st === 'playoff') return 'Playoffs';
+    if (st === 'semi') return 'Semi-finals';
+    if (st === 'final') return 'Final';
+    return 'Round ' + ((f && f.round) != null ? f.round : 1);
+  }
+  function fxRank(f) {
+    if (f && f.stage_rank != null) return +f.stage_rank;
+    var st = String((f && f.stage) || 'regular').toLowerCase();
+    return st === 'preseason' ? 0 : st === 'playoff' ? 2 : st === 'semi' ? 3 : st === 'final' ? 4 : 1;
+  }
+  // Groups a fixture list into ordered sections: [{key, label, list}]
+  function fxGroups(fx) {
+    var by = {}, keys = [];
+    fx.forEach(function (f) {
+      var k = fxRank(f) + ':' + (fxRank(f) === 1 ? (f.round != null ? f.round : 1) : 0);
+      if (!by[k]) { by[k] = { key: k, rank: fxRank(f), round: +(f.round || 0), label: fxLabel(f), list: [] }; keys.push(k); }
+      by[k].list.push(f);
+    });
+    return keys.map(function (k) { return by[k]; }).sort(function (a, b) {
+      return a.rank - b.rank || a.round - b.round;
+    });
+  }
+  function roundLabel(rd) { return (+rd === 0) ? 'Pre-season' : 'Round ' + rd; }
   // ---------- MATCH CENTRE (organiser enters the scoring timeline) ----------
   var KIND_PTS = { try: 5, conversion: 2, penalty: 3, drop_goal: 3, goal: 1, point: 1, yellow_card: 0, red_card: 0 };
   var KIND_LBL = { try: 'Try', conversion: 'Conversion', penalty: 'Penalty', drop_goal: 'Drop goal', goal: 'Goal', point: 'Point', yellow_card: 'Yellow card', red_card: 'Red card' };
