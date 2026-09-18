@@ -658,7 +658,16 @@
   }
   function fxEdit(f) {
     var isBye = f.bye, teamH = (f.home && f.home.id) || '', teamA = (f.away && f.away.id) || '';
-    var flds = '<div class="f"><label>Round</label><input class="lg-in fe-r" type="number" value="' + (f.round || 1) + '" style="width:90px"></div>';
+    // A pre-season friendly is played BEFORE round 1, so the editor picks the
+    // stage. A bare round number could only ever say "Round 1", which is what
+    // used to drag a pre-season match back into the round-robin on every save.
+    var isPre = String(f.stage || '').toLowerCase() === 'preseason';
+    var flds = '<div class="f"><label>Stage</label><select class="lg-sel fe-st" style="min-width:150px" onchange="FFPLeague.fxStageChange(this)">'
+      + '<option value="regular"' + (isPre ? '' : ' selected') + '>Round</option>'
+      + '<option value="preseason"' + (isPre ? ' selected' : '') + '>Pre-season</option>'
+      + '</select></div>'
+      + '<div class="f fe-rwrap"' + (isPre ? ' style="display:none"' : '') + '><label>Round</label>'
+      + '<input class="lg-in fe-r" type="number" min="1" value="' + (isPre ? 1 : (f.round != null ? f.round : 1)) + '" style="width:90px"></div>';
     if (!isBye) flds += '<div class="f"><label>Date</label><input class="lg-in fe-d" type="date" value="' + fxDateVal(f) + '"></div>'
       + '<div class="f"><label>Time</label><input class="lg-in fe-t" type="time" value="' + (f.scheduled_at ? fmtTime(new Date(f.scheduled_at)) : '') + '"></div>'
       + '<div class="f" style="flex:1;min-width:160px"><label>Venue / surface</label><select class="lg-sel fe-f" style="width:100%">' + surfaceOpts(S._fields, f.field_id) + '</select></div>'
@@ -668,6 +677,12 @@
       + (isBye ? '<span class="vv">bye</span>' : '<span class="vv">v</span><select class="lg-sel fe-a" style="flex:1;min-width:150px">' + entOpts(teamA) + '</select>') + '</div>'
       + '<div class="edrow2">' + flds + '</div>'
       + '<div class="edfoot"><span class="sp"></span><button class="lg-btn ghost" onclick="FFPLeague.cancelEditFx()">Cancel</button><button class="lg-btn pri" onclick="FFPLeague.saveFx(\'' + f.id + '\',' + (isBye ? 'true' : 'false') + ')">' + ic('check') + 'Save</button></div></div>';
+  }
+  // Pre-season has no round number, so the field goes away with it
+  function fxStageChange(sel) {
+    var box = sel.closest('.lg-maed'); if (!box) return;
+    var w = box.querySelector('.fe-rwrap'); if (!w) return;
+    w.style.display = sel.value === 'preseason' ? 'none' : '';
   }
   function editFx(id) { S.editFx = id; S.delFx = null; renderTab(); }
   function cancelEditFx() { S.editFx = null; renderTab(); }
@@ -682,10 +697,13 @@
     var box = document.querySelector('.lg-maed[data-id="' + id + '"]'); if (!box) return;
     var h = (box.querySelector('.fe-h') || {}).value || null;
     var a = isBye ? null : ((box.querySelector('.fe-a') || {}).value || null);
-    var rd = +((box.querySelector('.fe-r') || {}).value) || 1;
+    var st = (box.querySelector('.fe-st') || {}).value || 'regular';
+    // pre-season sits before round 1; never let `|| 1` swallow the 0
+    var rdIn = +((box.querySelector('.fe-r') || {}).value);
+    var rd = st === 'preseason' ? 0 : (rdIn > 0 ? rdIn : 1);
     if (!isBye && (!h || !a || h === a)) { toast('Pick two different teams', 'error'); return; }
     if (isBye && !h) { toast('Pick a team', 'error'); return; }
-    var r; try { r = await sb().rpc('lt_match_update', { p_scope: 'league', p_match: id, p_home: h, p_away: a, p_round: rd }); } catch (e) { r = { error: e }; }
+    var r; try { r = await sb().rpc('lt_match_update', { p_scope: 'league', p_match: id, p_home: h, p_away: a, p_round: rd, p_stage: st }); } catch (e) { r = { error: e }; }
     if (r && r.error) { toast('Save failed', 'error'); return; }
     if (!isBye) {
       var dv = (box.querySelector('.fe-d') || {}).value, tv = (box.querySelector('.fe-t') || {}).value, fid = (box.querySelector('.fe-f') || {}).value || null;
@@ -1218,7 +1236,7 @@
     confirmGen: confirmGen, cancelGen: cancelGen, doGen: doGen, saveResults: saveResults,
     addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap, autoplan: autoplan, schedSet: schedSet,
     togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch, toggleBye: toggleBye, togglePre: togglePre,
-    editFx: editFx, cancelEditFx: cancelEditFx, saveFx: saveFx, delAsk: delAsk, delCancel: delCancel, delFx: delFx,
+    editFx: editFx, fxStageChange: fxStageChange, cancelEditFx: cancelEditFx, saveFx: saveFx, delAsk: delAsk, delCancel: delCancel, delFx: delFx,
     addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
     addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface,
     offAdd: offAdd, offRemove: offRemove,
