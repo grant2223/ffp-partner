@@ -2730,6 +2730,10 @@ a { color: var(--ffp-blue); text-decoration: none; }
         <div id="tg-root"></div>
       </section>
 
+      <section class="panel" id="panel-courts">
+        <div id="vc-root"></div>
+      </section>
+
       <!-- ════════════════════════════════════════════════════════════════
            BUSINESS MANAGEMENT — outline. Four panels, each with tabs that
            become real tools (DB + UI + some backend). Built one at a time.
@@ -2955,13 +2959,6 @@ a { color: var(--ffp-blue); text-decoration: none; }
             <div>Already on Stripe? Connecting attaches the account you <b>already have</b> — no new account is created. Your invoice ledger stays in <a href="javascript:void(0)" onclick="showPanel('billing')">Payments &amp; Invoices</a>.</div>
           </div>
         </div>
-      </section>
-
-      <!-- ════════ AWARDS ════════
-           Organizer + committee surface. All content is rendered by
-           ffp-provider-awards-loader.js into #awards-host. -->
-      <section class="panel" id="panel-awards">
-        <div id="awards-host"></div>
       </section>
 
       <!-- ════════ EVENTS ════════ -->
@@ -3397,6 +3394,7 @@ const NAV = [
   // ── Account (your FFP account. Always free — never gated.)
   //    Order is deliberate: Check-ins first (used daily), Settings last. ──
   { id: 'checkins',    icon: 'qr_code_scanner', label: 'Check-ins',        section: 'account' },
+  { id: 'courts',      icon: 'connected_tv',    label: 'Courts & screens', section: 'account' },
   { id: 'profile',     icon: 'storefront',      label: 'Profile',          section: 'account' },
   { id: 'payments',    icon: 'account_balance', label: 'Connect Payments', section: 'account' },
   { id: 'refer',       icon: 'redeem',          label: 'Refer & earn',     section: 'account' },
@@ -3419,7 +3417,6 @@ const NAV = [
   { id: 'trips',       icon: 'flight',          label: 'Trips',       section: 'engagement' },
   { id: 'quests',      icon: 'flag',            label: 'Quests',      section: 'engagement' },
   { id: 'competitions',icon: 'emoji_events',    label: 'Competitions',section: 'engagement' },
-  { id: 'awards',      icon: 'military_tech',   label: 'Awards',      section: 'engagement' },
   { id: 'leagues',     icon: 'sports_soccer',   label: 'Leagues',     section: 'engagement' },
   { id: 'tournaments', icon: 'account_tree',    label: 'Tournaments', section: 'engagement' },
   { id: 'offers',      icon: 'local_offer',     label: 'Offers',      section: 'engagement' },
@@ -3547,7 +3544,7 @@ function toggleNavSection(sec) {
 
 // v12: load a panel's data loader the first time that panel is opened.
 // Overview/identity loaders stay eager; only clearly panel-scoped ones defer.
-var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=25', 'members': 'ffp-provider-members-loader.js?v=11', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15', 'offers': 'ffp-provider-offers-loader.js?v=11', 'competitions': 'ffp-provider-competitions-loader.js?v=29', 'leagues': 'ffp-provider-leagues-loader.js?v=34', 'tournaments': 'ffp-provider-tournaments-loader.js?v=32', 'loyalty': 'ffp-provider-loyalty-loader.js?v=4', 'awards': 'ffp-provider-awards-loader.js?v=1' };
+var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=25', 'members': 'ffp-provider-members-loader.js?v=11', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15', 'offers': 'ffp-provider-offers-loader.js?v=11', 'competitions': 'ffp-provider-competitions-loader.js?v=29', 'leagues': 'ffp-provider-leagues-loader.js?v=35', 'tournaments': 'ffp-provider-tournaments-loader.js?v=33', 'courts': 'ffp-provider-courts-loader.js?v=1', 'loyalty': 'ffp-provider-loyalty-loader.js?v=4' };
 var _provLoaded = {};
 function _loadScriptOnce(src) {
   if (_provLoaded[src]) return;
@@ -3745,6 +3742,7 @@ function showPanel(id) {
   if (id === 'loyalty') _callWhenReady('ffpRenderLoyalty');
   if (id === 'leagues') _callWhenReady('ffpRenderLeagues');
   if (id === 'tournaments') _callWhenReady('ffpRenderTournaments');
+  if (id === 'courts') _callWhenReady('ffpRenderCourts');
   if (id === 'checkins') { renderCheckIns(); if (window.FFPQuestCheckins) FFPQuestCheckins.reload(); }
   if (id === 'refer' && window.FFPVenueQR && FFPVenueQR.renderRefer) FFPVenueQR.renderRefer();
   if (id === 'analytics') renderAnalytics();
@@ -3752,7 +3750,6 @@ function showPanel(id) {
   if (id === 'members' && typeof renderMembers === 'function') renderMembers();
   if (id === 'billing') { if (typeof renderPayments === 'function') renderPayments(); }
   if (id === 'payments') renderPaymentsCard();
-  if (id === 'awards') _callWhenReady('renderAwards');
   if (id === 'settings') { renderAccountSettings(); loadNotifyPrefs(); }
   if (id === 'staff' && typeof renderStaff === 'function') renderStaff();
   if (id === 'appointments' && typeof renderAppointments === 'function') renderAppointments();
