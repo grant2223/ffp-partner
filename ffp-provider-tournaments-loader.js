@@ -65,6 +65,8 @@
       '.lg-crest{width:32px;height:32px;border-radius:9px;flex:none;background:#241053 center/cover no-repeat;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.14);vertical-align:middle;}',
       '.lg-rnd{display:flex;align-items:center;gap:12px;margin:20px 0 2px;padding:12px 14px;background:linear-gradient(180deg,#f7fafc,#eef4f8);border:1px solid #e4edf3;border-radius:12px;cursor:pointer;user-select:none;} .lg-rnd:hover{background:linear-gradient(180deg,#f2f8fb,#e7f1f7);} .lg-rnd .chev{color:var(--ffp-blue);font-size:22px;transition:transform .2s;} .lg-rnd.collapsed .chev{transform:rotate(-90deg);} .lg-rnd .rt{font-size:14px;font-weight:900;color:var(--ffp-text);} .lg-rnd .rc{font-size:11px;font-weight:800;color:var(--ffp-blue);background:#e2eff6;padding:3px 10px;border-radius:20px;} .lg-rnd .rd{font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-rnd .sp{flex:1;} .lg-rbody.hidden{display:none;}',
       '.lg-venue{padding:18px 4px;border-bottom:1px solid var(--ffp-border);} .lg-vh{display:flex;align-items:center;gap:12px;} .lg-vpin{width:38px;height:38px;border-radius:11px;background:linear-gradient(180deg,#eaf4f9,#dcecf3);color:var(--ffp-blue);display:flex;align-items:center;justify-content:center;flex:none;} .lg-vpin .ms{font-size:21px;} .lg-vh .g{flex:1;min-width:0;} .lg-vh .g b{font-size:16px;font-weight:900;color:var(--ffp-text);} .lg-vh .g span{display:block;font-size:12.5px;color:var(--ffp-text-muted);font-weight:700;} .lg-vh .act{color:#9aa8b4;font-size:19px;cursor:pointer;padding:5px;border-radius:8px;} .lg-vh .act:hover{color:var(--ffp-blue);background:#f4f7f9;}',
+      '.tg-kind{position:absolute;left:8px;top:8px;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#a86a08;background:#fff4e0;padding:3px 7px;border-radius:6px;} .tg-awgrid{width:100%;text-align:left;margin-top:18px;} .tg-awrow{display:flex;gap:8px;margin-top:7px;} .tg-awrow.wrap{flex-wrap:wrap;} .tg-awrow .lg-btn{flex:1;justify-content:center;min-width:110px;} .tg-awrow .lg-btn.on{background:var(--ffp-blue);border-color:var(--ffp-blue);color:#fff;}',
+      '.lg-scrbtn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid #cfe0ea;background:#f5fafc;color:var(--ffp-blue);border-radius:9px;padding:5px 10px;font:inherit;font-size:12px;font-weight:900;letter-spacing:.06em;cursor:pointer;margin-right:10px;} .lg-scrbtn .ms{font-size:16px;} .lg-scr{max-width:520px;} .lg-scrlab{font-size:12.5px;font-weight:800;color:#7c8b97;margin-top:16px;} .lg-scrurl{font-size:26px;font-weight:900;color:#12232f;letter-spacing:-.4px;margin-top:6px;word-break:break-all;} .lg-scrnote{font-size:12px;font-weight:600;color:#9aa8b4;margin-top:10px;} .lg-scrsteps{text-align:left;margin-top:20px;display:flex;flex-direction:column;gap:11px;width:100%;} .lg-scrsteps div{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;font-weight:600;color:#43525c;line-height:1.5;} .lg-scrsteps b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ffp-blue);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;}',
       '.lg-surfs{margin:12px 0 0 51px;position:relative;} .lg-surfs:before{content:"";position:absolute;left:-13px;top:2px;bottom:18px;width:1.5px;background:#e4edf3;} .lg-surf{display:flex;align-items:center;gap:10px;padding:10px 0;font-size:14px;font-weight:600;border-bottom:1px solid #f4f7f9;} .lg-surf .ms{color:var(--ffp-blue);font-size:18px;opacity:.85;} .lg-surf .x{color:#c0cad2;cursor:pointer;font-size:18px;} .lg-surf .x:hover{color:#d64545;} .lg-addsurf{margin:12px 0 0 51px;} .lg-btn.ghostb{color:var(--ffp-blue);border-color:#d4e6ef;background:#f5fafc;} .lg-maplink{display:inline-flex;align-items:center;gap:3px;color:var(--ffp-blue);font-weight:800;text-decoration:none;} .lg-maplink .ms{font-size:15px;vertical-align:-3px;}',
       '.lg-srow2{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-srow2 .s-match b{font-size:15px;font-weight:800;} .lg-srow2 .s-match small{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;margin-top:3px;} .lg-srow2 .s-when{display:flex;gap:8px;margin-top:11px;} .lg-srow2 .s-when .lg-in{padding:8px 9px;font-size:13px;} .lg-srow2 .s-right{display:flex;flex-direction:column;gap:9px;} .lg-srow2 .fl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;} .lg-srow2 .st-f{padding:9px 10px;font-size:13px;}',
       '.lg-offlist{display:flex;flex-direction:column;gap:6px;} .lg-offtag{display:flex;align-items:center;gap:9px;font-size:13px;padding:7px 10px;border:1px solid var(--ffp-border-mid);border-radius:9px;background:#fbfcfd;} .lg-offtag .role{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ffp-blue);} .lg-offtag .nm{font-weight:700;} .lg-offtag .sp{flex:1;} .lg-offtag .x{color:#c0cad2;cursor:pointer;font-size:16px;} .lg-assign{display:flex;gap:7px;align-items:center;} .lg-assign .lg-sel{padding:7px 9px;font-size:12.5px;flex:1;} .lg-btn.sm{padding:7px 11px;font-size:12px;} .lg-maed{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px;margin-bottom:14px;} .lg-scpill{display:inline-block;font-size:9px;font-weight:900;letter-spacing:.05em;color:#0a8f5f;background:#e3f6ec;padding:2px 7px;border-radius:20px;vertical-align:middle;margin-left:6px;} .lg-scpill.inv{color:#8a6d00;background:#fff4d6;} .lg-scpill.txt{color:#5b6b75;background:#eef2f5;} .lg-ocap{max-width:180px;padding:7px 9px;font-size:12.5px;}',
@@ -72,7 +74,7 @@
       '.lg-per{display:flex;align-items:center;gap:10px;margin-bottom:14px;} .lg-per .sp{flex:1;} .lg-perchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;padding:7px 12px;border-radius:20px;background:#eef2f5;color:#5b6b75;} .lg-perchip.live{background:#fdeaea;color:#d6353b;} .lg-perchip.live .d{width:7px;height:7px;border-radius:50%;background:#d6353b;} .lg-perchip.ht{background:#fff4d6;color:#8a6d00;} .lg-perchip.ft{background:#e3f6ec;color:#0a8f5f;} .lg-perset{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);}',
       '.lg-trk{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:14px 16px;margin-bottom:18px;} .lg-trk-clock{display:flex;align-items:center;gap:12px;margin-bottom:14px;} .lg-trk-clock .t{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ffp-text);} .lg-trk-clock .sp{flex:1;} .lg-trk-grp{margin-bottom:12px;} .lg-trk-lab{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8a99a6;margin-bottom:6px;} .lg-trk-btns{display:flex;gap:10px;} .lg-trk-b{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:11px 10px;font:inherit;font-size:13.5px;font-weight:800;color:var(--ffp-text);cursor:pointer;} .lg-trk-b span{font-size:12px;font-weight:900;color:#8a99a6;} .lg-trk-b.on{border-color:var(--ffp-blue);background:#eaf4fb;color:var(--ffp-blue);} .lg-trk-b.on span{color:var(--ffp-blue);} .lg-trk-apply{display:flex;align-items:center;gap:12px;margin-top:4px;flex-wrap:wrap;} .lg-trk-apply .sum{flex:1;font-size:12.5px;font-weight:700;color:var(--ffp-text-muted);min-width:180px;} .lg-livebtn{color:#d6353b;border-color:#f3c6c6;background:#fdeff0;}',
       /* match centre */
-      '.lg-mcbtn{border:none;background:none;color:#9aa8b4;cursor:pointer;padding:4px;border-radius:8px;} .lg-mcbtn:hover{color:var(--ffp-blue);background:#f4f7f9;} .lg-mcbtn .ms{font-size:20px;} .tg-m .tg-mcbtn{position:absolute;top:4px;right:4px;} .tg-m{position:relative;}',
+      '.lg-mcbtn{border:none;background:none;color:#9aa8b4;cursor:pointer;padding:4px;border-radius:8px;} .lg-mcbtn:hover{color:var(--ffp-blue);background:#f4f7f9;} .lg-mcbtn .ms{font-size:20px;} .tg-m .tg-macts{position:absolute;top:4px;right:4px;display:flex;gap:2px;} .tg-mcbtn{position:static;} .tg-m{position:relative;}',
       '.lg-mchd{display:flex;align-items:center;justify-content:center;gap:16px;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-mchd .tm{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800;} .lg-mchd .tm.a{flex-direction:row-reverse;} .lg-mchd .scr{font-size:26px;font-weight:900;color:var(--ffp-text);min-width:80px;text-align:center;}',
       '.lg-mctabs{display:flex;gap:20px;border-bottom:1px solid var(--ffp-border);margin:8px 0 4px;} .lg-mctabs button{background:none;border:none;font:inherit;font-size:13.5px;font-weight:800;color:var(--ffp-text-muted);padding:11px 0;border-bottom:2.5px solid transparent;cursor:pointer;} .lg-mctabs button.on{color:var(--ffp-blue);border-bottom-color:var(--ffp-blue);}',
       '.lg-mcadd{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px 2px;border-bottom:1px solid var(--ffp-border);} .lg-mcadd .lg-sel{width:auto;flex:1;min-width:120px;padding:8px 10px;font-size:13px;} .lg-mcadd .lg-in{padding:8px 10px;font-size:13px;}',
@@ -193,6 +195,47 @@
     }).join('');
   }
   function togRound(btn) { btn.classList.toggle('collapsed'); var b = btn.nextElementSibling; if (b && b.classList.contains('lg-rbody')) b.classList.toggle('hidden'); }
+  // ── COURT SCOREBOARD ───────────────────────────────────────────────────
+  // A scoreboard is set up by typing an address into a TV's browser with a
+  // remote, so the court's five-character code is the thing that matters. The
+  // full /display/<uuid> link is no use to anyone holding a remote control.
+  var SCREEN_BASE = 'ffppassport.com';   // the member app's domain
+  function screenPanel(code, court) {
+    var url = SCREEN_BASE + '/s/' + code;
+    var old = document.getElementById('tg-scr'); if (old) old.remove();
+    var bk = document.createElement('div'); bk.id = 'tg-scr'; bk.className = 'lg-cfm';
+    bk.innerHTML = '<div class="lg-cfm-in lg-scr">'
+      + '<span class="ms lg-cfm-ic" style="color:var(--ffp-blue)">cast</span>'
+      + '<div class="lg-cfm-t">Scoreboard, ' + esc(court) + '</div>'
+      + '<div class="lg-scrlab">On the TV, open a browser and go to</div>'
+      + '<div class="lg-scrurl" id="tg-scrurl">' + esc(url) + '</div>'
+      + '<div class="lg-scrnote">Five characters, and no lookalikes: there is no O, I, L, S, B, 0, 1 or 5.</div>'
+      + '<div class="lg-scrsteps">'
+      +   '<div><b>1</b><span>Open the browser on the TV, or on a stick plugged into it.</span></div>'
+      +   '<div><b>2</b><span>Type that address and leave it. The board keeps its own screen awake.</span></div>'
+      +   '<div><b>3</b><span>Casting from a tablet instead? Tap the board, turn on 16:9, then full screen.</span></div>'
+      + '</div>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" id="tg-scr-x">Close</button>'
+      +   '<button class="lg-btn pri" id="tg-scr-c">' + ic('content_copy') + 'Copy the address</button></div>'
+      + '</div>';
+    document.body.appendChild(bk);
+    bk.querySelector('#tg-scr-x').onclick = function () { bk.remove(); };
+    bk.querySelector('#tg-scr-c').onclick = function () { copyScreen('tg-scrurl'); };
+  }
+  function copyScreen(id) {
+    var el = document.getElementById(id); if (!el) return;
+    var t = el.textContent || '';
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t);
+      else {
+        var ta = document.createElement('textarea');
+        ta.value = t; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      toast('Address copied', 'success');
+    } catch (e) { toast('Could not copy, type it instead', 'error'); }
+  }
+
   function roundHead(label, count, range) {
     return '<div class="lg-rnd" onclick="FFPTourn.togRound(this)"><span class="ms chev">expand_more</span><span class="rt">' + esc(label) + '</span><span class="rc">' + count + (count === 1 ? ' match' : ' matches') + '</span><span class="sp"></span><span class="rd"><span class="ms" style="font-size:14px;vertical-align:-2px">event</span> ' + esc(range) + '</span></div>';
   }
@@ -304,7 +347,11 @@
     h2.innerHTML = vs.map(function (v2) {
       if (S.venEdit === v2.id) return venueEditor(v2);
       var surfaces = (v2.surfaces || []).map(function (s) {
-        return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name) + '<span class="sp"></span><span class="ms x" onclick="FFPTourn.removeSurface(\'' + s.id + '\')">delete</span></div>';
+        return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name)
+          + '<span class="sp"></span>'
+          // The code a TV is set up with — see screenPanel().
+          + (s.screen_code ? '<button class="lg-scrbtn" title="Scoreboard for this court" onclick="FFPTourn.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\')"><span class="ms">cast</span>' + esc(s.screen_code) + '</button>' : '')
+          + '<span class="ms x" onclick="FFPTourn.removeSurface(\'' + s.id + '\')">delete</span></div>';
       }).join('');
       var vmeta = [v2.city, (v2.maps_url ? '<a class="lg-maplink" href="' + esc(v2.maps_url) + '" target="_blank" rel="noopener">' + ic('map') + 'Map</a>' : '')].filter(Boolean).join(', ');
       var addS = (S.surfAdd === v2.id)
@@ -352,6 +399,14 @@
     host.innerHTML =
       '<div class="lg-tool">' + (divs.length > 1 ? '<select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'schedule\')">' + divOpts() + '</select>' : '')
       + '<span class="lg-lab" style="margin:0">Match length</span><input class="lg-in" id="tg-mlen" type="number" value="30" style="width:64px"><span style="font-size:12px;color:var(--ffp-text-muted)">min</span>'
+      // The playing window, so a big draw rolls onto the next day instead of
+      // running to midnight. Days counts from the event start date.
+      + '<span class="lg-lab" style="margin:0">Each day</span>'
+      + '<input class="lg-in" id="tg-dstart" type="time" value="09:00" style="width:112px">'
+      + '<span style="font-size:12px;color:var(--ffp-text-muted)">to</span>'
+      + '<input class="lg-in" id="tg-dend" type="time" value="21:00" style="width:112px">'
+      + '<span class="lg-lab" style="margin:0">Days</span><input class="lg-in" id="tg-days" type="number" min="1" value="1" style="width:58px">'
+      + '<span class="lg-lab" style="margin:0">Between rounds</span><input class="lg-in" id="tg-rgap" type="number" min="0" value="0" style="width:58px"><span style="font-size:12px;color:var(--ffp-text-muted)">min</span>'
       + '<span class="sp"></span><button class="lg-btn" onclick="FFPTourn.addMatch()">' + ic('add') + 'Add match</button><button class="lg-btn pri" onclick="FFPTourn.autoplan()">' + ic('auto_awesome') + 'Auto-plan</button></div>'
       + (S.addMatch ? matchEditor() : '') + '<div id="tg-schedlist"><div class="lg-empty">Loading…</div></div>';
     if (!fields.length) { document.getElementById('tg-schedlist').innerHTML = '<div class="lg-empty">Add a venue + surfaces on the <b>Venues</b> tab, then Auto-plan.</div>'; }
@@ -417,8 +472,13 @@
   }
   async function autoplan() {
     if (!S.divId) { toast('Pick a division', 'error'); return; }
+    var gv = function (k, d) { var el = document.getElementById(k); var v = el ? String(el.value || '').trim() : ''; return v || d; };
     var len = +((document.getElementById('tg-mlen') || {}).value) || 30;
-    var r; try { r = await sb().rpc('lt_autoplan', { p_scope: 'tourn', p_division: S.divId, p_match_len: len }); } catch (e) { r = { error: e }; }
+    var args = { p_scope: 'tourn', p_division: S.divId, p_match_len: len,
+      p_day_start: gv('tg-dstart', '09:00'), p_day_end: gv('tg-dend', '21:00'),
+      p_days: Math.max(1, +gv('tg-days', '1') || 1),
+      p_round_gap: Math.max(0, +gv('tg-rgap', '0') || 0), p_round_barrier: true };
+    var r; try { r = await sb().rpc('lt_autoplan', args); } catch (e) { r = { error: e }; }
     if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a surface first (Venues tab)' : 'Could not plan', 'error'); return; }
     toast((r.data || 0) + ' matches planned', 'success'); renderTab();
   }
@@ -777,6 +837,30 @@
     for (var i = 0; i < rows.length; i++) { var el = rows[i]; var h = el.querySelector('.tg-hs').value, a = el.querySelector('.tg-as').value; if (h === '' || a === '') continue; try { await sb().rpc('tourn_result_save', { p_match: el.getAttribute('data-id'), p_home: +h, p_away: +a, p_sets: null, p_status: 'final' }); n++; } catch (e) {} }
     toast(n + ' results saved', 'success'); renderTab();
   }
+  async function setDrawFormat(v) {
+    var r;
+    try { r = await sb().rpc('tourn_division_save', { p_tourn: S.eventId, p_id: S.divId, p: { draw_format: v } }); }
+    catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not change the format', 'error'); return; }
+    toast(v === 'monrad' ? 'Monrad: everyone keeps playing' : 'Knockout draw', 'success');
+    refreshDetail();
+  }
+  async function monradRound() {
+    var r; try { r = await sb().rpc('tourn_monrad_round', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not draw the round', 'error'); return; }
+    var d = r.data || {};
+    if (d.ok === false) {
+      toast(d.reason === 'complete' ? 'All ' + d.rounds + ' rounds are drawn'
+          : d.reason === 'round_unfinished' ? 'Finish round ' + d.round + ' first'
+          : d.reason === 'not_enough_entrants' ? 'Needs at least two entrants'
+          : 'Could not draw the round', 'error');
+      return;
+    }
+    toast('Round ' + d.round + ' of ' + d.of + ': ' + d.matches + ' matches'
+      + (d.bye ? ', one bye' : '') + (d.rematch_forced ? ' (a rematch was unavoidable)' : ''), 'success');
+    refreshDetail();
+  }
+
   function confirmBracket() { S.brkConfirm = true; renderTab(); }
   function cancelBracket() { S.brkConfirm = false; renderTab(); }
   async function doBracket() {
@@ -789,12 +873,23 @@
   async function renderBracket(host) {
     var divs = S.detail.divisions || []; if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
     if (!S.divId) S.divId = divs[0].id; var ev = S.detail.event || {};
-    var buildCtl = S.brkConfirm
-      ? '<button class="lg-btn green" onclick="FFPTourn.doBracket()">' + ic('check') + 'Confirm build</button><button class="lg-btn ghost" onclick="FFPTourn.cancelBracket()">Cancel</button>'
-      : '<button class="lg-btn" onclick="FFPTourn.confirmBracket()">' + ic('account_tree') + (ev.group_stage ? 'Build from groups' : 'Draw bracket') + '</button>';
-    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'bracket\')">' + divOpts() + '</select><span class="sp"></span>' + buildCtl + '<button class="lg-btn pri" onclick="FFPTourn.saveBracketResults()">' + ic('check') + 'Save &amp; advance</button></div><div id="tg-brk"><div class="lg-empty">Loading…</div></div>';
+    // The draw format is per division: a straight knockout, or Monrad where
+    // nobody goes home — everyone is re-ranked each round and plays on, which
+    // is what a one-day club squash event usually wants.
+    var dv = divs.find(function (x) { return x.id === S.divId; }) || {};
+    var fmt = dv.draw_format || 'ko';
+    var fmtCtl = '<select class="lg-sel" style="width:auto;min-width:210px" onchange="FFPTourn.setDrawFormat(this.value)">'
+      + '<option value="ko"' + (fmt === 'ko' ? ' selected' : '') + '>Knockout draw</option>'
+      + '<option value="monrad"' + (fmt === 'monrad' ? ' selected' : '') + '>Monrad, everyone keeps playing</option>'
+      + '</select>';
+    var buildCtl = fmt === 'monrad'
+      ? '<button class="lg-btn" onclick="FFPTourn.monradRound()">' + ic('playlist_add') + 'Draw next round</button>'
+      : (S.brkConfirm
+        ? '<button class="lg-btn green" onclick="FFPTourn.doBracket()">' + ic('check') + 'Confirm build</button><button class="lg-btn ghost" onclick="FFPTourn.cancelBracket()">Cancel</button>'
+        : '<button class="lg-btn" onclick="FFPTourn.confirmBracket()">' + ic('account_tree') + (ev.group_stage ? 'Build from groups' : 'Draw bracket') + '</button>');
+    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'bracket\')">' + divOpts() + '</select>' + fmtCtl + '<span class="sp"></span>' + buildCtl + '<button class="lg-btn pri" onclick="FFPTourn.saveBracketResults()">' + ic('check') + 'Save &amp; advance</button></div><div id="tg-brk"><div class="lg-empty">Loading…</div></div>';
     var r; try { r = await sb().rpc('tourn_bracket', { p_division: S.divId }); } catch (e) { r = { error: e }; }
-    var ms = (r && r.data) || []; var host2 = document.getElementById('tg-brk');
+    var ms = (r && r.data) || []; S._bracket = ms; var host2 = document.getElementById('tg-brk');
     if (!ms.length) { host2.innerHTML = '<div class="lg-empty">No bracket yet — build it above.</div>'; return; }
     var byRound = {}; ms.filter(function (m) { return m.stage !== 'third'; }).forEach(function (m) { (byRound[m.round] = byRound[m.round] || []).push(m); });
     var cols = Object.keys(byRound).sort(function (a, b) { return a - b; }).map(function (rd) {
@@ -808,9 +903,78 @@
   function mHtml(m) {
     var hw = m.winner_entrant && m.home && m.home.id === m.winner_entrant, aw = m.winner_entrant && m.away && m.away.id === m.winner_entrant;
     var mc = (m.home && m.away) ? '<button class="lg-mcbtn tg-mcbtn" title="Match centre" onclick="FFPTourn.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + '</button>' : '';
+    // A no-show, retirement or disqualification still has a winner, and in a
+    // knockout that winner has to advance or the draw stalls.
+    var aw2 = (m.home && m.away && m.status !== 'final')
+      ? '<button class="lg-mcbtn tg-mcbtn" title="Walkover, retirement or disqualification" onclick="FFPTourn.awardPanel(\'' + m.id + '\')">' + ic('gavel') + '</button>' : '';
+    var kindTag = m.result_kind && m.result_kind !== 'played'
+      ? '<span class="tg-kind">' + esc(AWARD_SHORT[m.result_kind] || m.result_kind) + '</span>' : '';
     return '<div class="tg-m" data-id="' + m.id + '"><div class="s ' + (hw ? 'win' : (m.home ? '' : 'tbd')) + '"><b>' + esc((m.home && m.home.name) || 'TBD') + '</b><input type="number" class="tg-hs" value="' + (m.home_score != null ? m.home_score : '') + '" placeholder="–"></div>'
-      + '<div class="s ' + (aw ? 'win' : (m.away ? '' : 'tbd')) + '"><b>' + esc((m.away && m.away.name) || 'TBD') + '</b><input type="number" class="tg-as" value="' + (m.away_score != null ? m.away_score : '') + '" placeholder="–"></div>' + mc + '</div>';
+      + '<div class="s ' + (aw ? 'win' : (m.away ? '' : 'tbd')) + '"><b>' + esc((m.away && m.away.name) || 'TBD') + '</b><input type="number" class="tg-as" value="' + (m.away_score != null ? m.away_score : '') + '" placeholder="–"></div>' + kindTag
+      + ((aw2 || mc) ? '<div class="tg-macts">' + aw2 + mc + '</div>' : '') + '</div>';
   }
+  // ── AWARD A MATCH THAT WAS NOT PLAYED OUT ─────────────────────────────
+  var AWARD_KINDS = [['walkover', 'Walkover', 'Opponent did not show'],
+                     ['retired', 'Retired', 'Could not finish, injury or illness'],
+                     ['default', 'Default', 'Removed by the organiser'],
+                     ['disqualified', 'Disqualified', 'Removed for conduct']];
+  var AWARD_SHORT = { walkover: 'w/o', retired: 'ret', default: 'def', disqualified: 'dsq' };
+  var _awardM = null;
+  function awardPanel(id) {
+    var m = (S._bracket || []).find(function (x) { return x.id === id; });
+    if (!m) { toast('Reload the bracket first', 'error'); return; }
+    _awardM = m;
+    var old = document.getElementById('tg-aw'); if (old) old.remove();
+    var bk = document.createElement('div'); bk.id = 'tg-aw'; bk.className = 'lg-cfm';
+    bk.innerHTML = '<div class="lg-cfm-in lg-scr">'
+      + '<span class="ms lg-cfm-ic" style="color:#c47f00">gavel</span>'
+      + '<div class="lg-cfm-t">Award the match</div>'
+      + '<div class="lg-cfm-b">' + esc(m.home.name) + ' v ' + esc(m.away.name)
+      +   '<br>The winner still advances in the draw.</div>'
+      + '<div class="tg-awgrid">'
+      +   '<div class="lg-lab" style="margin:0">Who goes through</div>'
+      +   '<div class="tg-awrow">'
+      +     '<button class="lg-btn tg-awwin on" data-w="' + m.home.id + '">' + esc(m.home.name) + '</button>'
+      +     '<button class="lg-btn tg-awwin" data-w="' + m.away.id + '">' + esc(m.away.name) + '</button>'
+      +   '</div>'
+      +   '<div class="lg-lab" style="margin:12px 0 0">Why</div>'
+      +   '<div class="tg-awrow wrap">'
+      +     AWARD_KINDS.map(function (k, i) {
+              return '<button class="lg-btn tg-awkind' + (i === 0 ? ' on' : '') + '" data-k="' + k[0] + '" title="' + esc(k[2]) + '">' + esc(k[1]) + '</button>';
+            }).join('')
+      +   '</div>'
+      + '</div>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" id="tg-aw-x">Cancel</button>'
+      +   '<button class="lg-btn pri" id="tg-aw-go">' + ic('check') + 'Award it</button></div>'
+      + '</div>';
+    document.body.appendChild(bk);
+    var pick = function (sel, el) {
+      Array.prototype.slice.call(bk.querySelectorAll(sel)).forEach(function (b) { b.classList.remove('on'); });
+      el.classList.add('on');
+    };
+    Array.prototype.slice.call(bk.querySelectorAll('.tg-awwin')).forEach(function (b) {
+      b.onclick = function () { pick('.tg-awwin', b); };
+    });
+    Array.prototype.slice.call(bk.querySelectorAll('.tg-awkind')).forEach(function (b) {
+      b.onclick = function () { pick('.tg-awkind', b); };
+    });
+    bk.querySelector('#tg-aw-x').onclick = function () { bk.remove(); _awardM = null; };
+    bk.querySelector('#tg-aw-go').onclick = function () {
+      var w = bk.querySelector('.tg-awwin.on'), k = bk.querySelector('.tg-awkind.on');
+      bk.remove();
+      doAward(_awardM.id, w && w.getAttribute('data-w'), k && k.getAttribute('data-k'));
+    };
+  }
+  async function doAward(id, winner, kind) {
+    if (!id || !winner || !kind) { toast('Pick a winner and a reason', 'error'); return; }
+    var r;
+    try { r = await sb().rpc('lt_match_award', { p_scope: 'tourn', p_match: id, p_winner: winner, p_kind: kind }); }
+    catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not award the match', 'error'); return; }
+    toast((r.data && r.data.advanced) ? 'Awarded, winner advanced' : 'Awarded', 'success');
+    _awardM = null; renderTab();
+  }
+
   async function saveBracketResults() {
     var cards = Array.prototype.slice.call(document.querySelectorAll('#tg-brk .tg-m')); var n = 0;
     for (var i = 0; i < cards.length; i++) { var el = cards[i]; var h = el.querySelector('.tg-hs').value, a = el.querySelector('.tg-as').value; if (h === '' || a === '') continue; try { await sb().rpc('tourn_result_save', { p_match: el.getAttribute('data-id'), p_home: +h, p_away: +a, p_sets: null, p_status: 'final' }); n++; } catch (e) {} }
@@ -1208,12 +1372,12 @@
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
     sqToggle: sqToggle, sqSearch: sqSearch, sqAddMember: sqAddMember, sqNameOnly: sqNameOnly, sqInvite: sqInvite, sqRemove: sqRemove,
     doGroups: doGroups, saveGroupResults: saveGroupResults,
-    confirmBracket: confirmBracket, cancelBracket: cancelBracket, doBracket: doBracket, saveBracketResults: saveBracketResults,
+    confirmBracket: confirmBracket, cancelBracket: cancelBracket, doBracket: doBracket, setDrawFormat: setDrawFormat, monradRound: monradRound, awardPanel: awardPanel, doAward: doAward, saveBracketResults: saveBracketResults,
     setFmt: setFmt, buildStructure: buildStructure, pickImg: pickImg, entLogo: entLogo, addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap,
     autoplan: autoplan, schedSet: schedSet,
     togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch,
     addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
-    addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface,
+    addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface, screenPanel: screenPanel, copyScreen: copyScreen,
     offAdd: offAdd, offRemove: offRemove,
     openMatch: openMatch, closeMatch: closeMatch, addEvent: addEvent, removeEvent: removeEvent, saveResultFromEvents: saveResultFromEvents, addSub: addSub, removeSub: removeSub,
     trkToggle: trkToggle, trkReset: trkReset, trkPoss: trkPoss, trkHalf: trkHalf, trkApply: trkApply, mcSetPeriod: mcSetPeriod, _mcSetTime: _mcSetTime,
