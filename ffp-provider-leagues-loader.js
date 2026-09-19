@@ -54,6 +54,7 @@
       '.lg-rnd{display:flex;align-items:center;gap:12px;margin:20px 0 2px;padding:12px 14px;background:linear-gradient(180deg,#f7fafc,#eef4f8);border:1px solid #e4edf3;border-radius:12px;cursor:pointer;user-select:none;} .lg-rnd:hover{background:linear-gradient(180deg,#f2f8fb,#e7f1f7);} .lg-rnd .chev{color:var(--ffp-blue);font-size:22px;transition:transform .2s;} .lg-rnd.collapsed .chev{transform:rotate(-90deg);} .lg-rnd .rt{font-size:14px;font-weight:900;color:var(--ffp-text);} .lg-rnd .rc{font-size:11px;font-weight:800;color:var(--ffp-blue);background:#e2eff6;padding:3px 10px;border-radius:20px;} .lg-rnd .rd{font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-rnd .sp{flex:1;} .lg-rbody.hidden{display:none;}',
       /* venues */
       '.lg-venue{padding:18px 4px;border-bottom:1px solid var(--ffp-border);} .lg-vh{display:flex;align-items:center;gap:12px;} .lg-vpin{width:38px;height:38px;border-radius:11px;background:linear-gradient(180deg,#eaf4f9,#dcecf3);color:var(--ffp-blue);display:flex;align-items:center;justify-content:center;flex:none;} .lg-vpin .ms{font-size:21px;} .lg-vh .g{flex:1;min-width:0;} .lg-vh .g b{font-size:16px;font-weight:900;color:var(--ffp-text);} .lg-vh .g span{display:block;font-size:12.5px;color:var(--ffp-text-muted);font-weight:700;} .lg-vh .act{color:#9aa8b4;font-size:19px;cursor:pointer;padding:5px;border-radius:8px;} .lg-vh .act:hover{color:var(--ffp-blue);background:#f4f7f9;}',
+      '.lg-scrbtn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid #cfe0ea;background:#f5fafc;color:var(--ffp-blue);border-radius:9px;padding:5px 10px;font:inherit;font-size:12px;font-weight:900;letter-spacing:.06em;cursor:pointer;margin-right:10px;} .lg-scrbtn .ms{font-size:16px;} .lg-scr{max-width:520px;} .lg-scrlab{font-size:12.5px;font-weight:800;color:#7c8b97;margin-top:16px;} .lg-scrurl{font-size:26px;font-weight:900;color:#12232f;letter-spacing:-.4px;margin-top:6px;word-break:break-all;} .lg-scrnote{font-size:12px;font-weight:600;color:#9aa8b4;margin-top:10px;} .lg-scrsteps{text-align:left;margin-top:20px;display:flex;flex-direction:column;gap:11px;width:100%;} .lg-scrsteps div{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;font-weight:600;color:#43525c;line-height:1.5;} .lg-scrsteps b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ffp-blue);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;}',
       '.lg-surfs{margin:12px 0 0 51px;position:relative;} .lg-surfs:before{content:"";position:absolute;left:-13px;top:2px;bottom:18px;width:1.5px;background:#e4edf3;} .lg-surf{display:flex;align-items:center;gap:10px;padding:10px 0;font-size:14px;font-weight:600;border-bottom:1px solid #f4f7f9;} .lg-surf .ms{color:var(--ffp-blue);font-size:18px;opacity:.85;} .lg-surf .x{color:#c0cad2;cursor:pointer;font-size:18px;} .lg-surf .x:hover{color:#d64545;} .lg-addsurf{margin:12px 0 0 51px;} .lg-btn.ghostb{color:var(--ffp-blue);border-color:#d4e6ef;background:#f5fafc;} .lg-maplink{display:inline-flex;align-items:center;gap:3px;color:var(--ffp-blue);font-weight:800;text-decoration:none;} .lg-maplink .ms{font-size:15px;vertical-align:-3px;}',
       /* schedule v2 */
       '.lg-srow2{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-srow2 .s-match b{font-size:15px;font-weight:800;} .lg-srow2 .s-match small{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;margin-top:3px;} .lg-srow2 .s-when{display:flex;gap:8px;margin-top:11px;} .lg-srow2 .s-when .lg-in{padding:8px 9px;font-size:13px;} .lg-srow2 .s-right{display:flex;flex-direction:column;gap:9px;} .lg-srow2 .fl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;} .lg-srow2 .st-f{padding:9px 10px;font-size:13px;}',
@@ -187,6 +188,47 @@
     btn.classList.toggle('collapsed');
     var b = btn.nextElementSibling; if (b && b.classList.contains('lg-rbody')) b.classList.toggle('hidden');
   }
+  // ── COURT SCOREBOARD ───────────────────────────────────────────────────
+  // A scoreboard is set up by typing an address into a TV's browser with a
+  // remote, so the court's five-character code is the thing that matters. The
+  // full /display/<uuid> link is no use to anyone holding a remote control.
+  var SCREEN_BASE = 'ffppassport.com';   // the member app's domain
+  function screenPanel(code, court) {
+    var url = SCREEN_BASE + '/s/' + code;
+    var old = document.getElementById('lg-scr'); if (old) old.remove();
+    var bk = document.createElement('div'); bk.id = 'lg-scr'; bk.className = 'lg-cfm';
+    bk.innerHTML = '<div class="lg-cfm-in lg-scr">'
+      + '<span class="ms lg-cfm-ic" style="color:var(--ffp-blue)">cast</span>'
+      + '<div class="lg-cfm-t">Scoreboard, ' + esc(court) + '</div>'
+      + '<div class="lg-scrlab">On the TV, open a browser and go to</div>'
+      + '<div class="lg-scrurl" id="lg-scrurl">' + esc(url) + '</div>'
+      + '<div class="lg-scrnote">Five characters, and no lookalikes: there is no O, I, L, S, B, 0, 1 or 5.</div>'
+      + '<div class="lg-scrsteps">'
+      +   '<div><b>1</b><span>Open the browser on the TV, or on a stick plugged into it.</span></div>'
+      +   '<div><b>2</b><span>Type that address and leave it. The board keeps its own screen awake.</span></div>'
+      +   '<div><b>3</b><span>Casting from a tablet instead? Tap the board, turn on 16:9, then full screen.</span></div>'
+      + '</div>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" id="lg-scr-x">Close</button>'
+      +   '<button class="lg-btn pri" id="lg-scr-c">' + ic('content_copy') + 'Copy the address</button></div>'
+      + '</div>';
+    document.body.appendChild(bk);
+    bk.querySelector('#lg-scr-x').onclick = function () { bk.remove(); };
+    bk.querySelector('#lg-scr-c').onclick = function () { copyScreen('lg-scrurl'); };
+  }
+  function copyScreen(id) {
+    var el = document.getElementById(id); if (!el) return;
+    var t = el.textContent || '';
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t);
+      else {
+        var ta = document.createElement('textarea');
+        ta.value = t; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      toast('Address copied', 'success');
+    } catch (e) { toast('Could not copy, type it instead', 'error'); }
+  }
+
   function roundHead(label, count, range) {
     return '<div class="lg-rnd" onclick="FFPLeague.togRound(this)"><span class="ms chev">expand_more</span><span class="rt">' + esc(label) + '</span><span class="rc">' + count + (count === 1 ? ' match' : ' matches') + '</span><span class="sp"></span><span class="rd"><span class="ms" style="font-size:14px;vertical-align:-2px">event</span> ' + esc(range) + '</span></div>';
   }
@@ -260,7 +302,11 @@
     h2.innerHTML = vs.map(function (v) {
       if (S.venEdit === v.id) return venueEditor(v);
       var surfaces = (v.surfaces || []).map(function (s) {
-        return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name) + '<span class="sp"></span><span class="ms x" onclick="FFPLeague.removeSurface(\'' + s.id + '\')">delete</span></div>';
+        return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name)
+          + '<span class="sp"></span>'
+          // The code a TV is set up with — see screenPanel().
+          + (s.screen_code ? '<button class="lg-scrbtn" title="Scoreboard for this court" onclick="FFPLeague.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\')"><span class="ms">cast</span>' + esc(s.screen_code) + '</button>' : '')
+          + '<span class="ms x" onclick="FFPLeague.removeSurface(\'' + s.id + '\')">delete</span></div>';
       }).join('');
       var vmeta = [v.city, (v.maps_url ? '<a class="lg-maplink" href="' + esc(v.maps_url) + '" target="_blank" rel="noopener">' + ic('map') + 'Map</a>' : '')].filter(Boolean).join(', ');
       var addS = (S.surfAdd === v.id)
@@ -308,6 +354,14 @@
     host.innerHTML =
       '<div class="lg-tool">' + (divs.length > 1 ? '<select class="lg-sel" onchange="FFPLeague.setDiv(this.value,\'schedule\')">' + divOpts() + '</select>' : '')
       + '<span class="lg-lab" style="margin:0">Match length</span><input class="lg-in" id="lg-mlen" type="number" value="30" style="width:64px"><span style="font-size:12px;color:var(--ffp-text-muted)">min</span>'
+      // The playing window, so a big draw rolls onto the next day instead of
+      // running to midnight. Days counts from the event start date.
+      + '<span class="lg-lab" style="margin:0">Each day</span>'
+      + '<input class="lg-in" id="lg-dstart" type="time" value="09:00" style="width:112px">'
+      + '<span style="font-size:12px;color:var(--ffp-text-muted)">to</span>'
+      + '<input class="lg-in" id="lg-dend" type="time" value="21:00" style="width:112px">'
+      + '<span class="lg-lab" style="margin:0">Days</span><input class="lg-in" id="lg-days" type="number" min="1" value="1" style="width:58px">'
+      + '<span class="lg-lab" style="margin:0">Between rounds</span><input class="lg-in" id="lg-rgap" type="number" min="0" value="0" style="width:58px"><span style="font-size:12px;color:var(--ffp-text-muted)">min</span>'
       + '<span class="sp"></span><button class="lg-btn" onclick="FFPLeague.addMatch(\'schedule\')">' + ic('add') + 'Add match</button><button class="lg-btn pri" onclick="FFPLeague.autoplan()">' + ic('auto_awesome') + 'Auto-plan</button></div>'
       + (S.addMatch === 'schedule' ? matchEditor() : '')
       + '<div id="lg-schedlist"><div class="lg-empty">Loading…</div></div>';
@@ -343,8 +397,13 @@
   }
   async function autoplan() {
     if (!S.divId) { toast('Pick a division', 'error'); return; }
+    var gv = function (k, d) { var el = document.getElementById(k); var v = el ? String(el.value || '').trim() : ''; return v || d; };
     var len = +((document.getElementById('lg-mlen') || {}).value) || 30;
-    var r; try { r = await sb().rpc('lt_autoplan', { p_scope: 'league', p_division: S.divId, p_match_len: len }); } catch (e) { r = { error: e }; }
+    var args = { p_scope: 'league', p_division: S.divId, p_match_len: len,
+      p_day_start: gv('lg-dstart', '09:00'), p_day_end: gv('lg-dend', '21:00'),
+      p_days: Math.max(1, +gv('lg-days', '1') || 1),
+      p_round_gap: Math.max(0, +gv('lg-rgap', '0') || 0), p_round_barrier: true };
+    var r; try { r = await sb().rpc('lt_autoplan', args); } catch (e) { r = { error: e }; }
     if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a surface first (Venues tab)' : 'Could not plan', 'error'); return; }
     toast((r.data || 0) + ' matches planned', 'success'); renderTab();
   }
@@ -1238,7 +1297,7 @@
     togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch, toggleBye: toggleBye, togglePre: togglePre,
     editFx: editFx, fxStageChange: fxStageChange, cancelEditFx: cancelEditFx, saveFx: saveFx, delAsk: delAsk, delCancel: delCancel, delFx: delFx,
     addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
-    addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface,
+    addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface, screenPanel: screenPanel, copyScreen: copyScreen,
     offAdd: offAdd, offRemove: offRemove,
     openMatch: openMatch, closeMatch: closeMatch, addEvent: addEvent, removeEvent: removeEvent, saveResultFromEvents: saveResultFromEvents, addSub: addSub, removeSub: removeSub,
     mcTab: mcTab, mcPickStatPlayer: mcPickStatPlayer, saveStats: saveStats, setLive: setLive, saveTeamStats: saveTeamStats, saveStream: saveStream,
