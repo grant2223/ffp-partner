@@ -10,6 +10,18 @@
   function root() { return document.getElementById('tg-root'); }
   function ic(n) { return '<span class="ms">' + n + '</span>'; }
   var STAGE = { r64: 'Round of 64', r32: 'Round of 32', r16: 'Round of 16', quarter: 'Quarter-finals', semi: 'Semi-finals', final: 'Final', third: '3rd place' };
+  function stageLbl(m) { return m.stage === 'round' ? 'Round ' + (m.round || 1) : (STAGE[m.stage] || m.stage); }
+  // Extra draws a knockout can carry. Every loser of the named round plays on
+  // in the next draw down, so nobody travels to an event for one match.
+  var SIDE_DRAWS = [
+    ['none', 'Main draw only'],
+    ['plate', 'Plate, first-round losers'],
+    ['plate_bowl', 'Cup, Plate, Bowl'],
+    ['plate_bowl_shield', 'Cup, Plate, Bowl, Shield'],
+    ['qf_plate', 'Plate, quarter-final losers'],
+    ['consolation', 'Feed-in consolation'],
+    ['places', 'Every place played off (compass)']
+  ];
 
   var S = { view: 'list', eventId: null, detail: null, tab: 'details', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, grpDraw: false, brkConfirm: false };
 
@@ -48,7 +60,7 @@
     if (document.getElementById('tgx-css')) return;
     var css = document.createElement('style'); css.id = 'tgx-css';
     css.textContent = [
-      '.tg-brk{overflow-x:auto;padding:6px 2px 16px;} .tg-brkin{display:flex;gap:16px;min-width:max-content;} .tg-thirdwrap{margin-top:16px;border-top:1px solid var(--ffp-border);padding-top:16px;}',
+      '.tg-brk{overflow-x:auto;padding:6px 2px 16px;} .tg-brkin{display:flex;gap:16px;min-width:max-content;} .tg-thirdwrap{margin-top:16px;border-top:1px solid var(--ffp-border);padding-top:16px;} .tg-m.tg-void{visibility:hidden;}',
       '.tg-rnd{display:flex;flex-direction:column;justify-content:space-around;gap:14px;min-width:200px;} .tg-rnd .rh{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:#9aa8b4;text-align:center;margin-bottom:2px;}',
       '.tg-m{background:#fff;border:1px solid #d7dee5;border-radius:11px;overflow:hidden;} .tg-m .s{display:flex;align-items:center;gap:7px;padding:7px 9px;} .tg-m .s+.s{border-top:1px solid #eef1f6;} .tg-m .s b{flex:1;font-size:12.5px;font-weight:700;color:#12232f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .tg-m .s input{width:40px;padding:5px;border:1.5px solid #d7dee5;border-radius:7px;font:inherit;font-weight:800;text-align:center;} .tg-m .s.win b{color:#0a8f5f;} .tg-m .s.tbd b{color:#9aa8b4;font-weight:600;}',
       '.tg-grph{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:#12232f;margin:16px 0 4px;}',
@@ -66,7 +78,7 @@
       '.lg-rnd{display:flex;align-items:center;gap:12px;margin:20px 0 2px;padding:12px 14px;background:linear-gradient(180deg,#f7fafc,#eef4f8);border:1px solid #e4edf3;border-radius:12px;cursor:pointer;user-select:none;} .lg-rnd:hover{background:linear-gradient(180deg,#f2f8fb,#e7f1f7);} .lg-rnd .chev{color:var(--ffp-blue);font-size:22px;transition:transform .2s;} .lg-rnd.collapsed .chev{transform:rotate(-90deg);} .lg-rnd .rt{font-size:14px;font-weight:900;color:var(--ffp-text);} .lg-rnd .rc{font-size:11px;font-weight:800;color:var(--ffp-blue);background:#e2eff6;padding:3px 10px;border-radius:20px;} .lg-rnd .rd{font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-rnd .sp{flex:1;} .lg-rbody.hidden{display:none;}',
       '.lg-venue{padding:18px 4px;border-bottom:1px solid var(--ffp-border);} .lg-vh{display:flex;align-items:center;gap:12px;} .lg-vpin{width:38px;height:38px;border-radius:11px;background:linear-gradient(180deg,#eaf4f9,#dcecf3);color:var(--ffp-blue);display:flex;align-items:center;justify-content:center;flex:none;} .lg-vpin .ms{font-size:21px;} .lg-vh .g{flex:1;min-width:0;} .lg-vh .g b{font-size:16px;font-weight:900;color:var(--ffp-text);} .lg-vh .g span{display:block;font-size:12.5px;color:var(--ffp-text-muted);font-weight:700;} .lg-vh .act{color:#9aa8b4;font-size:19px;cursor:pointer;padding:5px;border-radius:8px;} .lg-vh .act:hover{color:var(--ffp-blue);background:#f4f7f9;}',
       '.tg-kind{position:absolute;left:8px;top:8px;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#a86a08;background:#fff4e0;padding:3px 7px;border-radius:6px;} .tg-awgrid{width:100%;text-align:left;margin-top:18px;} .tg-awrow{display:flex;gap:8px;margin-top:7px;} .tg-awrow.wrap{flex-wrap:wrap;} .tg-awrow .lg-btn{flex:1;justify-content:center;min-width:110px;} .tg-awrow .lg-btn.on{background:var(--ffp-blue);border-color:var(--ffp-blue);color:#fff;}',
-      '.lg-scrbtn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid #cfe0ea;background:#f5fafc;color:var(--ffp-blue);border-radius:9px;padding:5px 10px;font:inherit;font-size:12px;font-weight:900;letter-spacing:.06em;cursor:pointer;margin-right:10px;} .lg-scrbtn .ms{font-size:16px;} .lg-scr{max-width:520px;} .lg-scrlab{font-size:12.5px;font-weight:800;color:#7c8b97;margin-top:16px;} .lg-scrurl{font-size:26px;font-weight:900;color:#12232f;letter-spacing:-.4px;margin-top:6px;word-break:break-all;} .lg-scrnote{font-size:12px;font-weight:600;color:#9aa8b4;margin-top:10px;} .lg-scrsteps{text-align:left;margin-top:20px;display:flex;flex-direction:column;gap:11px;width:100%;} .lg-scrsteps div{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;font-weight:600;color:#43525c;line-height:1.5;} .lg-scrsteps b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ffp-blue);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;}',
+      '.lg-scrbtn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid #cfe0ea;background:#f5fafc;color:var(--ffp-blue);border-radius:9px;padding:5px 10px;font:inherit;font-size:12px;font-weight:900;letter-spacing:.06em;cursor:pointer;margin-right:10px;} .lg-scrbtn .ms{font-size:16px;} .lg-scrbtn.perm{border-color:#f2c14e;background:#fffaf0;color:#9a6b00;} .lg-vclink{width:230px!important;min-width:0;flex:none;margin-left:auto;height:36px!important;padding:0 30px 0 10px!important;font-size:16px!important;margin-right:10px;box-sizing:border-box;} .lg-scr{max-width:520px;} .lg-scrlab{font-size:12.5px;font-weight:800;color:#7c8b97;margin-top:16px;} .lg-scrurl{font-size:26px;font-weight:900;color:#12232f;letter-spacing:-.4px;margin-top:6px;word-break:break-all;} .lg-scrnote{font-size:12px;font-weight:600;color:#9aa8b4;margin-top:10px;} .lg-scrsteps{text-align:left;margin-top:20px;display:flex;flex-direction:column;gap:11px;width:100%;} .lg-scrsteps div{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;font-weight:600;color:#43525c;line-height:1.5;} .lg-scrsteps b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ffp-blue);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;}',
       '.lg-surfs{margin:12px 0 0 51px;position:relative;} .lg-surfs:before{content:"";position:absolute;left:-13px;top:2px;bottom:18px;width:1.5px;background:#e4edf3;} .lg-surf{display:flex;align-items:center;gap:10px;padding:10px 0;font-size:14px;font-weight:600;border-bottom:1px solid #f4f7f9;} .lg-surf .ms{color:var(--ffp-blue);font-size:18px;opacity:.85;} .lg-surf .x{color:#c0cad2;cursor:pointer;font-size:18px;} .lg-surf .x:hover{color:#d64545;} .lg-addsurf{margin:12px 0 0 51px;} .lg-btn.ghostb{color:var(--ffp-blue);border-color:#d4e6ef;background:#f5fafc;} .lg-maplink{display:inline-flex;align-items:center;gap:3px;color:var(--ffp-blue);font-weight:800;text-decoration:none;} .lg-maplink .ms{font-size:15px;vertical-align:-3px;}',
       '.lg-srow2{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-srow2 .s-match b{font-size:15px;font-weight:800;} .lg-srow2 .s-match small{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;margin-top:3px;} .lg-srow2 .s-when{display:flex;gap:8px;margin-top:11px;} .lg-srow2 .s-when .lg-in{padding:8px 9px;font-size:13px;} .lg-srow2 .s-right{display:flex;flex-direction:column;gap:9px;} .lg-srow2 .fl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;} .lg-srow2 .st-f{padding:9px 10px;font-size:13px;}',
       '.lg-offlist{display:flex;flex-direction:column;gap:6px;} .lg-offtag{display:flex;align-items:center;gap:9px;font-size:13px;padding:7px 10px;border:1px solid var(--ffp-border-mid);border-radius:9px;background:#fbfcfd;} .lg-offtag .role{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ffp-blue);} .lg-offtag .nm{font-weight:700;} .lg-offtag .sp{flex:1;} .lg-offtag .x{color:#c0cad2;cursor:pointer;font-size:16px;} .lg-assign{display:flex;gap:7px;align-items:center;} .lg-assign .lg-sel{padding:7px 9px;font-size:12.5px;flex:1;} .lg-btn.sm{padding:7px 11px;font-size:12px;} .lg-maed{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px;margin-bottom:14px;} .lg-scpill{display:inline-block;font-size:9px;font-weight:900;letter-spacing:.05em;color:#0a8f5f;background:#e3f6ec;padding:2px 7px;border-radius:20px;vertical-align:middle;margin-left:6px;} .lg-scpill.inv{color:#8a6d00;background:#fff4d6;} .lg-scpill.txt{color:#5b6b75;background:#eef2f5;} .lg-ocap{max-width:180px;padding:7px 9px;font-size:12.5px;}',
@@ -199,9 +211,9 @@
   // A scoreboard is set up by typing an address into a TV's browser with a
   // remote, so the court's five-character code is the thing that matters. The
   // full /display/<uuid> link is no use to anyone holding a remote control.
-  var SCREEN_BASE = 'ffppassport.com';   // the member app's domain
-  function screenPanel(code, court) {
-    var url = SCREEN_BASE + '/s/' + code;
+  var SCREEN_BASE = 'score.findfitpeople.com';   // the scoreboard address (Vercel, ffp-app)
+  function screenPanel(code, court, permanent) {
+    var url = SCREEN_BASE + '/' + code;
     var old = document.getElementById('tg-scr'); if (old) old.remove();
     var bk = document.createElement('div'); bk.id = 'tg-scr'; bk.className = 'lg-cfm';
     bk.innerHTML = '<div class="lg-cfm-in lg-scr">'
@@ -209,7 +221,7 @@
       + '<div class="lg-cfm-t">Scoreboard, ' + esc(court) + '</div>'
       + '<div class="lg-scrlab">On the TV, open a browser and go to</div>'
       + '<div class="lg-scrurl" id="tg-scrurl">' + esc(url) + '</div>'
-      + '<div class="lg-scrnote">Five characters, and no lookalikes: there is no O, I, L, S, B, 0, 1 or 5.</div>'
+      + '<div class="lg-scrnote">' + (permanent ? 'This is the court\'s own screen. The code never changes, and it shows every match played on this court.' : 'This screen is for this event only.') + '</div>'
       + '<div class="lg-scrsteps">'
       +   '<div><b>1</b><span>Open the browser on the TV, or on a stick plugged into it.</span></div>'
       +   '<div><b>2</b><span>Type that address and leave it. The board keeps its own screen awake.</span></div>'
@@ -343,14 +355,29 @@
       + (S.venAdd ? venueEditor(null) : '') + '<div id="tg-venlist"><div class="lg-empty">Loading…</div></div>';
     var r; try { r = await sb().rpc('lt_venues_list', { p_scope: 'tourn', p_event: S.eventId }); } catch (e) { r = { error: e }; }
     var vs = (r && r.data) || []; var h2 = document.getElementById('tg-venlist');
+    // The organiser's own venue courts (Partner > Courts & screens). A court
+    // stood on one of them uses that court's permanent screen, so the TV on
+    // the wall shows this event without being set up again.
+    var mc; try { mc = await sb().rpc('vc_mine'); } catch (e) { mc = {}; }
+    var mine = (mc && mc.data) || []; S._vcMine = mine;
+    var provs = []; mine.forEach(function (c) { if (!provs.some(function (p) { return p.id === c.provider_id; })) provs.push({ id: c.provider_id, name: c.venue }); });
+    var useBar = provs.length ? '<div class="lg-tool" style="margin-top:0">' + provs.map(function (p) {
+        return '<button class="lg-btn" onclick="FFPTourn.useMyCourts(\'' + p.id + '\')">' + ic('connected_tv') + 'Add courts from ' + esc(p.name) + '</button>';
+      }).join('') + '</div>' : '';
+    if (useBar) h2.insertAdjacentHTML('beforebegin', '<div id="tg-vcbar">' + useBar + '</div>');
     if (!vs.length && !S.venAdd) { h2.innerHTML = '<div class="lg-empty">No venues yet. Add a venue, then its courts.</div>'; return; }
     h2.innerHTML = vs.map(function (v2) {
       if (S.venEdit === v2.id) return venueEditor(v2);
       var surfaces = (v2.surfaces || []).map(function (s) {
+        var link = (S._vcMine || []).length
+          ? '<select class="lg-sel lg-vclink" title="Which screen shows this court" onchange="FFPTourn.linkCourt(\'' + s.id + '\',this.value)">'
+            + '<option value="">Event-only screen</option>'
+            + S._vcMine.map(function (c) { var one = S._vcMine.every(function (x) { return x.provider_id === c.provider_id; }); return '<option value="' + c.id + '"' + (c.id === s.venue_court_id ? ' selected' : '') + '>' + esc(one ? c.name + ' screen' : c.name + ', ' + c.venue) + '</option>'; }).join('')
+            + '</select>' : '';
         return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name)
-          + '<span class="sp"></span>'
+          + '<span class="sp"></span>' + link
           // The code a TV is set up with — see screenPanel().
-          + (s.screen_code ? '<button class="lg-scrbtn" title="Scoreboard for this court" onclick="FFPTourn.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\')"><span class="ms">cast</span>' + esc(s.screen_code) + '</button>' : '')
+          + (s.screen_code ? '<button class="lg-scrbtn' + (s.permanent ? ' perm' : '') + '" title="Scoreboard for this court" onclick="FFPTourn.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\',' + (s.permanent ? 'true' : 'false') + ')"><span class="ms">' + (s.permanent ? 'connected_tv' : 'cast') + '</span>' + esc(s.screen_code) + '</button>' : '')
           + '<span class="ms x" onclick="FFPTourn.removeSurface(\'' + s.id + '\')">delete</span></div>';
       }).join('');
       var vmeta = [v2.city, (v2.maps_url ? '<a class="lg-maplink" href="' + esc(v2.maps_url) + '" target="_blank" rel="noopener">' + ic('map') + 'Map</a>' : '')].filter(Boolean).join(', ');
@@ -381,6 +408,18 @@
   }
   async function removeVenue(id) { await sb().rpc('lt_venue_remove', { p_id: id }); toast('Removed', 'success'); renderTab(); }
   function addSurface(vid) { S.surfAdd = vid; renderTab(); }
+  async function useMyCourts(pid) {
+    var r; try { r = await sb().rpc('lt_fields_from_venue', { p_scope: 'tourn', p_event: S.eventId, p_provider: pid }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not add the courts', 'error'); return; }
+    toast(r.data ? (r.data + ' court' + (r.data === 1 ? '' : 's') + ' added, on their own screens') : 'All your courts are already here', 'success');
+    renderTab();
+  }
+  async function linkCourt(fid, cid) {
+    var r; try { r = await sb().rpc('lt_field_link', { p_field: fid, p_court: cid || null }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not change the screen', 'error'); return; }
+    toast(cid ? 'Now on that court\'s screen' : 'Back to an event-only screen', 'success');
+    renderTab();
+  }
   function cancelSurface() { S.surfAdd = null; renderTab(); }
   async function saveSurface(vid) {
     var nm = v('tg-sfname'); if (!nm || !nm.trim()) return;
@@ -412,8 +451,12 @@
     if (!fields.length) { document.getElementById('tg-schedlist').innerHTML = '<div class="lg-empty">Add a venue + surfaces on the <b>Venues</b> tab, then Auto-plan.</div>'; }
     if (!S.divId) { document.getElementById('tg-schedlist').innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
     var names = await entrantNames(S.divId); await loadEntrantsArr();
-    var mr; try { mr = await sb().from('tourn_matches').select('id,stage,group_label,round,slot,home_entrant,away_entrant,scheduled_at,court,field_id').eq('division_id', S.divId).order('round').order('slot'); } catch (e) { mr = { error: e }; }
-    var ms = (mr && mr.data) || []; var offr = await sb().rpc('lt_officials_list', { p_scope: 'tourn', p_event: S.eventId }); var offs = (offr && offr.data) || [];
+    var mr; try { mr = await sb().from('tourn_matches').select('id,stage,group_label,round,play_round,draw,slot,status,home_entrant,away_entrant,scheduled_at,court,field_id').eq('division_id', S.divId).neq('status', 'void').order('round').order('slot'); } catch (e) { mr = { error: e }; }
+    var ms = (mr && mr.data) || [];
+    var dnm = {}, dsort = {};
+    try { var dl = await sb().rpc('tourn_draws_list', { p_division: S.divId }); ((dl && dl.data) || []).forEach(function (d) { dnm[d.key] = d.name; dsort[d.key] = d.sort; }); } catch (e) {}
+    ms.forEach(function (m) { m._draw = (m.draw && m.draw !== 'main') ? (dnm[m.draw] || '') : ''; m._dsort = dsort[m.draw] || 0; });
+    var offr = await sb().rpc('lt_officials_list', { p_scope: 'tourn', p_event: S.eventId }); var offs = (offr && offr.data) || [];
     S._fields = fields; S._offs = offs;
     var host2 = document.getElementById('tg-schedlist');
     if (!ms.length) { host2.innerHTML = '<div class="lg-empty">No matches yet — draw groups or build the bracket first, or add one manually.</div>'; return; }
@@ -431,7 +474,8 @@
     var ko = ms.filter(function (m) { return m.stage !== 'group'; });
     grp.sort(function (a, b) { return (a.group_label || '').localeCompare(b.group_label || '') || (a.round || 0) - (b.round || 0) || (a.slot || 0) - (b.slot || 0); });
     var koRank = { r64: 1, r32: 2, r16: 3, quarter: 4, semi: 5, third: 6, final: 7 };
-    ko.sort(function (a, b) { return (koRank[a.stage] || 9) - (koRank[b.stage] || 9) || (a.slot || 0) - (b.slot || 0); });
+    // in playing order: the time slot first, then Main before Plate before Bowl
+    ko.sort(function (a, b) { return ((a.play_round || a.round) - (b.play_round || b.round)) || (a._dsort - b._dsort) || (koRank[a.stage] || 9) - (koRank[b.stage] || 9) || (a.slot || 0) - (b.slot || 0); });
     var html = '';
     if (grp.length) html += roundHead('Group stage', grp.length, roundRange(grp)) + '<div class="lg-rbody">' + grp.map(schedRow).join('') + '</div>';
     if (ko.length) html += roundHead('Knockout', ko.length, roundRange(ko)) + '<div class="lg-rbody">' + ko.map(schedRow).join('') + '</div>';
@@ -442,7 +486,7 @@
     var t = m.scheduled_at ? new Date(m.scheduled_at) : null;
     var tv = t ? fmtTime(t) : '';
     var dv = t ? (t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2)) : ((S.detail.event && S.detail.event.starts_at) || '');
-    var lbl = m.stage === 'group' ? ('Group ' + (m.group_label || '')) : (STAGE[m.stage] || m.stage);
+    var lbl = m.stage === 'group' ? ('Group ' + (m.group_label || '')) : ((m._draw ? m._draw + ' ' : '') + stageLbl(m));
     var tags = (m._offs || []).map(function (o) {
       return '<div class="lg-offtag"><span class="role">' + esc(o.role || 'Official') + '</span><span class="nm">' + esc(o.name) + '</span><span class="sp"></span><span class="ms x" onclick="FFPTourn.offRemove(\'' + o.id + '\')">close</span></div>';
     }).join('');
@@ -845,6 +889,16 @@
     toast(v === 'monrad' ? 'Monrad: everyone keeps playing' : 'Knockout draw', 'success');
     refreshDetail();
   }
+  async function setSideDraws(v) {
+    var r;
+    try { r = await sb().rpc('tourn_division_save', { p_tourn: S.eventId, p_id: S.divId, p: { side_draws: v } }); }
+    catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not change the draws', 'error'); return; }
+    var built = (S._bracket || []).length > 0;
+    toast(built ? 'Saved. Draw the bracket again to apply it' : 'Saved', 'success');
+    refreshDetail();
+  }
+  function setDraw(k) { S.drawKey = k; renderTab(); }
   async function monradRound() {
     var r; try { r = await sb().rpc('tourn_monrad_round', { p_division: S.divId }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not draw the round', 'error'); return; }
@@ -882,25 +936,42 @@
       + '<option value="ko"' + (fmt === 'ko' ? ' selected' : '') + '>Knockout draw</option>'
       + '<option value="monrad"' + (fmt === 'monrad' ? ' selected' : '') + '>Monrad, everyone keeps playing</option>'
       + '</select>';
+    var side = dv.side_draws || 'none';
+    var sideCtl = fmt === 'monrad' ? '' : '<select class="lg-sel" style="width:auto;min-width:230px" title="Extra draws for players knocked out" onchange="FFPTourn.setSideDraws(this.value)">'
+      + SIDE_DRAWS.map(function (o) { return '<option value="' + o[0] + '"' + (side === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('')
+      + '</select>';
     var buildCtl = fmt === 'monrad'
       ? '<button class="lg-btn" onclick="FFPTourn.monradRound()">' + ic('playlist_add') + 'Draw next round</button>'
       : (S.brkConfirm
         ? '<button class="lg-btn green" onclick="FFPTourn.doBracket()">' + ic('check') + 'Confirm build</button><button class="lg-btn ghost" onclick="FFPTourn.cancelBracket()">Cancel</button>'
         : '<button class="lg-btn" onclick="FFPTourn.confirmBracket()">' + ic('account_tree') + (ev.group_stage ? 'Build from groups' : 'Draw bracket') + '</button>');
-    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'bracket\')">' + divOpts() + '</select>' + fmtCtl + '<span class="sp"></span>' + buildCtl + '<button class="lg-btn pri" onclick="FFPTourn.saveBracketResults()">' + ic('check') + 'Save &amp; advance</button></div><div id="tg-brk"><div class="lg-empty">Loading…</div></div>';
+    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'bracket\')">' + divOpts() + '</select>' + fmtCtl + sideCtl + '<span class="sp"></span>' + buildCtl + '<button class="lg-btn pri" onclick="FFPTourn.saveBracketResults()">' + ic('check') + 'Save &amp; advance</button></div><div id="tg-brk"><div class="lg-empty">Loading…</div></div>';
     var r; try { r = await sb().rpc('tourn_bracket', { p_division: S.divId }); } catch (e) { r = { error: e }; }
     var ms = (r && r.data) || []; S._bracket = ms; var host2 = document.getElementById('tg-brk');
     if (!ms.length) { host2.innerHTML = '<div class="lg-empty">No bracket yet — build it above.</div>'; return; }
-    var byRound = {}; ms.filter(function (m) { return m.stage !== 'third'; }).forEach(function (m) { (byRound[m.round] = byRound[m.round] || []).push(m); });
+    // One bracket per draw: Main / Cup, then Plate, Bowl, Consolation or the
+    // placement draws. A dropdown picks which one is on screen.
+    var draws = [], seen = {};
+    ms.forEach(function (m) { var k = m.draw || 'main'; if (!seen[k]) { seen[k] = 1; draws.push({ key: k, name: m.draw_name || 'Main Draw', sort: m.draw_sort || 0 }); } });
+    draws.sort(function (a, b) { return a.sort - b.sort; });
+    if (!seen[S.drawKey || '']) S.drawKey = draws[0].key;
+    var dms = ms.filter(function (m) { return (m.draw || 'main') === S.drawKey; });
+    var drawCtl = draws.length > 1
+      ? '<div class="lg-tool" style="margin-top:0"><span class="lg-lab" style="margin:0">Draw</span><select class="lg-sel" style="width:auto;min-width:200px" onchange="FFPTourn.setDraw(this.value)">'
+        + draws.map(function (d) { var c = ms.filter(function (m) { return (m.draw || 'main') === d.key && m.status !== 'void'; }).length;
+            return '<option value="' + d.key + '"' + (d.key === S.drawKey ? ' selected' : '') + '>' + esc(d.name) + ' (' + c + ' matches)</option>'; }).join('')
+        + '</select></div>' : '';
+    var byRound = {}; dms.filter(function (m) { return m.stage !== 'third'; }).forEach(function (m) { (byRound[m.round] = byRound[m.round] || []).push(m); });
     var cols = Object.keys(byRound).sort(function (a, b) { return a - b; }).map(function (rd) {
       var items = byRound[rd].sort(function (a, b) { return a.slot - b.slot; });
-      return '<div class="tg-rnd"><div class="rh">' + esc(STAGE[items[0].stage] || items[0].stage) + '</div>' + items.map(mHtml).join('') + '</div>';
+      return '<div class="tg-rnd"><div class="rh">' + esc(stageLbl(items[0])) + '</div>' + items.map(mHtml).join('') + '</div>';
     }).join('');
-    var third = ms.find(function (m) { return m.stage === 'third'; });
-    host2.innerHTML = '<div class="tg-brk"><div class="tg-brkin">' + cols + '</div></div>'
+    var third = dms.find(function (m) { return m.stage === 'third'; });
+    host2.innerHTML = drawCtl + '<div class="tg-brk"><div class="tg-brkin">' + cols + '</div></div>'
       + (third ? '<div class="tg-thirdwrap"><div class="rh" style="text-align:left;margin-bottom:8px">3rd / 4th play-off</div><div style="max-width:230px">' + mHtml(third) + '</div></div>' : '');
   }
   function mHtml(m) {
+    if (m.status === 'void') return '<div class="tg-m tg-void"></div>';
     var hw = m.winner_entrant && m.home && m.home.id === m.winner_entrant, aw = m.winner_entrant && m.away && m.away.id === m.winner_entrant;
     var mc = (m.home && m.away) ? '<button class="lg-mcbtn tg-mcbtn" title="Match centre" onclick="FFPTourn.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + '</button>' : '';
     // A no-show, retirement or disqualification still has a winner, and in a
@@ -976,9 +1047,9 @@
   }
 
   async function saveBracketResults() {
-    var cards = Array.prototype.slice.call(document.querySelectorAll('#tg-brk .tg-m')); var n = 0;
+    var cards = Array.prototype.slice.call(document.querySelectorAll('#tg-brk .tg-m[data-id]')); var n = 0;
     for (var i = 0; i < cards.length; i++) { var el = cards[i]; var h = el.querySelector('.tg-hs').value, a = el.querySelector('.tg-as').value; if (h === '' || a === '') continue; try { await sb().rpc('tourn_result_save', { p_match: el.getAttribute('data-id'), p_home: +h, p_away: +a, p_sets: null, p_status: 'final' }); n++; } catch (e) {} }
-    toast(n + ' saved — winners advanced', 'success'); renderTab();
+    toast(n + ' saved, winners advanced', 'success'); renderTab();
   }
 
   function pickImg(kind) {
@@ -1372,12 +1443,12 @@
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
     sqToggle: sqToggle, sqSearch: sqSearch, sqAddMember: sqAddMember, sqNameOnly: sqNameOnly, sqInvite: sqInvite, sqRemove: sqRemove,
     doGroups: doGroups, saveGroupResults: saveGroupResults,
-    confirmBracket: confirmBracket, cancelBracket: cancelBracket, doBracket: doBracket, setDrawFormat: setDrawFormat, monradRound: monradRound, awardPanel: awardPanel, doAward: doAward, saveBracketResults: saveBracketResults,
+    confirmBracket: confirmBracket, cancelBracket: cancelBracket, doBracket: doBracket, setDrawFormat: setDrawFormat, setSideDraws: setSideDraws, setDraw: setDraw, monradRound: monradRound, awardPanel: awardPanel, doAward: doAward, saveBracketResults: saveBracketResults,
     setFmt: setFmt, buildStructure: buildStructure, pickImg: pickImg, entLogo: entLogo, addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap,
     autoplan: autoplan, schedSet: schedSet,
     togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch,
     addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
-    addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface, screenPanel: screenPanel, copyScreen: copyScreen,
+    addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface, screenPanel: screenPanel, useMyCourts: useMyCourts, linkCourt: linkCourt, copyScreen: copyScreen,
     offAdd: offAdd, offRemove: offRemove,
     openMatch: openMatch, closeMatch: closeMatch, addEvent: addEvent, removeEvent: removeEvent, saveResultFromEvents: saveResultFromEvents, addSub: addSub, removeSub: removeSub,
     trkToggle: trkToggle, trkReset: trkReset, trkPoss: trkPoss, trkHalf: trkHalf, trkApply: trkApply, mcSetPeriod: mcSetPeriod, _mcSetTime: _mcSetTime,
