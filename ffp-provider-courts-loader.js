@@ -6,6 +6,8 @@
    Exposes window.ffpRenderCourts (panel hook) + window.FFPCourts (actions). Icons use .ms. */
 (function () {
   var SCREEN_BASE = 'score.findfitpeople.com';
+  var TABLET_BASE = 'https://app.findfitpeople.com/tablet/';
+  var QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
   var sb = function () { return window.supabase; };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); };
   function toast(m, k) { if (typeof window.showToast === 'function') { try { window.showToast(m, k || 'info'); return; } catch (e) {} } console.log('[FFP Courts]', m); }
@@ -26,13 +28,13 @@
       '#vc-root .vc-add{display:flex;gap:8px;align-items:center;}',
       '#vc-root .vc-in{height:42px;box-sizing:border-box;border:1px solid var(--ffp-border-mid,#d5dee5);border-radius:10px;padding:0 12px;font:inherit;font-size:16px!important;font-weight:700;color:#12232f;background:#fff;min-width:0;flex:none;}',
       '#vc-root .vc-sel{height:42px;box-sizing:border-box;border:1px solid var(--ffp-border-mid,#d5dee5);border-radius:10px;padding:0 30px 0 10px;font:inherit;font-size:16px!important;font-weight:700;color:#12232f;background:#fff;min-width:0;flex:none;}',
-      '#vc-root .vc-btn{display:inline-flex;align-items:center;gap:6px;height:42px;box-sizing:border-box;border:1px solid var(--ffp-border-mid,#d5dee5);background:#fff;border-radius:10px;padding:0 14px;font:inherit;font-size:13px;font-weight:800;color:#12232f;cursor:pointer;white-space:nowrap;}',
-      '#vc-root .vc-btn .ms{font-size:18px;}',
-      '#vc-root .vc-btn.pri{background:var(--ffp-blue,#1980AD);border-color:var(--ffp-blue,#1980AD);color:#fff;}',
-      '#vc-root .vc-btn.gold{background:linear-gradient(135deg,#FFD66B,#F2A900);border-color:#F2A900;color:#1d1600;}',
-      '#vc-root .vc-btn.red{background:#d9534f;border-color:#d9534f;color:#fff;}',
-      '#vc-root .vc-btn.ghost{border-color:transparent;background:transparent;color:var(--ffp-text-muted,#6a7c8a);}',
-      '#vc-root .vc-btn.icon{width:42px;padding:0;justify-content:center;}',
+      '#vc-root .vc-btn,#vc-ov .vc-btn{display:inline-flex;align-items:center;gap:6px;height:42px;box-sizing:border-box;border:1px solid var(--ffp-border-mid,#d5dee5);background:#fff;border-radius:10px;padding:0 14px;font:inherit;font-size:13px;font-weight:800;color:#12232f;cursor:pointer;white-space:nowrap;}',
+      '#vc-root .vc-btn .ms,#vc-ov .vc-btn .ms{font-size:18px;}',
+      '#vc-root .vc-btn.pri,#vc-ov .vc-btn.pri{background:var(--ffp-blue,#1980AD);border-color:var(--ffp-blue,#1980AD);color:#fff;}',
+      '#vc-root .vc-btn.gold,#vc-ov .vc-btn.gold{background:linear-gradient(135deg,#FFD66B,#F2A900);border-color:#F2A900;color:#1d1600;}',
+      '#vc-root .vc-btn.red,#vc-ov .vc-btn.red{background:#d9534f;border-color:#d9534f;color:#fff;}',
+      '#vc-root .vc-btn.ghost,#vc-ov .vc-btn.ghost{border-color:transparent;background:transparent;color:var(--ffp-text-muted,#6a7c8a);}',
+      '#vc-root .vc-btn.icon,#vc-ov .vc-btn.icon{width:42px;padding:0;justify-content:center;}',
       /* court rows: a list on the page, not cards */
       '#vc-root .vc-list{border-top:2px solid #12232f;}',
       '#vc-root .vc-row{display:grid;grid-template-columns:minmax(140px,1fr) 140px minmax(200px,1.2fr) auto;align-items:center;gap:18px;padding:18px 4px;border-bottom:1px solid var(--ffp-border,#e7ecf0);}',
@@ -58,6 +60,20 @@
       '#vc-root .vc-how i{font-style:normal;flex:none;width:28px;height:28px;border-radius:50%;background:var(--ffp-blue,#1980AD);color:#fff;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;}',
       '#vc-root .vc-how b{display:block;font-size:14px;font-weight:900;color:#12232f;}',
       '#vc-root .vc-how span{display:block;font-size:13px;font-weight:600;color:#6a7c8a;margin-top:3px;line-height:1.45;}',
+      '.vc-ov{position:fixed;inset:0;z-index:9999;background:#fff;display:flex;overflow-y:auto;}',
+      '.vc-ov .in{margin:auto;max-width:560px;width:100%;padding:34px 28px;text-align:center;}',
+      '.vc-ov .ms.big{font-size:56px;color:var(--ffp-blue,#1980AD);}',
+      '.vc-ov h2{font-size:24px;font-weight:900;color:#12232f;margin:8px 0 0;}',
+      '.vc-ov p{font-size:14.5px;font-weight:600;color:#5a6b78;line-height:1.55;margin:10px 0 0;}',
+      '.vc-ov .qr{display:inline-block;margin-top:22px;padding:14px;background:#fff;box-shadow:0 0 0 3px #F2A900,0 12px 30px rgba(0,0,0,.12);border-radius:12px;line-height:0;}',
+      '.vc-ov .url{font-size:13px;font-weight:700;color:#6a7c8a;word-break:break-all;margin-top:14px;}',
+      '.vc-ov .warn{font-size:13px;font-weight:700;color:#9a6b00;margin-top:10px;}',
+      '.vc-ov .acts{display:flex;gap:10px;justify-content:center;margin-top:22px;flex-wrap:wrap;}',
+      '.vc-ov .tl{margin-top:26px;border-top:1px solid var(--ffp-border,#e7ecf0);text-align:left;}',
+      '.vc-ov .tl h3{font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#6a7c8a;margin:16px 0 6px;}',
+      '.vc-ov .tr{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--ffp-border,#e7ecf0);}',
+      '.vc-ov .tr span{flex:1;font-size:14px;font-weight:700;color:#12232f;}',
+      '#vc-root .vc-acts .vc-btn .ms{font-size:18px;}',
       '@media (max-width:900px){#vc-root .vc-row{grid-template-columns:1fr 1fr;}#vc-root .vc-acts{justify-content:flex-start;}#vc-root .vc-how{grid-template-columns:1fr;}}'
     ].join('\n');
     document.head.appendChild(st);
@@ -81,6 +97,7 @@
     var acts = '<div class="vc-acts">'
       + '<button class="vc-btn" title="Copy the screen address" onclick="FFPCourts.copy(\'' + esc(c.screen_code) + '\')">' + ic('content_copy') + 'Copy</button>'
       + '<a class="vc-btn" title="Open this court\'s screen" href="https://' + SCREEN_BASE + '/' + esc(c.screen_code) + '" target="_blank" rel="noopener">' + ic('open_in_new') + 'Open</a>'
+      + '<button class="vc-btn" title="The scoring tablet at this court" onclick="FFPCourts.tablet(\'' + c.id + '\')">' + ic('tablet_android') + 'Tablet</button>'
       + '<button class="vc-btn icon ghost" title="Rename" onclick="FFPCourts.edit(\'' + c.id + '\')">' + ic('edit') + '</button>'
       + '<button class="vc-btn icon ghost" title="New code" onclick="FFPCourts.ask(\'' + c.id + '\',\'code\')">' + ic('autorenew') + '</button>'
       + '<button class="vc-btn icon ghost" title="Remove" onclick="FFPCourts.ask(\'' + c.id + '\',\'remove\')">' + ic('delete') + '</button>'
@@ -173,8 +190,68 @@
     } catch (e) { toast(t, 'info'); }
   }
 
+  // ── the scoring tablet at a court ───────────────────────────────────────
+  // Pairing makes a link with a secret key. Open it on the tablet once (scan
+  // the QR with the tablet's camera) and it scores this court's matches with
+  // nobody signed in. Only matches on this court: unpair it here at any time.
+  function loadQr(cb) {
+    if (window.QRCode) { cb(); return; }
+    var sc = document.createElement('script'); sc.src = QR_LIB; sc.onload = cb; sc.onerror = cb; document.head.appendChild(sc);
+  }
+  function closeOv() { var o = document.getElementById('vc-ov'); if (o) o.remove(); }
+  async function tablet(id, key) {
+    var c = S.courts.find(function (x) { return x.id === id; }) || { name: 'Court' };
+    var tr; try { tr = await sb().rpc('vc_tablets', { p_court: id }); } catch (e) { tr = {}; }
+    var list = (tr && tr.data) || [];
+    closeOv();
+    var ov = document.createElement('div'); ov.id = 'vc-ov'; ov.className = 'vc-ov';
+    var fmt = function (t) { try { return t ? new Date(t).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not used yet'; } catch (e) { return ''; } };
+    var body = key
+      ? '<h2>Pair the tablet, ' + esc(c.name) + '</h2>'
+        + '<p>On the tablet, scan this with the camera and open the link. It stays paired to this court.</p>'
+        + '<div class="qr" id="vc-qr"></div>'
+        + '<div class="url" id="vc-turl">' + esc(TABLET_BASE + key) + '</div>'
+        + '<div class="warn">This link is shown once. Anyone with it can score matches on this court, so do not share it.</div>'
+        + '<div class="acts"><button class="vc-btn" onclick="FFPCourts.copyText(\'vc-turl\')">' + ic('content_copy') + 'Copy link</button>'
+        + '<button class="vc-btn pri" onclick="FFPCourts.tablet(\'' + id + '\')">' + ic('check') + 'Done</button></div>'
+      : '<span class="ms big">tablet_android</span><h2>Scoring tablet, ' + esc(c.name) + '</h2>'
+        + '<p>A tablet at the court scores this court\'s tournament and league matches, and club matches between FFP members. Nobody signs in on it.</p>'
+        + '<div class="acts"><button class="vc-btn gold" onclick="FFPCourts.pairTablet(\'' + id + '\')">' + ic('add') + 'Pair a tablet</button>'
+        + '<button class="vc-btn" onclick="FFPCourts.closeOv()">Close</button></div>'
+        + (list.length ? '<div class="tl"><h3>Paired tablets</h3>' + list.map(function (t) {
+            return '<div class="tr"><span>Paired ' + esc(fmt(t.created_at)) + ', last used ' + esc(fmt(t.last_seen_at)) + '</span>'
+              + '<button class="vc-btn red" onclick="FFPCourts.unpair(\'' + t.id + '\',\'' + id + '\')">' + ic('link_off') + 'Unpair</button></div>';
+          }).join('') + '</div>' : '');
+    ov.innerHTML = '<div class="in">' + body + '</div>';
+    document.body.appendChild(ov);
+    if (key) loadQr(function () {
+      var h = document.getElementById('vc-qr');
+      if (h && window.QRCode) { try { new window.QRCode(h, { text: TABLET_BASE + key, width: 240, height: 240, correctLevel: window.QRCode.CorrectLevel.M }); } catch (e) {} }
+    });
+  }
+  async function pairTablet(id) {
+    var r; try { r = await sb().rpc('vc_tablet_create', { p_court: id }); } catch (e) { r = { error: e }; }
+    if (r.error || !r.data) { toast('Could not pair a tablet', 'error'); return; }
+    tablet(id, r.data);
+  }
+  async function unpair(tid, id) {
+    var r; try { r = await sb().rpc('vc_tablet_revoke', { p_id: tid }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not unpair it', 'error'); return; }
+    toast('Tablet unpaired', 'success'); tablet(id);
+  }
+  function copyText(elId) {
+    var el = document.getElementById(elId); if (!el) return;
+    var t = el.textContent || '';
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t);
+      else { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+      toast('Copied', 'success');
+    } catch (e) { toast(t, 'info'); }
+  }
+
   window.FFPCourts = { add: add, addMany: addMany, edit: edit, cancelEdit: cancelEdit, saveName: saveName, setAccess: setAccess,
-    ask: ask, cancelAsk: cancelAsk, remove: remove, newCode: newCode, copy: copy, refresh: refresh };
+    ask: ask, cancelAsk: cancelAsk, remove: remove, newCode: newCode, copy: copy, refresh: refresh,
+    tablet: tablet, pairTablet: pairTablet, unpair: unpair, copyText: copyText, closeOv: closeOv };
   window.ffpRenderCourts = function () {
     var h = root(); if (h) { css(); h.innerHTML = '<div class="vc-sub" style="padding:20px 0">Loading courts…</div>'; }
     S.edit = null; S.confirm = null; refresh();
