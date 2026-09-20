@@ -14,7 +14,7 @@
   function root() { return document.getElementById('vc-root'); }
   function ic(n) { return '<span class="ms">' + n + '</span>'; }
   function pid() { return window.FFP_PROVIDER && window.FFP_PROVIDER.id; }
-  var S = { courts: [], edit: null, confirm: null };
+  var S = { courts: [], edit: null, confirm: null, promos: [], pdel: null, draft: null };
 
   function css() {
     if (document.getElementById('vc-css')) return;
@@ -74,6 +74,51 @@
       '.vc-ov .tr{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--ffp-border,#e7ecf0);}',
       '.vc-ov .tr span{flex:1;font-size:14px;font-weight:700;color:#12232f;}',
       '#vc-root .vc-acts .vc-btn .ms{font-size:18px;}',
+      /* promos on free screens */
+      '#vc-root .vp{margin-top:34px;}',
+      '#vc-root .vp-hd{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:14px;}',
+      '#vc-root .vp-h2{font-size:19px;font-weight:900;color:#12232f;letter-spacing:-.3px;}',
+      '#vc-root .vp-list{border-top:2px solid #12232f;}',
+      '#vc-root .vp-row{display:grid;grid-template-columns:34px 120px minmax(180px,1fr) 170px 150px auto;align-items:center;gap:18px;padding:14px 4px;border-bottom:1px solid var(--ffp-border,#e7ecf0);}',
+      '#vc-root .vp-row.off{opacity:.55;}',
+      '#vc-root .vp-th{width:120px;height:100px;border-radius:10px;overflow:hidden;background:#0a2436;position:relative;}',
+      '#vc-root .vp-th img{width:100%;height:100%;object-fit:cover;display:block;}',
+      '#vc-root .vp-tx{min-width:0;}',
+      '#vc-root .vp-tg{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;background:#FFC847;color:#12212c;border-radius:5px;padding:3px 7px;margin-bottom:5px;}',
+      '#vc-root .vp-tx b{display:block;font-size:16px;font-weight:900;color:#12232f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      '#vc-root .vp-tx span{display:block;font-size:13px;font-weight:600;color:#6a7c8a;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      '#vc-root .vp-tx .vp-tg{display:block;margin:0 0 3px;padding:0;background:none;font-size:11px;font-weight:900;letter-spacing:.14em;color:#c98f00;}',
+      '#vc-root .vp-n{font-size:22px;font-weight:900;color:#c98f00;text-align:center;}',
+      '#vc-root .vp-mv{display:flex;flex-direction:column;}',
+      '#vc-root .vp-mv .vc-btn{height:30px;width:34px;}',
+      '#vc-root .vp-mv .vc-btn:disabled{opacity:.25;cursor:default;}',
+      '#vc-root .vp-meta{font-size:13px;font-weight:700;color:#43525c;line-height:1.45;}',
+      '#vc-root .vp-meta small{display:block;font-size:12px;font-weight:600;color:#9aa8b4;}',
+      '#vc-root .vp-empty{padding:26px 6px;border-top:2px solid #12232f;font-size:14px;font-weight:600;color:#6a7c8a;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}',
+      '#vc-root .vp-empty .ms{font-size:44px;color:var(--ffp-blue,#1980AD);}',
+      '.vc-ov .in.wide{max-width:980px;text-align:left;}',
+      '.vc-ov .pe{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:30px;margin-top:18px;align-items:start;}',
+      '.vc-ov .pv{position:relative;width:100%;aspect-ratio:6/5;border-radius:12px;overflow:hidden;background:#0a2436;cursor:pointer;}',
+      '.vc-ov .pv img{width:100%;height:100%;object-fit:cover;display:block;}',
+      '.vc-ov .pv .ov{position:absolute;inset:0;background:linear-gradient(0deg,rgba(3,12,20,.92) 0,rgba(3,12,20,.2) 60%,transparent);}',
+      '.vc-ov .pv .tx{position:absolute;left:22px;right:22px;bottom:20px;color:#fff;}',
+      '.vc-ov .pv .tg{display:inline-block;font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;background:#FFC847;color:#12212c;border-radius:6px;padding:4px 9px;}',
+      '.vc-ov .pv h4{font-size:30px;font-weight:900;line-height:1.05;margin:9px 0 5px;letter-spacing:-.02em;}',
+      '.vc-ov .pv p{font-size:15px;font-weight:800;color:#cfe8f6;margin:0;}',
+      '.vc-ov .pv .up{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#cfe8f6;font-size:15px;font-weight:800;}',
+      '.vc-ov .pv .up .ms{font-size:46px;}',
+      '.vc-ov .pv .chg{position:absolute;top:12px;right:12px;}',
+      '.vc-ov .pvn{font-size:12.5px;font-weight:600;color:#8a96a1;margin-top:8px;}',
+      '.vc-ov .fl{display:block;margin-bottom:14px;}',
+      '.vc-ov .fl>span{display:block;font-size:12px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#6a7c8a;margin-bottom:6px;}',
+      '.vc-ov .fl input[type=text],.vc-ov .fl input[type=date]{width:100%;height:44px;box-sizing:border-box;border:1px solid var(--ffp-border-mid,#d5dee5);border-radius:10px;padding:0 12px;font:inherit;font-size:16px!important;font-weight:700;color:#12232f;background:#fff;}',
+      '.vc-ov .fl small{display:block;font-size:12px;font-weight:600;color:#9aa8b4;margin-top:4px;}',
+      '.vc-ov .cks{display:flex;flex-wrap:wrap;gap:6px 22px;}',
+      '.vc-ov .ck{display:inline-flex;align-items:center;gap:8px;height:34px;font-size:15px;font-weight:800;color:#12232f;cursor:pointer;}',
+      '.vc-ov .ck.on{color:var(--ffp-blue,#1980AD);}',
+      '.vc-ov .ck input{margin:0;width:18px;height:18px;accent-color:var(--ffp-blue,#1980AD);}',
+      '.vc-ov .acts.l{justify-content:flex-start;}',
+      '@media (max-width:900px){#vc-root .vp-row{grid-template-columns:100px 1fr;}.vc-ov .pe{grid-template-columns:1fr;}}',
       '@media (max-width:900px){#vc-root .vc-row{grid-template-columns:1fr 1fr;}#vc-root .vc-acts{justify-content:flex-start;}#vc-root .vc-how{grid-template-columns:1fr;}}'
     ].join('\n');
     document.head.appendChild(st);
@@ -83,6 +128,8 @@
     var p = pid(); if (!p) { S.courts = []; return; }
     var r; try { r = await sb().rpc('vc_list', { p_provider: p }); } catch (e) { r = { error: e }; }
     S.courts = (r && r.data) || [];
+    var q; try { q = await sb().rpc('vp_list', { p_provider: p }); } catch (e) { q = { error: e }; }
+    S.promos = (q && q.data) || [];
   }
 
   function rowHtml(c) {
@@ -134,8 +181,129 @@
       + '<div><i>2</i><div><b>Type the court\'s code</b><span>Or the full address. Leave it open: the screen stays awake.</span></div></div>'
       + '<div><i>3</i><div><b>Play</b><span>Tournament and league matches on that court show up by themselves. At a club night, players scan the screen\'s QR code.</span></div></div>'
       + '</div>';
-    h.innerHTML = top + body + how;
+    h.innerHTML = top + body + (S.courts.length ? promosHtml() : '') + how;
     var f = document.getElementById('vc-ren'); if (f) { f.focus(); f.select(); }
+  }
+
+  // ── promos on free screens ──────────────────────────────────────────────
+  // A free court shows the court, then each promo for 8 seconds, full height
+  // across the left two thirds. The QR to link a match never leaves the screen.
+  function courtNames(ids) {
+    if (!ids || !ids.length) return 'All courts';
+    var n = S.courts.filter(function (c) { return ids.indexOf(c.id) >= 0; }).map(function (c) { return c.name; });
+    return n.length ? n.join(', ') : 'No courts';
+  }
+  function day(t) { try { return new Date(t).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return ''; } }
+  function promoRow(p, i) {
+    var ended = p.ends_at && new Date(p.ends_at) < new Date();
+    var state = !p.active ? 'Paused' : ended ? 'Ended' : 'Showing';
+    var last = i === S.promos.length - 1;
+    var row = '<div class="vp-row' + (state === 'Showing' ? '' : ' off') + '">'
+      + '<div class="vp-mv"><button class="vc-btn icon ghost" title="Earlier in the rotation"' + (i === 0 ? ' disabled' : '') + ' onclick="FFPCourts.promoMove(\'' + p.id + '\',-1)">' + ic('keyboard_arrow_up') + '</button>'
+      + '<div class="vp-n">' + (i + 1) + '</div>'
+      + '<button class="vc-btn icon ghost" title="Later in the rotation"' + (last ? ' disabled' : '') + ' onclick="FFPCourts.promoMove(\'' + p.id + '\',1)">' + ic('keyboard_arrow_down') + '</button></div>'
+      + '<div class="vp-th"><img src="' + esc(p.image_url) + '" alt=""></div>'
+      + '<div class="vp-tx">' + (p.tag ? '<span class="vp-tg">' + esc(p.tag) + '</span>' : '')
+      + '<b>' + esc(p.headline || 'Photo only') + '</b>' + (p.body ? '<span>' + esc(p.body) + '</span>' : '') + '</div>'
+      + '<div class="vp-meta">' + esc(courtNames(p.court_ids)) + '<small>' + (p.ends_at ? 'Until ' + esc(day(p.ends_at)) : 'No end date') + '</small></div>'
+      + '<div class="vc-acc"><select class="vc-sel" onchange="FFPCourts.promoActive(\'' + p.id + '\',this.value)">'
+      + '<option value="1"' + (p.active ? ' selected' : '') + '>' + (ended ? 'Ended' : 'Showing') + '</option>'
+      + '<option value="0"' + (!p.active ? ' selected' : '') + '>Paused</option></select></div>'
+      + '<div class="vc-acts"><button class="vc-btn" onclick="FFPCourts.promoEdit(\'' + p.id + '\')">' + ic('edit') + 'Edit</button>'
+      + '<button class="vc-btn icon ghost" title="Delete" onclick="FFPCourts.promoAsk(\'' + p.id + '\')">' + ic('delete') + '</button></div>';
+    if (S.pdel === p.id) row += '<div class="vc-cfm"><span>Delete this promo? It comes off every screen straight away.</span>'
+      + '<button class="vc-btn" onclick="FFPCourts.promoAsk(null)">Cancel</button><button class="vc-btn red" onclick="FFPCourts.promoRemove(\'' + p.id + '\')">' + ic('delete') + 'Delete</button></div>';
+    return row + '</div>';
+  }
+  function promosHtml() {
+    return '<div class="vp"><div class="vp-hd"><div><div class="vp-h2">Promos on free screens</div>'
+      + '<div class="vc-sub">Free courts rotate through these in order, 8 seconds each.</div></div>'
+      + '<span class="sp"></span><button class="vc-btn gold" onclick="FFPCourts.promoEdit(null)">' + ic('add') + 'Add promo</button></div>'
+      + (S.promos.length ? '<div class="vp-list">' + S.promos.map(promoRow).join('') + '</div>'
+        : '<div class="vp-empty"><span class="ms">campaign</span><div>No promos yet. Add club nights, tournaments, deals or partners, and they show on your free courts.</div></div>')
+      + '</div>';
+  }
+  function promoEdit(id) {
+    var p = id ? S.promos.find(function (x) { return x.id === id; }) : null;
+    S.draft = p ? { id: p.id, image_url: p.image_url, tag: p.tag || '', headline: p.headline || '', body: p.body || '',
+                    court_ids: (p.court_ids || []).slice(), ends_at: p.ends_at ? String(p.ends_at).slice(0, 10) : '' }
+                : { id: null, image_url: '', tag: '', headline: '', body: '', court_ids: [], ends_at: '' };
+    closeOv();
+    var ov = document.createElement('div'); ov.id = 'vc-ov'; ov.className = 'vc-ov';
+    document.body.appendChild(ov);
+    drawEditor();
+  }
+  function drawEditor() {
+    var ov = document.getElementById('vc-ov'); var d = S.draft; if (!ov || !d) return;
+    var all = !d.court_ids.length;
+    ov.innerHTML = '<div class="in wide"><h2>' + (d.id ? 'Edit promo' : 'Add a promo') + '</h2>'
+
+      + '<div class="pe"><div><div class="pv" id="vp-pv" onclick="FFPCourts.promoPick()"></div>'
+      + '<div class="pvn">Words sit at the bottom of the photo.</div></div>'
+      + '<div>'
+      + '<label class="fl"><span>Tag (optional)</span><input type="text" id="vp-tag" maxlength="24" placeholder="Tonight" value="' + esc(d.tag) + '" oninput="FFPCourts.promoField(\'tag\',this.value)"></label>'
+      + '<label class="fl"><span>Headline</span><input type="text" id="vp-hl" maxlength="60" placeholder="Club Night Doubles" value="' + esc(d.headline) + '" oninput="FFPCourts.promoField(\'headline\',this.value)"></label>'
+      + '<label class="fl"><span>One line</span><input type="text" id="vp-bd" maxlength="90" placeholder="Thursdays 7pm. Book in the FFP app" value="' + esc(d.body) + '" oninput="FFPCourts.promoField(\'body\',this.value)"></label>'
+      + '<div class="fl"><span>Courts</span><div class="cks">'
+      + '<label class="ck' + (all ? ' on' : '') + '"><input type="checkbox"' + (all ? ' checked' : '') + ' onchange="FFPCourts.promoCourt(null)">All courts</label>'
+      + S.courts.map(function (c) { var on = d.court_ids.indexOf(c.id) >= 0;
+          return '<label class="ck' + (on ? ' on' : '') + '"><input type="checkbox"' + (on ? ' checked' : '') + ' onchange="FFPCourts.promoCourt(\'' + c.id + '\')">' + esc(c.name) + '</label>'; }).join('')
+      + '</div></div>'
+      + '<label class="fl"><span>Show until (optional)</span><input type="date" id="vp-end" value="' + esc(d.ends_at) + '" onchange="FFPCourts.promoField(\'ends_at\',this.value)"></label>'
+      + '<div class="acts l"><button class="vc-btn pri" onclick="FFPCourts.promoSave()">' + ic('check') + 'Save promo</button>'
+      + '<button class="vc-btn" onclick="FFPCourts.closeOv()">Cancel</button></div>'
+      + '</div></div></div>';
+    drawPreview();
+  }
+  function drawPreview() {
+    var v = document.getElementById('vp-pv'); var d = S.draft; if (!v || !d) return;
+    if (!d.image_url) { v.innerHTML = '<div class="up"><span class="ms">add_photo_alternate</span>Upload a photo</div>'; return; }
+    var words = d.tag || d.headline || d.body;
+    v.innerHTML = '<img src="' + esc(d.image_url) + '" alt="">'
+      + (words ? '<div class="ov"></div><div class="tx">' + (d.tag ? '<span class="tg">' + esc(d.tag) + '</span>' : '')
+        + (d.headline ? '<h4>' + esc(d.headline) + '</h4>' : '') + (d.body ? '<p>' + esc(d.body) + '</p>' : '') + '</div>' : '')
+      + '<span class="vc-btn chg">' + ic('photo_camera') + 'Change</span>';
+  }
+  function promoField(k, v) { if (!S.draft) return; S.draft[k] = v; if (k !== 'ends_at') drawPreview(); }
+  function promoCourt(id) {
+    var d = S.draft; if (!d) return;
+    if (id === null) d.court_ids = [];
+    else { var i = d.court_ids.indexOf(id); if (i >= 0) d.court_ids.splice(i, 1); else d.court_ids.push(id); }
+    if (d.court_ids.length === S.courts.length) d.court_ids = [];   // every court is all courts
+    drawEditor();
+  }
+  function promoPick() {
+    if (!window.FFPUpload) { toast('Uploader not ready, refresh and retry', 'error'); return; }
+    window.FFPUpload.pick({ bucket: 'listing-covers', key: 'promo-' + pid() + '-' + Date.now(), aspect: 6 / 5, outW: 1200, outH: 1000,
+      title: 'Promo photo (6:5)',
+      onDone: function (url) { if (S.draft) { S.draft.image_url = url; drawPreview(); } },
+      onError: function () { toast('Upload failed', 'error'); } });
+  }
+  async function promoSave() {
+    var d = S.draft; if (!d) return;
+    if (!d.image_url) { toast('Add a photo first', 'error'); return; }
+    var end = d.ends_at ? new Date(d.ends_at + 'T23:59:59').toISOString() : '';
+    var p = { image_url: d.image_url, tag: d.tag, headline: d.headline, body: d.body, court_ids: d.court_ids, ends_at: end };
+    var r; try { r = await sb().rpc('vp_save', { p_provider: pid(), p_id: d.id, p: p }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not save the promo', 'error'); return; }
+    S.draft = null; closeOv(); toast(d.id ? 'Promo saved' : 'Promo added. It shows on free screens within a minute', 'success'); refresh();
+  }
+  async function promoActive(id, v) {
+    var r; try { r = await sb().rpc('vp_save', { p_provider: pid(), p_id: id, p: { active: v === '1' } }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not change it', 'error'); return; }
+    toast(v === '1' ? 'Promo showing' : 'Promo paused', 'success'); refresh();
+  }
+  async function promoMove(id, dir) {
+    var r; try { r = await sb().rpc('vp_move', { p_id: id, p_dir: dir }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not move it', 'error'); return; }
+    refresh();
+  }
+  function promoAsk(id) { S.pdel = id; render(); }
+  async function promoRemove(id) {
+    var r; try { r = await sb().rpc('vp_remove', { p_id: id }); } catch (e) { r = { error: e }; }
+    S.pdel = null;
+    if (r.error) { toast('Could not delete it', 'error'); render(); return; }
+    toast('Promo deleted', 'success'); refresh();
   }
 
   async function refresh() { await load(); render(); }
@@ -251,10 +419,12 @@
 
   window.FFPCourts = { add: add, addMany: addMany, edit: edit, cancelEdit: cancelEdit, saveName: saveName, setAccess: setAccess,
     ask: ask, cancelAsk: cancelAsk, remove: remove, newCode: newCode, copy: copy, refresh: refresh,
-    tablet: tablet, pairTablet: pairTablet, unpair: unpair, copyText: copyText, closeOv: closeOv };
+    tablet: tablet, pairTablet: pairTablet, unpair: unpair, copyText: copyText, closeOv: closeOv,
+    promoEdit: promoEdit, promoField: promoField, promoCourt: promoCourt, promoPick: promoPick, promoSave: promoSave,
+    promoActive: promoActive, promoMove: promoMove, promoAsk: promoAsk, promoRemove: promoRemove };
   window.ffpRenderCourts = function () {
     var h = root(); if (h) { css(); h.innerHTML = '<div class="vc-sub" style="padding:20px 0">Loading courts…</div>'; }
     S.edit = null; S.confirm = null; refresh();
   };
-  console.log('[FFP Courts v1] Loaded ✓');
+  console.log('[FFP Courts v3] Loaded ✓');
 })();
