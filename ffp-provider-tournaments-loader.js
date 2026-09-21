@@ -128,7 +128,7 @@
       '.lg-surfs{margin:12px 0 0 51px;position:relative;} .lg-surfs:before{content:"";position:absolute;left:-13px;top:2px;bottom:18px;width:1.5px;background:#e4edf3;} .lg-surf{display:flex;align-items:center;gap:10px;padding:10px 0;font-size:14px;font-weight:600;border-bottom:1px solid #f4f7f9;} .lg-surf .ms{color:var(--ffp-blue);font-size:18px;opacity:.85;} .lg-surf .x{color:#c0cad2;cursor:pointer;font-size:18px;} .lg-surf .x:hover{color:#d64545;} .lg-addsurf{margin:12px 0 0 51px;} .lg-btn.ghostb{color:var(--ffp-blue);border-color:#d4e6ef;background:#f5fafc;} .lg-maplink{display:inline-flex;align-items:center;gap:3px;color:var(--ffp-blue);font-weight:800;text-decoration:none;} .lg-maplink .ms{font-size:15px;vertical-align:-3px;}',
       '.lg-srow2{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-srow2 .s-match b{font-size:15px;font-weight:800;} .lg-srow2 .s-match small{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;margin-top:3px;} .lg-srow2 .s-when{display:flex;gap:8px;margin-top:11px;} .lg-srow2 .s-when .lg-in{padding:8px 9px;font-size:13px;} .lg-srow2 .s-right{display:flex;flex-direction:column;gap:9px;} .lg-srow2 .fl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;} .lg-srow2 .st-f{padding:9px 10px;font-size:13px;}',
       '.lg-offlist{display:flex;flex-direction:column;gap:6px;} .lg-offtag{display:flex;align-items:center;gap:9px;font-size:13px;padding:7px 10px;border:1px solid var(--ffp-border-mid);border-radius:9px;background:#fbfcfd;} .lg-offtag .role{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ffp-blue);} .lg-offtag .nm{font-weight:700;} .lg-offtag .sp{flex:1;} .lg-offtag .x{color:#c0cad2;cursor:pointer;font-size:16px;} .lg-assign{display:flex;gap:7px;align-items:center;} .lg-assign .lg-sel{padding:7px 9px;font-size:12.5px;flex:1;} .lg-btn.sm{padding:7px 11px;font-size:12px;} .lg-maed{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px;margin-bottom:14px;} .lg-scpill{display:inline-block;font-size:9px;font-weight:900;letter-spacing:.05em;color:#0a8f5f;background:#e3f6ec;padding:2px 7px;border-radius:20px;vertical-align:middle;margin-left:6px;} .lg-scpill.inv{color:#8a6d00;background:#fff4d6;} .lg-scpill.txt{color:#5b6b75;background:#eef2f5;} .lg-ocap{max-width:180px;padding:7px 9px;font-size:12.5px;}',
-      '.lg-sq{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px 14px;margin:0 0 12px 46px;} .lg-sqsrch{display:flex;align-items:center;gap:8px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:9px 12px;} .lg-sqsrch .ms{color:#9aa8b4;font-size:19px;} .lg-sqsrch input{border:none;outline:none;font:inherit;font-weight:600;font-size:13.5px;flex:1;background:none;} .lg-sqres{background:#fff;border:1px solid #eef2f5;border-radius:10px;margin-top:8px;padding:2px 12px;} .lg-sqres .row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid #f2f5f7;} .lg-sqres .row:last-child{border-bottom:none;} .lg-sqres .av{width:32px;height:32px;border-radius:50%;background:#dfe7ec center/cover no-repeat;flex:none;} .lg-sqres .g{flex:1;min-width:0;} .lg-sqres .g b{font-size:13.5px;font-weight:800;display:block;} .lg-sqres .g span{font-size:11px;color:#8a99a6;font-weight:600;} .lg-sqadd2{display:flex;gap:8px;margin-top:8px;} .lg-sqlist{margin-top:8px;} .lg-sqrow{display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid #f0f3f6;font-size:13.5px;font-weight:700;} .lg-sqrow:last-child{border-bottom:none;} .lg-sqrow .sp{flex:1;} .lg-sqrow .x{color:#c0cad2;cursor:pointer;font-size:17px;}',
+      '.lg-sq{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px 14px;margin:0 0 12px 46px;} .lg-sqsrch{display:flex;align-items:center;gap:8px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:9px 12px;} .lg-sqsrch .ms{color:#9aa8b4;font-size:19px;} .lg-sqsrch input{border:none;outline:none;font:inherit;font-weight:600;font-size:13.5px;flex:1;background:none;} .lg-sqres{background:#fff;border:1px solid #eef2f5;border-radius:10px;margin-top:8px;padding:2px 12px;} .lg-sqres .row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid #f2f5f7;} .lg-sqres .row:last-child{border-bottom:none;} .lg-sqres .av{width:32px;height:32px;border-radius:50%;background:#dfe7ec center/cover no-repeat;flex:none;} .lg-sqres .g{flex:1;min-width:0;} .lg-sqres .g b{font-size:13.5px;font-weight:800;display:block;} .lg-sqres .g span{font-size:11px;color:#8a99a6;font-weight:600;} .lg-sqadd2{display:flex;gap:8px;margin-top:8px;} .lg-sqlist{margin-top:8px;} .lg-sqrow{display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid #f0f3f6;font-size:13.5px;font-weight:700;} .lg-sqrow:last-child{border-bottom:none;} .lg-sqrow .sp{flex:1;} .lg-sqrow .x{color:#c0cad2;cursor:pointer;font-size:17px;} .lg-sqno{width:62px;padding:5px 6px;font-size:12.5px;flex:none;} .lg-sqpos{max-width:168px;padding:5px 7px;font-size:12px;} .lg-sqpos.fixed{border:none;background:none;color:#5b6b75;font-size:11.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:0 4px;} .lg-sqcap{width:26px;height:26px;border-radius:50%;border:1.5px solid #d7dee5;color:#9aa8b4;font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;} .lg-sqcap.on{background:#F2A900;border-color:#F2A900;color:#12212c;} .lg-sqph{position:relative;width:34px;height:44px;border-radius:7px 7px 3px 3px;background:#e6edf2 center/cover no-repeat;border:1.5px solid #d7dee5;flex:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;} .lg-sqph .ms{font-size:16px;color:#9aa8b4;} .lg-sqph.own{border-color:#F2A900;} .lg-sqph .x{position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#0b2136;color:#fff;font-size:12px;font-style:normal;line-height:17px;text-align:center;}',
       '.lg-per{display:flex;align-items:center;gap:10px;margin-bottom:14px;} .lg-per .sp{flex:1;} .lg-perchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;padding:7px 12px;border-radius:20px;background:#eef2f5;color:#5b6b75;} .lg-perchip.live{background:#fdeaea;color:#d6353b;} .lg-perchip.live .d{width:7px;height:7px;border-radius:50%;background:#d6353b;} .lg-perchip.ht{background:#fff4d6;color:#8a6d00;} .lg-perchip.ft{background:#e3f6ec;color:#0a8f5f;} .lg-perset{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);}',
       '.lg-trk{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:14px 16px;margin-bottom:18px;} .lg-trk-clock{display:flex;align-items:center;gap:12px;margin-bottom:14px;} .lg-trk-clock .t{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ffp-text);} .lg-trk-clock .sp{flex:1;} .lg-trk-grp{margin-bottom:12px;} .lg-trk-lab{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8a99a6;margin-bottom:6px;} .lg-trk-btns{display:flex;gap:10px;} .lg-trk-b{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:11px 10px;font:inherit;font-size:13.5px;font-weight:800;color:var(--ffp-text);cursor:pointer;} .lg-trk-b span{font-size:12px;font-weight:900;color:#8a99a6;} .lg-trk-b.on{border-color:var(--ffp-blue);background:#eaf4fb;color:var(--ffp-blue);} .lg-trk-b.on span{color:var(--ffp-blue);} .lg-trk-apply{display:flex;align-items:center;gap:12px;margin-top:4px;flex-wrap:wrap;} .lg-trk-apply .sum{flex:1;font-size:12.5px;font-weight:700;color:var(--ffp-text-muted);min-width:180px;} .lg-livebtn{color:#d6353b;border-color:#f3c6c6;background:#fdeff0;}',
       /* match centre */
@@ -846,6 +846,7 @@
     var f = document.getElementById('tg-entq') || document.getElementById('tg-entname'); if (f) f.focus();
     var r; try { r = await sb().rpc('tourn_roster', { p_division: S.divId }); } catch (e) { r = { error: e }; }
     try { var sq = await sb().rpc('lt_squad_list', { p_scope: 'tourn', p_event: S.eventId }); S._squad = (sq && sq.data) || []; } catch (e) { S._squad = []; }
+    try { var po = await sb().rpc('lt_position_list', { p_event: S.eventId }); S._pos = (po && po.data) || []; } catch (e) { S._pos = []; }
     try {
       var gm = await sb().from('tourn_matches').select('group_label').eq('division_id', S.divId);
       S._grpLabels = [...new Set(((gm && gm.data) || []).map(function (x) { return x.group_label; }).filter(Boolean))];
@@ -1037,10 +1038,100 @@
     var list = squadFor(entId);
     out += '<div class="lg-sqlist">' + (list.length ? list.map(function (p) {
       var b = p.member_id ? '<span class="lg-scpill">FFP</span>' : (p.invite_email ? '<span class="lg-scpill inv">INVITED</span>' : '<span class="lg-scpill txt">NAME</span>');
-      return '<div class="lg-sqrow"><span class="nm">' + esc(p.name) + '</span>' + b + '<span class="sp"></span><span class="ms x" onclick="FFPTourn.sqRemove(\'' + p.id + '\')">close</span></div>';
+      return '<div class="lg-sqrow">' + sqPhotoCell(p) + sqNoCell(p) + '<span class="nm">' + esc(p.name) + '</span>' + b + '<span class="sp"></span>' + sqPosCell(p) + sqCapCell(p) + '<span class="ms x" onclick="FFPTourn.sqRemove(\'' + p.id + '\')">close</span></div>';
     }).join('') : '<div class="lg-empty" style="padding:12px">No players yet.</div>') + '</div>';
     return out;
   }
+
+  // ── shirt numbers. A sport with a position list (rugby 1-23) gets a shirt
+  //    picker on every squad member; the starting numbers carry their own
+  //    position, so only a replacement is asked what it plays. ──────────
+  function posList() { return S._pos || []; }
+  function posOf(n) { var f = posList().filter(function (x) { return Number(x.number) === Number(n); })[0]; return f || null; }
+  function sqTaken(entId, exceptId) {
+    var o = {}; squadFor(entId).forEach(function (x) { if (x.id !== exceptId && x.number != null) o[Number(x.number)] = 1; }); return o;
+  }
+  function sqNoCell(p) {
+    var list = posList(); if (!list.length) return '';
+    var taken = sqTaken(p.entrant_id, p.id);
+    var o = '<option value="">&ndash;</option>' + list.map(function (x) {
+      var dis = taken[Number(x.number)] ? ' disabled' : '';
+      return '<option value="' + x.number + '"' + (Number(p.number) === Number(x.number) ? ' selected' : '') + dis + '>' + x.number + '</option>';
+    }).join('');
+    return '<select class="lg-sel lg-sqno" title="Shirt number" onchange="FFPTourn.sqSetNo(\'' + p.id + '\',this.value)">' + o + '</select>';
+  }
+  function sqPosCell(p) {
+    var list = posList(); if (!list.length || p.number == null) return '';
+    var meta = posOf(p.number);
+    if (meta && meta.grp !== 'replacements') return '<span class="lg-sqpos fixed">' + esc(meta.name) + '</span>';
+    var named = {}; var opts = list.filter(function (x) {
+      if (x.grp === 'replacements') return false;
+      if (named[x.name]) return false; named[x.name] = 1; return true;
+    });
+    return '<select class="lg-sel lg-sqpos" onchange="FFPTourn.sqSetPos(\'' + p.id + '\',this.value)"><option value="">Covers&hellip;</option>'
+      + opts.map(function (x) { return '<option value="' + esc(x.name) + '"' + (p.position === x.name ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('')
+      + '</select>';
+  }
+  function sqCapCell(p) {
+    if (!posList().length) return '';
+    return '<span class="lg-sqcap' + (p.captain ? ' on' : '') + '" title="Captain" onclick="FFPTourn.sqCaptain(\'' + p.id + '\',' + (p.captain ? 'false' : 'true') + ')">C</span>';
+  }
+  async function sqSetNo(id, n) {
+    var row = (S._squad || []).filter(function (x) { return x.id === id; })[0] || {};
+    var meta = n ? posOf(n) : null;
+    var pos = meta && meta.grp !== 'replacements' ? meta.name : (row.position || null);
+    try { await sb().rpc('lt_squad_set_position', { p_id: id, p_number: n ? Number(n) : null, p_position: pos }); }
+    catch (e) { toast((e && e.message) || 'Could not set the shirt', 'error'); }
+    _sqReload(row.entrant_id || S.sqOpen);
+  }
+  async function sqSetPos(id, pos) {
+    var row = (S._squad || []).filter(function (x) { return x.id === id; })[0] || {};
+    try { await sb().rpc('lt_squad_set_position', { p_id: id, p_number: row.number == null ? null : Number(row.number), p_position: pos || null }); }
+    catch (e) { toast((e && e.message) || 'Could not set the position', 'error'); }
+    _sqReload(row.entrant_id || S.sqOpen);
+  }
+  async function sqCaptain(id, on) {
+    var row = (S._squad || []).filter(function (x) { return x.id === id; })[0] || {};
+    try { await sb().rpc('lt_squad_set_position', { p_id: id, p_number: row.number == null ? null : Number(row.number), p_position: row.position || null, p_captain: !!on }); }
+    catch (e) { toast((e && e.message) || 'Could not set the captain', 'error'); }
+    _sqReload(row.entrant_id || S.sqOpen);
+  }
+
+
+  // ── player portrait. A club can upload its own shot — cropped to the
+  //    passport shape every graphic uses — instead of the member's profile
+  //    photo. The small x hands the player back to their profile photo. ──
+  function sqPhotoCell(p) {
+    var own = !!p.photo_url_own;
+    var url = p.photo_url_own || p.photo || '';
+    return '<span class="lg-sqph' + (own ? ' own' : '') + '" title="' + (own ? 'Club portrait' : 'Profile photo — click to upload the club\'s own') + '"'
+      + ' style="' + (url ? "background-image:url('" + esc(url) + "')" : '') + '"'
+      + ' onclick="FFPTourn.sqPhoto(\'' + p.id + '\')">'
+      + (url ? '' : '<i class="ms">add_a_photo</i>')
+      + (own ? '<em class="x" onclick="event.stopPropagation();FFPTourn.sqPhotoClear(\'' + p.id + '\')">&times;</em>' : '')
+      + '</span>';
+  }
+  function sqPhoto(id) {
+    if (!window.FFPUpload) { toast('Uploader not ready \u2014 refresh and retry', 'error'); return; }
+    var row = (S._squad || []).filter(function (x) { return x.id === id; })[0] || {};
+    window.FFPUpload.pick({
+      bucket: 'listing-covers', key: 'squad-' + id, aspect: 7 / 9, outW: 700, outH: 900,
+      title: 'Player portrait \u2014 ' + (row.name || 'player'),
+      onDone: async function (url) {
+        try { await sb().rpc('lt_squad_set_photo', { p_id: id, p_url: url }); }
+        catch (e) { toast('Could not save the portrait', 'error'); return; }
+        toast('Portrait saved', 'check'); _sqReload(row.entrant_id || S.sqOpen);
+      },
+      onError: function () { toast('Upload failed', 'error'); }
+    });
+  }
+  async function sqPhotoClear(id) {
+    var row = (S._squad || []).filter(function (x) { return x.id === id; })[0] || {};
+    try { await sb().rpc('lt_squad_set_photo', { p_id: id, p_url: null }); }
+    catch (e) { toast('Could not clear the portrait', 'error'); return; }
+    _sqReload(row.entrant_id || S.sqOpen);
+  }
+
   function paintSqRes(entId) { var el = document.getElementById('lg-sqres-' + entId); if (el) el.innerHTML = sqResHtml(entId); }
   function sqToggle(id) { S.sqOpen = (S.sqOpen === id) ? null : id; renderTab(); }
   var _sqTimer = {};
@@ -1049,7 +1140,7 @@
     if (q.trim().length < 2) { S._sqRes = S._sqRes || {}; S._sqRes[id] = []; paintSqRes(id); return; }
     _sqTimer[id] = setTimeout(async function () { var r; try { r = await sb().rpc('lt_member_search', { p_q: q.trim() }); } catch (e) { r = null; } S._sqRes = S._sqRes || {}; S._sqRes[id] = (r && r.data) || []; paintSqRes(id); }, 300);
   }
-  async function _sqReload(id) { try { var sq = await sb().rpc('lt_squad_list', { p_scope: 'tourn', p_event: S.eventId }); S._squad = (sq && sq.data) || []; } catch (e) {} S._sqQ = S._sqQ || {}; S._sqQ[id] = ''; S._sqRes = S._sqRes || {}; S._sqRes[id] = []; var inp = document.getElementById('lg-sqq-' + id); if (inp) inp.value = ''; paintSqRes(id); renderEntrants(root()); }
+  async function _sqReload(id) { try { var sq = await sb().rpc('lt_squad_list', { p_scope: 'tourn', p_event: S.eventId }); S._squad = (sq && sq.data) || []; } catch (e) {} if (!(S._pos || []).length) { try { var po = await sb().rpc('lt_position_list', { p_event: S.eventId }); S._pos = (po && po.data) || []; } catch (e) {} } S._sqQ = S._sqQ || {}; S._sqQ[id] = ''; S._sqRes = S._sqRes || {}; S._sqRes[id] = []; var inp = document.getElementById('lg-sqq-' + id); if (inp) inp.value = ''; paintSqRes(id); renderEntrants(root()); }
   async function sqAddMember(id, memberId) { try { await sb().rpc('lt_squad_add_member', { p_scope: 'tourn', p_event: S.eventId, p_entrant: id, p_member: memberId }); } catch (e) { toast('Could not add', 'error'); return; } _sqReload(id); }
   async function sqNameOnly(id) { var nm = ((S._sqQ || {})[id] || '').trim(); if (!nm) return; try { await sb().rpc('lt_squad_add', { p_scope: 'tourn', p_event: S.eventId, p_entrant: id, p_name: nm }); } catch (e) { toast('Could not add', 'error'); return; } _sqReload(id); }
   async function sqInvite(id) { var txt = ((S._sqQ || {})[id] || '').trim(); var em = txt.indexOf('@') > -1 ? txt : prompt('Their FFP email (we\'ll link their account)'); if (!em || em.indexOf('@') < 0) return; var nm = txt.indexOf('@') > -1 ? '' : txt; try { await sb().rpc('lt_squad_invite', { p_scope: 'tourn', p_event: S.eventId, p_entrant: id, p_name: nm, p_email: em }); } catch (e) { toast('Could not invite', 'error'); return; } try { var rf = (window.FFPAuth && FFPAuth.getRefresh && FFPAuth.getRefresh()) || null; if (rf) { var r = await fetch('https://ffp-passport-backend.vercel.app/api/lt/squad-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh: rf, scope: 'tourn', event_id: S.eventId, name: nm, email: em }) }); var jd = await r.json().catch(function () { return {}; }); toast(jd && jd.linked ? 'Member linked' : 'Invited — email sent', 'check'); } } catch (e) { /* email best-effort */ } _sqReload(id); }
@@ -1841,6 +1932,8 @@
     addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
     addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface, screenPanel: screenPanel, useMyCourts: useMyCourts, linkCourt: linkCourt, copyScreen: copyScreen,
     offAdd: offAdd, offRemove: offRemove,
+    sqSetNo: sqSetNo, sqSetPos: sqSetPos, sqCaptain: sqCaptain,
+    sqPhoto: sqPhoto, sqPhotoClear: sqPhotoClear,
     openMatch: openMatch, closeMatch: closeMatch, addEvent: addEvent, removeEvent: removeEvent, saveResultFromEvents: saveResultFromEvents, addSub: addSub, removeSub: removeSub,
     trkToggle: trkToggle, trkReset: trkReset, trkPoss: trkPoss, trkHalf: trkHalf, trkApply: trkApply, mcSetPeriod: mcSetPeriod, _mcSetTime: _mcSetTime,
     mcTab: mcTab, mcPickStatPlayer: mcPickStatPlayer, saveStats: saveStats, setLive: setLive, saveTeamStats: saveTeamStats, saveStream: saveStream,
