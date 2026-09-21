@@ -159,19 +159,62 @@
   function isScorerRole(r) { r = String(r || '').toLowerCase(); return r === 'scorer' || r === 'both'; }
   function fmtDay(d) { return DOW[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()]; }
   function fmtTime(d) { return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  // ── the competition's clock ─────────────────────────────────────────────
+  // A kick-off belongs to the place the match is played, not to the desk it is
+  // typed at. new Date('2026-10-04T19:30:00') is read in the BROWSER's zone, so
+  // a Dubai fixture entered from Australia landed four hours out. Everything
+  // below reads and writes wall-clock time in the competition's own zone.
+  function evTz() {
+    return (S.detail && S.detail.event && S.detail.event.timezone) || 'UTC';
+  }
+  // what the clock on the wall in `tz` reads at instant `at`, as UTC-shaped parts
+  function tzParts(at, tz) {
+    var f = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', weekday: 'short' });
+    var o = {};
+    f.formatToParts(new Date(at)).forEach(function (x) { o[x.type] = x.value; });
+    o.hour = (o.hour === '24') ? '00' : o.hour;
+    return o;
+  }
+  function tzOffsetMs(at, tz) {
+    var p = tzParts(at, tz);
+    var asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+    return asUtc - new Date(at).getTime();
+  }
+  // 'YYYY-MM-DD' + 'HH:MM' read in tz  ->  an ISO instant
+  function zoneToISO(dateStr, timeStr, tz) {
+    if (!dateStr) return null;
+    var d = String(dateStr).split('-'), t = String(timeStr || '00:00').split(':');
+    var wall = Date.UTC(+d[0], +d[1] - 1, +d[2], +t[0] || 0, +t[1] || 0, 0);
+    var ms = wall - tzOffsetMs(wall, tz);
+    ms = wall - tzOffsetMs(ms, tz);   // second pass settles a DST boundary
+    return new Date(ms).toISOString();
+  }
+  function zoneDate(iso, tz) { var p = tzParts(iso, tz); return p.year + '-' + p.month + '-' + p.day; }
+  function zoneTime(iso, tz) { var p = tzParts(iso, tz); return p.hour + ':' + p.minute; }
+  function zoneDay(iso, tz) {
+    var p = tzParts(iso, tz);
+    return DOW[new Date(Date.UTC(+p.year, +p.month - 1, +p.day)).getUTCDay()] + ' ' + (+p.day) + ' ' + MON[+p.month - 1];
+  }
   function crest(o, big) {
     o = o || {}; var nm = o.name || 'TBD'; var cls = 'lg-crest' + (big ? ' big' : '');
     if (o.logo) return '<span class="' + cls + '" style="background-image:url(\'' + esc(o.logo) + '\')"></span>';
     return '<span class="' + cls + '">' + esc(nm.replace(/[^A-Za-z ]/g, '').split(' ').map(function (w) { return w[0] || ''; }).join('').slice(0, 2).toUpperCase() || '?') + '</span>';
   }
   function roundRange(list) {
-    var ds = list.map(function (f) { return f.scheduled_at ? new Date(f.scheduled_at) : null; }).filter(Boolean);
+    // a round spans days on the competition's calendar, not the viewer's
+    var tz = evTz();
+    var ds = list.map(function (f) { return f.scheduled_at ? new Date(f.scheduled_at).getTime() : null; }).filter(Boolean);
     if (!ds.length) return 'Not scheduled';
-    var mn = new Date(Math.min.apply(null, ds)), mx = new Date(Math.max.apply(null, ds));
-    var sameDay = mn.toDateString() === mx.toDateString();
-    if (sameDay) return fmtDay(mn) + ', 1 day';
-    var days = Math.round((new Date(mx.getFullYear(), mx.getMonth(), mx.getDate()) - new Date(mn.getFullYear(), mn.getMonth(), mn.getDate())) / 86400000) + 1;
-    var span = (mn.getMonth() === mx.getMonth()) ? (mn.getDate() + '–' + mx.getDate() + ' ' + MON[mx.getMonth()]) : (mn.getDate() + ' ' + MON[mn.getMonth()] + ' – ' + mx.getDate() + ' ' + MON[mx.getMonth()]);
+    var mn = Math.min.apply(null, ds), mx = Math.max.apply(null, ds);
+    var pn = tzParts(mn, tz), px = tzParts(mx, tz);
+    if (pn.year === px.year && pn.month === px.month && pn.day === px.day) return zoneDay(mn, tz) + ', 1 day';
+    var dayMs = function (p) { return Date.UTC(+p.year, +p.month - 1, +p.day); };
+    var days = Math.round((dayMs(px) - dayMs(pn)) / 86400000) + 1;
+    var span = (pn.month === px.month && pn.year === px.year)
+      ? ((+pn.day) + '–' + (+px.day) + ' ' + MON[+px.month - 1])
+      : ((+pn.day) + ' ' + MON[+pn.month - 1] + ' – ' + (+px.day) + ' ' + MON[+px.month - 1]);
     return span + ', ' + days + ' days';
   }
   function surfaceOpts(fields, selId) {
@@ -407,9 +450,9 @@
     }).join('');
   }
   function schedRow(f) {
-    var t = f.scheduled_at ? new Date(f.scheduled_at) : null;
-    var tv = t ? fmtTime(t) : '';
-    var dv = t ? (t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2)) : ((S.detail.event && S.detail.event.starts_at) || '');
+    var tz = evTz();
+    var tv = f.scheduled_at ? zoneTime(f.scheduled_at, tz) : '';
+    var dv = f.scheduled_at ? zoneDate(f.scheduled_at, tz) : ((S.detail.event && S.detail.event.starts_at) || '');
     var offs = f.officials || [];
     var tags = offs.map(function (o) {
       return '<div class="lg-offtag"><span class="role">' + esc(o.role || 'Official') + '</span><span class="nm">' + esc(o.name) + '</span><span class="sp"></span><span class="ms x" onclick="FFPLeague.offRemove(\'' + o.id + '\')">close</span></div>';
@@ -438,7 +481,7 @@
     var row = document.querySelector('.lg-srow2[data-id="' + id + '"]'); if (!row) return;
     var dv = (row.querySelector('.st-d') || {}).value, tv = row.querySelector('.st-t').value, fid = row.querySelector('.st-f').value || null;
     var base = dv || (S.detail.event && S.detail.event.starts_at) || new Date().toISOString().slice(0, 10);
-    var when = (tv || dv) ? new Date(base + 'T' + (tv || '00:00') + ':00').toISOString() : null;
+    var when = (tv || dv) ? zoneToISO(base, tv || '00:00', evTz()) : null;
     await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null });
     toast('Rescheduled', 'success');
   }
@@ -784,7 +827,7 @@
   }
   // A computed (auto) bye is virtual (id "bye-…") — not editable/removable. A stored bye is a real row (stage='bye').
   function isVirtualBye(f) { return f.bye && typeof f.id === 'string' && f.id.indexOf('bye-') === 0; }
-  function fxDateVal(f) { if (!f.scheduled_at) return ''; var d = new Date(f.scheduled_at); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function fxDateVal(f) { return f.scheduled_at ? zoneDate(f.scheduled_at, evTz()) : ''; }
   function delBtns(id) {
     if (S.delFx === id) return '<button class="lg-mcbtn del" title="Confirm delete" onclick="FFPLeague.delFx(\'' + id + '\')" style="color:var(--ffp-red)">' + ic('delete_forever') + '</button><button class="lg-mcbtn" title="Keep" onclick="FFPLeague.delCancel()">' + ic('close') + '</button>';
     return '<button class="lg-mcbtn del" title="Delete fixture" onclick="FFPLeague.delAsk(\'' + id + '\')">' + ic('delete') + '</button>';
@@ -793,7 +836,7 @@
     if (S.editFx === f.id) return fxEdit(f);
     if (isVirtualBye(f)) return '<div class="lg-bye">' + crest(f.home) + '<b>' + esc((f.home && f.home.name) || '') + '</b><span class="tag">BYE</span><span class="msg">no match this round</span></div>';
     if (f.bye) return '<div class="lg-bye" data-id="' + f.id + '">' + crest(f.home) + '<b>' + esc((f.home && f.home.name) || '') + '</b><span class="tag">BYE</span><div class="acts"><button class="lg-mcbtn" title="Edit bye" onclick="FFPLeague.editFx(\'' + f.id + '\')">' + ic('edit') + '</button>' + delBtns(f.id) + '</div></div>';
-    var day = f.scheduled_at ? '<div class="fxday">' + fmtDay(new Date(f.scheduled_at)) + ', ' + fmtTime(new Date(f.scheduled_at)) + '</div>' : '';
+    var day = f.scheduled_at ? '<div class="fxday">' + zoneDay(f.scheduled_at, evTz()) + ', ' + zoneTime(f.scheduled_at, evTz()) + '</div>' : '';
     return '<div class="lg-fx2" data-id="' + f.id + '"><div class="tm a">' + esc((f.home && f.home.name) || 'TBD') + crest(f.home) + '</div>'
       + '<div class="mid">' + day + '<div class="sc"><input type="number" class="lg-hs" value="' + (f.home_score != null ? f.home_score : '') + '" placeholder="–"><span class="v">v</span><input type="number" class="lg-as" value="' + (f.away_score != null ? f.away_score : '') + '" placeholder="–"></div></div>'
       + '<div class="tm">' + crest(f.away) + esc((f.away && f.away.name) || 'TBD') + '</div>'
@@ -813,7 +856,7 @@
       + '<div class="f fe-rwrap"' + (isPre ? ' style="display:none"' : '') + '><label>Round</label>'
       + '<input class="lg-in fe-r" type="number" min="1" value="' + (isPre ? 1 : (f.round != null ? f.round : 1)) + '" style="width:90px"></div>';
     if (!isBye) flds += '<div class="f"><label>Date</label><input class="lg-in fe-d" type="date" value="' + fxDateVal(f) + '"></div>'
-      + '<div class="f"><label>Time</label><input class="lg-in fe-t" type="time" value="' + (f.scheduled_at ? fmtTime(new Date(f.scheduled_at)) : '') + '"></div>'
+      + '<div class="f"><label>Time</label><input class="lg-in fe-t" type="time" value="' + (f.scheduled_at ? zoneTime(f.scheduled_at, evTz()) : '') + '"></div>'
       + '<div class="f" style="flex:1;min-width:160px"><label>Venue / surface</label><select class="lg-sel fe-f" style="width:100%">' + surfaceOpts(S._fields, f.field_id) + '</select></div>'
       + '<div class="f" style="flex:1;min-width:100%"><label>Livestream link</label><input class="lg-in fe-s" type="url" placeholder="YouTube, Twitch, Facebook…" value="' + esc(f.stream_url || '') + '"></div>';
     return '<div class="lg-maed" data-id="' + f.id + '"><div class="ttl">Edit ' + (isBye ? 'bye' : 'fixture') + '</div>'
@@ -851,7 +894,7 @@
     if (r && r.error) { toast('Save failed', 'error'); return; }
     if (!isBye) {
       var dv = (box.querySelector('.fe-d') || {}).value, tv = (box.querySelector('.fe-t') || {}).value, fid = (box.querySelector('.fe-f') || {}).value || null;
-      var when = (dv || tv) ? new Date((dv || new Date().toISOString().slice(0, 10)) + 'T' + (tv || '00:00') + ':00').toISOString() : null;
+      var when = (dv || tv) ? zoneToISO(dv || zoneDate(Date.now(), evTz()), tv || '00:00', evTz()) : null;
       try { await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null }); } catch (e) { /* non-blocking */ }
       var su = (box.querySelector('.fe-s') || {}).value;
       try { await sb().rpc('lt_match_set_stream', { p_scope: 'league', p_match: id, p_url: (su && su.trim()) ? su.trim() : null }); } catch (e) { /* non-blocking */ }
@@ -885,7 +928,7 @@
     var a = (document.getElementById('lg-mm-a') || {}).value || null;
     if (!h || !a || h === a) { toast('Pick two different teams', 'error'); return; }
     var dv = (document.getElementById('lg-mm-d') || {}).value, tv = (document.getElementById('lg-mm-t') || {}).value, fid = (document.getElementById('lg-mm-f') || {}).value || null;
-    var when = (dv || tv) ? new Date((dv || new Date().toISOString().slice(0, 10)) + 'T' + (tv || '00:00') + ':00').toISOString() : null;
+    var when = (dv || tv) ? zoneToISO(dv || zoneDate(Date.now(), evTz()), tv || '00:00', evTz()) : null;
     var r; try { r = await sb().rpc('lt_match_add', { p_scope: 'league', p_division: S.divId, p_round: pre ? 0 : rd, p_home: h, p_away: a, p_when: when, p_field: fid, p_stage: pre ? 'preseason' : 'regular' }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not add', 'error'); return; } S.addMatch = null; S.addPre = false; toast(pre ? 'Preseason match added' : 'Fixture added', 'success'); renderTab();
   }
