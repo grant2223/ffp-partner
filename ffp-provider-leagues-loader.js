@@ -60,7 +60,7 @@
       '.lg-srow2{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-srow2 .s-match b{font-size:15px;font-weight:800;} .lg-srow2 .s-match small{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;margin-top:3px;} .lg-srow2 .s-when{display:flex;gap:8px;margin-top:11px;} .lg-srow2 .s-when .lg-in{padding:8px 9px;font-size:13px;} .lg-srow2 .s-right{display:flex;flex-direction:column;gap:9px;} .lg-srow2 .fl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;} .lg-srow2 .st-f{padding:9px 10px;font-size:13px;}',
       '.lg-offlist{display:flex;flex-direction:column;gap:6px;} .lg-offtag{display:flex;align-items:center;gap:9px;font-size:13px;padding:7px 10px;border:1px solid var(--ffp-border-mid);border-radius:9px;background:#fbfcfd;} .lg-offtag .role{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ffp-blue);} .lg-offtag .nm{font-weight:700;} .lg-offtag .sp{flex:1;} .lg-offtag .x{color:#c0cad2;cursor:pointer;font-size:16px;} .lg-assign{display:flex;gap:7px;align-items:center;} .lg-assign .lg-sel{padding:7px 9px;font-size:12.5px;flex:1;} .lg-btn.sm{padding:7px 11px;font-size:12px;}',
       '.lg-scpill{display:inline-block;font-size:9px;font-weight:900;letter-spacing:.05em;color:#0a8f5f;background:#e3f6ec;padding:2px 7px;border-radius:20px;vertical-align:middle;margin-left:6px;} .lg-scpill.inv{color:#8a6d00;background:#fff4d6;} .lg-scpill.txt{color:#5b6b75;background:#eef2f5;} .lg-ocap{max-width:180px;padding:7px 9px;font-size:12.5px;}',
-      '.lg-sq{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px 14px;margin:0 0 12px 46px;} .lg-sqsrch{display:flex;align-items:center;gap:8px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:9px 12px;} .lg-sqsrch .ms{color:#9aa8b4;font-size:19px;} .lg-sqsrch input{border:none;outline:none;font:inherit;font-weight:600;font-size:13.5px;flex:1;background:none;} .lg-sqres{background:#fff;border:1px solid #eef2f5;border-radius:10px;margin-top:8px;padding:2px 12px;} .lg-sqres .row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid #f2f5f7;} .lg-sqres .row:last-child{border-bottom:none;} .lg-sqres .av{width:32px;height:32px;border-radius:50%;background:#dfe7ec center/cover no-repeat;flex:none;} .lg-sqres .g{flex:1;min-width:0;} .lg-sqres .g b{font-size:13.5px;font-weight:800;display:block;} .lg-sqres .g span{font-size:11px;color:#8a99a6;font-weight:600;} .lg-sqadd2{display:flex;gap:8px;margin-top:8px;} .lg-sqlist{margin-top:8px;} .lg-sqrow{display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid #f0f3f6;font-size:13.5px;font-weight:700;} .lg-sqrow:last-child{border-bottom:none;} .lg-sqrow .sp{flex:1;} .lg-sqrow .x{color:#c0cad2;cursor:pointer;font-size:17px;} .lg-sqno{width:62px;padding:5px 6px;font-size:12.5px;flex:none;} .lg-sqpos{max-width:168px;padding:5px 7px;font-size:12px;} .lg-sqpos.fixed{border:none;background:none;color:#5b6b75;font-size:11.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:0 4px;} .lg-sqcap{width:26px;height:26px;border-radius:50%;border:1.5px solid #d7dee5;color:#9aa8b4;font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;} .lg-sqcap.on{background:#F2A900;border-color:#F2A900;color:#12212c;} .lg-sqph{position:relative;width:34px;height:44px;border-radius:7px 7px 3px 3px;background:#e6edf2 center/cover no-repeat;border:1.5px solid #d7dee5;flex:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;} .lg-sqph .ms{font-size:16px;color:#9aa8b4;} .lg-sqph.own{border-color:#F2A900;} .lg-sqph .x{position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#0b2136;color:#fff;font-size:12px;font-style:normal;line-height:17px;text-align:center;} .lg-gfx{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0 0;max-width:660px;padding:12px 14px;border:1px solid #e4edf3;border-radius:12px;background:#f7fafc;} .lg-gfx > .ms{color:#F2A900;font-size:22px;} .lg-gfx .g{flex:1;min-width:200px;} .lg-gfx .g b{display:block;font-size:13.5px;font-weight:800;} .lg-gfx .g span{font-size:11.5px;color:#8a99a6;font-weight:600;}',
+      '.lg-sq{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px 14px;margin:0 0 12px 46px;} .lg-sqsrch{display:flex;align-items:center;gap:8px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:9px 12px;} .lg-sqsrch .ms{color:#9aa8b4;font-size:19px;} .lg-sqsrch input{border:none;outline:none;font:inherit;font-weight:600;font-size:13.5px;flex:1;background:none;} .lg-sqres{background:#fff;border:1px solid #eef2f5;border-radius:10px;margin-top:8px;padding:2px 12px;} .lg-sqres .row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid #f2f5f7;} .lg-sqres .row:last-child{border-bottom:none;} .lg-sqres .av{width:32px;height:32px;border-radius:50%;background:#dfe7ec center/cover no-repeat;flex:none;} .lg-sqres .g{flex:1;min-width:0;} .lg-sqres .g b{font-size:13.5px;font-weight:800;display:block;} .lg-sqres .g span{font-size:11px;color:#8a99a6;font-weight:600;} .lg-sqadd2{display:flex;gap:8px;margin-top:8px;} .lg-sqlist{margin-top:8px;} .lg-sqrow{display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid #f0f3f6;font-size:13.5px;font-weight:700;} .lg-sqrow:last-child{border-bottom:none;} .lg-sqrow .sp{flex:1;} .lg-sqrow .x{color:#c0cad2;cursor:pointer;font-size:17px;} .lg-sqno{width:62px;padding:5px 6px;font-size:12.5px;flex:none;} .lg-sqpos{max-width:168px;padding:5px 7px;font-size:12px;} .lg-sqpos.fixed{border:none;background:none;color:#5b6b75;font-size:11.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:0 4px;} .lg-sqcap{width:26px;height:26px;border-radius:50%;border:1.5px solid #d7dee5;color:#9aa8b4;font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;} .lg-sqcap.on{background:#F2A900;border-color:#F2A900;color:#12212c;} .lg-sqph{position:relative;width:34px;height:44px;border-radius:7px 7px 3px 3px;background:#e6edf2 center/cover no-repeat;border:1.5px solid #d7dee5;flex:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;} .lg-sqph .ms{font-size:16px;color:#9aa8b4;} .lg-sqph.own{border-color:#F2A900;} .lg-sqph .x{position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#0b2136;color:#fff;font-size:12px;font-style:normal;line-height:17px;text-align:center;} .lg-gfx{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0 0;max-width:660px;padding:12px 14px;border:1px solid #e4edf3;border-radius:12px;background:#f7fafc;} .lg-gfx > .ms{color:#F2A900;font-size:22px;} .lg-gfx .g{flex:1;min-width:200px;} .lg-gfx .g b{display:block;font-size:13.5px;font-weight:800;} .lg-gfx .g span{font-size:11.5px;color:#8a99a6;font-weight:600;} .lg-ts{margin:12px 0 0;max-width:660px;border:1px solid #e4edf3;border-radius:12px;background:#fff;overflow:hidden;} .lg-ts .hd{padding:12px 14px;background:#f7fafc;border-bottom:1px solid #e4edf3;} .lg-ts .hd b{display:block;font-size:13.5px;font-weight:800;} .lg-ts .hd span{font-size:11.5px;color:#8a99a6;font-weight:600;} .lg-ts .tabs{display:flex;gap:8px;padding:10px 14px 0;} .lg-ts .tabs button{flex:1;padding:9px 10px;border:1.5px solid #d7dee5;border-radius:9px;background:#fff;font:inherit;font-size:12.5px;font-weight:800;color:#0b2136;cursor:pointer;} .lg-ts .tabs button.on{background:#0b2136;border-color:#0b2136;color:#fff;} .lg-ts .tabs button em{font-style:normal;opacity:.6;margin-left:5px;} .lg-ts .lg-sqlist{padding:4px 14px 12px;} .lg-ts .lg-sqrow{opacity:.5;} .lg-ts .lg-sqrow.on{opacity:1;} .lg-ts .lg-sqph{cursor:default;}',
       '.lg-maed{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:14px 16px;margin-bottom:14px;} .lg-maed .ttl{font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:#8a99a6;margin-bottom:12px;} .lg-maed .fe-byetog{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#43525c;cursor:pointer;} .lg-maed .fe-byetog input{width:16px;height:16px;}',
       '.edrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;} .edrow .lg-sel{flex:1;min-width:150px;} .edrow .vv{font-weight:800;color:#8a99a6;} .edrow2{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:11px;} .edrow2 .f{display:flex;flex-direction:column;gap:5px;} .edrow2 .f label{font-size:11px;font-weight:800;color:#43525c;} .edrow2 .f .lg-in,.edrow2 .f .lg-sel{padding:8px 10px;font-size:13px;} .edfoot{display:flex;align-items:center;gap:10px;margin-top:14px;} .edfoot .sp{flex:1;}',
       /* match centre + per-fixture actions */
@@ -662,7 +662,7 @@
     var list = squadFor(entId);
     out += '<div class="lg-sqlist">' + (list.length ? list.map(function (p) {
       var b = p.member_id ? '<span class="lg-scpill">FFP</span>' : (p.invite_email ? '<span class="lg-scpill inv">INVITED</span>' : '<span class="lg-scpill txt">NAME</span>');
-      return '<div class="lg-sqrow">' + sqPhotoCell(p) + sqNoCell(p) + '<span class="nm">' + esc(p.name) + '</span>' + b + '<span class="sp"></span>' + sqPosCell(p) + sqCapCell(p) + '<span class="ms x" onclick="FFPLeague.sqRemove(\'' + p.id + '\')">close</span></div>';
+      return '<div class="lg-sqrow">' + sqPhotoCell(p) + '<span class="nm">' + esc(p.name) + '</span>' + b + '<span class="sp"></span><span class="ms x" onclick="FFPLeague.sqRemove(\'' + p.id + '\')">close</span></div>';
     }).join('') : '<div class="lg-empty" style="padding:12px">No players yet.</div>') + '</div>';
     return out;
   }
@@ -675,51 +675,6 @@
   function posOf(n) { var f = posList().filter(function (x) { return Number(x.number) === Number(n); })[0]; return f || null; }
   function sqTaken(entId, exceptId) {
     var o = {}; squadFor(entId).forEach(function (x) { if (x.id !== exceptId && x.number != null) o[Number(x.number)] = 1; }); return o;
-  }
-  function sqNoCell(p) {
-    var list = posList(); if (!list.length) return '';
-    var taken = sqTaken(p.entrant_id, p.id);
-    var o = '<option value="">&ndash;</option>' + list.map(function (x) {
-      var dis = taken[Number(x.number)] ? ' disabled' : '';
-      return '<option value="' + x.number + '"' + (Number(p.number) === Number(x.number) ? ' selected' : '') + dis + '>' + x.number + '</option>';
-    }).join('');
-    return '<select class="lg-sel lg-sqno" title="Shirt number" onchange="FFPLeague.sqSetNo(\'' + p.id + '\',this.value)">' + o + '</select>';
-  }
-  function sqPosCell(p) {
-    var list = posList(); if (!list.length || p.number == null) return '';
-    var meta = posOf(p.number);
-    if (meta && meta.grp !== 'replacements') return '<span class="lg-sqpos fixed">' + esc(meta.name) + '</span>';
-    var named = {}; var opts = list.filter(function (x) {
-      if (x.grp === 'replacements') return false;
-      if (named[x.name]) return false; named[x.name] = 1; return true;
-    });
-    return '<select class="lg-sel lg-sqpos" onchange="FFPLeague.sqSetPos(\'' + p.id + '\',this.value)"><option value="">Covers&hellip;</option>'
-      + opts.map(function (x) { return '<option value="' + esc(x.name) + '"' + (p.position === x.name ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('')
-      + '</select>';
-  }
-  function sqCapCell(p) {
-    if (!posList().length) return '';
-    return '<span class="lg-sqcap' + (p.captain ? ' on' : '') + '" title="Captain" onclick="FFPLeague.sqCaptain(\'' + p.id + '\',' + (p.captain ? 'false' : 'true') + ')">C</span>';
-  }
-  async function sqSetNo(id, n) {
-    var row = (S._squad || []).filter(function (x) { return x.id === id; })[0] || {};
-    var meta = n ? posOf(n) : null;
-    var pos = meta && meta.grp !== 'replacements' ? meta.name : (row.position || null);
-    try { await sb().rpc('lt_squad_set_position', { p_id: id, p_number: n ? Number(n) : null, p_position: pos }); }
-    catch (e) { toast((e && e.message) || 'Could not set the shirt', 'error'); }
-    _sqReload(row.entrant_id || S.sqOpen);
-  }
-  async function sqSetPos(id, pos) {
-    var row = (S._squad || []).filter(function (x) { return x.id === id; })[0] || {};
-    try { await sb().rpc('lt_squad_set_position', { p_id: id, p_number: row.number == null ? null : Number(row.number), p_position: pos || null }); }
-    catch (e) { toast((e && e.message) || 'Could not set the position', 'error'); }
-    _sqReload(row.entrant_id || S.sqOpen);
-  }
-  async function sqCaptain(id, on) {
-    var row = (S._squad || []).filter(function (x) { return x.id === id; })[0] || {};
-    try { await sb().rpc('lt_squad_set_position', { p_id: id, p_number: row.number == null ? null : Number(row.number), p_position: row.position || null, p_captain: !!on }); }
-    catch (e) { toast((e && e.message) || 'Could not set the captain', 'error'); }
-    _sqReload(row.entrant_id || S.sqOpen);
   }
 
   // ── player portrait. A club can upload its own shot \u2014 cropped to the
@@ -955,7 +910,7 @@
   // ---------- MATCH CENTRE (organiser enters the scoring timeline) ----------
   var KIND_PTS = { try: 5, conversion: 2, penalty: 3, drop_goal: 3, goal: 1, point: 1, yellow_card: 0, red_card: 0 };
   var KIND_LBL = { try: 'Try', conversion: 'Conversion', penalty: 'Penalty', drop_goal: 'Drop goal', goal: 'Goal', point: 'Point', yellow_card: 'Yellow card', red_card: 'Red card' };
-  function openMatch(id) { S.matchOpen = id; S.mcTab = 'timeline'; S._mcDiv = null; S.mcStatPlayer = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = null; S._htSnap = null; S._mcSetTime = '40:00'; renderMatchCentre(); }
+  function openMatch(id) { S.matchOpen = id; S.mcTab = 'timeline'; S._mcDiv = null; S.mcStatPlayer = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = null; S._htSnap = null; S._mcSetTime = '40:00'; S._tsTeam = 'home'; S._ts = []; renderMatchCentre(); tsReload(); }
   function closeMatch() { S.matchOpen = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } renderTab(); }
   async function renderMatchCentre() {
     var host = document.getElementById('lg-tab'); if (!host) return;
@@ -978,7 +933,7 @@
     host.innerHTML =
       '<div class="lg-tool"><button class="lg-btn" onclick="FFPLeague.closeMatch()">' + ic('arrow_back') + 'Back to fixtures</button><span class="sp"></span>' + liveBtn + '<button class="lg-btn pri" onclick="FFPLeague.saveResultFromEvents()">' + ic('check') + 'Save result</button></div>'
       + '<div class="lg-mchd"><div class="tm">' + crest(m.home) + '<b>' + esc(m.home.name) + '</b></div><div class="scr">' + esc(score) + '</div><div class="tm a"><b>' + esc(m.away.name) + '</b>' + crest(m.away) + '</div></div>'
-      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:10px 0"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPLeague.saveStream()">' + ic('live_tv') + 'Save stream</button></div>' + gfxRow(m)
+      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:10px 0"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPLeague.saveStream()">' + ic('live_tv') + 'Save stream</button></div>' + gfxRow(m) + tsPanel(m)
       + '<div class="lg-mctabs"><button class="' + (tab === 'timeline' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'timeline\')">Scoring timeline</button><button class="' + (tab === 'subs' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'subs\')">Substitutions</button><button class="' + (tab === 'stats' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'stats\')">Player stats</button><button class="' + (tab === 'team' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'team\')">Team stats</button></div>'
       + (tab === 'timeline'
         ? ('<div class="lg-mcadd">'
@@ -1079,7 +1034,7 @@
       + '<button class="pbp-pb home" ' + (t.done ? 'disabled' : '') + ' onclick="FFPLeague.pbpAward(\'home\')"><span class="pl">' + ic('add') + 'Point</span><span class="nm">' + esc(m.home.name) + '</span></button></div>'
       + decide
       + '<div class="pbp-srow"><button onclick="FFPLeague.pbpUndo()">' + ic('undo') + 'Undo</button><button onclick="FFPLeague.pbpServer()">' + ic('swap_horiz') + 'Change server</button></div>'
-      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:14px 0 0;max-width:660px"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPLeague.saveStream()">' + ic('live_tv') + 'Save stream</button></div>' + gfxRow(m)
+      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:14px 0 0;max-width:660px"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPLeague.saveStream()">' + ic('live_tv') + 'Save stream</button></div>' + gfxRow(m) + tsPanel(m)
       + '<div class="lg-sub" style="margin:10px 0 0">Point-by-point — every tap streams live to followers. Same board as the FFP App scorer.</div>';
   }
 
@@ -1120,6 +1075,80 @@
     var url = GFX_BASE + id;
     try { navigator.clipboard.writeText(url); toast('Overlay URL copied \u2014 paste it into YoloBox, OBS or vMix', 'check'); }
     catch (e) { prompt('Overlay URL', url); }
+  }
+
+
+  // ── TEAM SHEET. The squad is the club's players; the sheet is the ones
+  //    playing today, in the shirts they wear in THIS match. A player can be
+  //    12 one week and 23 the next, so the number lives on the fixture. ──
+  function tsRows() { return S._ts || []; }
+  function tsToday(sqid) { var r = tsRows().filter(function (x) { return x.squad_id === sqid; })[0]; return r || null; }
+  function tsTakenIn(ent, exceptId) {
+    var o = {}; tsRows().forEach(function (x) {
+      if (x.entrant_id === ent && x.squad_id !== exceptId && x.number != null) o[Number(x.number)] = 1;
+    }); return o;
+  }
+  function tsNamed(ent) { return tsRows().filter(function (x) { return x.entrant_id === ent && x.number != null; }).length; }
+  async function tsReload() {
+    var m = S._mc || {}; if (!m.id) return;
+    try { var r = await sb().rpc('lt_teamsheet_list', { p_match: m.id }); S._ts = (r && r.data) || []; } catch (e) { S._ts = []; }
+    if (!(S._pos || []).length) { try { var po = await sb().rpc('lt_position_list', { p_event: S.eventId }); S._pos = (po && po.data) || []; } catch (e) {} }
+    renderTab();
+  }
+  async function tsWrite(sqid, num, pos, cap) {
+    var m = S._mc || {}; var r;
+    try { r = await sb().rpc('lt_teamsheet_set', { p_match: m.id, p_squad: sqid, p_number: num, p_position: pos, p_captain: cap }); }
+    catch (e) { r = { error: e }; }
+    if (r && r.error) { toast((r.error.message) || 'Could not name that shirt', 'error'); return; }
+    tsReload();
+  }
+  function tsShirt(sqid, n) {
+    var cur = tsToday(sqid) || {};
+    var meta = n ? posOf(n) : null;
+    var pos = meta && meta.grp !== 'replacements' ? meta.name : (cur.position || null);
+    tsWrite(sqid, n ? Number(n) : null, pos, null);
+  }
+  function tsCovers(sqid, pos) { var cur = tsToday(sqid) || {}; tsWrite(sqid, cur.number == null ? null : Number(cur.number), pos || null, null); }
+  function tsCaptain(sqid, on) {
+    var cur = tsToday(sqid) || {};
+    if (cur.number == null) { toast('Give them a shirt first', 'error'); return; }
+    tsWrite(sqid, Number(cur.number), cur.position || null, !!on);
+  }
+  function tsTeam(which) { S._tsTeam = which; renderTab(); }
+  function tsPanel(m) {
+    var list = posList(); if (!list.length || !m || !m.id) return '';
+    var which = S._tsTeam || 'home';
+    var tm = which === 'away' ? m.away : m.home; if (!tm) return '';
+    var rows = tsRows().filter(function (x) { return x.entrant_id === tm.id; });
+    var body = rows.length ? rows.map(function (p) {
+      var today = tsToday(p.squad_id) || {};
+      var meta = today.number != null ? posOf(today.number) : null;
+      var mine = tsTakenIn(tm.id, p.squad_id);
+      var opts = '<option value="">&ndash;</option>' + list.map(function (x) {
+        return '<option value="' + x.number + '"' + (Number(today.number) === Number(x.number) ? ' selected' : '')
+          + (mine[Number(x.number)] ? ' disabled' : '') + '>' + x.number + '</option>';
+      }).join('');
+      var named = {};
+      var covers = meta && meta.grp === 'replacements'
+        ? '<select class="lg-sel lg-sqpos" onchange="FFPLeague.tsCovers(\'' + p.squad_id + '\',this.value)"><option value="">Covers&hellip;</option>'
+            + list.filter(function (x) { if (x.grp === 'replacements' || named[x.name]) return false; named[x.name] = 1; return true; })
+                  .map(function (x) { return '<option value="' + esc(x.name) + '"' + (today.position === x.name ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('')
+            + '</select>'
+        : (meta ? '<span class="lg-sqpos fixed">' + esc(meta.name) + '</span>' : '');
+      return '<div class="lg-sqrow' + (today.number != null ? ' on' : '') + '">'
+        + '<span class="lg-sqph" style="' + (p.photo ? "background-image:url('" + esc(p.photo) + "')" : '') + '"></span>'
+        + '<select class="lg-sel lg-sqno" onchange="FFPLeague.tsShirt(\'' + p.squad_id + '\',this.value)">' + opts + '</select>'
+        + '<span class="nm">' + esc(p.name) + '</span><span class="sp"></span>' + covers
+        + '<span class="lg-sqcap' + (today.captain ? ' on' : '') + '" title="Captain" onclick="FFPLeague.tsCaptain(\'' + p.squad_id + '\',' + (today.captain ? 'false' : 'true') + ')">C</span>'
+        + '</div>';
+    }).join('') : '<div class="lg-empty" style="padding:12px">No players in this club&#39;s squad yet. Add them under Entrants.</div>';
+
+    return '<div class="lg-ts">'
+      + '<div class="hd"><b>Team sheet</b><span>Give a shirt to everyone playing today. 1&ndash;15 carry their position, 16&ndash;23 pick what they cover, and the numbers are for this match only.</span></div>'
+      + '<div class="tabs">'
+      + '<button class="' + (which === 'home' ? 'on' : '') + '" onclick="FFPLeague.tsTeam(\'home\')">' + esc((m.home || {}).name || 'Home') + ' <em>' + tsNamed((m.home || {}).id) + '</em></button>'
+      + '<button class="' + (which === 'away' ? 'on' : '') + '" onclick="FFPLeague.tsTeam(\'away\')">' + esc((m.away || {}).name || 'Away') + ' <em>' + tsNamed((m.away || {}).id) + '</em></button>'
+      + '</div><div class="lg-sqlist">' + body + '</div></div>';
   }
 
   async function saveStream() {
@@ -1449,7 +1478,8 @@
     editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit,
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
     sqToggle: sqToggle, sqSearch: sqSearch, sqAddMember: sqAddMember, sqNameOnly: sqNameOnly, sqInvite: sqInvite, sqRemove: sqRemove,
-    sqSetNo: sqSetNo, sqSetPos: sqSetPos, sqCaptain: sqCaptain, sqPhoto: sqPhoto, sqPhotoClear: sqPhotoClear,
+    sqPhoto: sqPhoto, sqPhotoClear: sqPhotoClear,
+    tsShirt: tsShirt, tsCovers: tsCovers, tsCaptain: tsCaptain, tsTeam: tsTeam,
     gfxOpen: gfxOpen, gfxCopy: gfxCopy, gfxLink: gfxLink,
     confirmGen: confirmGen, cancelGen: cancelGen, doGen: doGen, saveResults: saveResults,
     addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap, autoplan: autoplan, schedSet: schedSet,
