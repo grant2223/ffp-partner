@@ -1092,12 +1092,30 @@
     if (!m || !m.id) return '';
     return '<div class="lg-gfx">'
       + '<span class="ms">smart_display</span>'
-      + '<div class="g"><b>Broadcast graphics</b><span>Scorebug, team sheets, try scorer, substitutions and the officials \u2014 driven from the control page.</span></div>'
+      + '<div class="g"><b>Broadcast graphics</b><span>Overlay URL goes in the encoder once. The control link runs the graphics \u2014 no FFP sign-in needed, so send it to your operator.</span></div>'
       + '<button class="lg-btn" onclick="FFPLeague.gfxCopy(\'' + m.id + '\')">' + ic('content_copy') + 'Copy overlay URL</button>'
+      + '<button class="lg-btn" onclick="FFPLeague.gfxLink(\'' + m.id + '\')">' + ic('link') + 'Copy control link</button>'
       + '<button class="lg-btn pri" onclick="FFPLeague.gfxOpen(\'' + m.id + '\')">' + ic('tune') + 'Open control</button>'
       + '</div>';
   }
-  function gfxOpen(id) { window.open(GFX_BASE + id + '/control', '_blank', 'noopener'); }
+  // The control page is run by a livestream operator who is not an FFP member,
+  // so the organiser mints a key for this match and it travels in the link.
+  async function gfxOpen(id) {
+    var w = window.open('', '_blank');           // opened on the click, or the popup is blocked
+    var r; try { r = await sb().rpc('gfx_key', { p_match: id }); } catch (e) { r = null; }
+    var key = r && r.data;
+    if (!key) { if (w) w.close(); toast((r && r.error && r.error.message) || 'Could not open the control page', 'error'); return; }
+    var url = GFX_BASE + id + '/control?k=' + encodeURIComponent(key);
+    if (w) { w.location = url; } else { window.open(url, '_blank', 'noopener'); }
+  }
+  async function gfxLink(id) {
+    var r; try { r = await sb().rpc('gfx_key', { p_match: id }); } catch (e) { r = null; }
+    var key = r && r.data;
+    if (!key) { toast('Could not make the control link', 'error'); return; }
+    var url = GFX_BASE + id + '/control?k=' + encodeURIComponent(key);
+    try { navigator.clipboard.writeText(url); toast('Control link copied \u2014 send it to your operator', 'check'); }
+    catch (e) { prompt('Control link', url); }
+  }
   function gfxCopy(id) {
     var url = GFX_BASE + id;
     try { navigator.clipboard.writeText(url); toast('Overlay URL copied \u2014 paste it into YoloBox, OBS or vMix', 'check'); }
@@ -1432,7 +1450,7 @@
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
     sqToggle: sqToggle, sqSearch: sqSearch, sqAddMember: sqAddMember, sqNameOnly: sqNameOnly, sqInvite: sqInvite, sqRemove: sqRemove,
     sqSetNo: sqSetNo, sqSetPos: sqSetPos, sqCaptain: sqCaptain, sqPhoto: sqPhoto, sqPhotoClear: sqPhotoClear,
-    gfxOpen: gfxOpen, gfxCopy: gfxCopy,
+    gfxOpen: gfxOpen, gfxCopy: gfxCopy, gfxLink: gfxLink,
     confirmGen: confirmGen, cancelGen: cancelGen, doGen: doGen, saveResults: saveResults,
     addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap, autoplan: autoplan, schedSet: schedSet,
     togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch, toggleBye: toggleBye, togglePre: togglePre,
