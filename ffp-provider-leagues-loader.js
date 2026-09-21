@@ -1060,7 +1060,7 @@
     if (!m || !m.id) return '';
     return '<div class="lg-gfx">'
       + '<span class="ms">smart_display</span>'
-      + '<div class="g"><b>Broadcast graphics</b><span>Overlay URL goes in the encoder once. The control link runs the graphics \u2014 no FFP sign-in needed, so send it to your operator.</span></div>'
+      + '<div class="g"><b>Broadcast graphics</b><span>Overlay URL goes in the encoder once, at 1920\u00d71080 (16:9 HD). Tries, cards and substitutions show themselves as the scorer records them \u2014 the control link is only needed when someone is running the graphics by hand.</span></div>'
       + '<button class="lg-btn" onclick="FFPLeague.gfxCopy(\'' + m.id + '\')">' + ic('content_copy') + 'Copy overlay URL</button>'
       + '<button class="lg-btn" onclick="FFPLeague.gfxLink(\'' + m.id + '\')">' + ic('link') + 'Copy control link</button>'
       + '<button class="lg-btn pri" onclick="FFPLeague.gfxOpen(\'' + m.id + '\')">' + ic('tune') + 'Open control</button>'
@@ -1086,7 +1086,7 @@
   }
   function gfxCopy(id) {
     var url = GFX_BASE + id;
-    try { navigator.clipboard.writeText(url); toast('Overlay URL copied \u2014 paste it into YoloBox, OBS or vMix', 'check'); }
+    try { navigator.clipboard.writeText(url); toast('Overlay URL copied \u2014 add it at 1920\u00d71080 in YoloBox, OBS or vMix', 'check'); }
     catch (e) { prompt('Overlay URL', url); }
   }
 
