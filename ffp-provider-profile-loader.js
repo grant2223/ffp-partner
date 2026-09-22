@@ -17,7 +17,7 @@
        of the activity taxonomy + an "Add ‘x’" custom option), replacing the ugly native
        <datalist> that rendered a full-height list on the right of the screen. Click to add a chip;
        outside-click / Esc closes it. (Tab order/labels handled in the dashboard: Business Details
-       · Activities · Branding.)
+      , Activities, Branding.)
    v11 (2026-06-02): TABBED profile (Branding / Business info / Activities). The "Activities we
        offer" field now injects into the Activities tab (#pf-activities-host); the "Google Maps
        link" (venue location) stays in Business info, after Address. Falls back to the old
@@ -882,7 +882,9 @@
       '</div>';
     var cat = document.getElementById('pf-category');
     var catField = (cat && cat.closest) ? cat.closest('.field') : null;
-    if (catField && catField.parentNode) { catField.parentNode.insertBefore(f, catField.nextSibling); }
+    // Account type comes FIRST: it decides whether the venue/business fields and
+    // the category list even apply, so asking for it after Category is backwards.
+    if (catField && catField.parentNode) { catField.parentNode.insertBefore(f, catField); }
     else { panel.appendChild(f); }
     var atSel = document.getElementById('pf-acct-type'); if (atSel) atSel.onchange = function () { setAccountType(this.value); };
     var catSel = document.getElementById('pf-brand-cat');
