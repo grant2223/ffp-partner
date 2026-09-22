@@ -135,7 +135,7 @@
           + the base experiences modal); Events Country/City are now the shared searchable picker buttons
           (#em-country-btn/#em-city-btn) wired by the events loader — no native dropdowns. (b) Cache-busts:
           ffp-taxonomy.js?v=10, ffp-provider-experiences-loader.js?v=8, ffp-provider-events-loader.js?v=11,
-          ffp-provider-classes-loader.js?v=2, ffp-provider-profile-loader.js?v=16. (c) PROFILE COMPLETION reworked to
+          ffp-provider-classes-loader.js?v=2, ffp-provider-profile-loader.js?v=17. (c) PROFILE COMPLETION reworked to
           the real storefront ESSENTIALS (business name, category, city, about, logo, hero, ≥1 activity — 100% now
           reachable; website/hours are non-blocking extras) + a "your listings won't show on Find Fit People until
           your profile is complete" warning banner on every listing panel (renderListingGate in showPanel).
@@ -159,7 +159,7 @@
      v42 (2026-06-05): Passport-member DISCOUNT field — providers set their own % off Find Fit People bookings for paid
           Passport members (Business Details tab; blank = platform default 10%). Saved to
           providers.passport_discount_pct via provider_save_profile; the booking site reads it at checkout.
-          Loads ffp-provider-profile-loader.js?v=16.
+          Loads ffp-provider-profile-loader.js?v=17.
      v41: Listing covers → Storage. handleUpload('listing:…') (shared by events/experiences/challenges/
           deals/quests via #listing-photo-slot) now uploads to the listing-covers bucket via FFPUpload and
           stores the public URL in hero_image_url, instead of base64-in-DB. Depends on ffp-image-upload.js.
@@ -274,7 +274,7 @@
 <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.js"></script>
 <script src="assets/ffp-image-upload.js?v=7"></script>
 <script src="assets/ffp-gallery.js?v=1"></script>
-<script src="ffp-provider-profile-loader.js?v=16"></script>
+<script src="ffp-provider-profile-loader.js?v=17"></script>
 <!-- Shared provider picker (FFPPicker) defined HERE in the dashboard so Events/Challenges/Experiences
      activity + country/city pickers never depend on a separately-uploaded loader being present. -->
 <script>
