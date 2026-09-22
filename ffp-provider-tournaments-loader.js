@@ -246,18 +246,58 @@
   var ROLES = ['Referee','Assistant referee','Umpire','Line judge','Chair umpire','Timekeeper','Scorer','TMO'];
   function fmtDay(d) { return DOW[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()]; }
   function fmtTime(d) { return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  // ── the tournament's clock ──────────────────────────────────────────────
+  // Kick-offs belong to the place the tournament is played, not to the desk it
+  // is run from. Reading or writing them through the browser's own zone put a
+  // Dubai draw on Australian time - and, worse, bucketed matches into the wrong
+  // tournament DAY once the local date differed.
+  function evTz() {
+    return (S.detail && S.detail.event && S.detail.event.timezone) || 'UTC';
+  }
+  function tzParts(at, tz) {
+    var f = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    var o = {};
+    f.formatToParts(new Date(at)).forEach(function (x) { o[x.type] = x.value; });
+    o.hour = (o.hour === '24') ? '00' : o.hour;
+    return o;
+  }
+  function tzOffsetMs(at, tz) {
+    var p = tzParts(at, tz);
+    return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second) - new Date(at).getTime();
+  }
+  function zoneToISO(dateStr, timeStr, tz) {
+    if (!dateStr) return null;
+    var d = String(dateStr).split('-'), t = String(timeStr || '00:00').split(':');
+    var wall = Date.UTC(+d[0], +d[1] - 1, +d[2], +t[0] || 0, +t[1] || 0, 0);
+    var ms = wall - tzOffsetMs(wall, tz);
+    ms = wall - tzOffsetMs(ms, tz);
+    return new Date(ms).toISOString();
+  }
+  function zoneDate(iso, tz) { var p = tzParts(iso, tz); return p.year + '-' + p.month + '-' + p.day; }
+  function zoneTime(iso, tz) { var p = tzParts(iso, tz); return p.hour + ':' + p.minute; }
+  function zoneDay(iso, tz) {
+    var p = tzParts(iso, tz);
+    return DOW[new Date(Date.UTC(+p.year, +p.month - 1, +p.day)).getUTCDay()] + ' ' + (+p.day) + ' ' + MON[+p.month - 1];
+  }
   function crest(o) {
     o = o || {}; var nm = o.name || 'TBD';
     if (o.logo) return '<span class="lg-crest" style="background-image:url(\'' + esc(o.logo) + '\')"></span>';
     return '<span class="lg-crest">' + esc(nm.replace(/[^A-Za-z ]/g, '').split(' ').map(function (w) { return w[0] || ''; }).join('').slice(0, 2).toUpperCase() || '?') + '</span>';
   }
   function roundRange(list) {
-    var ds = list.map(function (f) { return f.scheduled_at ? new Date(f.scheduled_at) : null; }).filter(Boolean);
+    var tz = evTz();
+    var ds = list.map(function (f) { return f.scheduled_at ? new Date(f.scheduled_at).getTime() : null; }).filter(Boolean);
     if (!ds.length) return 'Not scheduled';
-    var mn = new Date(Math.min.apply(null, ds)), mx = new Date(Math.max.apply(null, ds));
-    if (mn.toDateString() === mx.toDateString()) return fmtDay(mn) + ', 1 day';
-    var days = Math.round((new Date(mx.getFullYear(), mx.getMonth(), mx.getDate()) - new Date(mn.getFullYear(), mn.getMonth(), mn.getDate())) / 86400000) + 1;
-    var span = (mn.getMonth() === mx.getMonth()) ? (mn.getDate() + '–' + mx.getDate() + ' ' + MON[mx.getMonth()]) : (mn.getDate() + ' ' + MON[mn.getMonth()] + ' – ' + mx.getDate() + ' ' + MON[mx.getMonth()]);
+    var mn = Math.min.apply(null, ds), mx = Math.max.apply(null, ds);
+    var pn = tzParts(mn, tz), px = tzParts(mx, tz);
+    if (pn.year === px.year && pn.month === px.month && pn.day === px.day) return zoneDay(mn, tz) + ', 1 day';
+    var dayMs = function (q) { return Date.UTC(+q.year, +q.month - 1, +q.day); };
+    var days = Math.round((dayMs(px) - dayMs(pn)) / 86400000) + 1;
+    var span = (pn.month === px.month && pn.year === px.year)
+      ? ((+pn.day) + '–' + (+px.day) + ' ' + MON[+px.month - 1])
+      : ((+pn.day) + ' ' + MON[+pn.month - 1] + ' – ' + (+px.day) + ' ' + MON[+px.month - 1]);
     return span + ', ' + days + ' days';
   }
   function surfaceOpts(fields, selId) {
@@ -506,7 +546,7 @@
   function ymd(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function dayOf(when) {
     if (!when) return 0;
-    var k = ymd(new Date(when));
+    var k = zoneDate(when, evTz());
     var days = evDays();
     for (var i = 0; i < days.length; i++) if (days[i].date === k) return days[i].n;
     return 0;
@@ -597,7 +637,7 @@
       var times = [...new Set(on.map(function (m) { return new Date(m.scheduled_at).getTime(); }))].sort(function (a, b) { return a - b; });
       var cells = '<div class="th"></div>' + fields.map(function (f) { return '<div class="th">' + esc(f.name) + '</div>'; }).join('');
       times.forEach(function (t) {
-        cells += '<div class="tm">' + fmtTime(new Date(t)) + '</div>';
+        cells += '<div class="tm">' + zoneTime(t, evTz()) + '</div>';
         fields.forEach(function (f) {
           var m = on.find(function (x) { return x.field_id === f.id && new Date(x.scheduled_at).getTime() === t; });
           cells += '<div class="c">' + (m ? gridCell(m) : '') + '</div>';
@@ -626,7 +666,7 @@
       var ta = a.scheduled_at ? Date.parse(a.scheduled_at) : Infinity, tb = b.scheduled_at ? Date.parse(b.scheduled_at) : Infinity;
       return (ta - tb) || String(a.court || '').localeCompare(String(b.court || ''), undefined, { numeric: true });
     }).forEach(function (m) {
-      var k = m.scheduled_at ? ('Day ' + m._day + ', ' + fmtDay(new Date(m.scheduled_at))) : 'Not scheduled';
+      var k = m.scheduled_at ? ('Day ' + m._day + ', ' + zoneDay(m.scheduled_at, evTz())) : 'Not scheduled';
       if (!byDay[k]) { byDay[k] = []; order.push(k); } byDay[k].push(m);
     });
     host2.innerHTML = cov + order.map(function (k) {
@@ -649,7 +689,7 @@
   function schedRow(m) {
     var t = matchTitle(m);
     var days = evDays();
-    var tv = m.scheduled_at ? fmtTime(new Date(m.scheduled_at)) : '';
+    var tv = m.scheduled_at ? zoneTime(m.scheduled_at, evTz()) : '';
     var no = !m.scheduled_at || !m.field_id;
     return '<div class="tg-sr' + (no ? ' no' : '') + ' ' + divColour(m.division_id) + '" data-id="' + m.id + '">'
       + '<div class="m">' + (S.schedDiv === 'all' && S.schedView !== 'division' ? '<u>' + esc(divName(m.division_id)) + '</u>' : '')
@@ -716,7 +756,7 @@
     var fid = (row.querySelector('.st-f') || {}).value || null;
     var days = evDays();
     var day = days.find(function (d) { return d.n === dn; }) || days[0];
-    var when = (dn && tv) ? new Date(day.date + 'T' + tv + ':00').toISOString() : null;
+    var when = (dn && tv) ? zoneToISO(day.date, tv, evTz()) : null;
     if ((dn && !tv) || (!dn && tv)) { toast('Pick both a day and a time', 'error'); return; }
     var r; try { r = await sb().rpc('lt_match_schedule', { p_scope: 'tourn', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null }); } catch (e) { r = { error: e }; }
     if (r && r.error) { toast('Could not reschedule', 'error'); return; }
