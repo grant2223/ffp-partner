@@ -141,7 +141,7 @@
       return '<div class="cx-card" onclick="FFPComp.open(\'' + ev.id + '\')">' +
         '<div class="cx-cover" style="' + (cover ? 'background-image:url(\'' + esc(cover) + '\')' : 'background:linear-gradient(135deg,' + esc(ev.accent || '#d6353b') + ',#0f2230)') + '">' +
         '<div class="scr"></div><span class="cx-bd bd ' + st + '">' + st.toUpperCase() + '</span></div>' +
-        '<div class="cx-cbody"><b>' + esc(ev.name) + '</b><span>' + (ev.divisions || 0) + ' divisions · ' + (ev.entrants || 0) + ' athletes' + (ev.city ? ' · ' + esc(ev.city) : '') + '</span></div></div>';
+        '<div class="cx-cbody"><b>' + esc(ev.name) + '</b><span>' + (ev.divisions || 0) + ' divisions, ' + (ev.entrants || 0) + ' athletes' + (ev.city ? ', ' + esc(ev.city) : '') + '</span></div></div>';
     }).join('');
     g.innerHTML = '<div class="cx-new" onclick="FFPComp.create()"><span class="ms">add_circle</span>Create competition</div>' + cards;
   }
@@ -176,7 +176,7 @@
       '<div class="cx-head"><div style="display:flex;align-items:center;gap:12px;">' +
       '<button class="cx-btn sm" onclick="FFPComp.list()"><span class="ms">arrow_back</span></button>' +
       '<div><div class="cx-h1">' + esc(ev.name) + ' <span class="cx-pill ' + (ev.status || 'draft') + '">' + esc(ev.status || 'draft') + '</span></div>' +
-      '<div class="cx-sub">' + ((S.detail.divisions || []).length) + ' divisions · ' + (ev.entrants || 0) + ' athletes</div></div></div></div>' +
+      '<div class="cx-sub">' + ((S.detail.divisions || []).length) + ' divisions, ' + (ev.entrants || 0) + ' athletes</div></div></div></div>' +
       '<div class="cx-editnav">' + tabs.map(function (t) { return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" onclick="FFPComp.tab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</div>' +
       '<div id="cx-tab"></div></div>';
     renderTab();
@@ -339,8 +339,8 @@
     c.innerHTML = '<div class="cx-head"><div class="cx-sub">Each division is individual or a team of N, and has its OWN events.</div>' +
       '<button class="cx-btn pri sm" onclick="FFPComp.editDivision()"><span class="ms">add</span> Add division</button></div>' +
       (divs.length ? divs.map(function (d, i) {
-        var mix = (d.team_size > 1 && (d.req_male || d.req_female)) ? ' · ' + (d.req_male || 0) + 'M/' + (d.req_female || 0) + 'F' : '';
-        var meta = (d.team_size > 1 ? 'Teams of ' + d.team_size : 'Individual') + mix + (d.gender ? ' · ' + d.gender : '') + ((d.min_age || d.max_age) ? ' · age ' + (d.min_age || 0) + '–' + (d.max_age || '+') : '') + ' · ' + (d.entrants || 0) + ' entered · ' + ((d.workouts || []).length) + ' events';
+        var mix = (d.team_size > 1 && (d.req_male || d.req_female)) ? ', ' + (d.req_male || 0) + 'M/' + (d.req_female || 0) + 'F' : '';
+        var meta = (d.team_size > 1 ? 'Teams of ' + d.team_size : 'Individual') + mix + (d.gender ? ', ' + d.gender : '') + ((d.min_age || d.max_age) ? ', age ' + (d.min_age || 0) + '–' + (d.max_age || '+') : '') + ', ' + (d.entrants || 0) + ' entered, ' + ((d.workouts || []).length) + ' events';
         return '<div class="cx-row"><div class="cx-av"><span class="ms" style="font-size:18px">military_tech</span></div>' +
           '<div class="g"><b>' + esc(d.name) + '</b><span>' + esc(meta) + '</span></div>' +
           '<button class="cx-btn sm" onclick="FFPComp.moveDivision(\'' + d.id + '\',-1)"' + (i === 0 ? ' disabled' : '') + ' title="Move up"><span class="ms">arrow_upward</span></button>' +
@@ -430,12 +430,12 @@
     c.innerHTML = '<div class="cx-toolbar">' + divPickerHtml('FFPComp.setDiv(this.value)') +
       (div ? '<button class="cx-btn pri sm" onclick="FFPComp.editWorkout()"><span class="ms">add</span> Add event</button>' : '') + '</div>' +
       (!div ? '' : (wods.length ? wods.map(function (w, i) {
-        var meta = w.score_type + ' · ' + (w.direction === 'asc' ? 'lower wins' : 'higher wins') + (w.cap_seconds ? ' · cap ' + Math.floor(w.cap_seconds / 60) + ':' + ('' + (w.cap_seconds % 60)).padStart(2, '0') : '');
+        var meta = w.score_type + ', ' + (w.direction === 'asc' ? 'lower wins' : 'higher wins') + (w.cap_seconds ? ', cap ' + Math.floor(w.cap_seconds / 60) + ':' + ('' + (w.cap_seconds % 60)).padStart(2, '0') : '');
         return '<div class="cx-row cx-drow" draggable="true" data-wid="' + w.id + '"' +
           ' ondragstart="FFPComp.wDragStart(event,\'' + w.id + '\')" ondragover="FFPComp.wDragOver(event,\'' + w.id + '\')" ondragleave="FFPComp.wDragLeave(event)" ondrop="FFPComp.wDrop(event,\'' + w.id + '\')" ondragend="FFPComp.wDragEnd(event)">' +
           '<span class="ms cx-drag" title="Drag to reorder">drag_indicator</span>' +
           '<div class="cx-av"><span class="ms" style="font-size:18px">fitness_center</span></div>' +
-          '<div class="g"><b>Event ' + (i + 1) + ' · ' + esc(w.name) + '</b><span>' + esc(meta) + '</span></div>' +
+          '<div class="g"><b>Event ' + (i + 1) + ', ' + esc(w.name) + '</b><span>' + esc(meta) + '</span></div>' +
           '<button class="cx-btn sm" onclick="FFPComp.editWorkout(\'' + w.id + '\')">Edit</button></div>';
       }).join('') + '<div class="cx-sub" style="margin-top:8px">Drag <span class="ms" style="font-size:14px;vertical-align:-2px">drag_indicator</span> to reorder events.</div>' : '<div class="cx-empty">No events in this division yet.</div>'));
   }
@@ -578,7 +578,7 @@
       }
     }
     if (ok) {
-      var msg = copied ? ('Saved · copied to ' + copied + ' division' + (copied === 1 ? '' : 's')) : (targets.length > 1 ? 'Added to ' + targets.length + ' divisions' : 'Saved');
+      var msg = copied ? ('Saved, copied to ' + copied + ' division' + (copied === 1 ? '' : 's')) : (targets.length > 1 ? 'Added to ' + targets.length + ' divisions' : 'Saved');
       toast(msg, 'check'); closeModal(); reload();
     } else { toast('Save failed', 'error'); }
   }
@@ -594,8 +594,8 @@
     var box = document.getElementById('cx-roster'); if (!box) return;
     box.innerHTML = rows.length ? rows.map(function (a) {
       var av = a.photo ? '<span class="cx-av" style="background-image:url(\'' + esc(a.photo) + '\')"></span>' : '<span class="cx-av">' + esc((a.name || '?').slice(0, 1).toUpperCase()) + '</span>';
-      var tag = a.is_member ? ' · FFP member' : (a.status === 'invited' ? ' · invited' + (a.invite_email ? ' · ' + esc(a.invite_email) : '') : ' · manual');
-      return '<div class="cx-row">' + av + '<div class="g"><b>' + esc(a.name) + '</b><span>#' + (a.athlete_no || '—') + ' · ' + esc(a.status || '') + tag + '</span></div></div>';
+      var tag = a.is_member ? ', FFP member' : (a.status === 'invited' ? ', invited' + (a.invite_email ? ', ' + esc(a.invite_email) : '') : ', manual');
+      return '<div class="cx-row">' + av + '<div class="g"><b>' + esc(a.name) + '</b><span>#' + (a.athlete_no || '—') + ', ' + esc(a.status || '') + tag + '</span></div></div>';
     }).join('') : '<div class="cx-empty">No athletes yet. Members register themselves in the FFP App, or add them here.</div>';
   }
   var _caT = null;
@@ -623,7 +623,7 @@
       if (!rows.length) { box.innerHTML = '<div class="cx-empty" style="padding:14px">No members found. Invite them below.</div>'; return; }
       box.innerHTML = rows.map(function (m) {
         var av = m.photo ? '<span class="cx-av" style="background-image:url(\'' + esc(m.photo) + '\')"></span>' : '<span class="cx-av">' + esc((m.name || '?').slice(0, 1).toUpperCase()) + '</span>';
-        var sub = [m.city, m.email_hint].filter(Boolean).join(' · ');
+        var sub = [m.city, m.email_hint].filter(Boolean).join(', ');
         return '<div class="cx-row">' + av + '<div class="g"><b>' + esc(m.name) + '</b><span>' + esc(sub) + '</span></div>' +
           '<button class="cx-btn pri sm" onclick="FFPComp.linkAthlete(\'' + m.id + '\',this)">Add</button></div>';
       }).join('');
@@ -694,8 +694,36 @@
   // score formatting/parsing by event type (time = m:ss)
   function _scFmt(raw, t) { if (raw == null || raw === '') return ''; if (t === 'time') { var s = Math.round(Number(raw)), m = Math.floor(s / 60), ss = s % 60; return m + ':' + (ss < 10 ? '0' : '') + ss; } return String(raw); }
   function _dtLocal(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d.getTime())) return ''; var p = function (n) { return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
-  function _dateOnly(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d.getTime())) return ''; var p = function (n) { return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
-  function _timeOnly(iso) { if (!iso) return '00:00'; var d = new Date(iso); if (isNaN(d.getTime())) return '00:00'; var p = function (n) { return (n < 10 ? '0' : '') + n; }; return p(d.getHours()) + ':' + p(d.getMinutes()); }
+  // ── the competition's clock ─────────────────────────────────────────────
+  // A workout or heat starts at a wall-clock time at the venue. Reading and
+  // writing it through the browser's own zone shifted every start time by
+  // however far the organiser happened to be from the event.
+  function evTz() {
+    return (S.detail && S.detail.event && S.detail.event.timezone) || 'UTC';
+  }
+  function tzParts(at, tz) {
+    var f = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    var o = {};
+    f.formatToParts(new Date(at)).forEach(function (x) { o[x.type] = x.value; });
+    o.hour = (o.hour === '24') ? '00' : o.hour;
+    return o;
+  }
+  function tzOffsetMs(at, tz) {
+    var q = tzParts(at, tz);
+    return Date.UTC(+q.year, +q.month - 1, +q.day, +q.hour, +q.minute, +q.second) - new Date(at).getTime();
+  }
+  function zoneToISO(dateStr, timeStr, tz) {
+    if (!dateStr) return null;
+    var d = String(dateStr).split('-'), t = String(timeStr || '00:00').split(':');
+    var wall = Date.UTC(+d[0], +d[1] - 1, +d[2], +t[0] || 0, +t[1] || 0, 0);
+    var ms = wall - tzOffsetMs(wall, tz);
+    ms = wall - tzOffsetMs(ms, tz);
+    return new Date(ms).toISOString();
+  }
+  function _dateOnly(iso) { if (!iso) return ''; var q = tzParts(iso, evTz()); return q.year + '-' + q.month + '-' + q.day; }
+  function _timeOnly(iso) { if (!iso) return '00:00'; var q = tzParts(iso, evTz()); return q.hour + ':' + q.minute; }
   function _scParse(val, t) { val = (val == null ? '' : String(val)).trim(); if (val === '') return null; if (t === 'time') { if (val.indexOf(':') > -1) { var p = val.split(':'); return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0); } var n = parseFloat(val); return isNaN(n) ? null : n; } var x = parseFloat(val); return isNaN(x) ? null : x; }
   async function saveScores() {
     var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; });
@@ -754,7 +782,7 @@
       }).join('');
       return '<div class="cx-row" style="border-bottom:none;align-items:center">' +
         '<span class="rk" style="width:24px;text-align:center;font-size:17px;font-weight:700;color:#222">' + cl.rank + '</span>' + lg +
-        '<div class="g"><b>' + esc(cl.name) + '</b><span>' + esc([cl.city, (cl.entries || 0) + ' entries'].filter(Boolean).join(' · ')) + '</span></div>' +
+        '<div class="g"><b>' + esc(cl.name) + '</b><span>' + esc([cl.city, (cl.entries || 0) + ' entries'].filter(Boolean).join(', ')) + '</span></div>' +
         '<div style="text-align:right"><b style="display:block;font-size:18px;font-weight:800;color:#222">' + cl.total + '</b><span style="font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:#9aa8b4;font-weight:700">points</span></div></div>' +
         entries;
     }).join('');
@@ -962,8 +990,8 @@
     var heats = (hr && hr.data) || [];
     if (!heats.length) { host.innerHTML = '<div class="cx-schnoheat">No heats generated yet — create them in Heats &amp; lanes, then set their times here.</div>'; return; }
     host.innerHTML = heats.map(function (h) {
-      var t = h.start_at ? new Date(h.start_at) : null; var tv = t ? (('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2)) : '';
-      var who = (h.lanes || []).map(function (l) { return esc(l.name || 'Athlete'); }).join(' · ') || (h.lanes ? '' : '');
+      var tv = h.start_at ? _timeOnly(h.start_at) : '';
+      var who = (h.lanes || []).map(function (l) { return esc(l.name || 'Athlete'); }).join(', ') || (h.lanes ? '' : '');
       return '<div class="cx-schrow"><span class="hn">' + esc(h.name) + '</span><span class="who">' + who + '</span>'
         + '<input type="time" class="cx-in sm" value="' + tv + '" data-heat="' + h.id + '" data-judge="' + (h.judge_id || '') + '" onchange="FFPComp.schedHeat(\'' + h.id + '\',this)"></div>';
     }).join('');
@@ -973,7 +1001,7 @@
     var cur = null;
     (S.detail.divisions || []).forEach(function (d) { (d.workouts || []).forEach(function (w) { if (w.id === wid) cur = w; }); });
     var timePart = cur ? _timeOnly(cur.start_at) : '00:00';
-    var iso = dateVal ? new Date(dateVal + 'T' + timePart + ':00').toISOString() : null;
+    var iso = dateVal ? zoneToISO(dateVal, timePart, evTz()) : null;
     var r; try { r = await sb().rpc('comp_workout_save', { p_division: divId, p_id: wid, p: { start_at: iso } }); } catch (e) { r = { error: e }; }
     if (!r || r.error) { toast('Save failed', 'error'); return; }
     if (cur) cur.start_at = iso;
@@ -986,7 +1014,7 @@
         for (var i = 0; i < heats.length; i++) {
           var h = heats[i];
           if (!h.start_at) continue;
-          var when = new Date(dateVal + 'T' + _timeOnly(h.start_at) + ':00').toISOString();
+          var when = zoneToISO(dateVal, _timeOnly(h.start_at), evTz());
           await sb().rpc('comp_heat_set', { p_heat: h.id, p_start: when, p_judge: h.judge_id || null });
         }
         loadSchedHeats(wid, iso);
@@ -998,7 +1026,7 @@
     var wid = null, divId = null, wStart = null, host = null;
     (S.detail.divisions || []).forEach(function (d) { (d.workouts || []).forEach(function (w) { var hh = document.getElementById('cx-schheats-' + w.id); if (hh && hh.contains(el)) { wid = w.id; divId = d.id; host = hh; if (w.start_at) wStart = w.start_at; } }); });
     var base = (wStart || (S.detail.event && S.detail.event.starts_at) || new Date().toISOString()).slice(0, 10);
-    var when = el.value ? new Date(base + 'T' + el.value + ':00').toISOString() : null;
+    var when = el.value ? zoneToISO(base, el.value, evTz()) : null;
     var jid = el.getAttribute('data-judge') || null;
     var r; try { r = await sb().rpc('comp_heat_set', { p_heat: heatId, p_start: when, p_judge: jid }); } catch (e) { r = { error: e }; }
     if (!r || r.error) { toast('Save failed', 'error'); return; }
@@ -1025,7 +1053,7 @@
           + '<button class="cx-btn pri sm" onclick="FFPComp.judgeDecide(\'' + j.member_id + '\',true)">Approve</button>'
           + '<button class="cx-btn sm" style="margin-left:6px" onclick="FFPComp.judgeDecide(\'' + j.member_id + '\',false)">Decline</button></div>';
       }
-      return '<div class="cx-row">' + av + '<div class="g"><b>' + esc(j.name) + '</b><span>' + esc(j.email || '') + ' · official</span></div><span class="ms" style="color:#9aa8b4;cursor:pointer" onclick="FFPComp.removeJudge(\'' + j.member_id + '\')">close</span></div>';
+      return '<div class="cx-row">' + av + '<div class="g"><b>' + esc(j.name) + '</b><span>' + esc(j.email || '') + ', official</span></div><span class="ms" style="color:#9aa8b4;cursor:pointer" onclick="FFPComp.removeJudge(\'' + j.member_id + '\')">close</span></div>';
     }).join('') : '<div class="cx-empty">No judges yet.</div>';
     // Judge positions the organiser defines (used per lane in Heats & lanes)
     var pos = (S.detail.event && Array.isArray(S.detail.event.judge_positions)) ? S.detail.event.judge_positions : [];
@@ -1049,7 +1077,7 @@
         var t = a.start_at ? new Date(a.start_at) : null;
         var tv = t ? (('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2)) : 'TBA';
         var where = a.position ? a.position : (a.lane != null ? ('Lane ' + a.lane) : 'Anywhere');
-        return '<div class="cx-jsrow"><span class="tm">' + tv + '</span><span class="ev">' + esc(a.workout || '') + (a.division ? ' · ' + esc(a.division) : '') + (a.heat ? ' · ' + esc(a.heat) : '') + '</span><span class="stn">' + esc(where) + '</span></div>';
+        return '<div class="cx-jsrow"><span class="tm">' + tv + '</span><span class="ev">' + esc(a.workout || '') + (a.division ? ', ' + esc(a.division) : '') + (a.heat ? ', ' + esc(a.heat) : '') + '</span><span class="stn">' + esc(where) + '</span></div>';
       }).join('');
       return '<div class="cx-jsched-j"><div class="cx-jsched-who">' + av + '<b>' + esc(j.judge) + '</b></div>' + asg + '</div>';
     }).join('');
