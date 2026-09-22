@@ -394,7 +394,7 @@
     if (!businessName) { toast('Business name is required', 'error'); return; }
     if (!category)     { toast('Category is required', 'error'); return; }
     if (!city)         { toast('City is required', 'error'); return; }
-    if (!timezone)     { toast('Timezone is required', 'error'); return; }
+    if (!timezone && !_brand.is_brand) { toast('Timezone is required', 'error'); return; }
 
     // Hours — AUTO-CLOSE any day where times are empty (no invalid open-but-no-times state)
     var hoursRows = [];
@@ -908,8 +908,12 @@
   function applyBrandFieldMode(on) {
     // hide the venue/business fields for BRAND or EVENT ORGANIZER (neither is a bookable venue)
     var hideBiz = on || _brand.is_organizer;
-    var catF = _pfField('pf-category'); if (catF) catF.style.display = hideBiz ? 'none' : '';
-    ['pf-timezone', 'pf-area', 'pf-address'].forEach(function (id) { var f = _pfField(id); if (f) f.style.display = hideBiz ? 'none' : ''; });
+    // Category and timezone stay for an event organiser: both are required on
+    // save, and an organiser has a real answer for each. Hiding a required
+    // field is what made "Category is required" unfixable from the screen.
+    var catF = _pfField('pf-category'); if (catF) catF.style.display = on ? 'none' : '';
+    var tzF  = _pfField('pf-timezone'); if (tzF)  tzF.style.display  = on ? 'none' : '';
+    ['pf-area', 'pf-address'].forEach(function (id) { var f = _pfField(id); if (f) f.style.display = hideBiz ? 'none' : ''; });
     var hg = document.getElementById('hours-grid'); var hs = (hg && hg.closest) ? hg.closest('.form-section') : null; if (hs) hs.style.display = hideBiz ? 'none' : '';
     ['pf-extras-loc', 'pf-extras-booking'].forEach(function (id) { var el = document.getElementById(id); if (el) el.style.display = hideBiz ? 'none' : ''; });
     // Relabel the Activities tab per account type: Venue = Activities, Brand = Products, Event organizer = Event types.
