@@ -63,12 +63,12 @@
      ----
      v68 (2026-06-26)
      v68: OVERVIEW rebuilt to owner-analytics layout (matches admin display). provOverviewStats now renders:
-          (1) hero KPI row — Revenue·month / Active members·7d (+new) / Check-ins·7d (+trend ▲▼) / Members at risk;
-          (2) charts row — Revenue·last 12 weeks (bar) + Check-ins·last 7 days (line);
-          (3) Most popular sessions·30d (horizontal bar); (4) Today card (Classes/Appointments/Bookings/No-shows
+          (1) hero KPI row — Revenue,month / Active members,7d (+new) / Check-ins,7d (+trend ▲▼) / Members at risk;
+          (2) charts row — Revenue,last 12 weeks (bar) + Check-ins,last 7 days (line);
+          (3) Most popular sessions,30d (horizontal bar); (4) Today card (Classes/Appointments/Bookings/No-shows
           + appointments-by-coach), Needs-attention (lapsing members from at_risk_list, "View" → members),
-          Class fill rate·30d (color-coded bars: green ≥70 / amber ≥40 / red <40, from class_fill), and
-          Expiring memberships·next 30d (from expiring_soon, red ≤7 days).
+          Class fill rate,30d (color-coded bars: green ≥70 / amber ≥40 / red <40, from class_fill), and
+          Expiring memberships,next 30d (from expiring_soon, red ≤7 days).
           Backed by provider_overview RPC v5 (revenue_by_week[12], at_risk_list[6], class_fill[8], expiring_soon[6]).
           Inline JS = HTML is the bust.
      ----
@@ -108,7 +108,7 @@
           with their bio (people book for the coach). Cache-busts: scheduling-loader?v=3, staff-loader?v=2.
      v56: SESSIONS form rebuilt to standard — Activity + City use the shared searchable picker, Coach is a dropdown
           of the provider's own staff, Location is a Maps URL, Price labelled per-person/per-session, Capacity min=1.
-          Cache-bust ffp-provider-scheduling-loader.js?v=2.
+          Cache-bust ffp-provider-scheduling-loader.js?v=3.
      v55: TOURS NEED APPROVAL — Tours panel shows "reviewed by admin within 24 hours" help-strip; new tours submit
           as 'pending' (no partner self-publish). Sessions tab stays on the left menu (un-retired, label "Sessions").
           Admin approves tours in the NEW admin Tours screen (ffp-admin-classes-loader.js). Needs classes-loader?v=7.
@@ -134,8 +134,8 @@
      v49: UNIFIED FIELDS + PROFILE GATE. (a) Level fields read the shared FFP_TAX.attendeeLevels (Events #em-intensity
           + the base experiences modal); Events Country/City are now the shared searchable picker buttons
           (#em-country-btn/#em-city-btn) wired by the events loader — no native dropdowns. (b) Cache-busts:
-          ffp-taxonomy.js?v=10, ffp-provider-experiences-loader.js?v=7, ffp-provider-events-loader.js?v=10,
-          ffp-provider-classes-loader.js?v=2, ffp-provider-profile-loader.js?v=14. (c) PROFILE COMPLETION reworked to
+          ffp-taxonomy.js?v=10, ffp-provider-experiences-loader.js?v=8, ffp-provider-events-loader.js?v=11,
+          ffp-provider-classes-loader.js?v=2, ffp-provider-profile-loader.js?v=16. (c) PROFILE COMPLETION reworked to
           the real storefront ESSENTIALS (business name, category, city, about, logo, hero, ≥1 activity — 100% now
           reachable; website/hours are non-blocking extras) + a "your listings won't show on Find Fit People until
           your profile is complete" warning banner on every listing panel (renderListingGate in showPanel).
@@ -159,7 +159,7 @@
      v42 (2026-06-05): Passport-member DISCOUNT field — providers set their own % off Find Fit People bookings for paid
           Passport members (Business Details tab; blank = platform default 10%). Saved to
           providers.passport_discount_pct via provider_save_profile; the booking site reads it at checkout.
-          Loads ffp-provider-profile-loader.js?v=13.
+          Loads ffp-provider-profile-loader.js?v=16.
      v41: Listing covers → Storage. handleUpload('listing:…') (shared by events/experiences/challenges/
           deals/quests via #listing-photo-slot) now uploads to the listing-covers bucket via FFPUpload and
           stores the public URL in hero_image_url, instead of base64-in-DB. Depends on ffp-image-upload.js.
@@ -175,7 +175,7 @@
           the Save button, so the 2nd+ crop was stuck disabled (which also meant the hero never saved →
           no Replace/Remove buttons). Save button now resets every time the crop modal opens
           (ffp-image-upload.js?v=6). Logo + hero share the identical Replace/Remove buttons via renderUploader.
-          Also cache-busts ffp-provider-venue-qr-loader.js?v=2 — the deployed copy was stale and still
+          Also cache-busts ffp-provider-venue-qr-loader.js?v=3 — the deployed copy was stale and still
           selected providers.passport_no (no such column → the 400 in the console); the fixed file selects
           only business_name. (That 400 was the venue-QR card, NOT the image upload.)
      v37: UPLOAD 400 FIX — storage RLS requires the file folder to equal auth.uid() (the login JWT `sub`).
@@ -199,12 +199,12 @@
      v32: CATEGORY STANDARDISATION — activity picker now groups by the standardised 6 categories
           (activity_types.category migrated platform-wide to fitness/sports/wellness/recovery/adventure/food,
           granular values preserved in activity_types.subcategory). Picker group headers Title-cased for
-          display (storage stays lowercase). Loads ffp-provider-events-loader.js?v=8 (dead 23-category
+          display (storage stays lowercase). Loads ffp-provider-events-loader.js?v=11 (dead 23-category
           array removed). New events derive the standard category from the picker.
-     v31: Event GUEST LIST — loads ffp-provider-events-loader.js?v=7, which shows who RSVP'd to an event
+     v31: Event GUEST LIST — loads ffp-provider-events-loader.js?v=11, which shows who RSVP'd to an event
           (passport info: photo + name + city) with "Going" / "Checked in" badges inside the event modal
           (provider_event_roster RPC, owner-gated). Lets providers see who's coming + who showed up.
-     v30: #quests P1 — providers can now CREATE facility quests. New ffp-provider-quest-create-loader.js?v=1
+     v30: #quests P1 — providers can now CREATE facility quests. New ffp-provider-quest-create-loader.js?v=2
           injects a "Your quests" card (create/edit/pause) at the top of the Quests panel → provider_save_quest
           RPC (quest goes live on submit, venue-bound, awards a venue stamp). Completion uses the existing
           check-in → provider_quest_approve flow. (DB layer already applied + verified.)
@@ -269,12 +269,12 @@
 <script src="assets/ffp-time.js?v=1"></script>
 <script src="assets/ffp-currency.js?v=2"></script>
 <script src="assets/ffp-select.js?v=1"></script>
-<script src="ffp-provider-auth.js?v=8"></script>
+<script src="ffp-provider-auth.js?v=9"></script>
 <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.js"></script>
 <script src="assets/ffp-image-upload.js?v=7"></script>
 <script src="assets/ffp-gallery.js?v=1"></script>
-<script src="ffp-provider-profile-loader.js?v=29"></script>
+<script src="ffp-provider-profile-loader.js?v=16"></script>
 <!-- Shared provider picker (FFPPicker) defined HERE in the dashboard so Events/Challenges/Experiences
      activity + country/city pickers never depend on a separately-uploaded loader being present. -->
 <script>
@@ -359,9 +359,9 @@
   console.log('[FFPPicker] ready (dashboard-owned, decoupled) ✓');
 })();
 </script>
-<script src="ffp-provider-events-loader.js?v=19"></script>
+<script src="ffp-provider-events-loader.js?v=11"></script>
 <!-- Experiences loader is lazy-loaded on demand via _provLoaderSrc['experiences'] (ensureProviderLoader) — was double-loaded here, removed -->
-<script src="ffp-provider-challenges-loader.js?v=2"></script>
+<script src="ffp-provider-challenges-loader.js?v=3"></script>
 <!-- v29 (2026-06-03): Taxonomy audit fixes — "Provider type" (pf-type) reads the unified provider_type
      taxonomy via FFP_TAX.providerTypes (shared with admin rankings; business_structure concept dropped);
      Experience Type + Experience/Event Level selects read FFP_TAX.experienceTypes / fitnessLevels (no more
@@ -374,7 +374,7 @@
      v27 (2026-06-02): Big GREEN "Save changes" banner sticks under the topbar (#ffp-save-banner),
      shown only on Profile when there are unsaved changes — calls saveProfile(); hidden on save /
      when leaving Profile. setSaveBar() toggles it.
-     v26 (2026-06-02): Profile tab order is now Business Details · Activities · Branding (default
+     v26 (2026-06-02): Profile tab order is now Business Details, Activities, Branding (default
      Business Details); "Business info" renamed "Business Details". Activities input uses our own
      styled dropdown (profile loader v12, ref ?v=12) instead of the native datalist.
      v25 (2026-06-02): PORTAL RESTRUCTURE. (1) Business profile split into TABS — Branding
@@ -385,7 +385,7 @@
      Challenge results → #panel-challenges (above listings); Event check-ins → #panel-checkins.
      (3) Deals nav item + #panel-deals restored as a dormant "Coming soon" placeholder.
      v24 (2026-06-02): Check-ins console rewired to Supabase RPCs — quests loader ref now
-     ffp-provider-quests-loader.js?v=3. Three cards: Quest check-ins (approve/decline),
+     ffp-provider-quests-loader.js?v=4. Three cards: Quest check-ins (approve/decline),
      Challenge results (verify), Event check-ins (attendance). Fixes the old /api/quests 404s.
      v23 (2026-06-01): Notifications are now a prominent TOP banner (was an easy-to-miss
      bottom-right corner toast). Full-width on mobile. Delete confirmed working.
@@ -398,13 +398,13 @@
 <!-- v12: notifications loader restored (this branch was missing it) — wires the
      topbar bell to real data AND overrides signOut() to do a real ffpLogout()
      instead of the inline demo that showed a blank screen. -->
-<script src="ffp-provider-notifications-loader.js?v=4"></script>
+<script src="ffp-provider-notifications-loader.js?v=5"></script>
 <!-- v12: check-ins loader now loads on first open of the Check-ins panel
      (see ensureProviderLoader in showPanel) — not needed on initial load. -->
-<script src="ffp-provider-quests-loader.js?v=5"></script>
+<script src="ffp-provider-quests-loader.js?v=4"></script>
 <!-- Provider quest CREATION (#quests P1): "Your quests" card + create/edit form at the top of the Quests panel -> provider_save_quest RPC. -->
 <script src="ffp-provider-quest-create-loader.js?v=2"></script>
-<script src="ffp-provider-venue-qr-loader.js?v=9"></script>
+<script src="ffp-provider-venue-qr-loader.js?v=3"></script>
 <!-- ffp-provider-quest-analytics-loader.js reference removed (v40): that file does not exist in the repo,
      so it 404'd → returned the HTML fallback → "Unexpected token '<'" console error on every load. -->
 <!-- Feedback widget (shared) -> public.feedback -> admin Feedback panel -->
@@ -2587,14 +2587,14 @@ a { color: var(--ffp-blue); text-decoration: none; }
               <div class="uploader logo-uploader" id="up-logo" onclick="pickProviderImage('logo')">
                 <div class="uploader-icon"><span class="ms">image</span></div>
                 <div class="uploader-title">Upload logo</div>
-                <div class="uploader-hint">PNG · square · crop to fit</div>
+                <div class="uploader-hint">PNG, square, crop to fit</div>
               </div></div>
             <div class="field">
               <div class="label">Profile banner <span class="label-hint">— the wide image across the top of your public profile; also the fallback cover for any listing without its own</span></div>
               <div class="uploader" id="up-hero" onclick="pickProviderImage('hero')">
                 <div class="uploader-icon"><span class="ms">image</span></div>
                 <div class="uploader-title">Click or drag to upload</div>
-                <div class="uploader-hint">JPG or PNG · 16:9 · position &amp; crop to fit the banner</div>
+                <div class="uploader-hint">JPG or PNG, 16:9, position &amp; crop to fit the banner</div>
               </div></div>
             <div class="field full">
               <div class="label">Tour video <span class="label-hint">— optional; a short facility tour shown on your public profile. Paste a YouTube, Vimeo or MP4 link.</span></div>
@@ -3544,7 +3544,7 @@ function toggleNavSection(sec) {
 
 // v12: load a panel's data loader the first time that panel is opened.
 // Overview/identity loaders stay eager; only clearly panel-scoped ones defer.
-var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=4', 'scheduling': 'ffp-provider-scheduling-loader.js?v=25', 'members': 'ffp-provider-members-loader.js?v=11', 'plans': 'ffp-provider-plans-loader.js?v=2', 'announcements': 'ffp-provider-announcements-loader.js?v=1', 'billing': 'ffp-provider-billing-loader.js?v=4', 'staff': 'ffp-provider-staff-loader.js?v=4', 'experiences': 'ffp-provider-experiences-loader.js?v=25', 'appointments': 'ffp-provider-appointments-loader.js?v=15', 'offers': 'ffp-provider-offers-loader.js?v=11', 'competitions': 'ffp-provider-competitions-loader.js?v=29', 'leagues': 'ffp-provider-leagues-loader.js?v=42', 'tournaments': 'ffp-provider-tournaments-loader.js?v=37', 'courts': 'ffp-provider-courts-loader.js?v=3', 'loyalty': 'ffp-provider-loyalty-loader.js?v=4' };
+var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=5', 'scheduling': 'ffp-provider-scheduling-loader.js?v=3', 'members': 'ffp-provider-members-loader.js?v=12', 'plans': 'ffp-provider-plans-loader.js?v=3', 'announcements': 'ffp-provider-announcements-loader.js?v=2', 'billing': 'ffp-provider-billing-loader.js?v=5', 'staff': 'ffp-provider-staff-loader.js?v=5', 'experiences': 'ffp-provider-experiences-loader.js?v=8', 'appointments': 'ffp-provider-appointments-loader.js?v=16', 'offers': 'ffp-provider-offers-loader.js?v=12', 'competitions': 'ffp-provider-competitions-loader.js?v=31', 'leagues': 'ffp-provider-leagues-loader.js?v=43', 'tournaments': 'ffp-provider-tournaments-loader.js?v=39', 'courts': 'ffp-provider-courts-loader.js?v=4', 'loyalty': 'ffp-provider-loyalty-loader.js?v=5' };
 var _provLoaded = {};
 function _loadScriptOnce(src) {
   if (_provLoaded[src]) return;
@@ -3558,7 +3558,7 @@ function ensureProviderLoader(id) {
   var src = _provLoaderSrc[id];
   if (!src) return;
   // the leagues/tournaments/competitions consoles use the shared sponsor editor widget
-  if (id === 'leagues' || id === 'tournaments' || id === 'competitions') { _loadScriptOnce('ffp-event-sponsors-editor.js?v=1'); _loadScriptOnce('ffp-bulk-athletes.js?v=3'); }
+  if (id === 'leagues' || id === 'tournaments' || id === 'competitions') { _loadScriptOnce('ffp-event-sponsors-editor.js?v=2'); _loadScriptOnce('ffp-bulk-athletes.js?v=4'); }
   _loadScriptOnce(src);
 }
 // Calls a global render fn once its lazy loader has defined it (retries briefly while the loader boots).
@@ -3717,7 +3717,7 @@ function showPanel(id) {
   if (item && _navCollapsed[item.section]) toggleNavSection(item.section);
   document.getElementById('tb-title').textContent = item ? item.label : '';
   // GA4 per-panel page_view (SPA — no real page reload on panel switch)
-  try { if (window.ffpTrackView) window.ffpTrackView('partner/' + id, 'Partner · ' + (item ? item.label : id)); } catch (e) {}
+  try { if (window.ffpTrackView) window.ffpTrackView('partner/' + id, 'Partner, ' + (item ? item.label : id)); } catch (e) {}
   // Top bar status pill reflects provider account status (not listing status)
   const statusPill = document.getElementById('tb-status');
   if (id === 'overview' || id === 'profile') {
@@ -4076,9 +4076,9 @@ async function provOverviewStats() {
 
     // ---- 1. HERO ROW ----
     var heroRow = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;">' +
-      hero(fmtAed(d.revenue_month_aed), 'Revenue · this month', '', { accent: '#1980AD' }) +
-      hero(d.active_members_7d || 0, 'Active members · 7d', (d.members_new_7d ? '+' + d.members_new_7d + ' new this week' : ''), {}) +
-      hero(ci, 'Check-ins · 7d', hasCi ? ((ci >= cip ? '▲ +' : '▼ −') + Math.abs(trend) + '% vs last week') : '', { down: ci < cip }) +
+      hero(fmtAed(d.revenue_month_aed), 'Revenue, this month', '', { accent: '#1980AD' }) +
+      hero(d.active_members_7d || 0, 'Active members, 7d', (d.members_new_7d ? '+' + d.members_new_7d + ' new this week' : ''), {}) +
+      hero(ci, 'Check-ins, 7d', hasCi ? ((ci >= cip ? '▲ +' : '▼ −') + Math.abs(trend) + '% vs last week') : '', { down: ci < cip }) +
       hero(atRisk, 'Members at risk', atRisk > 0 ? 'inactive 14–60 days' : 'none lapsing', { danger: atRisk > 0 }) +
       '</div>';
 
@@ -4089,18 +4089,18 @@ async function provOverviewStats() {
     var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var revLabels = (function () { var out = [], dd = new Date(), m = new Date(dd); var off = (m.getDay() + 6) % 7; m.setDate(m.getDate() - off); for (var i = 11; i >= 0; i--) { var x = new Date(m); x.setDate(m.getDate() - i * 7); out.push(MON[x.getMonth()] + ' ' + x.getDate()); } return out; })();
     var chartsRow = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-top:14px;">' +
-      card(miniHdr('Revenue · last 12 weeks') + '<div style="height:180px;position:relative;"><canvas id="ovc-revenue"></canvas></div>') +
-      card(miniHdr('Check-ins · last 7 days') + '<div style="height:180px;position:relative;"><canvas id="ovc-checkins"></canvas></div>') +
+      card(miniHdr('Revenue, last 12 weeks') + '<div style="height:180px;position:relative;"><canvas id="ovc-revenue"></canvas></div>') +
+      card(miniHdr('Check-ins, last 7 days') + '<div style="height:180px;position:relative;"><canvas id="ovc-checkins"></canvas></div>') +
       '</div>';
 
     // ---- 3. CLASS FILL RATE + MOST POPULAR SESSIONS ----
     var fills = Array.isArray(d.class_fill) ? d.class_fill : [];
     var tops = Array.isArray(d.top_sessions) ? d.top_sessions : [];
     var fillCard = fills.length
-      ? card(miniHdr('Class fill rate · 30 days') + '<div style="height:' + (fills.length * 38 + 10) + 'px;position:relative;"><canvas id="ovc-fill"></canvas></div>')
-      : card(miniHdr('Class fill rate · 30 days') + '<div style="font-size:12.5px;color:var(--ffp-text-muted);">Set a capacity on your sessions to see fill rates.</div>');
+      ? card(miniHdr('Class fill rate, 30 days') + '<div style="height:' + (fills.length * 38 + 10) + 'px;position:relative;"><canvas id="ovc-fill"></canvas></div>')
+      : card(miniHdr('Class fill rate, 30 days') + '<div style="font-size:12.5px;color:var(--ffp-text-muted);">Set a capacity on your sessions to see fill rates.</div>');
     var popCard = tops.length
-      ? card(miniHdr('Most popular sessions · 30 days') + '<div style="height:' + (tops.length * 38 + 10) + 'px;position:relative;"><canvas id="ovc-sessions"></canvas></div>')
+      ? card(miniHdr('Most popular sessions, 30 days') + '<div style="height:' + (tops.length * 38 + 10) + 'px;position:relative;"><canvas id="ovc-sessions"></canvas></div>')
       : '';
     var popRow = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-top:14px;">' + fillCard + popCard + '</div>';
 
@@ -4109,14 +4109,14 @@ async function provOverviewStats() {
     var statLine = function (n, lbl, danger) { return '<div style="text-align:center;flex:1;"><div style="font-size:24px;font-weight:800;color:' + (danger ? '#dc2626' : 'var(--ffp-text)') + ';">' + n + '</div><div style="font-size:11px;font-weight:600;color:var(--ffp-text-muted);margin-top:2px;">' + lbl + '</div></div>'; };
     var todayInner = miniHdr('Today') +
       '<div style="display:flex;gap:8px;padding:4px 0 12px;border-bottom:1px solid var(--ffp-border);">' +
-        statLine(d.sessions_today || 0, 'Classes') + statLine(d.appts_today || 0, 'Appointments') + statLine(d.bookings_today || 0, 'Bookings') + statLine(noShow, 'No-shows · 7d', noShow > 0) +
+        statLine(d.sessions_today || 0, 'Classes') + statLine(d.appts_today || 0, 'Appointments') + statLine(d.bookings_today || 0, 'Bookings') + statLine(noShow, 'No-shows, 7d', noShow > 0) +
       '</div>' +
       (coaches.length ? '<div style="margin-top:12px;">' + miniHdr('Appointments by coach') +
         coaches.map(function (c) { return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;"><span style="font-weight:600;color:var(--ffp-text);">' + esc(c.name) + '</span><span style="font-weight:800;color:#1980AD;">' + (c.count || 0) + '</span></div>'; }).join('') + '</div>'
         : '<div style="margin-top:12px;font-size:12.5px;color:var(--ffp-text-muted);">No appointments booked today.</div>');
 
     var risks = Array.isArray(d.at_risk_list) ? d.at_risk_list : [];
-    var riskInner = miniHdr('Needs attention · lapsing members') +
+    var riskInner = miniHdr('Needs attention, lapsing members') +
       (risks.length ? risks.map(function (m) {
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--ffp-border);">' +
           '<div><div style="font-size:13.5px;font-weight:700;color:var(--ffp-text);">' + esc(m.name) + '</div>' +
@@ -4126,7 +4126,7 @@ async function provOverviewStats() {
       }).join('') : '<div style="margin-top:8px;font-size:12.5px;color:var(--ffp-text-muted);">No members lapsing right now — nice work.</div>');
 
     var exps = Array.isArray(d.expiring_soon) ? d.expiring_soon : [];
-    var expInner = miniHdr('Expiring memberships · next 30 days') +
+    var expInner = miniHdr('Expiring memberships, next 30 days') +
       (exps.length ? exps.map(function (m) {
         var soon = (m.days || 0) <= 7;
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--ffp-border);">' +
@@ -4226,14 +4226,14 @@ async function renderProviderRating() {
       var photo = rv.member_photo
         ? '<img class="pr-rev-photo" src="' + prEsc(rv.member_photo) + '" alt="">'
         : '<div class="pr-rev-photo pr-rev-photo-ph"><span class="ms">person</span></div>';
-      var ctx = rv.session_title ? (prEsc(rv.session_title) + (rv.coach ? ' · ' + prEsc(rv.coach) : '')) : '';
+      var ctx = rv.session_title ? (prEsc(rv.session_title) + (rv.coach ? ', ' + prEsc(rv.coach) : '')) : '';
       var subrat = (rv.ratings && typeof rv.ratings === 'object')
         ? Object.keys(rv.ratings).map(function (k) { return '<span style="font-size:11px;font-weight:800;color:#13657f;background:rgba(25,128,173,.10);border:1px solid rgba(25,128,173,.22);border-radius:10px;padding:2px 8px;">' + prEsc(PR_RLBL[k] || k) + ' ' + prEsc(rv.ratings[k]) + '★</span>'; }).join('')
         : '';
       return '<div class="pr-rev" data-stars="' + (Math.round(Number(rv.stars_overall) || 0)) + '" data-photo="' + (rv.photo_url ? '1' : '0') + '">' +
         '<div class="pr-rev-head">' + photo +
           '<div class="pr-rev-id"><div class="pr-rev-name">' + prEsc(rv.member_name) + '</div>' +
-          '<div class="pr-rev-when">' + when + (ctx ? ' · ' + ctx : '') + '</div></div>' +
+          '<div class="pr-rev-when">' + when + (ctx ? ', ' + ctx : '') + '</div></div>' +
           '<div class="pr-rev-stars">' + prStars(rv.stars_overall) + '</div>' +
         '</div>' +
         (subrat ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;">' + subrat + '</div>' : '') +
@@ -4568,7 +4568,7 @@ function renderUploader(targetId, dataUrl, kind) {
     el.innerHTML =
       '<div class="uploader-icon"><span class="ms">image</span></div>' +
       '<div class="uploader-title">' + (isLogo ? 'Upload logo' : 'Click or drag to upload') + '</div>' +
-      '<div class="uploader-hint">' + (isLogo ? 'PNG · square · crop to fit' : 'JPG or PNG · 16:9 · position & crop') + '</div>';
+      '<div class="uploader-hint">' + (isLogo ? 'PNG, square, crop to fit' : 'JPG or PNG, 16:9, position & crop') + '</div>';
   }
 }
 
@@ -5005,7 +5005,7 @@ function openEventModal(id) {
   const editing = id ? events.find(e => e.id === id) : null;
   const e = editing || { title: '', description: '', about: '', category: '', activity: '', event_date: '', event_time: '', end_date: '', end_time: '', country: (providerProfile.country || 'United Arab Emirates'), city: (providerProfile.city || ''), area: (providerProfile.area || ''), venue: '', capacity: '', price_aed: '', intensity: 'Social', parking: '', facilities: '', bring: '', hero_url: null };
   openModalShell('full', (editing ? 'Edit event' : 'New event'), `
-    <div id="ev-stepbar" style="font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--ffp-purple,#8b5cf6);margin:0 0 12px;">Step 1 of 2 · Details</div>
+    <div id="ev-stepbar" style="font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--ffp-purple,#8b5cf6);margin:0 0 12px;">Step 1 of 2, Details</div>
     <div id="ev-step1">
     <div class="form-section">
       <div class="form-section-title">Photos <span class="label-hint" style="text-transform:none;letter-spacing:0;font-weight:600;">— drag to reorder; the first photo is the cover shown on the card</span></div>
@@ -5154,7 +5154,7 @@ function evStep(n) {
   document.querySelectorAll('.ev-s1').forEach(x => { x.style.display = n === 1 ? '' : 'none'; });
   document.querySelectorAll('.ev-s2').forEach(x => { x.style.display = n === 2 ? '' : 'none'; });
   const bar = document.getElementById('ev-stepbar');
-  if (bar) bar.textContent = n === 1 ? 'Step 1 of 2 · Details' : 'Step 2 of 2 · Good to know';
+  if (bar) bar.textContent = n === 1 ? 'Step 1 of 2, Details' : 'Step 2 of 2, Good to know';
   const mb = document.querySelector('.modal-body'); if (mb) mb.scrollTop = 0;
 }
 
@@ -5836,10 +5836,10 @@ function generateAnalyticsData(period) {
     .map(d => ({ title: d.perk || 'Untitled', sub: d.category || '—', val: Math.round((d.claims || 0) * mult / 6) + Math.round(rng() * 4) }))
     .sort((a, b) => b.val - a.val);
   const topEvents = events.slice()
-    .map(e => ({ title: e.title || 'Untitled', sub: 'Event · ' + (fmtDateShort(e.event_date) || ''), val: Math.round((e.rsvps || 0) * mult / 3) + Math.round(rng() * 3) }))
+    .map(e => ({ title: e.title || 'Untitled', sub: 'Event, ' + (fmtDateShort(e.event_date) || ''), val: Math.round((e.rsvps || 0) * mult / 3) + Math.round(rng() * 3) }))
     .sort((a, b) => b.val - a.val);
   const topExps = experiences.slice()
-    .map(e => ({ title: e.title || 'Untitled', sub: 'Experience · ' + (e.destination || ''), val: Math.round((e.applications || 0) * mult / 2) + Math.round(rng() * 2) }))
+    .map(e => ({ title: e.title || 'Untitled', sub: 'Experience, ' + (e.destination || ''), val: Math.round((e.applications || 0) * mult / 2) + Math.round(rng() * 2) }))
     .sort((a, b) => b.val - a.val);
   const topEventsCombined = [...topEvents, ...topExps].sort((a, b) => b.val - a.val);
 
@@ -5907,7 +5907,7 @@ function renderBars(targetId, items, toneClass) {
     return '<div class="bar-row">' +
       '<div class="bar-head">' +
         '<span class="bar-label">' + escHtml(it.label) + '</span>' +
-        '<span class="bar-val">' + it.val.toLocaleString() + ' · ' + pct + '%</span>' +
+        '<span class="bar-val">' + it.val.toLocaleString() + ', ' + pct + '%</span>' +
       '</div>' +
       '<div class="bar-track"><div class="bar-fill ' + toneClass + '" style="width: ' + w + '%"></div></div>' +
     '</div>';
@@ -6001,7 +6001,7 @@ function renderCheckIns() {
       '<div class="checkin-avatar">' + escHtml(c.member_letter) + '</div>' +
       '<div class="checkin-info">' +
         '<div class="checkin-name">' + escHtml(c.member_name) + '</div>' +
-        '<div class="checkin-listing">' + escHtml(c.listing) + ' · ' + escHtml(c.code) + '</div>' +
+        '<div class="checkin-listing">' + escHtml(c.listing) + ', ' + escHtml(c.code) + '</div>' +
       '</div>' +
       '<div>' +
         '<div class="checkin-status">' + c.status + '</div>' +
@@ -6029,7 +6029,7 @@ function verifyClaimCode() {
         <span class="ms" style="font-size: 38px;">check_circle</span>
       </div>
       <div style="font-size: 18px; font-weight: 800; margin-bottom: 4px;">${escHtml(name)}</div>
-      <div style="font-size: 12px; font-weight: 600; color: var(--ffp-text-muted); letter-spacing: .3px;">Member · FFP Passport</div>
+      <div style="font-size: 12px; font-weight: 600; color: var(--ffp-text-muted); letter-spacing: .3px;">Member, FFP Passport</div>
       <div style="margin-top: 14px; padding: 12px 16px; background: var(--ffp-bg-3); border-radius: var(--r-md); display: inline-block;">
         <div style="font-size: 10px; font-weight: 800; color: var(--ffp-text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;">Claiming</div>
         <div style="font-size: 13px; font-weight: 800;">First class free</div>
@@ -6148,25 +6148,25 @@ function _renderClientProfile(d, activeTab){
   var upcoming=appts.filter(function(a){ return new Date(a.start_at).getTime()>=now && a.status!=='cancelled' && a.status!=='no_show'; }).sort(function(a,b){ return new Date(a.start_at)-new Date(b.start_at); });
   var upKeys={}; upcoming.forEach(function(a){ upKeys[a.id]=1; });
   var past=appts.filter(function(a){ return !upKeys[a.id]; });
-  function apptRow(a){ var left='<div style="font-weight:700;color:var(--ffp-text);font-size:13px;">'+_cpWhen(a.start_at)+'</div><div style="font-size:11.5px;color:var(--ffp-text-muted);">'+escHtml(a.service_name||'Session')+(a.coach_name?(' · '+escHtml(a.coach_name)):'')+'</div>';
+  function apptRow(a){ var left='<div style="font-weight:700;color:var(--ffp-text);font-size:13px;">'+_cpWhen(a.start_at)+'</div><div style="font-size:11.5px;color:var(--ffp-text-muted);">'+escHtml(a.service_name||'Session')+(a.coach_name?(', '+escHtml(a.coach_name)):'')+'</div>';
     var detail='<div>'+kv('Service',a.service_name||'—')+kv('Coach',a.coach_name||'—')+kv('Duration',(a.duration_min||60)+' min')+kv('Payment',a.payment_status||'—')+(a.price_aed!=null?kv('Price',_cpMoney(a.price_aed,ccy)):'')+'</div>';
     return expItem(left,_cpPill(a.status),(a.service_name||'')+' '+(a.coach_name||'')+' '+(a.status||'')+' '+_cpWhen(a.start_at),detail); }
   var sessionsPane='<div id="cp-pane-sessions" style="display:none;">'+
-    (upcoming.length? subhead('Upcoming · '+upcoming.length)+upcoming.map(apptRow).join('') : '')+
-    subhead('Past'+(past.length?(' · '+past.length):''))+(past.length? past.map(apptRow).join('') : empty('No past sessions.'))+'</div>';
+    (upcoming.length? subhead('Upcoming, '+upcoming.length)+upcoming.map(apptRow).join('') : '')+
+    subhead('Past'+(past.length?(', '+past.length):''))+(past.length? past.map(apptRow).join('') : empty('No past sessions.'))+'</div>';
   // Plans & packages — active first
   var items=(d.plans||[]).map(function(pl){ return {kind:'Membership', name:pl.plan_name||'Plan', detail:(pl.plan_type==='term'?'Unlimited':(pl.credits_remaining!=null?(pl.credits_remaining+' credits left'):'—')), expiry:pl.expiry_date, status:pl.status||'active', active:(pl.status==='active')}; })
     .concat((d.packages||[]).map(function(pk){ return {kind:'Package', name:pk.name||'Package', detail:((pk.sessions_remaining!=null?pk.sessions_remaining:'?')+'/'+(pk.sessions_total!=null?pk.sessions_total:'?')+' sessions left'), expiry:pk.expiry_date, status:pk.status||'active', active:(pk.status==='active')}; }));
-  function planRow(it){ var left='<div style="font-weight:700;color:var(--ffp-text);font-size:13px;">'+escHtml(it.name)+' <span style="font-size:10px;font-weight:700;color:var(--ffp-text-dim);">· '+it.kind+'</span></div><div style="font-size:11.5px;color:var(--ffp-text-muted);">'+escHtml(it.detail)+(it.expiry?(' · until '+escHtml(it.expiry)):'')+'</div>';
+  function planRow(it){ var left='<div style="font-weight:700;color:var(--ffp-text);font-size:13px;">'+escHtml(it.name)+' <span style="font-size:10px;font-weight:700;color:var(--ffp-text-dim);">, '+it.kind+'</span></div><div style="font-size:11.5px;color:var(--ffp-text-muted);">'+escHtml(it.detail)+(it.expiry?(', until '+escHtml(it.expiry)):'')+'</div>';
     var detail='<div>'+kv('Type',it.kind)+kv('Status',it.status)+kv('Remaining',it.detail)+(it.expiry?kv('Expires',it.expiry):'')+'</div>';
     return expItem(left,_cpPill(it.status),(it.name||'')+' '+(it.kind||'')+' '+(it.status||''),detail); }
   var active=items.filter(function(i){return i.active;}), inactive=items.filter(function(i){return !i.active;});
   var plansPane='<div id="cp-pane-plans" style="display:none;">'+
     '<div style="margin:2px 0 8px;"><button class="btn btn-pri btn-sm" onclick="cpAddPlan()"><span class="ms">add</span> Add membership / package</button></div>'+
-    (items.length ? (active.length? subhead('Active · '+active.length)+active.map(planRow).join('') : '')+(inactive.length? subhead('Past · '+inactive.length)+inactive.map(planRow).join('') : '') : empty('No memberships or packages.'))+'</div>';
+    (items.length ? (active.length? subhead('Active, '+active.length)+active.map(planRow).join('') : '')+(inactive.length? subhead('Past, '+inactive.length)+inactive.map(planRow).join('') : '') : empty('No memberships or packages.'))+'</div>';
   // Payments ledger — rows expand to detail
   var payments=(d.payments||[]);
-  function payRow(pm){ var s=(pm.status||''); var left='<div style="font-weight:700;color:var(--ffp-text);font-size:13px;">'+escHtml(pm.descr||pm.kind||'Payment')+' <span style="font-size:10px;color:var(--ffp-text-dim);">· '+escHtml(pm.kind||'')+'</span></div><div style="font-size:11.5px;color:var(--ffp-text-muted);">'+_cpWhen(pm.date)+'</div>';
+  function payRow(pm){ var s=(pm.status||''); var left='<div style="font-weight:700;color:var(--ffp-text);font-size:13px;">'+escHtml(pm.descr||pm.kind||'Payment')+' <span style="font-size:10px;color:var(--ffp-text-dim);">, '+escHtml(pm.kind||'')+'</span></div><div style="font-size:11.5px;color:var(--ffp-text-muted);">'+_cpWhen(pm.date)+'</div>';
     var detail='<div>'+kv('Type',pm.kind||'—')+kv('Status',s||'—')+kv('Amount',_cpMoney(pm.amount,ccy))+'</div>';
     return expItem(left,'<div style="font-weight:800;font-size:13px;color:var(--ffp-text);">'+_cpMoney(pm.amount,ccy)+'</div>',(pm.descr||'')+' '+(pm.kind||'')+' '+s,detail); }
   var totalPaid=payments.reduce(function(s,pm){ return s+(Number(pm.amount)||0); },0);
@@ -6250,7 +6250,7 @@ function _cpRenderForms(){
     if(f.status==='completed'){
       if(f.source==='upload'&&f.uploaded_file_url){ det+='<div style="margin-bottom:7px;"><a href="'+escHtml(f.uploaded_file_url)+'" target="_blank" rel="noopener" style="color:var(--ffp-blue);font-weight:700;font-size:12.5px;"><span class="ms" style="font-size:15px;vertical-align:-3px;">description</span> View uploaded copy</a></div>'; }
       var resp=f.responses||{}; (f.fields||[]).forEach(function(fl){ if(fl.type==='statement'||fl.type==='info') return; var v=resp[fl.key]; if(fl.type==='consent') v=(v?'Accepted':'Not accepted'); if(fl.type==='yesno') v=(v===true||v==='yes'?'Yes':(v===false||v==='no'?'No':v)); det+='<div style="font-size:12px;margin-bottom:5px;line-height:1.5;"><span style="color:var(--ffp-text-dim);">'+escHtml(fl.label||fl.key)+'</span><br><span style="font-weight:700;color:var(--ffp-text);">'+escHtml(v==null||v===''?'—':String(v))+'</span></div>'; });
-      if(f.signature_name) det+='<div style="font-size:12px;margin-top:7px;color:var(--ffp-text-muted);">Signed by <b style="color:var(--ffp-text);">'+escHtml(f.signature_name)+'</b> · '+_cpWhen(f.completed_at)+'</div>';
+      if(f.signature_name) det+='<div style="font-size:12px;margin-top:7px;color:var(--ffp-text-muted);">Signed by <b style="color:var(--ffp-text);">'+escHtml(f.signature_name)+'</b>, '+_cpWhen(f.completed_at)+'</div>';
     } else {
       det+='<div style="font-size:12px;color:var(--ffp-text-muted);margin-bottom:8px;">Waiting on the client to complete &amp; sign in their app — or upload a signed copy here.</div>'+
         '<button class="btn btn-sec btn-sm" onclick="cpUploadForm(\''+f.id+'\')"><span class="ms">upload_file</span> Upload signed copy</button>';
@@ -6319,7 +6319,7 @@ async function cpManageTemplates(){
 function _cpTemplateListHtml(){
   var tpls=window._cpTpls||[];
   if(!tpls.length) return '<div class="psub" style="padding:6px 0;">No templates yet. Create your first — start from a Waiver or PAR-Q and adjust it.</div>';
-  return tpls.map(function(t){ return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--ffp-border);"><div style="min-width:0;"><div style="font-weight:800;font-size:13px;color:var(--ffp-text);">'+escHtml(t.title)+'</div><div style="font-size:11px;color:var(--ffp-text-muted);">'+((t.fields&&t.fields.length)||0)+' field'+(((t.fields&&t.fields.length)===1)?'':'s')+(t.requires_signature?' · signature':'')+'</div></div><div style="display:flex;gap:6px;flex:0 0 auto;"><button class="btn btn-sec btn-sm" onclick="cpPreviewTpl(\''+t.id+'\')" title="Preview"><span class="ms">visibility</span></button><button class="btn btn-sec btn-sm" onclick="cpEditTemplate(\''+t.id+'\')"><span class="ms">edit</span></button><button class="btn btn-ghost btn-sm" onclick="cpDeleteTemplate(\''+t.id+'\')"><span class="ms">delete</span></button></div></div>'; }).join('');
+  return tpls.map(function(t){ return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--ffp-border);"><div style="min-width:0;"><div style="font-weight:800;font-size:13px;color:var(--ffp-text);">'+escHtml(t.title)+'</div><div style="font-size:11px;color:var(--ffp-text-muted);">'+((t.fields&&t.fields.length)||0)+' field'+(((t.fields&&t.fields.length)===1)?'':'s')+(t.requires_signature?', signature':'')+'</div></div><div style="display:flex;gap:6px;flex:0 0 auto;"><button class="btn btn-sec btn-sm" onclick="cpPreviewTpl(\''+t.id+'\')" title="Preview"><span class="ms">visibility</span></button><button class="btn btn-sec btn-sm" onclick="cpEditTemplate(\''+t.id+'\')"><span class="ms">edit</span></button><button class="btn btn-ghost btn-sm" onclick="cpDeleteTemplate(\''+t.id+'\')"><span class="ms">delete</span></button></div></div>'; }).join('');
 }
 function cpEditTemplate(tid){
   var tpls=window._cpTpls||[], t=tid?tpls.filter(function(x){return x.id===tid;})[0]:null;
@@ -6365,7 +6365,7 @@ function _ffpFormPreview(title, desc, sig, fields, ovId){
   ov.setAttribute('style','position:fixed;inset:0;z-index:2000000000;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;');
   ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
   ov.innerHTML='<div style="width:100%;max-width:440px;background:#fff;border-radius:18px;overflow:hidden;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">'+
-    '<div style="background:#0f2531;color:#fff;padding:13px 18px;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:11px;font-weight:800;opacity:.85;letter-spacing:.5px;">PREVIEW · WHAT THE CLIENT SEES</div><button onclick="var e=document.getElementById(\''+ovId+'\');if(e)e.remove();" style="background:rgba(255,255,255,.16);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:15px;">&#10005;</button></div>'+
+    '<div style="background:#0f2531;color:#fff;padding:13px 18px;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:11px;font-weight:800;opacity:.85;letter-spacing:.5px;">PREVIEW, WHAT THE CLIENT SEES</div><button onclick="var e=document.getElementById(\''+ovId+'\');if(e)e.remove();" style="background:rgba(255,255,255,.16);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:15px;">&#10005;</button></div>'+
     '<div style="padding:20px 18px;max-height:calc(100vh - 170px);overflow-y:auto;">'+
       '<div style="font-size:19px;font-weight:800;color:#0f2531;margin-bottom:4px;">'+esc(title)+'</div>'+
       (desc?'<div style="font-size:13px;color:#5a6b6e;line-height:1.5;margin-bottom:18px;">'+esc(desc)+'</div>':'<div style="margin-bottom:14px;"></div>')+
@@ -6453,9 +6453,9 @@ async function cpAddPlan(){
     function item(onclk,name,detail){ return '<button onclick="'+onclk+'" style="display:block;width:100%;text-align:left;border:1px solid var(--ffp-border-mid);background:var(--ffp-bg-2);border-radius:10px;padding:11px 13px;margin-bottom:8px;cursor:pointer;font-family:inherit;"><div style="font-weight:800;font-size:13px;color:var(--ffp-text);">'+escHtml(name)+'</div>'+(detail?'<div style="font-size:11.5px;color:var(--ffp-text-muted);margin-top:2px;">'+escHtml(detail)+'</div>':'')+'</button>'; }
     var body='<div class="field" style="margin-bottom:14px;"><div class="label">Payment method (for packages)</div><select class="select" id="cp-add-pay"><option value="cash">Cash</option><option value="card">Card</option><option value="bank_deposit">Bank deposit</option><option value="comp">Comp (free)</option><option value="unpaid">Unpaid / bill later</option></select></div>';
     body+='<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ffp-text-dim);margin-bottom:6px;">Memberships</div>';
-    body+= plans.length ? plans.map(function(p){ var det=[(p.price_aed!=null?money(p.price_aed):''),(p.plan_type==='term'?'Unlimited':(p.credits!=null?p.credits+' credits':'')),(p.period_days?p.period_days+' days':'')].filter(Boolean).join(' · '); return item('cpDoAssignPlan(\''+p.id+'\')',p.name||'Plan',det); }).join('') : '<div class="psub" style="padding:4px 0;">No membership plans yet — create them in the Memberships area.</div>';
+    body+= plans.length ? plans.map(function(p){ var det=[(p.price_aed!=null?money(p.price_aed):''),(p.plan_type==='term'?'Unlimited':(p.credits!=null?p.credits+' credits':'')),(p.period_days?p.period_days+' days':'')].filter(Boolean).join(', '); return item('cpDoAssignPlan(\''+p.id+'\')',p.name||'Plan',det); }).join('') : '<div class="psub" style="padding:4px 0;">No membership plans yet — create them in the Memberships area.</div>';
     body+='<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ffp-text-dim);margin:14px 0 6px;">Packages</div>';
-    body+= packs.length ? packs.map(function(p){ var n=(p.credits!=null?p.credits:p.sessions); var det=[(p.price_aed!=null?money(p.price_aed):''),(n!=null?n+' sessions':'')].filter(Boolean).join(' · '); return item('cpDoSellPackage(\''+p.id+'\')',p.name||'Package',det); }).join('') : '<div class="psub" style="padding:4px 0;">No packages yet.</div>';
+    body+= packs.length ? packs.map(function(p){ var n=(p.credits!=null?p.credits:p.sessions); var det=[(p.price_aed!=null?money(p.price_aed):''),(n!=null?n+' sessions':'')].filter(Boolean).join(', '); return item('cpDoSellPackage(\''+p.id+'\')',p.name||'Package',det); }).join('') : '<div class="psub" style="padding:4px 0;">No packages yet.</div>';
     _cpDialogBody(body);
   }catch(e){ _cpDialogBody('<div class="psub">Could not load.</div>'); }
 }
@@ -6540,7 +6540,7 @@ async function loadFeatureMap() {
     window.FFP_FEATURE_MAP = map;
   } catch (e) {}
 }
-// Card control: ★Featured (live), Approved·pay to activate, Feature pending, or a "Feature — $99/day" button.
+// Card control: ★Featured (live), Approved,pay to activate, Feature pending, or a "Feature — $99/day" button.
 function featureBtn(kind, id, featured) {
   var st = (window.FFP_FEATURE_MAP || {})[kind + ':' + id];
   if (featured || st === 'live') return '<button class="btn btn-ghost btn-sm" title="Featured on the FFP homepage today" style="color:#2b3942;"><span class="ms">star</span></button>';
@@ -6661,7 +6661,7 @@ function renderListingUploader(dataUrl) {
         <input type="file" id="up-listing-input" accept="image/*" onchange="handleUpload('listing:listing', this.files[0])">
         <div class="uploader-icon"><span class="ms">image</span></div>
         <div class="uploader-title">Click or drag to upload photo</div>
-        <div class="uploader-hint">JPG or PNG · 16:10 · up to 5 MB</div>
+        <div class="uploader-hint">JPG or PNG, 16:10, up to 5 MB</div>
       </div>
     `;
   }
