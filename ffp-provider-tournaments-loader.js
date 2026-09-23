@@ -14,13 +14,13 @@
   // Extra draws a knockout can carry. Every loser of the named round plays on
   // in the next draw down, so nobody travels to an event for one match.
   var SIDE_DRAWS = [
-    ['none', 'Main draw only'],
-    ['plate', 'Plate, first-round losers'],
-    ['plate_bowl', 'Cup, Plate, Bowl'],
-    ['plate_bowl_shield', 'Cup, Plate, Bowl, Shield'],
-    ['qf_plate', 'Plate, quarter-final losers'],
-    ['consolation', 'Feed-in consolation'],
-    ['places', 'Every place played off (compass)']
+    ['none', 'No, one loss and they are out', 'The shortest event. Lose your first match and you are finished.'],
+    ['plate', 'Plate, for first-round losers', 'Everyone beaten in round 1 moves into a second draw, so nobody travels for one match.'],
+    ['plate_bowl', 'Plate and Bowl', 'Two draws below the main one. Most players get at least three matches.'],
+    ['plate_bowl_shield', 'Plate, Bowl and Shield', 'Three draws below the main one. Nearly everyone plays in every round.'],
+    ['qf_plate', 'Plate, for quarter-final losers', 'Only the players who reach the quarter-finals and lose get a second draw.'],
+    ['consolation', 'Feed-in consolation', 'A loser joins the second draw at the round they went out, not back at its start.'],
+    ['places', 'Every place played off', 'Nobody stops until their exact finishing position is decided, 1st to last.']
   ];
 
   var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, grpDraw: false, brkConfirm: false };
@@ -96,7 +96,7 @@
       '.lg-teamstat .hd{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;padding:8px 2px 12px;border-bottom:1px solid var(--ffp-border);} .lg-teamstat .hd span{font-size:13px;font-weight:800;text-align:center;} .lg-teamstat .hd span:first-child{text-align:left;} .lg-teamstat .hd span:last-child{text-align:right;}',
       '.lg-tsrow{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #f0f3f6;} .lg-tsrow .lab{text-align:center;font-size:12.5px;font-weight:700;color:#43525c;} .lg-tsrow .lg-in{padding:8px 10px;text-align:center;}',
       '#tg-root .lg-nav{gap:15px;align-items:center;}#tg-root .lg-nav .tg-phase{padding:0 2px 0 0;}#tg-root .lg-nav .tg-navsep{margin:0 2px;}',
-      '.tg-sec{padding:2px 0 22px;}.tg-sec+.tg-sec{border-top:1px solid var(--ffp-border);padding-top:20px;}.tg-sech{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#8a99a8;margin:0 0 14px;}.tg-hint{font-size:12px;font-weight:700;color:#6a7c8a;margin-top:7px;}.tg-dvrow{display:flex;align-items:center;gap:12px;padding:13px 2px;border-top:1px solid var(--ffp-border);cursor:pointer;}.tg-dvrow:last-of-type{border-bottom:1px solid var(--ffp-border);}.tg-dvrow .g{flex:1;min-width:0;}.tg-dvrow .g b{display:block;font-size:14px;font-weight:800;color:var(--ffp-text);}.tg-dvrow .g span{display:block;font-size:12px;font-weight:600;color:var(--ffp-text-muted);margin-top:2px;}.tg-dvrow .st{font-size:11px;font-weight:800;color:#8a99a8;white-space:nowrap;}.tg-dvrow .st.done{color:var(--ffp-green);}.tg-dvrow.on{box-shadow:inset 3px 0 0 var(--ffp-blue);padding-left:12px;}.tg-dvrow.on .g b{color:var(--ffp-blue);}.tg-fmts{margin-top:18px;}.tg-dvhead{font-size:15px;font-weight:900;color:var(--ffp-text);margin:22px 0 0;}.tg-shape{font-size:12.5px;font-weight:700;color:#6a7c8a;margin:14px 0 0;}.tg-acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}'
+      '.tg-sec{padding:2px 0 22px;}.tg-sec+.tg-sec{border-top:1px solid var(--ffp-border);padding-top:20px;}.tg-sech{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#8a99a8;margin:0 0 14px;}.tg-hint{font-size:12px;font-weight:700;color:#6a7c8a;margin-top:7px;}.tg-dvrow{display:flex;align-items:center;gap:12px;padding:13px 2px;border-top:1px solid var(--ffp-border);cursor:pointer;}.tg-dvrow:last-of-type{border-bottom:1px solid var(--ffp-border);}.tg-dvrow .g{flex:1;min-width:0;}.tg-dvrow .g b{display:block;font-size:14px;font-weight:800;color:var(--ffp-text);}.tg-dvrow .g span{display:block;font-size:12px;font-weight:600;color:var(--ffp-text-muted);margin-top:2px;}.tg-dvrow .st{font-size:11px;font-weight:800;color:#8a99a8;white-space:nowrap;}.tg-dvrow .st.done{color:var(--ffp-green);}.tg-dvrow.on{box-shadow:inset 3px 0 0 var(--ffp-blue);padding-left:12px;}.tg-dvrow.on .g b{color:var(--ffp-blue);}.tg-fmts{margin-top:18px;}.tg-dvrow .cv{font-size:20px;color:#9aa8b4;}.tg-dvrow.on .cv{color:var(--ffp-blue);}.tg-dvedit{padding:4px 0 22px 32px;border-bottom:1px solid var(--ffp-border);}.tg-dvedit .tg-fmts{margin-top:4px;}.tg-fmtnow{display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:800;color:var(--ffp-text);}.tg-fmtnow a{font-size:12px;font-weight:700;color:var(--ffp-blue);cursor:pointer;}.tg-shape{font-size:12.5px;font-weight:700;color:#6a7c8a;margin:14px 0 0;}.tg-acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -160,7 +160,7 @@
     el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.activity || ev.sport_key].filter(Boolean).join(', ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPTourn.back()">' + ic('arrow_back') + 'All tournaments</button></div>'
       + '<div class="lg-nav"><span class="tg-phase">Set up</span>' + tabBtn('information', 'Information') + tabBtn('setup', 'Setup') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials')
-      + '<span class="tg-navsep"></span><span class="tg-phase">Run</span>' + (anyGroups() ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Knockout') + tabBtn('schedule', 'Schedule') + tabBtn('sponsors', 'Sponsors') + '</div><div id="tg-tab"></div></div>';
+      + '<span class="tg-navsep"></span><span class="tg-phase">Run</span>' + (anyGroups() ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Draw') + tabBtn('schedule', 'Schedule') + tabBtn('sponsors', 'Sponsors') + '</div><div id="tg-tab"></div></div>';
     renderTab();
   }
   function snapFormats() { S._fmtSaved = {}; ((S.detail && S.detail.divisions) || []).forEach(function (d) { S._fmtSaved[d.id] = fmtOfDiv(d); }); }
@@ -595,39 +595,52 @@
     var rows = divs.map(function (d) {
       var on = d.id === S.divId;
       var built = (d.match_count || 0) > 0;
-      return '<div class="tg-dvrow' + (on ? ' on' : '') + '" onclick="FFPTourn.setDiv(\'' + d.id + '\',\'setup\')">'
+      var row = '<div class="tg-dvrow' + (on ? ' on' : '') + '" onclick="FFPTourn.setDiv(\'' + d.id + '\',\'setup\')">'
+        + '<span class="ms cv">' + (on ? 'expand_more' : 'chevron_right') + '</span>'
         + '<div class="g"><b>' + esc(d.name) + '</b><span>' + esc(fmtLabel(fmtOfDiv(d))) + ', ' + esc(shapeLine(d)) + '</span></div>'
         + '<span class="st' + (built ? ' done' : '') + '">' + (built ? 'Draw made' : 'Not drawn') + '</span></div>';
+      return on ? row + divFormatEditor(d) : row;
     }).join('');
 
-    var body = '';
-    if (dv) {
-      var k = fmtOfDiv(dv), n = dv.entrant_count || 0;
-      var changed = !!(S._fmtSaved && S._fmtSaved[dv.id] && S._fmtSaved[dv.id] !== k);
-      var cards = FORMATS.map(function (f) {
-        return '<div class="tg-fmt' + (f[0] === k ? ' on' : '') + '" onclick="FFPTourn.setDivFmt(\'' + f[0] + '\')">'
-          + '<div class="dia">' + fmtDia(f[0]) + '</div><b>' + f[1] + '</b><span>' + f[2] + '</span></div>';
-      }).join('');
-      var incl = '';
-      if (k === 'grp' || k === 'gk') {
-        incl += '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Number of groups</div><input class="lg-in" id="tg-ng" type="number" min="1" value="' + (dv.num_groups || Math.max(2, Math.round((n || 8) / 4))) + '"></div>'
-          + (k === 'gk' ? '<div class="lg-fld"><div class="lg-lab">Advance per group</div><input class="lg-in" id="tg-adv" type="number" min="1" value="' + (dv.groups_advance || 2) + '"></div>' : '<div></div>') + '</div>';
-      }
-      if (k === 'ko' || k === 'gk' || k === 'monrad') {
-        incl += '<div class="lg-fld"><div class="lg-lab">Losers keep playing</div><select class="lg-sel" id="tg-side">'
-          + SIDE_DRAWS.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === (dv.side_draws || 'none') ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('')
-          + '</select></div>';
-        if (k !== 'monrad') incl += '<div class="lg-fld"><div class="lg-lab">3rd-place play-off</div><div class="lg-seg" id="tg-third"><button data-v="true" class="' + (dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">Yes</button><button data-v="false" class="' + (!dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">No</button></div></div>';
-      }
-      body = '<div class="tg-dvhead">' + esc(dv.name) + '</div><div class="tg-fmts">' + cards + '</div>'
-        + '<div class="tg-fmtset">' + incl
-        + (changed ? '<div class="tg-shape">Becomes ' + esc(shapeLine(dv)) + '</div>' : '')
-        + '<div class="tg-acts"><button class="lg-btn pri" onclick="FFPTourn.saveDivFormat()">' + ic('check') + 'Save format</button>'
-        + '<button class="lg-btn" onclick="FFPTourn.buildDivDraw()">' + ic('bolt') + ((dv.match_count || 0) ? 'Draw again' : 'Make the draw') + '</button></div></div>';
-    }
-
     host.innerHTML = head
-      + '<div class="tg-sec"><div class="tg-sech">Format, per division</div>' + rows + body + '</div>';
+      + '<div class="tg-sec"><div class="tg-sech">Format, per division</div>' + rows + '</div>';
+  }
+  function divFormatEditor(dv) {
+    var k = fmtOfDiv(dv), n = dv.entrant_count || 0;
+    var changed = !!(S._fmtSaved && S._fmtSaved[dv.id] && S._fmtSaved[dv.id] !== k);
+    var cards = FORMATS.map(function (f) {
+      return '<div class="tg-fmt' + (f[0] === k ? ' on' : '') + '" onclick="FFPTourn.setDivFmt(\'' + f[0] + '\')">'
+        + '<div class="dia">' + fmtDia(f[0]) + '</div><b>' + f[1] + '</b><span>' + f[2] + '</span></div>';
+    }).join('');
+    var incl = '';
+    if (k === 'grp' || k === 'gk') {
+      incl += '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Number of groups</div><input class="lg-in" id="tg-ng" type="number" min="1" value="' + (dv.num_groups || Math.max(2, Math.round((n || 8) / 4))) + '"></div>'
+        + (k === 'gk' ? '<div class="lg-fld"><div class="lg-lab">Advance per group</div><input class="lg-in" id="tg-adv" type="number" min="1" value="' + (dv.groups_advance || 2) + '"></div>' : '<div></div>') + '</div>';
+    }
+    // Extra draws only mean something in a knockout. Monrad already keeps
+    // everyone playing, and a group table has nobody to knock out.
+    if (k === 'ko' || k === 'gk') {
+      var side = dv.side_draws || 'none';
+      var cur = SIDE_DRAWS.find(function (x) { return x[0] === side; }) || SIDE_DRAWS[0];
+      incl += '<div class="lg-fld"><div class="lg-lab">Do beaten players keep playing?</div>'
+        + '<select class="lg-sel" id="tg-side" onchange="FFPTourn.sideHint()">'
+        + SIDE_DRAWS.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === side ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('')
+        + '</select><div class="tg-hint" id="tg-sidehint">' + esc(cur[2]) + '</div></div>';
+      incl += '<div class="lg-fld"><div class="lg-lab">3rd-place play-off</div><div class="lg-seg" id="tg-third"><button data-v="true" class="' + (dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">Yes</button><button data-v="false" class="' + (!dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">No</button></div></div>';
+    }
+    if (k === 'monrad') incl += '<div class="tg-hint">Monrad re-ranks everyone after every round, so nobody is knocked out and every place is decided. There are no extra draws to add.</div>';
+    if (k === 'grp') incl += '<div class="tg-hint">Everyone plays everyone in their group and the table decides it. Nothing follows the groups.</div>';
+    return '<div class="tg-dvedit"><div class="tg-fmts">' + cards + '</div>'
+      + '<div class="tg-fmtset">' + incl
+      + (changed ? '<div class="tg-shape">Becomes ' + esc(shapeLine(dv)) + '</div>' : '')
+      + '<div class="tg-acts"><button class="lg-btn pri" onclick="FFPTourn.saveDivFormat()">' + ic('check') + 'Save format</button>'
+      + '<button class="lg-btn" onclick="FFPTourn.buildDivDraw()">' + ic('bolt') + ((dv.match_count || 0) ? 'Draw again' : 'Make the draw') + '</button></div></div></div>';
+  }
+  function sideHint() {
+    var sel = document.getElementById('tg-side'), h = document.getElementById('tg-sidehint');
+    if (!sel || !h) return;
+    var x = SIDE_DRAWS.find(function (o) { return o[0] === sel.value; });
+    h.textContent = x ? x[2] : '';
   }
   function fmtDia(k) {
     if (k === 'grp') return '<svg width="56" height="60" viewBox="0 0 56 60" class="tgd"><rect x="2" y="4" width="52" height="12" rx="2"/><rect x="2" y="18" width="52" height="12" rx="2"/><rect x="2" y="32" width="52" height="12" rx="2"/><rect x="2" y="46" width="52" height="12" rx="2"/></svg>';
@@ -734,21 +747,46 @@
     host.innerHTML = rows + adder; var f = document.getElementById('tg-dvname'); if (f) f.focus();
   }
   function divEditor(d) {
-    d = d || {}; var isTeam = (d.kind || 'team') !== 'individual';
+    d = d || {};
+    var mode = (S.detail && S.detail.event && S.detail.event.entrant_mode) || 'individual';
+    var isTeam = d.id ? (d.kind !== 'individual') : (mode === 'team');
     var gOpts = '<option value="">Open / any</option>' + genderNames().map(function (g) { return '<option' + (d.gender === g ? ' selected' : '') + '>' + esc(g) + '</option>'; }).join('');
-    return '<div class="lg-edit"><input class="lg-in" id="tg-dvname" placeholder="Division name" value="' + esc(d.name || '') + '">'
-      + '<div class="lg-seg" id="tg-dvkind"><button data-v="team" class="' + (isTeam ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-dvkind\')">Team / pair</button><button data-v="individual" class="' + (!isTeam ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-dvkind\')">Individual</button></div>'
+    // Only a mixed tournament asks per division; otherwise Setup already said.
+    var kindCtl = mode === 'mixed'
+      ? '<div class="lg-seg" id="tg-dvkind"><button data-v="team" class="' + (isTeam ? 'on' : '') + '" onclick="FFPTourn.divKind(this)">Team / pair</button><button data-v="individual" class="' + (!isTeam ? 'on' : '') + '" onclick="FFPTourn.divKind(this)">Individual</button></div>'
+      : '<span class="lg-seg" id="tg-dvkind" style="display:none"><button data-v="' + (isTeam ? 'team' : 'individual') + '" class="on"></button></span>';
+    var teamCtl = isTeam
+      ? '<input class="lg-in" id="tg-dvsize" type="number" min="1" placeholder="Players per team" title="Players per team" value="' + (d.team_size != null ? d.team_size : 2) + '" style="width:150px">'
+      : '';
+    return '<div class="lg-edit" id="tg-dved"><input class="lg-in" id="tg-dvname" placeholder="' + (isTeam ? 'Team division name' : 'Division name') + '" value="' + esc(d.name || '') + '">'
+      + kindCtl + teamCtl
       + '<select class="lg-sel" id="tg-dvgender" style="width:auto">' + gOpts + '</select>'
       + '<input class="lg-in" id="tg-dvmin" type="number" placeholder="Min age" value="' + (d.min_age != null ? d.min_age : '') + '" style="width:88px">'
       + '<input class="lg-in" id="tg-dvmax" type="number" placeholder="Max age" value="' + (d.max_age != null ? d.max_age : '') + '" style="width:88px">'
       + '<button class="lg-btn pri" onclick="FFPTourn.saveDivision(\'' + (d.id || '') + '\')">' + ic('check') + 'Save</button><button class="lg-btn ghost" onclick="FFPTourn.cancelDivision()">Cancel</button></div>';
   }
+  // Switching a division to a team needs the team fields there and then.
+  function divKind(btn) {
+    document.querySelectorAll('#tg-dvkind button').forEach(function (b) { b.classList.remove('on'); });
+    btn.classList.add('on');
+    var team = btn.getAttribute('data-v') === 'team';
+    var ed = document.getElementById('tg-dved'); if (!ed) return;
+    var sz = document.getElementById('tg-dvsize');
+    if (team && !sz) {
+      sz = document.createElement('input');
+      sz.className = 'lg-in'; sz.id = 'tg-dvsize'; sz.type = 'number'; sz.min = '1';
+      sz.placeholder = 'Players per team'; sz.title = 'Players per team'; sz.value = '2';
+      sz.style.width = '150px';
+      ed.insertBefore(sz, document.getElementById('tg-dvgender'));
+    } else if (!team && sz) { sz.remove(); }
+  }
   function editDivision(id) { S.divEdit = id; renderTab(); }
   function cancelDivision() { S.divEdit = null; renderTab(); }
   async function saveDivision(id) {
     var nm = (document.getElementById('tg-dvname') || {}).value; if (!nm || !nm.trim()) { toast('Name required', 'error'); return; }
-    var kind = segVal('tg-dvkind') || 'team';
-    var p = { name: nm.trim(), kind: kind, team_size: kind === 'team' ? 2 : 1, gender: v('tg-dvgender') || 'any', min_age: v('tg-dvmin') || null, max_age: v('tg-dvmax') || null };
+    var mode = (S.detail && S.detail.event && S.detail.event.entrant_mode) || 'individual';
+    var kind = segVal('tg-dvkind') || (mode === 'team' ? 'team' : 'individual');
+    var p = { name: nm.trim(), kind: kind, team_size: kind === 'team' ? (Math.max(1, +v('tg-dvsize') || 2)) : 1, gender: v('tg-dvgender') || 'any', min_age: v('tg-dvmin') || null, max_age: v('tg-dvmax') || null };
     var r; try { r = await sb().rpc('tourn_division_save', { p_tourn: S.eventId, p_id: id || null, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Save failed', 'error'); return; } S.divEdit = null; toast('Saved', 'success'); refreshDetail();
   }
@@ -1064,14 +1102,9 @@
     // is what a one-day club squash event usually wants.
     var dv = divs.find(function (x) { return x.id === S.divId; }) || {};
     var fmt = dv.draw_format || 'ko';
-    var fmtCtl = '<select class="lg-sel" style="width:auto;min-width:210px" onchange="FFPTourn.setDrawFormat(this.value)">'
-      + '<option value="ko"' + (fmt === 'ko' ? ' selected' : '') + '>Knockout draw</option>'
-      + '<option value="monrad"' + (fmt === 'monrad' ? ' selected' : '') + '>Monrad, everyone keeps playing</option>'
-      + '</select>';
-    var side = dv.side_draws || 'none';
-    var sideCtl = fmt === 'monrad' ? '' : '<select class="lg-sel" style="width:auto;min-width:230px" title="Extra draws for players knocked out" onchange="FFPTourn.setSideDraws(this.value)">'
-      + SIDE_DRAWS.map(function (o) { return '<option value="' + o[0] + '"' + (side === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('')
-      + '</select>';
+    // Format and extra draws belong to Setup; this tab runs the draw.
+    var fmtCtl = '<span class="tg-fmtnow">' + esc(fmtLabel(fmtOfDiv(dv))) + '<a onclick="FFPTourn.tab(\'setup\')">Change in Setup</a></span>';
+    var sideCtl = '';
     var buildCtl = fmt === 'monrad'
       ? '<button class="lg-btn" onclick="FFPTourn.monradOpen()">' + ic('account_tree') + 'Open full draw</button>'
         + '<button class="lg-btn" onclick="FFPTourn.monradRound()">' + ic('playlist_add') + 'Draw next round</button>'
@@ -1094,9 +1127,13 @@
         + draws.map(function (d) { var c = ms.filter(function (m) { return (m.draw || 'main') === d.key && m.status !== 'void'; }).length;
             return '<option value="' + d.key + '"' + (d.key === S.drawKey ? ' selected' : '') + '>' + esc(d.name) + ' (' + c + ' matches)</option>'; }).join('')
         + '</select></div>' : '';
+    // A division switched to Monrad can still carry knockout rows from an
+    // earlier build. They are not part of this draw, so they are not drawn.
+    var monradHere = dms.some(function (m) { return m.stage === 'monrad'; });
+    if (monradHere) dms = dms.filter(function (m) { return m.stage === 'monrad'; });
     var byRound = {}; dms.filter(function (m) { return m.stage !== 'third'; }).forEach(function (m) { (byRound[m.round] = byRound[m.round] || []).push(m); });
     var rkeys = Object.keys(byRound).sort(function (a, b) { return a - b; });
-    var isMonrad = dms.some(function (m) { return m.stage === 'monrad'; });
+    var isMonrad = monradHere;
     var cols = rkeys.map(function (rd) {
       var items = byRound[rd].sort(function (a, b) { return a.slot - b.slot; });
       var lab = items[0].round_label || stageLbl(items[0]);
@@ -1113,8 +1150,7 @@
     var mc = (m.home && m.away) ? '<button class="lg-mcbtn tg-mcbtn" title="Match centre" onclick="FFPTourn.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + '</button>' : '';
     // A no-show, retirement or disqualification still has a winner, and in a
     // knockout that winner has to advance or the draw stalls.
-    var aw2 = (m.home && m.away && m.status !== 'final')
-      ? '<button class="lg-mcbtn tg-mcbtn" title="Walkover, retirement or disqualification" onclick="FFPTourn.awardPanel(\'' + m.id + '\')">' + ic('gavel') + '</button>' : '';
+    var aw2 = '';
     var kindTag = m.result_kind && m.result_kind !== 'played'
       ? '<span class="tg-kind">' + esc(AWARD_SHORT[m.result_kind] || m.result_kind) + '</span>' : '';
     return '<div class="tg-m' + ((aw2 || mc) ? ' acts' : '') + '" data-id="' + m.id + '"><div class="s ' + (hw ? 'win' : (m.home ? '' : 'tbd')) + '"><b>' + esc((m.home && m.home.name) || 'TBD') + '</b><input type="number" class="tg-hs" value="' + (m.home_score != null ? m.home_score : '') + '" placeholder="–"></div>'
@@ -1130,7 +1166,8 @@
   var _awardM = null;
   function awardPanel(id) {
     var m = (S._bracket || []).find(function (x) { return x.id === id; });
-    if (!m) { toast('Reload the bracket first', 'error'); return; }
+    if (!m && S._mc && S._mc.id === id) m = S._mc;
+    if (!m || !m.home || !m.away) { toast('Both players must be in the match first', 'error'); return; }
     _awardM = m;
     var old = document.getElementById('tg-aw'); if (old) old.remove();
     var bk = document.createElement('div'); bk.id = 'tg-aw'; bk.className = 'lg-cfm';
@@ -1225,7 +1262,9 @@
       : (m.status === 'live' ? '<button class="lg-btn lg-livebtn" onclick="FFPTourn.setLive(\'scheduled\')">● LIVE</button>'
         : '<button class="lg-btn" onclick="FFPTourn.setLive(\'live\')">' + ic('sensors') + 'Go live</button>');
     host.innerHTML =
-      '<div class="lg-tool"><button class="lg-btn" onclick="FFPTourn.closeMatch()">' + ic('arrow_back') + 'Back</button><span class="sp"></span>' + liveBtn + '<button class="lg-btn pri" onclick="FFPTourn.saveResultFromEvents()">' + ic('check') + 'Save result</button></div>'
+      '<div class="lg-tool"><button class="lg-btn" onclick="FFPTourn.closeMatch()">' + ic('arrow_back') + 'Back</button><span class="sp"></span>'
+      + '<button class="lg-btn" title="Walkover, retirement or disqualification" onclick="FFPTourn.awardPanel(\'' + m.id + '\')">' + ic('gavel') + 'Not played out</button>'
+      + liveBtn + '<button class="lg-btn pri" onclick="FFPTourn.saveResultFromEvents()">' + ic('check') + 'Save result</button></div>'
       + '<div class="lg-mchd"><div class="tm">' + crest(m.home) + '<b>' + esc(m.home.name) + '</b></div><div class="scr">' + esc(score) + '</div><div class="tm a"><b>' + esc(m.away.name) + '</b>' + crest(m.away) + '</div></div>'
       + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:10px 0"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPTourn.saveStream()">' + ic('live_tv') + 'Save stream</button></div>'
       + '<div class="lg-mctabs"><button class="' + (tab === 'timeline' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'timeline\')">Scoring timeline</button><button class="' + (tab === 'subs' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'subs\')">Substitutions</button><button class="' + (tab === 'stats' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'stats\')">Player stats</button><button class="' + (tab === 'team' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'team\')">Team stats</button></div>'
@@ -1575,7 +1614,7 @@
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
     statusPick: statusPick,
     saveDetails: saveDetails, sportHint: sportHint,
-    setEntrantMode: setEntrantMode, saveSetup: saveSetup, setDivFmt: setDivFmt, saveDivFormat: saveDivFormat, buildDivDraw: buildDivDraw, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
+    divKind: divKind, setEntrantMode: setEntrantMode, saveSetup: saveSetup, sideHint: sideHint, setDivFmt: setDivFmt, saveDivFormat: saveDivFormat, buildDivDraw: buildDivDraw, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, bulkAthletes: bulkAthletes, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit,
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
