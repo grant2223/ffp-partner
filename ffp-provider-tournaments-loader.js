@@ -810,12 +810,27 @@
     if (quiet) return true;
     toast('Format saved', 'success'); await refreshDetail(); return true;
   }
-  async function buildDivDraw() {
+  function buildDivDraw() {
     var divs = S.detail.divisions || [];
     var dv = divs.find(function (x) { return x.id === S.divId; }); if (!dv) return;
     if (!(dv.entrant_count || 0)) { toast('Add entrants first', 'error'); return; }
+    if ((dv.played_count || 0) > 0) {
+      showConfirm('replay', 'Draw ' + dv.name + ' again?',
+        (dv.played_count === 1 ? 'One result has' : dv.played_count + ' results have')
+          + ' already been entered in this draw. Drawing again builds it from scratch and those scores are lost.',
+        'Yes, draw it again', 'final', function () { _buildDivDraw(dv); });
+      return;
+    }
+    _buildDivDraw(dv);
+  }
+  async function _buildDivDraw(dv) {
     if (!(await saveDivFormat(true))) return;
     var k = fmtOfDiv(dv), r;
+    if (k === 'monrad') {
+      try { r = await sb().rpc('tourn_monrad_open', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast('Could not make the draw', 'error'); return; }
+      toast('Draw made', 'success'); S.tab = 'bracket'; S.drawKey = null; await refreshDetail(); return;
+    }
     if (k === 'grp' || k === 'gk') {
       var ng = +v('tg-ng') || Math.max(2, Math.round((dv.entrant_count || 8) / 4));
       try { r = await sb().rpc('tourn_groups_generate', { p_division: S.divId, p_num_groups: ng }); } catch (e) { r = { error: e }; }
@@ -1749,7 +1764,7 @@
 
   // Printed on load so a deploy can be confirmed in one look, without
   // guessing from the screen: open the console and read this line.
-  var BUILD = '2026-09-23.9';
+  var BUILD = '2026-09-23.10';
   console.log('[FFP Tournaments] build ' + BUILD);
   window.FFPTourn = {
     build: BUILD,
