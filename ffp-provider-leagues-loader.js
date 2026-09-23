@@ -722,16 +722,6 @@
     return out;
   }
 
-  // ── shirt numbers, positions and the armband. A sport with a position
-  //    list (rugby 1-23) gets a shirt picker on every squad member; the
-  //    starting numbers carry their own position, so only a replacement is
-  //    asked what it covers. ─────────────────────────────────────────────
-  function posList() { return S._pos || []; }
-  function posOf(n) { var f = posList().filter(function (x) { return Number(x.number) === Number(n); })[0]; return f || null; }
-  function sqTaken(entId, exceptId) {
-    var o = {}; squadFor(entId).forEach(function (x) { if (x.id !== exceptId && x.number != null) o[Number(x.number)] = 1; }); return o;
-  }
-
   // ── player portrait. A club can upload its own shot \u2014 cropped to the
   //    passport shape every graphic uses \u2014 instead of the member's
   //    profile photo. The small x hands the player back to it. ───────────
@@ -1135,23 +1125,23 @@
 
 
 
-  // ── TEAM SHEET. The 23 shirts are fixed — 1 is the loosehead prop, 10 is
-  //    the fly-half, always. What changes each match is WHO is in each shirt,
-  //    picked from the club's squad. So the sheet reads position-first: one
-  //    row per shirt, and a player dropped into it. ──────────────────────
+  // ── TEAM SHEET. The 23 positions are fixed — 1 is the loosehead prop, 10 is
+  //    the fly-half, always. What changes each match is WHO fills each
+  //    position, picked from the club's squad. So the sheet reads
+  //    position-first: one row per position, a player dropped into it. ──────────────────────
   function tsSquadFor(entId) { return (S._squad || []).filter(function (x) { return x.entrant_id === entId; }); }
   function tsUsed(entId, exceptNo) {
-    var o = {}; (S._shirts || []).forEach(function (x) {
+    var o = {}; (S._slots || []).forEach(function (x) {
       if (Number(x.number) !== Number(exceptNo) && x.squad_id) o[x.squad_id] = 1;
     }); return o;
   }
-  function tsNamedCount() { return (S._shirts || []).filter(function (x) { return !!x.squad_id; }).length; }
+  function tsNamedCount() { return (S._slots || []).filter(function (x) { return !!x.squad_id; }).length; }
   async function tsReload() {
     var m = S._mc || {}; if (!m.id) return;
     var tm = (S._tsTeam === 'away' ? m.away : m.home) || {};
     if (!tm.id) return;
-    try { var r = await sb().rpc('lt_teamsheet_shirts', { p_match: m.id, p_entrant: tm.id }); S._shirts = (r && r.data) || []; }
-    catch (e) { S._shirts = []; }
+    try { var r = await sb().rpc('lt_teamsheet_slots', { p_match: m.id, p_entrant: tm.id }); S._slots = (r && r.data) || []; }
+    catch (e) { S._slots = []; }
     try { var c = await sb().rpc('lt_staff_list', { p_match: m.id, p_entrant: tm.id }); S._coach = ((c && c.data) || [])[0] ? c.data[0].name : ''; }
     catch (e) { S._coach = ''; }
     if (!(S._squad || []).length) {
@@ -1160,25 +1150,25 @@
     if (S.mcTab === 'sheet') renderMatchCentre();
   }
   async function tsPut(num, squadId) {
-    var m = S._mc || {}; var cur = (S._shirts || []).filter(function (x) { return Number(x.number) === Number(num); })[0] || {};
+    var m = S._mc || {}; var cur = (S._slots || []).filter(function (x) { return Number(x.number) === Number(num); })[0] || {};
     var r;
     try {
       r = await sb().rpc('lt_teamsheet_assign', { p_match: m.id, p_number: Number(num),
         p_squad: squadId || null, p_captain: null, p_position: cur.grp === 'replacements' ? (cur.position || null) : null });
     } catch (e) { r = { error: e }; }
-    if (r && r.error) { toast(r.error.message || 'Could not name that shirt', 'error'); return; }
+    if (r && r.error) { toast(r.error.message || 'Could not fill that position', 'error'); return; }
     tsReload();
   }
   async function tsCovers(num, pos) {
-    var m = S._mc || {}; var cur = (S._shirts || []).filter(function (x) { return Number(x.number) === Number(num); })[0] || {};
+    var m = S._mc || {}; var cur = (S._slots || []).filter(function (x) { return Number(x.number) === Number(num); })[0] || {};
     if (!cur.squad_id) return;
     try { await sb().rpc('lt_teamsheet_assign', { p_match: m.id, p_number: Number(num), p_squad: cur.squad_id, p_captain: null, p_position: pos || null }); }
     catch (e) { toast('Could not set the cover', 'error'); }
     tsReload();
   }
   async function tsCap(num) {
-    var m = S._mc || {}; var cur = (S._shirts || []).filter(function (x) { return Number(x.number) === Number(num); })[0] || {};
-    if (!cur.squad_id) { toast('Name a player in that shirt first', 'error'); return; }
+    var m = S._mc || {}; var cur = (S._slots || []).filter(function (x) { return Number(x.number) === Number(num); })[0] || {};
+    if (!cur.squad_id) { toast('Put a player in that position first', 'error'); return; }
     try { await sb().rpc('lt_teamsheet_assign', { p_match: m.id, p_number: Number(num), p_squad: cur.squad_id, p_captain: !cur.captain, p_position: cur.grp === 'replacements' ? (cur.position || null) : null }); }
     catch (e) { toast('Could not set the captain', 'error'); }
     tsReload();
@@ -1191,17 +1181,17 @@
     catch (e) { toast('Could not save the coach', 'error'); return; }
     S._coach = name || ''; toast('Saved', 'check');
   }
-  function tsTeam(which) { S._tsTeam = which; S._shirts = []; renderMatchCentre(); tsReload(); }
+  function tsTeam(which) { S._tsTeam = which; S._slots = []; renderMatchCentre(); tsReload(); }
   function tsSheet(m) {
     if (!m || !m.id) return '';
     var which = S._tsTeam || 'home';
     var tm = (which === 'away' ? m.away : m.home) || {};
-    var shirts = S._shirts || [];
-    if (!shirts.length) return '<div class="lg-empty" style="padding:16px">No shirt numbers for this sport.</div>';
+    var slots = S._slots || [];
+    if (!slots.length) return '<div class="lg-empty" style="padding:16px">No positions for this sport.</div>';
     var squad = tsSquadFor(tm.id);
     var allPos = (S._pos || []);
 
-    var rows = shirts.map(function (x) {
+    var rows = slots.map(function (x) {
       var used = tsUsed(tm.id, x.number);
       var opts = '<option value="">&mdash; empty &mdash;</option>' + squad.map(function (p) {
         return '<option value="' + p.id + '"' + (p.id === x.squad_id ? ' selected' : '')
@@ -1223,14 +1213,14 @@
         + '</div>';
     });
 
-    var cut = shirts.filter(function (x) { return x.grp !== 'replacements'; }).length;
+    var cut = slots.filter(function (x) { return x.grp !== 'replacements'; }).length;
     return '<div class="lg-tsheet">'
       + '<div class="tabs">'
       + '<button class="' + (which === 'home' ? 'on' : '') + '" onclick="FFPLeague.tsTeam(\'home\')">' + esc((m.home || {}).name || 'Home') + '</button>'
       + '<button class="' + (which === 'away' ? 'on' : '') + '" onclick="FFPLeague.tsTeam(\'away\')">' + esc((m.away || {}).name || 'Away') + '</button>'
       + '<span class="count">' + tsNamedCount() + ' named</span></div>'
       + '<details class="lg-info"><summary>' + ic('info') + 'About the team sheet</summary>'
-      + '<p>The 23 shirts are fixed. Pick who plays in each one today &mdash; every player added to the club&#39;s squad under Entrants is in the list, and nobody can be in two shirts at once. The livestream team sheet and try card are built from this.</p></details>'
+      + '<p>The 23 positions are fixed &mdash; 2 is always the hooker, 9 always the scrum-half. Pick who fills each one today. Every player added to the club&#39;s squad under Entrants is in the list, and nobody can hold two positions at once. The livestream team sheet and try card are built from this.</p></details>'
       + '<div class="coach"><label>Coach</label><input class="lg-in" id="lg-ts-coach" placeholder="Head coach" value="' + esc(tsCoach()) + '" onblur="FFPLeague.tsSaveCoach(this.value)"></div>'
       + '<div class="grid"><div class="hd">Starting XV</div>' + rows.slice(0, cut).join('')
       + '<div class="hd">Replacements</div>' + rows.slice(cut).join('') + '</div></div>';
