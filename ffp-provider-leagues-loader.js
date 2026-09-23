@@ -1206,7 +1206,7 @@
         : '';
       return '<div class="row' + (x.squad_id ? ' on' : '') + '">'
         + '<span class="no">' + x.number + '</span>'
-        + '<span class="pos">' + esc(x.grp === 'replacements' ? 'Replacement' : x.position) + '</span>'
+        + '<span class="pos">' + esc(x.grp === 'replacements' ? 'Impact Bench' : x.position) + '</span>'
         + '<select class="lg-sel pl" onchange="FFPLeague.tsPut(' + x.number + ',this.value)">' + opts + '</select>'
         + cover
         + '<span class="cap' + (x.captain ? ' on' : '') + '" title="Captain" onclick="FFPLeague.tsCap(' + x.number + ')">C</span>'
@@ -1223,7 +1223,7 @@
       + '<p>The 23 positions are fixed &mdash; 2 is always the hooker, 9 always the scrum-half. Pick who fills each one today. Every player added to the club&#39;s squad under Entrants is in the list, and nobody can hold two positions at once. The livestream team sheet and try card are built from this.</p></details>'
       + '<div class="coach"><label>Coach</label><input class="lg-in" id="lg-ts-coach" placeholder="Head coach" value="' + esc(tsCoach()) + '" onblur="FFPLeague.tsSaveCoach(this.value)"></div>'
       + '<div class="grid"><div class="hd">Starting XV</div>' + rows.slice(0, cut).join('')
-      + '<div class="hd">Replacements</div>' + rows.slice(cut).join('') + '</div></div>';
+      + '<div class="hd">Impact Bench</div>' + rows.slice(cut).join('') + '</div></div>';
   }
 
   async function saveStream() {
