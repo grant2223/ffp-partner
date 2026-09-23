@@ -1507,9 +1507,10 @@
     if (r.error) { toast('Could not generate', 'error'); return; } toast((r.data || 0) + ' fixtures created', 'success'); renderTab();
   }
   async function saveResults() {
-    var rows = Array.prototype.slice.call(document.querySelectorAll('.lg-fx')); var n = 0;
+    var rows = Array.prototype.slice.call(document.querySelectorAll('.lg-fx2')); var n = 0;
     for (var i = 0; i < rows.length; i++) { var el = rows[i]; var h = el.querySelector('.lg-hs').value, a = el.querySelector('.lg-as').value; if (h === '' || a === '') continue; try { await sb().rpc('league_result_save', { p_fixture: el.getAttribute('data-id'), p_home: +h, p_away: +a, p_sets: null, p_status: 'final' }); n++; } catch (e) {} }
-    toast(n + ' results saved', 'success'); renderTab();
+    if (!n) { toast('Nothing to save \u2014 enter both scores on a fixture first', 'error'); return; }
+    toast(n === 1 ? '1 result saved' : n + ' results saved', 'success'); renderTab();
   }
 
   // ---------- TABLE ----------
