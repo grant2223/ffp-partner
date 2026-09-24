@@ -188,7 +188,15 @@
       '/* Nothing should sit here: Auto-plan places every match, decided or not. */',
       '.sc-ch.warn{background:linear-gradient(92deg,#5c3d06,#7a5a12);}',
       '.sc-ch.warn .ct{color:#ffe2ab;}',
-      '.lg-surf .lg-vcnote{font-size:12px;font-weight:700;color:#7c8b97;margin-left:8px;}'
+      '.lg-surf .lg-vcnote{font-size:12px;font-weight:700;color:#7c8b97;margin-left:8px;}',
+      '/* Open an empty draw: the format decides the shape, not the entry list. */',
+      '.tg-opendraw{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--ffp-border);}',
+      '.tg-opendraw .lb{font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#5c6f7c;}',
+      '.tg-opendraw .hint{flex:1 1 100%;font-size:12.5px;font-weight:600;color:#5c6f7c;}',
+      '.tg-opendraw.warn{background:#fff7e6;border:1px solid #e8cf9a;border-radius:12px;padding:12px 14px;}',
+      '.tg-opendraw.warn b{font-size:14px;font-weight:900;color:#12232f;}',
+      '.tg-opendraw.warn span:not(.sp){font-size:12.5px;font-weight:600;color:#5c4a22;}',
+      '.tg-opendraw .sp{flex:1;}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -1089,8 +1097,48 @@
     return '<div class="tg-dvedit"><div class="tg-fmts">' + cards + '</div>'
       + '<div class="tg-fmtset">' + incl
       + (changed ? '<div class="tg-shape">Becomes ' + esc(shapeLine(dv)) + '</div>' : '')
+      + drawSizeRow(dv, k)
       + '<div class="tg-acts"><button class="lg-btn pri" onclick="FFPTourn.saveDivFormat()">' + ic('check') + 'Save format</button>'
       + '<button class="lg-btn" onclick="FFPTourn.buildDivDraw()">' + ic('bolt') + ((dv.match_count || 0) ? 'Draw again' : 'Make the draw') + '</button></div></div></div>';
+  }
+  // The order of play is set from the format, not from who has entered: an
+  // empty draw of a chosen size gives every round its matches, so the whole
+  // tournament can be scheduled and the names dropped in as results come.
+  var DRAW_SIZES = [4, 8, 16, 32, 64, 128];
+  function drawSizeRow(dv, k) {
+    if (k === 'grp') return '';
+    var cur = dv.draw_size || 0;
+    var sel = DRAW_SIZES.map(function (n) {
+      return '<option value="' + n + '"' + (n === cur ? ' selected' : '') + '>' + n + ' players</option>';
+    }).join('');
+    var has = (dv.match_count || 0) > 0;
+    if (S.openDrawAsk === dv.id) {
+      return '<div class="tg-opendraw warn"><b>Replace the draw with an empty one?</b>'
+        + '<span>Every match in this division is rebuilt with no names in it. Results already entered stop this.</span>'
+        + '<span class="sp"></span>'
+        + '<button class="lg-btn ghost" onclick="FFPTourn.openDrawCancel()">Cancel</button>'
+        + '<button class="lg-btn pri" onclick="FFPTourn.openDivDraw(1)">Yes, open it empty</button></div>';
+    }
+    return '<div class="tg-opendraw"><span class="lb">Draw size</span>'
+      + '<select class="lg-sel" id="tg-dsize" style="width:auto;min-width:130px">' + sel + '</select>'
+      + '<button class="lg-btn" onclick="FFPTourn.openDivDraw()">' + ic('grid_on')
+      + (has ? 'Open an empty draw' : 'Open the draw') + '</button>'
+      + '<span class="hint">Builds every round now, before anyone enters. Auto-plan can then schedule the whole tournament.</span></div>';
+  }
+  function openDrawCancel() { S.openDrawAsk = null; renderTab(); }
+  async function openDivDraw(confirmed) {
+    var dv = ((S.detail && S.detail.divisions) || []).find(function (d) { return d.id === S.divId; }) || {};
+    if ((dv.match_count || 0) > 0 && !confirmed) { S.openDrawAsk = dv.id; renderTab(); return; }
+    var el = document.getElementById('tg-dsize');
+    var size = +((el && el.value) || dv.draw_size || 16) || 16;
+    S.openDrawAsk = null;
+    var r; try { r = await sb().rpc('tourn_bracket_open', { p_division: S.divId, p_size: size }); } catch (e) { r = { error: e }; }
+    if (r.error) {
+      toast(/matches_played/.test(r.error.message || '') ? 'A match has already been played in this division' : 'Could not open the draw', 'error');
+      renderTab(); return;
+    }
+    toast('Draw opened for ' + (r.data || size) + ' players', 'success');
+    S.tab = 'bracket'; S.drawKey = null; await refreshDetail();
   }
   function sideHint() {
     var sel = document.getElementById('tg-side'), h = document.getElementById('tg-sidehint');
@@ -2158,7 +2206,7 @@
 
   // Printed on load so a deploy can be confirmed in one look, without
   // guessing from the screen: open the console and read this line.
-  var BUILD = '2026-09-24.3';
+  var BUILD = '2026-09-24.4';
   console.log('[FFP Tournaments] build ' + BUILD);
   window.FFPTourn = {
     build: BUILD,
@@ -2200,6 +2248,7 @@
     pickImg: pickImg, entLogo: entLogo, addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap,
     autoplan: autoplan, schedSet: schedSet,
     setSchedDiv: setSchedDiv, planSet: planSet, setAddDiv: setAddDiv,
+    openDivDraw: openDivDraw, openDrawCancel: openDrawCancel,
     breakAdd: breakAdd, breakSave: breakSave, breakRemove: breakRemove,
     rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
     schedToggle: schedToggle, schedMove: schedMove, setMainCourt: setMainCourt,
