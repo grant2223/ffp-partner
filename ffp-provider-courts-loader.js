@@ -6,7 +6,7 @@
    Exposes window.ffpRenderCourts (panel hook) + window.FFPCourts (actions). Icons use .ms. */
 (function () {
   var SCREEN_BASE = 'score.findfitpeople.com';
-  var TABLET_BASE = 'https://app.findfitpeople.com/tablet/';
+  var TABLET_URL = 'https://app.findfitpeople.com/tablet';
   var QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
   var sb = function () { return window.supabase; };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); };
@@ -66,6 +66,8 @@
       '.vc-ov h2{font-size:24px;font-weight:900;color:#12232f;margin:8px 0 0;}',
       '.vc-ov p{font-size:14.5px;font-weight:600;color:#5a6b78;line-height:1.55;margin:10px 0 0;}',
       '.vc-ov .qr{display:inline-block;margin-top:22px;padding:14px;background:#fff;box-shadow:0 0 0 3px #F2A900,0 12px 30px rgba(0,0,0,.12);border-radius:12px;line-height:0;}',
+      /* the PIN is the thing you read out; the QR is the shortcut */
+      '.vc-ov .pin{margin-top:20px;font-size:52px;font-weight:900;letter-spacing:.18em;color:#12232f;font-variant-numeric:tabular-nums;line-height:1.05;}',
       '.vc-ov .url{font-size:13px;font-weight:700;color:#6a7c8a;word-break:break-all;margin-top:14px;}',
       '.vc-ov .warn{font-size:13px;font-weight:700;color:#9a6b00;margin-top:10px;}',
       '.vc-ov .acts{display:flex;gap:10px;justify-content:center;margin-top:22px;flex-wrap:wrap;}',
@@ -119,7 +121,11 @@
       '.vc-ov .ck input{margin:0;width:18px;height:18px;accent-color:var(--ffp-blue,#1980AD);}',
       '.vc-ov .acts.l{justify-content:flex-start;}',
       '@media (max-width:900px){#vc-root .vp-row{grid-template-columns:100px 1fr;}.vc-ov .pe{grid-template-columns:1fr;}}',
-      '@media (max-width:900px){#vc-root .vc-row{grid-template-columns:1fr 1fr;}#vc-root .vc-acts{justify-content:flex-start;}#vc-root .vc-how{grid-template-columns:1fr;}}'
+      '@media (max-width:900px){#vc-root .vc-row{grid-template-columns:1fr 1fr;}#vc-root .vc-acts{justify-content:flex-start;}#vc-root .vc-how{grid-template-columns:1fr;}}',
+      /* both shipped just under AA on this panel: the warning line at 4.49:1 and
+         the connected-tablets heading at 4.32:1. Last in the array so they win. */
+      '.vc-ov .warn{color:#8c5f00;}',
+      '.vc-ov .tl h3{color:#61737f;}'
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -375,37 +381,43 @@
     var ov = document.createElement('div'); ov.id = 'vc-ov'; ov.className = 'vc-ov';
     var fmt = function (t) { try { return t ? new Date(t).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not used yet'; } catch (e) { return ''; } };
     var body = key
-      ? '<h2>Pair the tablet, ' + esc(c.name) + '</h2>'
-        + '<p>On the tablet, scan this with the camera and open the link. It stays paired to this court.</p>'
+      ? '<h2>Connect a tablet, ' + esc(c.name) + '</h2>'
+        + '<p>On the tablet open <b>' + esc(TABLET_URL.replace(/^https?:\/\//, '')) + '</b> and type this PIN, or point its camera at the square.</p>'
+        + '<div class="pin" id="vc-turl">' + esc(String(key).slice(0, 3) + ' ' + String(key).slice(3)) + '</div>'
         + '<div class="qr" id="vc-qr"></div>'
-        + '<div class="url" id="vc-turl">' + esc(TABLET_BASE + key) + '</div>'
-        + '<div class="warn">This link is shown once. Anyone with it can score matches on this court, so do not share it.</div>'
-        + '<div class="acts"><button class="vc-btn" onclick="FFPCourts.copyText(\'vc-turl\')">' + ic('content_copy') + 'Copy link</button>'
+        + '<div class="warn">Good for 15 minutes, and works once. Anyone with the PIN can connect a tablet to this court.</div>'
+        + '<div class="acts"><button class="vc-btn" onclick="FFPCourts.pairTablet(\'' + id + '\')">' + ic('refresh') + 'New PIN</button>'
         + '<button class="vc-btn pri" onclick="FFPCourts.tablet(\'' + id + '\')">' + ic('check') + 'Done</button></div>'
       : '<span class="ms big">tablet_android</span><h2>Scoring tablet, ' + esc(c.name) + '</h2>'
-        + '<p>A tablet at the court scores this court\'s tournament and league matches, and club matches between FFP members. Nobody signs in on it.</p>'
-        + '<div class="acts"><button class="vc-btn gold" onclick="FFPCourts.pairTablet(\'' + id + '\')">' + ic('add') + 'Pair a tablet</button>'
+        + '<p>A tablet at the court scores this court\'s tournament and league matches, and open play between FFP members. Nobody signs in on it.</p>'
+        + '<div class="acts"><button class="vc-btn gold" onclick="FFPCourts.pairTablet(\'' + id + '\')">' + ic('add') + 'Connect a tablet</button>'
         + '<button class="vc-btn" onclick="FFPCourts.closeOv()">Close</button></div>'
-        + (list.length ? '<div class="tl"><h3>Paired tablets</h3>' + list.map(function (t) {
-            return '<div class="tr"><span>Paired ' + esc(fmt(t.created_at)) + ', last used ' + esc(fmt(t.last_seen_at)) + '</span>'
-              + '<button class="vc-btn red" onclick="FFPCourts.unpair(\'' + t.id + '\',\'' + id + '\')">' + ic('link_off') + 'Unpair</button></div>';
+        + (list.length ? '<div class="tl"><h3>Connected tablets</h3>' + list.map(function (t) {
+            return '<div class="tr"><span>Connected ' + esc(fmt(t.created_at)) + ', last seen ' + esc(fmt(t.last_seen_at)) + '</span>'
+              + '<button class="vc-btn red" onclick="FFPCourts.unpair(\'' + t.id + '\',\'' + id + '\')">' + ic('link_off') + 'Disconnect</button></div>';
           }).join('') + '</div>' : '');
     ov.innerHTML = '<div class="in">' + body + '</div>';
     document.body.appendChild(ov);
     if (key) loadQr(function () {
       var h = document.getElementById('vc-qr');
-      if (h && window.QRCode) { try { new window.QRCode(h, { text: TABLET_BASE + key, width: 240, height: 240, correctLevel: window.QRCode.CorrectLevel.M }); } catch (e) {} }
+      if (h && window.QRCode) { try { new window.QRCode(h, { text: TABLET_URL + '?pin=' + encodeURIComponent(key), width: 208, height: 208, correctLevel: window.QRCode.CorrectLevel.M }); } catch (e) {} }
     });
   }
+  // ONE way to connect a tablet, wherever it is: six digits. A tournament pitch
+  // uses the same tablet_pair_start, so a volunteer learns this once.
   async function pairTablet(id) {
-    var r; try { r = await sb().rpc('vc_tablet_create', { p_court: id }); } catch (e) { r = { error: e }; }
-    if (r.error || !r.data) { toast('Could not pair a tablet', 'error'); return; }
-    tablet(id, r.data);
+    var r; try { r = await sb().rpc('tablet_pair_start', { p_court: id, p_field: null }); } catch (e) { r = { error: e }; }
+    var m = String((r.error && r.error.message) || '');
+    if (r.error || !(r.data && r.data.pin)) {
+      toast(/not_yours/.test(m) ? 'That court is not yours' : /too_many_codes/.test(m) ? 'Too many PINs live for this court. Wait a few minutes.' : 'Could not make a PIN', 'error');
+      return;
+    }
+    tablet(id, r.data.pin);
   }
   async function unpair(tid, id) {
-    var r; try { r = await sb().rpc('vc_tablet_revoke', { p_id: tid }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not unpair it', 'error'); return; }
-    toast('Tablet unpaired', 'success'); tablet(id);
+    var r; try { r = await sb().rpc('tablet_revoke', { p_id: tid }); } catch (e) { r = { error: e }; }
+    if (r.error || (r.data && r.data.error)) { toast('Could not disconnect it', 'error'); return; }
+    toast('Tablet disconnected', 'success'); tablet(id);
   }
   function copyText(elId) {
     var el = document.getElementById(elId); if (!el) return;
