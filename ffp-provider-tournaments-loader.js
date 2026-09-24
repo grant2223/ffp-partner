@@ -184,7 +184,11 @@
       '.sc-bar{display:flex;align-items:center;gap:9px;padding:9px 11px;margin:2px 0;border-radius:8px;background:repeating-linear-gradient(135deg,#f1f5f8,#f1f5f8 9px,#e7edf2 9px,#e7edf2 18px);border:1px dashed #c8d4dd;}',
       '.sc-bar .ms{color:#5c6f7c;font-size:17px;}',
       '.sc-bar b{font-size:12.5px;font-weight:900;color:#3c4d59;}',
-      '.sc-bar span{font-size:12px;font-weight:700;color:#475763;}'
+      '.sc-bar span{font-size:12px;font-weight:700;color:#475763;}',
+      '/* Nothing should sit here: Auto-plan places every match, decided or not. */',
+      '.sc-ch.warn{background:linear-gradient(92deg,#5c3d06,#7a5a12);}',
+      '.sc-ch.warn .ct{color:#ffe2ab;}',
+      '.lg-surf .lg-vcnote{font-size:12px;font-weight:700;color:#7c8b97;margin-left:8px;}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -419,12 +423,36 @@
     // the wall shows this event without being set up again.
     var mc; try { mc = await sb().rpc('vc_mine'); } catch (e) { mc = {}; }
     var mine = (mc && mc.data) || []; S._vcMine = mine;
+    // Every surface on the event, including any that belongs to no venue.
+    var af; try { af = await sb().rpc('lt_fields_list', { p_scope: 'tourn', p_event: S.eventId }); } catch (e) { af = {}; }
+    var allFields = (af && af.data) || [];
     var provs = []; mine.forEach(function (c) { if (!provs.some(function (p) { return p.id === c.provider_id; })) provs.push({ id: c.provider_id, name: c.venue }); });
     var useBar = provs.length ? '<div class="lg-tool" style="margin-top:0">' + provs.map(function (p) {
         return '<button class="lg-btn" onclick="FFPTourn.useMyCourts(\'' + p.id + '\')">' + ic('connected_tv') + 'Add courts from ' + esc(p.name) + '</button>';
       }).join('') + '</div>' : '';
     if (useBar) h2.insertAdjacentHTML('beforebegin', '<div id="tg-vcbar">' + useBar + '</div>');
-    if (!vs.length && !S.venAdd) { h2.innerHTML = '<div class="lg-empty">No venues yet. Add a venue, then its courts.</div>'; return; }
+    var claimed = {};
+    vs.forEach(function (v2) { (v2.surfaces || []).forEach(function (x) { claimed[x.id] = true; }); });
+    var orphans = allFields.filter(function (f2) { return !claimed[f2.id]; });
+    if (!vs.length && !orphans.length && !S.venAdd) { h2.innerHTML = '<div class="lg-empty">No venues yet. Add a venue, then its courts.</div>'; return; }
+    // A surface that belongs to no venue is still a surface: it has a screen,
+    // it can take a tablet, and Auto-plan will put matches on it. Shown here
+    // so it can be seen and removed, rather than only turning up on the grid.
+    function orphanCard() {
+      if (!orphans.length) return '';
+      return '<div class="lg-venue"><div class="lg-vh"><span class="lg-vpin"><span class="ms">connected_tv</span></span>'
+        + '<div class="g"><b>Courts added from your own venue</b><span>Not under a venue above. Remove any you did not mean to add, then Auto-plan again.</span></div></div>'
+        + '<div class="lg-surfs">' + orphans.map(function (s) {
+            var vc = (S._vcMine || []).find(function (c) { return c.id === s.venue_court_id; });
+            return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name)
+              + (vc && vc.name !== s.name ? '<span class="lg-vcnote">' + esc(vc.name) + ' at ' + esc(vc.venue) + '</span>' : '')
+              + '<span class="sp"></span>'
+              + (s.screen_code ? '<button class="lg-scrbtn perm" title="Scoreboard for this court" onclick="FFPTourn.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\',true)"><span class="ms">connected_tv</span>' + esc(s.screen_code) + '</button>' : '')
+              + '<button class="lg-btn sm" title="Connect a scoring tablet to this court" onclick="FFPTourn.pinPanel(\'' + s.id + '\',\'' + esc(s.name) + '\')"><span class="ms">tablet_android</span>Connect a tablet</button>'
+              + '<span class="ms x" onclick="FFPTourn.removeSurface(\'' + s.id + '\')">delete</span></div>'
+              + (S.pinFor === s.id ? pinHtml(s) : '');
+          }).join('') + '</div></div>';
+    }
     h2.innerHTML = vs.map(function (v2) {
       if (S.venEdit === v2.id) return venueEditor(v2);
       var surfaces = (v2.surfaces || []).map(function (s) {
@@ -447,7 +475,7 @@
         : '<div class="lg-addsurf"><button class="lg-btn ghostb" onclick="FFPTourn.addSurface(\'' + v2.id + '\')">' + ic('add') + 'Add surface</button></div>';
       return '<div class="lg-venue"><div class="lg-vh"><span class="lg-vpin"><span class="ms">location_on</span></span><div class="g"><b>' + esc(v2.name) + '</b><span>' + vmeta + '</span></div><span class="ms act" onclick="FFPTourn.editVenue(\'' + v2.id + '\')">edit</span><span class="ms act" onclick="FFPTourn.removeVenue(\'' + v2.id + '\')">delete</span></div>'
         + (surfaces ? '<div class="lg-surfs">' + surfaces + '</div>' : '') + addS + '</div>';
-    }).join('');
+    }).join('') + orphanCard();
     var f = document.getElementById('tg-vname'); if (f) f.focus();
     var sf = document.getElementById('tg-sfname'); if (sf) sf.focus();
   }
@@ -623,9 +651,11 @@
     var mr; try {
       mr = await sb().from('tourn_matches')
         .select('id,division_id,stage,group_label,round,play_round,draw,slot,status,home_entrant,away_entrant,scheduled_at,court,field_id')
-        .eq('tourn_id', S.eventId).neq('status', 'void');
+        .eq('tourn_id', S.eventId);
     } catch (e) { mr = { error: e }; }
-    var ms = (mr && mr.data) || [];
+    // A bye is not a match: nobody turns up for it and it takes no court,
+    // so it has no place on a schedule. A void one is cancelled.
+    var ms = ((mr && mr.data) || []).filter(function (m) { return m.status !== 'void' && m.status !== 'bye'; });
     if (!ms.length) { box.innerHTML = '<div class="lg-empty">No matches yet. Make the draw on the <b>Setup</b> tab.</div>'; return; }
 
     var offr = await sb().rpc('lt_officials_list', { p_scope: 'tourn', p_event: S.eventId }); S._offs = (offr && offr.data) || [];
@@ -647,13 +677,17 @@
     var breaks = ((br && br.data) || []).sort(function (a, b) { return (a.sort - b.sort) || String(a.starts_at).localeCompare(String(b.starts_at)); });
     S._breaks = breaks;
 
-    var built = ms.some(function (m) { return !!m.scheduled_at; });
+    var fById = {}; fields.forEach(function (f) { fById[f.id] = f; });
+    // A match with no court and no time is not scheduled, so the schedule is
+    // not built yet. Auto-plan gives every match a slot whether or not anyone
+    // knows who is playing it, so the answer is always the one press.
+    var placed = function (m) { return !!(m.scheduled_at && m.field_id && fById[m.field_id]); };
+    var built = ms.length > 0 && ms.every(placed);
     var shown = S.schedDiv ? ms.filter(function (m) { return m.division_id === S.schedDiv; }) : ms;
 
-    var fById = {}; fields.forEach(function (f) { fById[f.id] = f; });
     var days = {}, loose = [];
     shown.forEach(function (m) {
-      if (!m.scheduled_at || !m.field_id || !fById[m.field_id]) { loose.push(m); return; }
+      if (!placed(m)) { loose.push(m); return; }
       var d = dayKey(m); (days[d] = days[d] || {}); (days[d][m.field_id] = days[d][m.field_id] || []).push(m);
     });
 
@@ -700,9 +734,10 @@
     });
     if (loose.length) {
       loose.sort(function (a, b) { return playRank(a) - playRank(b) || (a.slot || 0) - (b.slot || 0); });
-      html += '<div class="sc-day">Not scheduled</div>'
-        + '<div class="sc-ch"><b>Waiting for a court and a time</b><span class="ct">' + loose.length + (loose.length === 1 ? ' match' : ' matches') + '</span>'
-        + '<button class="sc-add" onclick="FFPTourn.addMatch(\'loose\')">' + ic('add') + 'Add match</button></div>'
+      html += '<div class="sc-day">Not on the schedule yet</div>'
+        + '<div class="sc-ch warn"><b>' + loose.length + (loose.length === 1 ? ' match has' : ' matches have') + ' no court and no time</b>'
+        + '<span class="ct">Auto-plan gives them one</span>'
+        + '<button class="sc-add" onclick="FFPTourn.autoplan()">' + ic('auto_awesome') + 'Auto-plan now</button></div>'
         + loose.map(function (m) { return schedRow(m, null, true, true); }).join('')
         + (S.addMatch === 'loose' ? matchEditor() : '');
     }
@@ -2123,7 +2158,7 @@
 
   // Printed on load so a deploy can be confirmed in one look, without
   // guessing from the screen: open the console and read this line.
-  var BUILD = '2026-09-24.1';
+  var BUILD = '2026-09-24.3';
   console.log('[FFP Tournaments] build ' + BUILD);
   window.FFPTourn = {
     build: BUILD,
