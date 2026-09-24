@@ -23,6 +23,18 @@
     ['places', 'Every place played off (compass)']
   ];
 
+  var TABLET_URL = 'https://app.findfitpeople.com/tablet';
+  var QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+  // the QR is the shortcut; the PIN is what works when the camera will not play
+  function drawPinQr(url) {
+    var h = document.getElementById('tg-qr'); if (!h) return;
+    var go = function () {
+      var h2 = document.getElementById('tg-qr');
+      if (h2 && window.QRCode) { h2.innerHTML = ''; try { new window.QRCode(h2, { text: url, width: 132, height: 132, correctLevel: window.QRCode.CorrectLevel.M }); } catch (e) {} }
+    };
+    if (window.QRCode) { go(); return; }
+    var sc = document.createElement('script'); sc.src = QR_LIB; sc.onload = go; sc.onerror = function () {}; document.head.appendChild(sc);
+  }
   var S = { plan: { len: 30, start: '09:00', end: '21:00', gap: 0, rest: 15 }, view: 'list', eventId: null, detail: null, tab: 'details', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, grpDraw: false, brkConfirm: false };
 
   function injectBaseCss() {
@@ -164,6 +176,17 @@
       /* both shipped under AA on this table: seed 2.68:1, column headers 3.32:1;
          these sit last so they win over the rules above */
       '.lg-tsrow{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #f0f3f6;} .lg-tsrow .lab{text-align:center;font-size:12.5px;font-weight:700;color:#43525c;} .lg-tsrow .lg-in{padding:8px 10px;text-align:center;}',
+      /* Connecting a tablet: one PIN, wherever the surface is. */
+      '.tg-conn{border-top:2px solid #1980AD;margin:10px 0 4px;padding:16px 4px 6px;display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;}',
+      '.tg-conn .qr{width:132px;height:132px;flex:0 0 auto;border-radius:12px;background:#fff;box-shadow:0 3px 12px rgba(15,34,48,.12);display:grid;place-items:center;padding:8px;box-sizing:border-box;line-height:0;}',
+      '.tg-conn .qr img,.tg-conn .qr canvas{width:100%!important;height:100%!important;}',
+      '.tg-conn .g{flex:1 1 300px;min-width:0;}',
+      '.tg-conn .lb{font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:#13657f;}',
+      '.tg-conn .code{font-size:42px;font-weight:900;letter-spacing:.16em;color:#12232f;margin:8px 0 2px;font-variant-numeric:tabular-nums;}',
+      '.tg-conn .exp{font-size:12.5px;font-weight:700;color:#5b6b75;}',
+      '.tg-conn .how{font-size:13px;font-weight:700;color:#43525c;margin-top:12px;line-height:1.5;max-width:460px;} .tg-conn .how b{font-weight:900;color:#12232f;}',
+      '.tg-conn .acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}',
+      '.lg-btn.sm{padding:7px 11px;font-size:12.5px;} .lg-btn.sm .ms{font-size:16px;}',
       /* both shipped under AA on the entrants table: seed 2.68:1, column headers
          3.32:1. Last in the array so they win over the rules above. */
       '.tg-er .sd{color:#96690a;}',
@@ -506,7 +529,9 @@
           + '<span class="sp"></span>' + link
           // The code a TV is set up with — see screenPanel().
           + (s.screen_code ? '<button class="lg-scrbtn' + (s.permanent ? ' perm' : '') + '" title="Scoreboard for this court" onclick="FFPTourn.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\',' + (s.permanent ? 'true' : 'false') + ')"><span class="ms">' + (s.permanent ? 'connected_tv' : 'cast') + '</span>' + esc(s.screen_code) + '</button>' : '')
-          + '<span class="ms x" onclick="FFPTourn.removeSurface(\'' + s.id + '\')">delete</span></div>';
+          + '<button class="lg-btn sm" title="Connect a scoring tablet to this pitch" onclick="FFPTourn.pinPanel(\'' + s.id + '\',\'' + esc(s.name) + '\')"><span class="ms">tablet_android</span>Connect a tablet</button>'
+          + '<span class="ms x" onclick="FFPTourn.removeSurface(\'' + s.id + '\')">delete</span></div>'
+          + (S.pinFor === s.id ? pinHtml(s) : '');
       }).join('');
       var vmeta = [v2.city, (v2.maps_url ? '<a class="lg-maplink" href="' + esc(v2.maps_url) + '" target="_blank" rel="noopener">' + ic('map') + 'Map</a>' : '')].filter(Boolean).join(', ');
       var addS = (S.surfAdd === v2.id)
@@ -542,6 +567,27 @@
     toast(r.data ? (r.data + ' court' + (r.data === 1 ? '' : 's') + ' added, on their own screens') : 'All your courts are already here', 'success');
     renderTab();
   }
+  // ONE way to connect a tablet, wherever it is: six digits. The same panel sits in
+  // Courts & screens for a permanent court, so a volunteer learns it once.
+  function pinHtml(s2) {
+    var p = S.pin || {};
+    if (p.err) return '<div class="tg-conn"><span class="g"><span class="lb">' + esc(s2.name) + '</span>'
+      + '<div class="exp" style="color:#b23b2e;font-weight:800">' + esc(p.err) + '</div>'
+      + '<div class="acts"><button class="lg-btn" onclick="FFPTourn.pinPanel(\'' + s2.id + '\',\'' + esc(s2.name) + '\')">Try again</button>'
+      + '<button class="lg-btn ghost" onclick="FFPTourn.pinClose()">Close</button></div></span></div>';
+    if (!p.pin) return '<div class="tg-conn"><span class="g"><span class="lb">' + esc(s2.name) + '</span><div class="exp">Making a PIN…</div></span></div>';
+    var url = TABLET_URL + '?pin=' + encodeURIComponent(p.pin);
+    return '<div class="tg-conn">'
+      + '<span class="qr" id="tg-qr"></span>'
+      + '<span class="g"><span class="lb">' + esc(s2.name) + ', connect a tablet</span>'
+      + '<div class="code">' + esc(p.pin.slice(0, 3) + ' ' + p.pin.slice(3)) + '</div>'
+      + '<div class="exp">Good for 15 minutes. Anyone with the PIN can connect a tablet to this pitch.</div>'
+      + '<div class="how">On the tablet open <b>' + esc(TABLET_URL.replace(/^https?:\/\//, '')) + '</b> and type the PIN, or point its camera at this square. It stays here until you disconnect it.</div>'
+      + '<div class="acts"><button class="lg-btn" onclick="FFPTourn.pinPanel(\'' + s2.id + '\',\'' + esc(s2.name) + '\')"><span class="ms">refresh</span>New PIN</button>'
+      + '<button class="lg-btn" onclick="FFPTourn.copy(\'' + esc(url) + '\')"><span class="ms">content_copy</span>Copy the link</button>'
+      + '<button class="lg-btn ghost" onclick="FFPTourn.pinClose()"><span class="ms">close</span>Done</button></div></span></div>';
+  }
+
   async function linkCourt(fid, cid) {
     var r; try { r = await sb().rpc('lt_field_link', { p_field: fid, p_court: cid || null }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not change the screen', 'error'); return; }
@@ -2079,6 +2125,18 @@
       toast(paid ? 'Marked paid' : 'Marked unpaid', 'success');
       open(S.eventId);
     },
+    pinPanel: async function (fid, nm) {
+      S.pinFor = fid; S.pin = {}; renderVenues(document.getElementById('tg-body') || document.body);
+      var r; try { r = await sb().rpc('tablet_pair_start', { p_court: null, p_field: fid }); } catch (e) { r = { error: e }; }
+      var m = String((r.error && r.error.message) || '');
+      S.pin = r.error
+        ? { err: /not_yours/.test(m) ? 'That pitch is not yours to connect.' : /too_many_codes/.test(m) ? 'Too many PINs live for this pitch. Wait a few minutes.' : 'Could not make a PIN.' }
+        : { pin: r.data && r.data.pin };
+      await renderVenues(document.getElementById('tg-body') || document.body);
+      if (S.pin && S.pin.pin) drawPinQr(TABLET_URL + '?pin=' + encodeURIComponent(S.pin.pin));
+    },
+    pinClose: function () { S.pinFor = null; S.pin = null; renderVenues(document.getElementById('tg-body') || document.body); },
+    copy: function (t) { try { navigator.clipboard.writeText(t); toast('Copied', 'success'); } catch (e) {} },
     saveDetails: saveDetails, sportHint: sportHint, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, bulkAthletes: bulkAthletes, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit,
