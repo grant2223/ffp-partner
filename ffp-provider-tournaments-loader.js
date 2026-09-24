@@ -144,7 +144,47 @@
       '.tg-pend .row .sp{flex:1;}',
       '.tg-paid{display:inline-flex;align-items:center;gap:5px;flex:none;border:1.5px solid #d7dee5;background:#fff;color:#5c6f7c;border-radius:9px;padding:4px 9px;font:inherit;font-size:11.5px;font-weight:800;cursor:pointer;}',
       '.tg-paid .ms{font-size:16px;}',
-      '.tg-paid.on{border-color:#a8d5bd;background:#eef9f3;color:#0a7d52;}'
+      '.tg-paid.on{border-color:#a8d5bd;background:#eef9f3;color:#0a7d52;}',
+      '/* ── ALL DIVISIONS ON ONE SCHEDULE ──────────────────────────────── */',
+      '/* A court takes whatever fits, so one row\'s division is not the next',
+      '   one\'s. Each row carries its division colour on its leading edge and',
+      '   a key says which is which. */',
+      '.sc-key{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:14px 0 2px;}',
+      '.sc-key .k{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#43525c;}',
+      '.sc-key .k i{width:13px;height:13px;border-radius:4px;background:var(--dc);flex:none;}',
+      '.sc-m{border-left:5px solid var(--dc);padding-left:11px;background:linear-gradient(90deg,var(--db),rgba(255,255,255,0) 42%);}',
+      '.sc-m .g span{color:var(--dcd);font-weight:700;}',
+      '.tg-d0{--dc:#c98f00;--db:rgba(242,169,0,.12);--dcd:#8a6200;}',
+      '.tg-d1{--dc:#1980AD;--db:rgba(25,128,173,.10);--dcd:#14607f;}',
+      '.tg-d2{--dc:#7a4fc2;--db:rgba(122,79,194,.10);--dcd:#5b3a93;}',
+      '.tg-d3{--dc:#1f9d57;--db:rgba(31,157,87,.10);--dcd:#17743f;}',
+      '.tg-d4{--dc:#0f8b8d;--db:rgba(15,139,141,.10);--dcd:#0a6a6c;}',
+      '.tg-d5{--dc:#c0392b;--db:rgba(192,57,43,.10);--dcd:#a32b1f;}',
+      '.tg-d6{--dc:#3f51b5;--db:rgba(63,81,181,.10);--dcd:#333f96;}',
+      '.tg-d7{--dc:#8d6e35;--db:rgba(141,110,53,.10);--dcd:#6b5327;}',
+      '.tg-d8{--dc:#b5399b;--db:rgba(181,57,155,.10);--dcd:#8e2a79;}',
+      '.tg-d9{--dc:#4a6572;--db:rgba(74,101,114,.10);--dcd:#3a515b;}',
+      '.sc-day .tz{font-size:12.5px;font-weight:700;color:#5c6f7c;}',
+      '.lg-btn.ghost.sc-rb{color:#8a5a00;border-color:#e0cfa4;}',
+      '.sc-plan+.sc-plan{padding-top:0;}',
+      '/* Breaks: a court shut for part of a day. Saved, not typed, so a later',
+      '   Rebuild steps over the same ones. */',
+      '.sc-brk{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;padding:4px 2px 14px;border-bottom:1px solid var(--ffp-border);margin-bottom:4px;}',
+      '.sc-brk .lb{flex:1 0 100%;font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#5c6f7c;margin-bottom:1px;}',
+      '.sc-brk .b{display:inline-flex;align-items:center;gap:6px;background:#f4f7f9;border:1px solid var(--ffp-border);border-radius:10px;padding:5px 6px 5px 8px;}',
+      '.sc-brk .b em{font-style:normal;font-size:12.5px;font-weight:700;color:#5c6f7c;}',
+      '.sc-brk .b .lg-sel{width:auto;min-width:118px;padding:6px 26px 6px 9px;font-size:12.5px;}',
+      '.sc-brk .b .lg-sel.dy{min-width:124px;}',
+      '.sc-brk .b .lg-in{padding:6px 8px;font-size:12.5px;}',
+      '.sc-brk .b .lg-in.w{width:112px;}',
+      '.sc-brk .b .lg-in.nm{width:140px;}',
+      '.sc-brk .b .sc-ic{color:#8a99a8;}',
+      '.sc-brk .sc-abk{padding:7px 12px;font-size:12.5px;}',
+      '/* A break shown where it falls, so the gap in the day is not a mystery. */',
+      '.sc-bar{display:flex;align-items:center;gap:9px;padding:9px 11px;margin:2px 0;border-radius:8px;background:repeating-linear-gradient(135deg,#f1f5f8,#f1f5f8 9px,#e7edf2 9px,#e7edf2 18px);border:1px dashed #c8d4dd;}',
+      '.sc-bar .ms{color:#5c6f7c;font-size:17px;}',
+      '.sc-bar b{font-size:12.5px;font-weight:900;color:#3c4d59;}',
+      '.sc-bar span{font-size:12px;font-weight:700;color:#475763;}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -533,29 +573,61 @@
     if (m.stage === 'group') return 'Group ' + (m.group_label || '');
     return (m._draw ? m._draw + ', ' : '') + stageLbl(m);
   }
+  // The schedule belongs to the tournament, not to one division. A court takes
+  // whatever fits, so every division is laid out together in one pass and each
+  // row carries its division's colour. Auto-plan is pressed once; after that the
+  // grid is edited by hand, and Rebuild has to be asked for.
+  function hm(t) { return String(t || '').slice(0, 5); }
+  function dayShortYmd(ymd) {
+    var a = String(ymd).split('-'); if (a.length !== 3) return String(ymd);
+    var p = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2], 12, 0, 0));
+    return DOW[p.getUTCDay()] + ' ' + (+a[2]) + ' ' + MON[+a[1] - 1];
+  }
+  function planNow() {
+    var g = function (id, d) { var el = document.getElementById(id); var v = el ? String(el.value || '').trim() : ''; return v || d; };
+    return { len: Math.max(5, +g('tg-mlen', '30') || 30), start: g('tg-dstart', '09:00'), end: g('tg-dend', '21:00'),
+             days: Math.max(1, +g('tg-days', '1') || 1), gap: Math.max(0, +g('tg-rgap', '0') || 0), rest: Math.max(0, +g('tg-rest', '0') || 0) };
+  }
+  function planSet() { S.plan = planNow(); }
+  function setSchedDiv(v) { S.schedDiv = v || ''; renderTab(); }
+
   async function renderSchedule(host) {
     var divs = S.detail.divisions || [];
     if (!S.divId && divs.length) S.divId = divs[0].id;
+    var P = S.plan || (S.plan = { len: 30, start: '09:00', end: '21:00', days: 1, gap: 0, rest: 0 });
     var fr; try { fr = await sb().rpc('lt_fields_list', { p_scope: 'tourn', p_event: S.eventId }); } catch (e) { fr = { error: e }; }
     var fields = (fr && fr.data) || []; S._fields = fields;
-    host.innerHTML =
-      '<div class="lg-tool">' + (divs.length > 1 ? '<select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'schedule\')">' + divOpts() + '</select>' : '')
-      + '<span class="sp"></span><button class="lg-btn pri" onclick="FFPTourn.autoplan()">' + ic('auto_awesome') + 'Auto-plan</button></div>'
-      + '<div class="sc-plan">Matches of <input class="lg-in" id="tg-mlen" type="number" value="30"> min, '
-      + '<input class="lg-in w" id="tg-dstart" type="time" value="09:00"> to <input class="lg-in w" id="tg-dend" type="time" value="21:00">, '
-      + 'over <input class="lg-in" id="tg-days" type="number" min="1" value="1"> day(s), '
-      + '<input class="lg-in" id="tg-rgap" type="number" min="0" value="0"> min between rounds</div>'
-      + '<div id="tg-schedlist"><div class="lg-empty">Loading…</div></div>';
-    var box = document.getElementById('tg-schedlist');
-    if (!S.divId) { box.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
+    host.innerHTML = '<div id="tg-schedtop"></div><div id="tg-schedlist"><div class="lg-empty">Loading…</div></div>';
+    var top = document.getElementById('tg-schedtop'), box = document.getElementById('tg-schedlist');
+    if (!divs.length) { box.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
     if (!fields.length) { box.innerHTML = '<div class="lg-empty">Add a venue and its courts on the <b>Venues</b> tab, then Auto-plan.</div>'; return; }
 
-    var names = await entrantNames(S.divId); await loadEntrantsArr();
-    var mr; try { mr = await sb().from('tourn_matches').select('id,stage,group_label,round,play_round,draw,slot,status,home_entrant,away_entrant,scheduled_at,court,field_id').eq('division_id', S.divId).neq('status', 'void'); } catch (e) { mr = { error: e }; }
+    var divIx = {}, divNm = {};
+    divs.forEach(function (d, i) { divIx[d.id] = i % 10; divNm[d.id] = d.name; });
+    S._divIx = divIx; S._divNm = divNm;
+
+    // Names and draw labels are per division, so they are gathered per division
+    // and merged. Draw keys repeat between divisions, hence the composite key.
+    var names = {}, dnm = {}, dsort = {};
+    for (var i = 0; i < divs.length; i++) {
+      var did = divs[i].id;
+      var nm = await entrantNames(did);
+      Object.keys(nm).forEach(function (k) { names[k] = nm[k]; });
+      try {
+        var dl = await sb().rpc('tourn_draws_list', { p_division: did });
+        ((dl && dl.data) || []).forEach(function (d) { dnm[did + '|' + d.key] = d.name; dsort[did + '|' + d.key] = d.sort; });
+      } catch (e) {}
+    }
+    await loadEntrantsArr();
+
+    var mr; try {
+      mr = await sb().from('tourn_matches')
+        .select('id,division_id,stage,group_label,round,play_round,draw,slot,status,home_entrant,away_entrant,scheduled_at,court,field_id')
+        .eq('tourn_id', S.eventId).neq('status', 'void');
+    } catch (e) { mr = { error: e }; }
     var ms = (mr && mr.data) || [];
     if (!ms.length) { box.innerHTML = '<div class="lg-empty">No matches yet. Make the draw on the <b>Setup</b> tab.</div>'; return; }
-    var dnm = {}, dsort = {};
-    try { var dl = await sb().rpc('tourn_draws_list', { p_division: S.divId }); ((dl && dl.data) || []).forEach(function (d) { dnm[d.key] = d.name; dsort[d.key] = d.sort; }); } catch (e) {}
+
     var offr = await sb().rpc('lt_officials_list', { p_scope: 'tourn', p_event: S.eventId }); S._offs = (offr && offr.data) || [];
     var moMap = {};
     try {
@@ -565,29 +637,64 @@
     } catch (e) {}
     ms.forEach(function (m) {
       m._names = names; m._offs = moMap[m.id] || [];
-      m._draw = (m.draw && m.draw !== 'main') ? (dnm[m.draw] || '') : ''; m._dsort = dsort[m.draw] || 0;
+      var dk = m.division_id + '|' + m.draw;
+      m._draw = (m.draw && m.draw !== 'main') ? (dnm[dk] || '') : ''; m._dsort = dsort[dk] || 0;
+      m._dix = divIx[m.division_id] || 0; m._dnm = divNm[m.division_id] || '';
     });
     S._sched = ms;
 
+    var br; try { br = await sb().from('tourn_breaks').select('id,field_id,on_date,starts_at,ends_at,label,sort').eq('tourn_id', S.eventId); } catch (e) { br = { error: e }; }
+    var breaks = ((br && br.data) || []).sort(function (a, b) { return (a.sort - b.sort) || String(a.starts_at).localeCompare(String(b.starts_at)); });
+    S._breaks = breaks;
+
+    var built = ms.some(function (m) { return !!m.scheduled_at; });
+    var shown = S.schedDiv ? ms.filter(function (m) { return m.division_id === S.schedDiv; }) : ms;
+
     var fById = {}; fields.forEach(function (f) { fById[f.id] = f; });
     var days = {}, loose = [];
-    ms.forEach(function (m) {
+    shown.forEach(function (m) {
       if (!m.scheduled_at || !m.field_id || !fById[m.field_id]) { loose.push(m); return; }
       var d = dayKey(m); (days[d] = days[d] || {}); (days[d][m.field_id] = days[d][m.field_id] || []).push(m);
     });
+
+    // The days a break can be pinned to: the ones in play, or failing that the
+    // ones the event is planned to run for.
+    var dayList = Object.keys(days).sort();
+    if (!dayList.length) {
+      var base = (S.detail.event && S.detail.event.starts_at) || evDateStr(new Date().toISOString());
+      var a = String(base).split('-');
+      for (var k = 0; k < P.days; k++) {
+        var p = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2] + k, 12, 0, 0));
+        dayList.push(p.getUTCFullYear() + '-' + pad2(p.getUTCMonth() + 1) + '-' + pad2(p.getUTCDate()));
+      }
+    }
+
+    top.innerHTML = schedTop(built, divs, fields, breaks, dayList, P) + (built ? divKey(divs) : '');
+
     var html = '';
-    Object.keys(days).sort().forEach(function (d) {
+    dayList.forEach(function (d) {
+      if (!days[d]) return;
       html += '<div class="sc-day">' + esc(evDayLong(d)) + '<span class="tz">' + esc(tzLabel()) + ' time</span></div>';
       fields.forEach(function (f) {
         var list = days[d][f.id]; if (!list || !list.length) return;
         list.sort(function (a, b) { return new Date(a.scheduled_at) - new Date(b.scheduled_at) || playRank(a) - playRank(b); });
         var slot = d + '|' + f.id;
+        // Breaks that apply to this court on this day, shown where they fall so
+        // the gap in the day is not a mystery.
+        var bks = breaks.filter(function (b) { return (!b.field_id || b.field_id === f.id) && (!b.on_date || b.on_date === d); });
+        var items = list.map(function (m) { return { t: evTimeStr(m.scheduled_at), m: m }; })
+          .concat(bks.map(function (b) { return { t: hm(b.starts_at), b: b }; }))
+          .sort(function (x, y) { return String(x.t).localeCompare(String(y.t)); });
+        var mi = -1;
         html += '<div class="sc-ch"><b>' + esc(f.name) + '</b>'
           + (f.is_main ? '<span class="mn">Main court</span>'
                        : '<button class="sc-mkm" onclick="FFPTourn.setMainCourt(\'' + f.id + '\')">Make main court</button>')
           + '<span class="ct">' + list.length + (list.length === 1 ? ' match' : ' matches') + '</span>'
           + '<button class="sc-add" onclick="FFPTourn.addMatch(\'' + slot + '\')">' + ic('add') + 'Add match</button></div>'
-          + list.map(function (m, i) { return schedRow(m, f.id, i === 0, i === list.length - 1); }).join('')
+          + items.map(function (it) {
+              if (it.b) return breakBar(it.b);
+              mi++; return schedRow(it.m, f.id, mi === 0, mi === list.length - 1);
+            }).join('')
           + (S.addMatch === slot ? matchEditor() : '');
       });
     });
@@ -599,7 +706,97 @@
         + loose.map(function (m) { return schedRow(m, null, true, true); }).join('')
         + (S.addMatch === 'loose' ? matchEditor() : '');
     }
-    box.innerHTML = html;
+    if (!html) html = '<div class="lg-empty">No schedule yet. Auto-plan builds every division in one go, so no two are given the same court at the same moment.</div>';
+    box.innerHTML = html + (S.rbAsk ? rebuildConfirm() : '');
+  }
+
+  function divKey(divs) {
+    if (divs.length < 2) return '';
+    return '<div class="sc-key">' + divs.map(function (d, i) {
+      return '<span class="k tg-d' + (i % 10) + '"><i></i>' + esc(d.name) + '</span>';
+    }).join('') + '</div>';
+  }
+
+  function schedTop(built, divs, fields, breaks, dayList, P) {
+    var dopt = '<option value="">All divisions</option>' + divs.map(function (d) {
+      return '<option value="' + d.id + '"' + (S.schedDiv === d.id ? ' selected' : '') + '>' + esc(d.name) + '</option>';
+    }).join('');
+    return '<div class="lg-tool">'
+      + (divs.length > 1 ? '<select class="lg-sel" style="width:auto;min-width:190px" title="Filters what you are looking at. Auto-plan always builds every division." onchange="FFPTourn.setSchedDiv(this.value)">' + dopt + '</select>' : '')
+      + '<span class="sp"></span>'
+      + (built
+        ? '<button class="lg-btn ghost sc-rb" onclick="FFPTourn.rebuildAsk()">' + ic('warning') + 'Rebuild schedule</button>'
+        : '<button class="lg-btn pri" onclick="FFPTourn.autoplan()">' + ic('auto_awesome') + 'Auto-plan the tournament</button>')
+      + '</div>'
+      + '<div class="sc-plan">Matches of <input class="lg-in" id="tg-mlen" type="number" value="' + P.len + '" oninput="FFPTourn.planSet()"> min, '
+      + '<input class="lg-in w" id="tg-dstart" type="time" value="' + esc(P.start) + '" oninput="FFPTourn.planSet()"> to '
+      + '<input class="lg-in w" id="tg-dend" type="time" value="' + esc(P.end) + '" oninput="FFPTourn.planSet()">, '
+      + 'over <input class="lg-in" id="tg-days" type="number" min="1" value="' + P.days + '" oninput="FFPTourn.planSet()"> day(s)</div>'
+      + '<div class="sc-plan"><input class="lg-in" id="tg-rgap" type="number" min="0" value="' + P.gap + '" oninput="FFPTourn.planSet()"> min between rounds, '
+      + '<input class="lg-in" id="tg-rest" type="number" min="0" value="' + P.rest + '" oninput="FFPTourn.planSet()"> min rest between a player\'s matches</div>'
+      + breakBlock(fields, breaks, dayList);
+  }
+
+  // A court can be shut for part of a day. Breaks are saved, not typed into the
+  // planner, so a later Rebuild steps over the same ones.
+  function breakBlock(fields, breaks, dayList) {
+    var courtOpts = function (sel) {
+      return '<option value="">All courts</option>' + fields.map(function (f) {
+        return '<option value="' + f.id + '"' + (sel === f.id ? ' selected' : '') + '>' + esc(f.name) + '</option>';
+      }).join('');
+    };
+    var dayOpts = function (sel) {
+      return '<option value="">Every day</option>' + dayList.map(function (d) {
+        return '<option value="' + d + '"' + (sel === d ? ' selected' : '') + '>' + esc(dayShortYmd(d)) + '</option>';
+      }).join('');
+    };
+    return '<div class="sc-brk"><span class="lb">Breaks, when a court is not in play</span>'
+      + breaks.map(function (b) {
+          return '<span class="b" data-id="' + b.id + '">'
+            + '<select class="lg-sel bk-f" onchange="FFPTourn.breakSave(\'' + b.id + '\')">' + courtOpts(b.field_id) + '</select>'
+            + '<select class="lg-sel dy bk-d" onchange="FFPTourn.breakSave(\'' + b.id + '\')">' + dayOpts(b.on_date) + '</select>'
+            + '<input class="lg-in w bk-s" type="time" value="' + hm(b.starts_at) + '" onchange="FFPTourn.breakSave(\'' + b.id + '\')"><em>to</em>'
+            + '<input class="lg-in w bk-e" type="time" value="' + hm(b.ends_at) + '" onchange="FFPTourn.breakSave(\'' + b.id + '\')">'
+            + '<input class="lg-in nm bk-l" value="' + esc(b.label || '') + '" placeholder="What for" onchange="FFPTourn.breakSave(\'' + b.id + '\')">'
+            + '<button class="sc-ic" title="Remove break" onclick="FFPTourn.breakRemove(\'' + b.id + '\')">' + ic('close') + '</button></span>';
+        }).join('')
+      + '<button class="lg-btn ghostb sc-abk" onclick="FFPTourn.breakAdd()">' + ic('add') + 'Add break</button></div>';
+  }
+  function breakBar(b) {
+    return '<div class="sc-bar">' + ic('pause')
+      + '<b>' + esc(b.label || 'Break') + '</b>'
+      + '<span>' + hm(b.starts_at) + ' to ' + hm(b.ends_at) + ', court closed</span></div>';
+  }
+  async function breakAdd() {
+    var r; try { r = await sb().from('tourn_breaks').insert({ tourn_id: S.eventId, starts_at: '13:00', ends_at: '14:00', label: 'Break', sort: (S._breaks || []).length }); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not add the break', 'error'); return; }
+    renderTab();
+  }
+  async function breakSave(id) {
+    var row = document.querySelector('.sc-brk .b[data-id="' + id + '"]'); if (!row) return;
+    var s = row.querySelector('.bk-s').value, e2 = row.querySelector('.bk-e').value;
+    if (!s || !e2 || e2 <= s) { toast('A break has to end after it starts', 'error'); renderTab(); return; }
+    var patch = { field_id: row.querySelector('.bk-f').value || null, on_date: row.querySelector('.bk-d').value || null,
+                  starts_at: s, ends_at: e2, label: row.querySelector('.bk-l').value || null };
+    var r; try { r = await sb().from('tourn_breaks').update(patch).eq('id', id); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not save the break', 'error'); return; }
+    toast('Break saved', 'success'); renderTab();
+  }
+  async function breakRemove(id) {
+    var r; try { r = await sb().from('tourn_breaks').delete().eq('id', id); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not remove it', 'error'); return; }
+    renderTab();
+  }
+
+  function rebuildAsk() { S.rbAsk = true; renderTab(); }
+  function rebuildCancel() { S.rbAsk = false; renderTab(); }
+  function rebuildConfirm() {
+    return '<div class="lg-cfm"><div class="lg-cfm-in">'
+      + '<span class="ms lg-cfm-ic" style="color:#b07800">warning</span>'
+      + '<div class="lg-cfm-t">Rebuild the whole schedule?</div>'
+      + '<div class="lg-cfm-b">This replans every match in every division and will move matches that players and officials have already been given times for. Results already entered are kept.</div>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPTourn.rebuildCancel()">Cancel</button>'
+      + '<button class="lg-btn pri" onclick="FFPTourn.autoplan(1)">Yes, rebuild</button></div></div></div>';
   }
   function schedRow(m, fieldId, isFirst, isLast) {
     var names = m._names || {};
@@ -607,10 +804,12 @@
     var dv = (m.scheduled_at ? evDateStr(m.scheduled_at) : '') || ((S.detail.event && S.detail.event.starts_at) || '');
     var open = S.schedOpen === m.id;
     var offTxt = (m._offs || []).map(function (o) { return (o.role ? o.role + ' ' : '') + o.name; }).join(', ');
-    var row = '<div class="sc-m' + (open ? ' open' : '') + '" data-id="' + m.id + '">'
+    // One court hosts several divisions in a day, so the row says which this is.
+    var sub = (m._dnm ? m._dnm + ', ' : '') + matchLabel(m) + (offTxt ? ', ' + offTxt : '');
+    var row = '<div class="sc-m tg-d' + (m._dix || 0) + (open ? ' open' : '') + '" data-id="' + m.id + '">'
       + '<input class="lg-in t st-t" type="time" value="' + tv + '" onchange="FFPTourn.schedSet(\'' + m.id + '\')">'
       + '<div class="g"><b>' + esc(names[m.home_entrant] || 'TBD') + ' v ' + esc(names[m.away_entrant] || 'TBD') + '</b>'
-      + '<span>' + esc(matchLabel(m)) + (offTxt ? ', ' + esc(offTxt) : '') + '</span></div>'
+      + '<span>' + esc(sub) + '</span></div>'
       + '<select class="lg-sel c st-f" title="Move to another court" onchange="FFPTourn.schedSet(\'' + m.id + '\')">' + surfaceOpts(S._fields, m.field_id) + '</select>'
       + '<button class="sc-ic" title="Earlier" ' + (isFirst ? 'disabled' : '') + ' onclick="FFPTourn.schedMove(\'' + m.id + '\',-1)">' + ic('arrow_upward') + '</button>'
       + '<button class="sc-ic" title="Later" ' + (isLast ? 'disabled' : '') + ' onclick="FFPTourn.schedMove(\'' + m.id + '\',1)">' + ic('arrow_downward') + '</button>'
@@ -653,13 +852,22 @@
     toast('Main court set', 'success'); renderTab();
   }
   function matchEditor() {
-    return '<div class="lg-edit lg-maed"><select class="lg-sel" id="tg-mm-h" style="flex:1;min-width:150px">' + entOpts(null) + '</select>'
+    // The schedule shows every division at once, so an added match has to say
+    // which division it belongs to rather than inherit whichever was last open.
+    var divs = (S.detail && S.detail.divisions) || [];
+    var dsel = divs.length < 2 ? '' :
+      '<select class="lg-sel" style="flex:0 0 170px;min-width:0" onchange="FFPTourn.setAddDiv(this.value)">'
+      + divs.map(function (d) { return '<option value="' + d.id + '"' + (d.id === S.divId ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join('')
+      + '</select>';
+    return '<div class="lg-edit lg-maed">' + dsel + '<select class="lg-sel" id="tg-mm-h" style="flex:1;min-width:150px">' + entOpts(null) + '</select>'
       + '<span style="font-weight:800;color:#8a99a6">v</span><select class="lg-sel" id="tg-mm-a" style="flex:1;min-width:150px">' + entOpts(null) + '</select>'
       + '<input class="lg-in" id="tg-mm-r" type="number" placeholder="Round" value="1" style="width:90px">'
       + '<button class="lg-btn pri" onclick="FFPTourn.saveMatch()">' + ic('check') + 'Add</button>'
       + '<button class="lg-btn ghost" onclick="FFPTourn.cancelMatch()">Cancel</button></div>';
   }
   function addMatch(slot) { S.addMatch = slot || 'loose'; renderTab(); }
+  // Changing the division changes who can be picked, so the roster is reloaded.
+  async function setAddDiv(id) { S.divId = id; await loadEntrantsArr(); renderTab(); }
   function cancelMatch() { S.addMatch = null; renderTab(); }
   async function saveMatch() {
     var h = (document.getElementById('tg-mm-h') || {}).value || null, a = (document.getElementById('tg-mm-a') || {}).value || null, rd = +((document.getElementById('tg-mm-r') || {}).value) || 1;
@@ -678,17 +886,20 @@
     }
     S.addMatch = null; toast('Match added', 'success'); renderTab();
   }
-  async function autoplan() {
-    if (!S.divId) { toast('Pick a division', 'error'); return; }
-    var gv = function (k, d) { var el = document.getElementById(k); var v = el ? String(el.value || '').trim() : ''; return v || d; };
-    var len = +((document.getElementById('tg-mlen') || {}).value) || 30;
-    var args = { p_scope: 'tourn', p_division: S.divId, p_match_len: len,
-      p_day_start: gv('tg-dstart', '09:00'), p_day_end: gv('tg-dend', '21:00'),
-      p_days: Math.max(1, +gv('tg-days', '1') || 1),
-      p_round_gap: Math.max(0, +gv('tg-rgap', '0') || 0), p_round_barrier: true };
-    var r; try { r = await sb().rpc('lt_autoplan', args); } catch (e) { r = { error: e }; }
-    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a surface first (Venues tab)' : 'Could not plan', 'error'); return; }
-    toast((r.data || 0) + ' matches planned', 'success'); renderTab();
+  // One press builds every division at once, so two divisions cannot be handed
+  // the same court at the same moment, and nothing is left waiting for a court
+  // that another division is quietly sitting on. Pressed once; after that the
+  // grid is edited by hand and replanning has to be asked for.
+  async function autoplan(isRebuild) {
+    var P = planNow(); S.plan = P;
+    var args = { p_tourn: S.eventId, p_match_len: P.len, p_day_start: P.start, p_day_end: P.end,
+                 p_days: P.days, p_round_gap: P.gap, p_rest: P.rest, p_divisions: null, p_tz: evTz() };
+    var r; try { r = await sb().rpc('tourn_autoplan_all', args); } catch (e) { r = { error: e }; }
+    S.rbAsk = false;
+    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a surface first (Venues tab)' : 'Could not plan', 'error'); renderTab(); return; }
+    var d = r.data || {}, n = d.placed || 0, over = d.over || 0;
+    toast(n + (n === 1 ? ' match planned' : ' matches planned') + (over ? ', ' + over + ' ran past the last day' : ''), over ? 'error' : 'success');
+    renderTab();
   }
   async function schedSet(id) {
     var row = document.querySelector('.sc-m[data-id="' + id + '"]'); if (!row) return;
@@ -1912,7 +2123,7 @@
 
   // Printed on load so a deploy can be confirmed in one look, without
   // guessing from the screen: open the console and read this line.
-  var BUILD = '2026-09-23.11';
+  var BUILD = '2026-09-24.1';
   console.log('[FFP Tournaments] build ' + BUILD);
   window.FFPTourn = {
     build: BUILD,
@@ -1953,6 +2164,9 @@
     confirmBracket: confirmBracket, cancelBracket: cancelBracket, doBracket: doBracket, monradOpen: monradOpen, setDrawFormat: setDrawFormat, setSideDraws: setSideDraws, setDraw: setDraw, monradRound: monradRound, awardPanel: awardPanel, doAward: doAward, saveBracketResults: saveBracketResults,
     pickImg: pickImg, entLogo: entLogo, addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap,
     autoplan: autoplan, schedSet: schedSet,
+    setSchedDiv: setSchedDiv, planSet: planSet, setAddDiv: setAddDiv,
+    breakAdd: breakAdd, breakSave: breakSave, breakRemove: breakRemove,
+    rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
     schedToggle: schedToggle, schedMove: schedMove, setMainCourt: setMainCourt,
     togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch,
     addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
