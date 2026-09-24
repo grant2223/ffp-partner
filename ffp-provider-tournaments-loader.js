@@ -1108,9 +1108,10 @@
   function drawSizeRow(dv, k) {
     if (k === 'grp') return '';
     var cur = dv.draw_size || 0;
-    var sel = DRAW_SIZES.map(function (n) {
-      return '<option value="' + n + '"' + (n === cur ? ' selected' : '') + '>' + n + ' players</option>';
-    }).join('');
+    var sel = (cur ? '' : '<option value="">Not set</option>')
+      + DRAW_SIZES.map(function (n) {
+          return '<option value="' + n + '"' + (n === cur ? ' selected' : '') + '>' + n + '</option>';
+        }).join('');
     var has = (dv.match_count || 0) > 0;
     if (S.openDrawAsk === dv.id) {
       return '<div class="tg-opendraw warn"><b>Replace the draw with an empty one?</b>'
@@ -1119,18 +1120,19 @@
         + '<button class="lg-btn ghost" onclick="FFPTourn.openDrawCancel()">Cancel</button>'
         + '<button class="lg-btn pri" onclick="FFPTourn.openDivDraw(1)">Yes, open it empty</button></div>';
     }
-    return '<div class="tg-opendraw"><span class="lb">Draw size</span>'
+    return '<div class="tg-opendraw"><span class="lb">Most players in this division</span>'
       + '<select class="lg-sel" id="tg-dsize" style="width:auto;min-width:130px">' + sel + '</select>'
       + '<button class="lg-btn" onclick="FFPTourn.openDivDraw()">' + ic('grid_on')
       + (has ? 'Open an empty draw' : 'Open the draw') + '</button>'
-      + '<span class="hint">Builds every round now, before anyone enters. Auto-plan can then schedule the whole tournament.</span></div>';
+      + '<span class="hint">The most this division takes is what its draw is built to. Every round is made now, empty, so the whole tournament can be scheduled before a single entry is in. Names drop into the slots as results come.</span></div>';
   }
   function openDrawCancel() { S.openDrawAsk = null; renderTab(); }
   async function openDivDraw(confirmed) {
     var dv = ((S.detail && S.detail.divisions) || []).find(function (d) { return d.id === S.divId; }) || {};
     if ((dv.match_count || 0) > 0 && !confirmed) { S.openDrawAsk = dv.id; renderTab(); return; }
     var el = document.getElementById('tg-dsize');
-    var size = +((el && el.value) || dv.draw_size || 16) || 16;
+    var size = +((el && el.value) || dv.draw_size || 0) || 0;
+    if (!size) { toast('Pick how many players this division takes first', 'error'); return; }
     S.openDrawAsk = null;
     var r; try { r = await sb().rpc('tourn_bracket_open', { p_division: S.divId, p_size: size }); } catch (e) { r = { error: e }; }
     if (r.error) {
@@ -1181,7 +1183,10 @@
       num_groups: +v('tg-ng') || null,
       groups_advance: k === 'gk' ? (+v('tg-adv') || 2) : (k === 'grp' ? 0 : (dv.groups_advance || 2)),
       third_place: segVal('tg-third') === 'true',
-      side_draws: v('tg-side') || 'none'
+      side_draws: v('tg-side') || 'none',
+      // the most players this division takes, and the shape its draw is built
+      // to — it belongs with the rest of the format, not only with the draw
+      draw_size: +v('tg-dsize') || null
     };
     var r; try { r = await sb().rpc('tourn_division_save', { p_tourn: S.eventId, p_id: S.divId, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not save the format', 'error'); return false; }
@@ -2206,7 +2211,7 @@
 
   // Printed on load so a deploy can be confirmed in one look, without
   // guessing from the screen: open the console and read this line.
-  var BUILD = '2026-09-24.4';
+  var BUILD = '2026-09-24.6';
   console.log('[FFP Tournaments] build ' + BUILD);
   window.FFPTourn = {
     build: BUILD,
