@@ -134,7 +134,17 @@
       '.tg-band i{flex:1;height:2px;border-radius:2px;background:#e3e9ee;}',
       '.tg-band.top b{color:#8a6200;} .tg-band.top i{background:linear-gradient(90deg,#f2a900,rgba(242,169,0,.12));}',
       '.tg-band.fin b{color:#12232f;font-size:12px;letter-spacing:.12em;}',
-      '.tg-band.fin i{background:linear-gradient(90deg,#f2a900,rgba(242,169,0,.12));height:3px;}'
+      '.tg-band.fin i{background:linear-gradient(90deg,#f2a900,rgba(242,169,0,.12));height:3px;}',
+      '.tg-pend{border:1.5px solid #e6d3a6;border-radius:12px;background:#fffdf6;padding:12px 14px;margin-bottom:16px;}',
+      '.tg-pend .hd{font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:#8a5a00;margin-bottom:8px;}',
+      '.tg-pend .row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #f0e6cc;flex-wrap:wrap;}',
+      '.tg-pend .row:first-of-type{border-top:none;}',
+      '.tg-pend .row b{font-size:14px;font-weight:800;color:#12232f;}',
+      '.tg-pend .row .sub{font-size:12px;font-weight:700;color:#6a7c8a;}',
+      '.tg-pend .row .sp{flex:1;}',
+      '.tg-paid{display:inline-flex;align-items:center;gap:5px;flex:none;border:1.5px solid #d7dee5;background:#fff;color:#5c6f7c;border-radius:9px;padding:4px 9px;font:inherit;font-size:11.5px;font-weight:800;cursor:pointer;}',
+      '.tg-paid .ms{font-size:16px;}',
+      '.tg-paid.on{border-color:#a8d5bd;background:#eef9f3;color:#0a7d52;}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -708,6 +718,19 @@
       + '<div class="lg-fld"><div class="lg-lab">Banner, 16:9, as shown in the app</div><div class="lg-banner16" onclick="FFPTourn.pickImg(\'cover\')" style="' + (ev.cover_url ? 'background-image:url(\'' + esc(ev.cover_url) + '\')' : '') + '">' + (ev.cover_url ? '' : '<span class="ms">image</span><span>Add banner</span>') + '</div></div></div>'
       + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">City</div><input class="lg-in" id="tg-city" list="tg-cityl" value="' + esc(ev.city || '') + '"><datalist id="tg-cityl">' + dlOpts(cityNames()) + '</datalist></div><div class="lg-fld"><div class="lg-lab">Country</div><input class="lg-in" id="tg-country" list="tg-cntl" value="' + esc(ev.country || '') + '"><datalist id="tg-cntl">' + dlOpts(countryNames()) + '</datalist></div></div>'
       + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Starts</div><input class="lg-in" id="tg-start" type="date" value="' + esc(ev.starts_at || '') + '"></div><div class="lg-fld"><div class="lg-lab">Ends</div><input class="lg-in" id="tg-end" type="date" value="' + esc(ev.ends_at || '') + '"></div></div>'
+      // Sign up: when entries open and close, what it costs, and how they pay.
+      // reg_opens_at / reg_closes_at are timestamps, so date and time are two
+      // fields and joinDT() puts them back together on save.
+      + '<div class="lg-fld"><div class="lg-lab">Sign up opens</div><div class="lg-2">'
+      +   '<input class="lg-in" id="tg-ro-d" type="date" value="' + esc(dPart(ev.reg_opens_at)) + '">'
+      +   '<input class="lg-in" id="tg-ro-t" type="time" value="' + esc(tPart(ev.reg_opens_at)) + '"></div></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Sign up closes</div><div class="lg-2">'
+      +   '<input class="lg-in" id="tg-rc-d" type="date" value="' + esc(dPart(ev.reg_closes_at)) + '">'
+      +   '<input class="lg-in" id="tg-rc-t" type="time" value="' + esc(tPart(ev.reg_closes_at)) + '"></div></div>'
+      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Entry fee, per entry</div><input class="lg-in" id="tg-fee" type="number" min="0" step="0.01" value="' + (ev.entry_fee != null ? esc(ev.entry_fee) : '') + '"></div>'
+      +   '<div class="lg-fld"><div class="lg-lab">Currency</div><input class="lg-in" id="tg-cur" maxlength="3" placeholder="AED" value="' + esc(ev.currency || '') + '"></div></div>'
+      + '<div class="lg-fld"><div class="lg-lab">How to pay <span style="font-weight:500;color:#8a99a8;">\u2014 shown to the entrant after they sign up</span></div>'
+      +   '<textarea class="lg-in" id="tg-payhow" rows="2" placeholder="Bank transfer to\u2026 , or pay on the day at the desk">' + esc(ev.pay_instructions || '') + '</textarea></div>'
       + '<div class="lg-fld"><div class="lg-lab">About</div><textarea class="lg-in" id="tg-desc" rows="3">' + esc(ev.description || '') + '</textarea></div>'
       + '<div class="lg-fld"><div class="lg-lab">Rules</div><textarea class="lg-in" id="tg-rules" rows="3">' + esc(ev.rules || '') + '</textarea></div>'
       + '<div class="lg-fld"><div class="lg-lab">Live stream URL <span style="font-weight:500;color:#8a99a8;">— the tournament\'s main channel, YouTube, Twitch or Facebook</span></div><input class="lg-in" id="tg-stream" value="' + esc(ev.stream_url || '') + '" placeholder="https://…"></div>'
@@ -929,10 +952,23 @@
     bk.onclick = function (e) { if (e.target === bk) bk.remove(); };
   }
   function v(id) { var e = document.getElementById(id); return e ? e.value : ''; }
+  // a timestamptz split into the two inputs a person actually fills in
+  function dPart(ts) { return ts ? String(ts).slice(0, 10) : ''; }
+  function tPart(ts) { if (!ts) return ''; var d = new Date(ts); if (isNaN(d)) return '';
+    return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function joinDT(dId, tId) {
+    var d = v(dId); if (!d) return '';
+    var t = v(tId) || '00:00';
+    return new Date(d + 'T' + t).toISOString();
+  }
+
   async function saveDetails() {
     var p = { name: v('tg-name'),
       city: v('tg-city'), country: v('tg-country'), starts_at: v('tg-start') || null, ends_at: v('tg-end') || null,
-      status: segVal('tg-status') || 'draft', description: v('tg-desc'), rules: v('tg-rules') };
+      status: segVal('tg-status') || 'draft', description: v('tg-desc'), rules: v('tg-rules'),
+      reg_opens_at: joinDT('tg-ro-d', 'tg-ro-t'), reg_closes_at: joinDT('tg-rc-d', 'tg-rc-t'),
+      entry_fee: v('tg-fee') === '' ? null : v('tg-fee'), currency: (v('tg-cur') || '').toUpperCase(),
+      pay_instructions: v('tg-payhow') };
     var r; try { r = await sb().rpc('tourn_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Save failed', 'error'); return; }
     try { await sb().rpc('tourn_set_stream', { p_event: S.eventId, p_url: v('tg-stream') }); } catch (e) {}
@@ -995,6 +1031,16 @@
   }
 
   // ENTRANTS (inline)
+  // Paid or not, and what it was paid by. One tap marks it, so the desk can
+  // take cash and move on without opening anything.
+  function paidCell(en) {
+    var on = !!en.paid;
+    var t = on ? ('Paid' + (en.paid_method_label ? ', ' + en.paid_method_label : '')) : 'Not paid';
+    return '<button class="tg-paid' + (on ? ' on' : '') + '" title="' + esc(t) + '"'
+      + ' onclick="FFPTourn.togglePaid(\'' + en.id + '\',' + (on ? 'false' : 'true') + ')">'
+      + ic(on ? 'paid' : 'radio_button_unchecked') + (on ? 'Paid' : 'Unpaid') + '</button>';
+  }
+
   async function renderEntrants(host) {
     var divs = S.detail.divisions || [];
     if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
@@ -1011,7 +1057,20 @@
       S._grpLabels = [...new Set(((gm && gm.data) || []).map(function (x) { return x.group_label; }).filter(Boolean))];
     } catch (e) { S._grpLabels = []; }
     var rows = (r && r.data) || []; var host2 = document.getElementById('tg-roster');
-    host2.innerHTML = rows.length ? rows.map(function (en) {
+    // Entries that have signed up but are not in yet. A team is made by its
+    // captain and waits here until the organiser lets it in.
+    var waiting = rows.filter(function (en) { return en.status === 'pending'; });
+    var pend = waiting.length
+      ? '<div class="tg-pend"><div class="hd">' + waiting.length + (waiting.length === 1 ? ' entry waiting' : ' entries waiting') + '</div>'
+        + waiting.map(function (en) {
+            return '<div class="row"><b>' + esc(en.name) + '</b>'
+              + '<span class="sub">' + esc(en.kind === 'individual' ? 'Individual' : 'Team') + (en.club ? ', ' + esc(en.club) : '') + '</span>'
+              + '<span class="sp"></span>'
+              + '<button class="lg-btn sm" onclick="FFPTourn.decide(\'' + en.id + '\',true)">' + ic('check') + 'Approve</button>'
+              + '<button class="lg-btn sm ghost" onclick="FFPTourn.decide(\'' + en.id + '\',false)">Decline</button></div>';
+          }).join('') + '</div>'
+      : '';
+    host2.innerHTML = pend + (rows.length ? rows.map(function (en) {
       var flag = en.nationality ? ', ' + esc(en.nationality) : '';
       var isTeam = en.kind !== 'individual';
       var sqBtn = isTeam ? '<button class="lg-btn sm" onclick="FFPTourn.sqToggle(\'' + en.id + '\')">' + ic('groups') + 'Squad (' + squadFor(en.id).length + ')</button>' : '';
@@ -1023,9 +1082,9 @@
       // Editing replaces the row in place, so the list never jumps.
       if (S.entEdit === en.id) return entEditHtml(en);
       var edBtn = '<span class="ms act" title="Edit details" onclick="FFPTourn.editEntrant(\'' + en.id + '\')">edit</span>';
-      var row = '<div class="lg-row">' + tCrest + '<div class="g"><b>' + esc(en.name) + '</b> <span>' + esc(en.status) + (en.group_label ? ', Group ' + esc(en.group_label) : '') + (en.kind === 'individual' ? flag : '') + '</span></div>' + sqBtn + edBtn + '</div>';
+      var row = '<div class="lg-row">' + tCrest + paidCell(en) + '<div class="g"><b>' + esc(en.name) + '</b> <span>' + esc(en.status) + (en.group_label ? ', Group ' + esc(en.group_label) : '') + (en.kind === 'individual' ? flag : '') + '</span></div>' + sqBtn + edBtn + '</div>';
       return row + (isTeam && S.sqOpen === en.id ? '<div class="lg-sq" id="lg-sq-' + en.id + '"><div class="lg-sqsrch">' + ic('search') + '<input id="lg-sqq-' + en.id + '" placeholder="Search FFP or type a name" value="' + esc((S._sqQ || {})[en.id] || '') + '" oninput="FFPTourn.sqSearch(\'' + en.id + '\',this.value)"></div><div id="lg-sqres-' + en.id + '">' + sqResHtml(en.id) + '</div></div>' : '');
-    }).join('') : '<div class="lg-empty">No entrants yet. Members self-register in the app, or add them here.</div>';
+    }).join('') : '<div class="lg-empty">No entrants yet. Members self-register in the app, or add them here.</div>');
     S._roster = rows;
   }
 
@@ -1871,6 +1930,16 @@
         : { pin: r.data && r.data.pin };
       await renderVenues(document.getElementById('tg-body') || document.body);
       if (S.pin && S.pin.pin) drawPinQr(TABLET_URL + '?pin=' + encodeURIComponent(S.pin.pin));
+    },
+    decide: async function (id, ok) {
+      var r; try { r = await sb().rpc('tourn_entrant_approve', { p_id: id, p_approve: !!ok }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast(ok ? 'Could not approve' : 'Could not decline', 'error'); return; }
+      toast(ok ? 'In' : 'Declined', 'success'); renderTab();
+    },
+    togglePaid: async function (id, paid) {
+      var r; try { r = await sb().rpc('tourn_entrant_pay', { p_id: id, p_paid: !!paid, p_method: null, p_ref: null, p_amount: null }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast('Could not change that', 'error'); return; }
+      toast(paid ? 'Marked paid' : 'Marked unpaid', 'success'); renderTab();
     },
     pinClose: function () { S.pinFor = null; S.pin = null; renderVenues(document.getElementById('tg-body') || document.body); },
     copy: function (t) { try { navigator.clipboard.writeText(t); toast('Copied', 'success'); } catch (e) {} },
