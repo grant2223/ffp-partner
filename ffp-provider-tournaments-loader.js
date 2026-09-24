@@ -190,7 +190,72 @@
       /* both shipped under AA on the entrants table: seed 2.68:1, column headers
          3.32:1. Last in the array so they win over the rules above. */
       '.tg-er .sd{color:#96690a;}',
-      '.tg-er.hd span{color:#61707c;}'
+      '.tg-er.hd span{color:#61707c;}',
+      /* ── BRACKET BOX ──────────────────────────────────────────────────
+         The actions used to be pinned to the top right corner, which is the
+         first player's score box, and the result tag to his name. Both move
+         into a strip along the bottom, next to the day, time and court. */
+      '.tg-m .tg-foot{display:flex;align-items:center;gap:8px;padding:5px 6px 5px 9px;border-top:1px solid #eef1f6;background:#fbfcfd;}',
+      '.tg-m .tg-foot .w{flex:1;min-width:0;font-size:11px;font-weight:700;color:#5c6f7c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.tg-m .tg-foot .w b{font-weight:900;color:#12232f;}',
+      '.tg-m .tg-foot .w.none{color:#8a5a00;font-weight:800;}',
+      '.tg-m .tg-macts{position:static;top:auto;right:auto;flex:none;}',
+      '.tg-m .tg-kind{position:static;left:auto;top:auto;flex:none;align-self:center;margin-right:2px;color:#8a5508;}',
+      '.tg-m .tg-foot .lg-mcbtn{padding:3px;} .tg-m .tg-foot .lg-mcbtn .ms{font-size:18px;}',
+      /* shipped at 2.43:1 on white, and the w/o tag at 4.07:1 */
+      '.tg-rnd .rh{color:#5c6f7c;}',
+      /* ── SCHEDULE, EVERY DAY ON SCREEN ────────────────────────────────
+         One heading and one grid per day, and a key so a colour in the grid
+         names a division. */
+      '.tg-dayh{display:flex;align-items:baseline;gap:12px;margin:26px 0 10px;padding-bottom:7px;border-bottom:2px solid var(--ffp-text,#12232f);}',
+      '.tg-dayh b{font-size:13px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:#12232f;}',
+      '.tg-dayh .dt{font-size:13px;font-weight:800;color:#12232f;}',
+      '.tg-dayh .ct{margin-left:auto;font-size:12px;font-weight:800;color:#5c6f7c;}',
+      '.tg-dayh .ct.none{color:#8a5a00;}',
+      '.tg-dayh+.tg-grid{border-top:none;}',
+      '.tg-dayempty{padding:16px 2px 4px;font-size:13px;font-weight:700;color:#6a7c8a;}',
+      '.tg-key{display:flex;flex-wrap:wrap;gap:7px 16px;align-items:center;margin:4px 0 2px;}',
+      '.tg-key .k{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#43525c;}',
+      '.tg-key .k i{width:13px;height:13px;border-radius:4px;background:var(--dc);flex:none;}',
+      /* the cell reads as its division at a glance. Grid children default to
+         min-width:auto, so a long name pushes the grid past its own track. */
+      '.tg-gm{border-left-width:5px;background:linear-gradient(90deg,var(--db),rgba(255,255,255,0) 78%);min-width:0;}',
+      '.tg-grid .c{min-width:0;}',
+      /* the light division colour was 2.68:1 on its own tint. These are the
+         same hues darkened to clear AA, measured on rendered pixels. */
+      '.tg-gm u{color:var(--dcd,var(--dc));}',
+      '.tg-d0{--dcd:#8a6200;} .tg-d1{--dcd:#14607f;} .tg-d2{--dcd:#5b3a93;}',
+      '.tg-d3{--dcd:#17743f;} .tg-d4{--dcd:#8f2b20;} .tg-d5{--dcd:#0b5c67;}',
+      /* three actions in the screen panel: Close stays small, the two actions
+         share the rest, or Open the board wraps onto two lines. */
+      '.lg-scr .lg-cfm-a .lg-btn{flex:1 1 auto;white-space:nowrap;}',
+      '.lg-scr .lg-cfm-a .lg-btn.ghost{flex:0 0 auto;}',
+      /* ── MONRAD / PLACES: ROUNDS ACROSS, POSITION BANDS DOWN ──────────
+         One ladder read by round, so a player can see what each match is
+         being played for and look ahead at the ones not yet decided. */
+      '.tg-mon{overflow-x:auto;padding-bottom:10px;}',
+      '.tg-monin{display:flex;gap:18px;align-items:flex-start;min-width:min-content;}',
+      '.tg-mrnd{flex:0 0 232px;width:232px;}',
+      '.tg-mrnd .tg-m{margin-bottom:10px;}',
+      '.tg-mrh{font-size:11px;font-weight:900;letter-spacing:.11em;text-transform:uppercase;color:#12232f;padding-bottom:7px;border-bottom:2px solid var(--ffp-text,#12232f);margin-bottom:4px;display:flex;align-items:baseline;gap:8px;}',
+      '.tg-mrh span{margin-left:auto;font-size:11px;font-weight:800;letter-spacing:0;text-transform:none;color:#5c6f7c;}',
+      '.tg-band{display:flex;align-items:center;gap:8px;margin:16px 0 8px;}',
+      '.tg-band b{font-size:10.5px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:#43525c;white-space:nowrap;}',
+      '.tg-band i{flex:1;height:2px;border-radius:2px;background:#e3e9ee;}',
+      /* gold = these two are still alive for the title */
+      '.tg-band.top b{color:#8a6200;} .tg-band.top i{background:linear-gradient(90deg,#f2a900,rgba(242,169,0,.12));}',
+      '.tg-band.fin b{color:#12232f;font-size:12px;letter-spacing:.12em;}',
+      '.tg-band.fin i{background:linear-gradient(90deg,#f2a900,rgba(242,169,0,.12));height:3px;}',
+      '.tg-m.ahead{border-style:dashed;border-color:#c4d0da;}',
+      /* an undecided slot is the whole point of the look-ahead, and it shipped
+         at #9aa8b4, 2.43:1 on white. The winner green shipped at 4.11:1. */
+      '.tg-m .s.tbd b{color:#5c6f7c;font-weight:700;}',
+      '.tg-m .s.win b{color:#0a7d52;}',
+      '.tg-byes{margin-top:2px;}',
+      '.tg-bye{display:flex;align-items:center;gap:7px;padding:5px 9px;border-bottom:1px solid #f0f3f5;}',
+      '.tg-bye b{flex:1;min-width:0;font-size:12px;font-weight:700;color:#43525c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.tg-bye u{text-decoration:none;font-size:10.5px;font-weight:900;color:#8a6200;flex:none;}',
+      '.tg-bye em{font-style:normal;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#5c6f7c;flex:none;}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -379,11 +444,14 @@
       +   '<div><b>3</b><span>Casting from a tablet instead? Tap the board, turn on 16:9, then full screen.</span></div>'
       + '</div>'
       + '<div class="lg-cfm-a"><button class="lg-btn ghost" id="tg-scr-x">Close</button>'
-      +   '<button class="lg-btn pri" id="tg-scr-c">' + ic('content_copy') + 'Copy the address</button></div>'
+      +   '<button class="lg-btn" id="tg-scr-c">' + ic('content_copy') + 'Copy address</button>'
+      +   '<button class="lg-btn pri" id="tg-scr-o">' + ic('open_in_new') + 'Open the board</button></div>'
       + '</div>';
     document.body.appendChild(bk);
     bk.querySelector('#tg-scr-x').onclick = function () { bk.remove(); };
     bk.querySelector('#tg-scr-c').onclick = function () { copyScreen('tg-scrurl'); };
+    // look at the board yourself, without setting up a TV first
+    bk.querySelector('#tg-scr-o').onclick = function () { window.open(url, '_blank', 'noopener'); };
   }
   function copyScreen(id) {
     var el = document.getElementById(id); if (!el) return;
@@ -671,9 +739,9 @@
     var divSel = '<select class="lg-sel" style="width:auto;min-width:180px" onchange="FFPTourn.setSchedDiv(this.value)">'
       + (divs.length > 1 ? '<option value="all"' + (S.schedDiv === 'all' ? ' selected' : '') + '>All divisions</option>' : '')
       + divs.map(function (d) { return '<option value="' + d.id + '"' + (d.id === S.schedDiv ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join('') + '</select>';
-    var daySel = S.schedView === 'court'
-      ? '<select class="lg-sel" style="width:auto;min-width:170px" onchange="FFPTourn.setSchedDay(this.value)">'
-        + days.map(function (d) { return '<option value="' + d.n + '"' + (d.n === S.schedDay ? ' selected' : '') + '>Day ' + d.n + ', ' + fmtDay(d.d) + '</option>'; }).join('') + '</select>' : '';
+    // By court shows EVERY day, one grid under the next, so nothing hides behind
+    // a picker. The day dropdown is gone.
+    var daySel = '';
     host.innerHTML = '<div class="lg-tool"><span class="lg-lab" style="margin:0">View</span>' + viewSel + divSel + daySel
       + '<span class="sp"></span><button class="lg-btn" onclick="FFPTourn.planSettings()">' + ic('tune') + 'Plan settings</button>'
       + (S.schedView === 'division' && S.schedDiv !== 'all' ? '<button class="lg-btn" onclick="FFPTourn.addMatch()">' + ic('add') + 'Add match</button>' : '')
@@ -705,20 +773,29 @@
     var unHtml = un.length ? '<div class="tg-unh">' + un.length + ' not scheduled</div>' + un.map(schedRow).join('') : '';
 
     if (S.schedView === 'court') {
-      var day = days.find(function (d) { return d.n === S.schedDay; }) || days[0];
-      var on = ms.filter(function (m) { return m._day === S.schedDay; });
-      var times = [...new Set(on.map(function (m) { return new Date(m.scheduled_at).getTime(); }))].sort(function (a, b) { return a - b; });
-      var cells = '<div class="th"></div>' + fields.map(function (f) { return '<div class="th">' + esc(f.name) + '</div>'; }).join('');
-      times.forEach(function (t) {
-        cells += '<div class="tm">' + zoneTime(t, evTz()) + '</div>';
-        fields.forEach(function (f) {
-          var m = on.find(function (x) { return x.field_id === f.id && new Date(x.scheduled_at).getTime() === t; });
-          cells += '<div class="c">' + (m ? gridCell(m) : '') + '</div>';
+      // a key, so a colour in the grid means a division you can name
+      var key = sdivs.length > 1
+        ? '<div class="tg-key">' + sdivs.map(function (d) {
+            return '<span class="k ' + divColour(d.id) + '"><i></i>' + esc(d.name) + '</span>'; }).join('') + '</div>'
+        : '';
+      var body = days.map(function (day) {
+        var on = ms.filter(function (m) { return m._day === day.n; });
+        var head = '<div class="tg-dayh"><b>Day ' + day.n + '</b><span class="dt">' + esc(fmtDay(day.d)) + '</span>'
+          + '<span class="ct' + (on.length ? '' : ' none') + '">'
+          + (on.length ? on.length + (on.length === 1 ? ' match' : ' matches') : 'Nothing on court') + '</span></div>';
+        if (!on.length) return head + '<div class="tg-dayempty">No matches on this day yet.</div>';
+        var times = [...new Set(on.map(function (m) { return new Date(m.scheduled_at).getTime(); }))].sort(function (a, b) { return a - b; });
+        var cells = '<div class="th"></div>' + fields.map(function (f) { return '<div class="th">' + esc(f.name) + '</div>'; }).join('');
+        times.forEach(function (t) {
+          cells += '<div class="tm">' + zoneTime(t, evTz()) + '</div>';
+          fields.forEach(function (f) {
+            var m = on.find(function (x) { return x.field_id === f.id && new Date(x.scheduled_at).getTime() === t; });
+            cells += '<div class="c">' + (m ? gridCell(m) : '') + '</div>';
+          });
         });
-      });
-      host2.innerHTML = cov + unHtml
-        + (times.length ? '<div class="tg-grid" style="grid-template-columns:76px repeat(' + fields.length + ',1fr)">' + cells + '</div>'
-                        : '<div class="lg-empty">Nothing on court on day ' + S.schedDay + ', ' + esc(fmtDay(day.d)) + ' yet.</div>');
+        return head + '<div class="tg-grid" style="grid-template-columns:76px repeat(' + fields.length + ',1fr)">' + cells + '</div>';
+      }).join('');
+      host2.innerHTML = cov + key + unHtml + body;
       return;
     }
     if (S.schedView === 'division') {
@@ -1533,6 +1610,10 @@
       + '<option value="monrad"' + (fmt === 'monrad' ? ' selected' : '') + '>Monrad, everyone keeps playing</option>'
       + '</select>';
     var side = dv.side_draws || 'none';
+    // Monrad and the placement format are one ladder, not a shelf of draws: every
+    // player keeps playing and every position gets decided. Those get the round
+    // view instead of a dropdown of brackets.
+    var mon = fmt === 'monrad' || side === 'places';
     var sideCtl = fmt === 'monrad' ? '' : '<select class="lg-sel" style="width:auto;min-width:230px" title="Extra draws for players knocked out" onchange="FFPTourn.setSideDraws(this.value)">'
       + SIDE_DRAWS.map(function (o) { return '<option value="' + o[0] + '"' + (side === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('')
       + '</select>';
@@ -1573,6 +1654,7 @@
       var head = '<div class="tg-dw"><b>' + slots + ' draw</b><span>' + (dv.entrant_count || 0) + ' players, ' + Math.max(0, slots - Object.keys(placed).length) + ' open slots. Pick a name into each slot, or fill them in seed order. Empty slots become byes when you confirm.</span></div>';
       host2.insertAdjacentHTML('beforebegin', head);
     }
+    if (mon) { host2.innerHTML = monHtml(ms); return; }
     // One bracket per draw: Main / Cup, then Plate, Bowl, Consolation or the
     // placement draws. A dropdown picks which one is on screen.
     var draws = [], seen = {};
@@ -1588,7 +1670,8 @@
     var byRound = {}; dms.filter(function (m) { return m.stage !== 'third'; }).forEach(function (m) { (byRound[m.round] = byRound[m.round] || []).push(m); });
     var cols = Object.keys(byRound).sort(function (a, b) { return a - b; }).map(function (rd) {
       var items = byRound[rd].sort(function (a, b) { return a.slot - b.slot; });
-      return '<div class="tg-rnd"><div class="rh">' + esc(stageLbl(items[0])) + '</div>' + items.map(mHtml).join('') + '</div>';
+      return '<div class="tg-rnd"><div class="rh">' + esc(stageLbl(items[0])) + '</div>'
+        + items.map(function (m) { return mHtml(m, false); }).join('') + '</div>';
     }).join('');
     var third = dms.find(function (m) { return m.stage === 'third'; });
     host2.innerHTML = drawCtl + '<div class="tg-brk"><div class="tg-brkin">' + cols + '</div></div>'
@@ -1601,8 +1684,12 @@
         .map(function (e) { return '<option value="' + e.id + '"' + (cur && cur.id === e.id ? ' selected' : '') + '>' + esc(e.name) + (e.seed != null ? ' [' + e.seed + ']' : '') + '</option>'; }).join('');
     return '<select class="slotsel" onchange="FFPTourn.drawPlace(\'' + m.id + '\',\'' + side + '\',this.value)">' + opts + '</select>';
   }
-  function mHtml(m) {
+  function mHtml(m, mon) {
     if (m.status === 'void') return '<div class="tg-m tg-void"></div>';
+    // In the round view a match with nobody in it yet is the point: a player
+    // looks ahead to see who they might meet, so the slot says so in full.
+    var tbd = mon ? 'To be decided' : 'TBD';
+    var ahead = mon && !m.home && !m.away ? ' ahead' : '';
     // while the draw is open, the first round is a row of name pickers
     if (S._drawOpen && m.round === 1) {
       return '<div class="tg-m" data-id="' + m.id + '"><div class="s">' + slotSel(m, 'home') + '</div><div class="s">' + slotSel(m, 'away') + '</div></div>';
@@ -1615,10 +1702,69 @@
       ? '<button class="lg-mcbtn tg-mcbtn" title="Walkover, retirement or disqualification" onclick="FFPTourn.awardPanel(\'' + m.id + '\')">' + ic('gavel') + '</button>' : '';
     var kindTag = m.result_kind && m.result_kind !== 'played'
       ? '<span class="tg-kind">' + esc(AWARD_SHORT[m.result_kind] || m.result_kind) + '</span>' : '';
-    return '<div class="tg-m" data-id="' + m.id + '"><div class="s ' + (hw ? 'win' : (m.home ? '' : 'tbd')) + '"><b>' + esc((m.home && m.home.name) || 'TBD') + '</b><input type="number" class="tg-hs" value="' + (m.home_score != null ? m.home_score : '') + '" placeholder="–"></div>'
-      + '<div class="s ' + (aw ? 'win' : (m.away ? '' : 'tbd')) + '"><b>' + esc((m.away && m.away.name) || 'TBD') + '</b><input type="number" class="tg-as" value="' + (m.away_score != null ? m.away_score : '') + '" placeholder="–"></div>' + kindTag
-      + ((aw2 || mc) ? '<div class="tg-macts">' + aw2 + mc + '</div>' : '') + '</div>';
+    // The day, time and court live in a strip along the bottom, with the result
+    // tag and the two action buttons. Nothing sits on top of a name or a score.
+    var when = m.scheduled_at
+      ? '<span class="w"><b>Day ' + dayOf(m.scheduled_at) + ', ' + zoneTime(m.scheduled_at, evTz()) + '</b>' + (m.court ? ', ' + esc(m.court) : '') + '</span>'
+      : '<span class="w none">Not scheduled</span>';
+    return '<div class="tg-m' + ahead + '" data-id="' + m.id + '"><div class="s ' + (hw ? 'win' : (m.home ? '' : 'tbd')) + '"><b>' + esc((m.home && m.home.name) || tbd) + '</b><input type="number" class="tg-hs" value="' + (m.home_score != null ? m.home_score : '') + '" placeholder="–"></div>'
+      + '<div class="s ' + (aw ? 'win' : (m.away ? '' : 'tbd')) + '"><b>' + esc((m.away && m.away.name) || tbd) + '</b><input type="number" class="tg-as" value="' + (m.away_score != null ? m.away_score : '') + '" placeholder="–"></div>'
+      + '<div class="tg-foot">' + when + kindTag + '<div class="tg-macts">' + aw2 + mc + '</div></div></div>';
   }
+  // ── MONRAD / PLACES: ONE LADDER, READ BY ROUND ────────────────────────
+  function ordNum(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+  // What a match decides: the finishing places still open to the two players in
+  // it. tourn_bracket sends the band, from the draw's own first place and size
+  // narrowed by the round. Down to two, the match names those two places.
+  function bandLabel(lo, hi) {
+    if (lo == null || hi == null) return 'Playing on';
+    if (hi <= lo) return ordNum(lo) + ' place';
+    if (hi - lo === 1) return lo === 1 ? 'Final' : ordNum(lo) + ' and ' + ordNum(hi);
+    return 'Playing for ' + lo + ' to ' + hi;
+  }
+  // A bye is not a match, so it does not get a match box
+  function byeHtml(m) {
+    var e = m.home || m.away; if (!e) return '';
+    return '<div class="tg-bye"><b>' + esc(e.name || '') + '</b>'
+      + (e.seed != null ? '<u>[' + e.seed + ']</u>' : '') + '<em>Bye</em></div>';
+  }
+  function monHtml(ms) {
+    var live = (ms || []).filter(function (m) { return m.status !== 'void'; });
+    if (!live.length) return '<div class="lg-empty">No draw yet. Create it and the names go in afterwards.</div>';
+    var prs = [];
+    live.forEach(function (m) {
+      var p = Number(m.play_round || m.round) || 1; m._pr = p;
+      if (prs.indexOf(p) < 0) prs.push(p);
+    });
+    prs.sort(function (a, b) { return a - b; });
+    var cols = prs.map(function (pr) {
+      var inR = live.filter(function (m) { return m._pr === pr; });
+      var played = inR.filter(function (m) { return m.status !== 'bye'; });
+      var byes = inR.filter(function (m) { return m.status === 'bye'; });
+      var bands = [], bseen = {};
+      played.forEach(function (m) {
+        var k = m.place_lo + '-' + m.place_hi;
+        if (!bseen[k]) { bseen[k] = 1; bands.push({ k: k, lo: Number(m.place_lo), hi: Number(m.place_hi) }); }
+      });
+      bands.sort(function (a, b) { return (a.lo - b.lo) || (a.hi - b.hi); });
+      var body = bands.map(function (b) {
+        var list = played.filter(function (m) { return m.place_lo + '-' + m.place_hi === b.k; })
+                         .sort(function (x, y) { return (x.slot || 0) - (y.slot || 0); });
+        // gold = still alive for the title
+        var cls = (b.hi - b.lo === 1) ? (b.lo === 1 ? ' fin' : ' top') : (b.lo === 1 ? ' top' : '');
+        return '<div class="tg-band' + cls + '"><b>' + esc(bandLabel(b.lo, b.hi)) + '</b><i></i></div>'
+          + list.map(function (m) { return mHtml(m, true); }).join('');
+      }).join('');
+      if (byes.length) {
+        body += '<div class="tg-band"><b>' + byes.length + ' through on a bye</b><i></i></div>'
+          + '<div class="tg-byes">' + byes.map(byeHtml).join('') + '</div>';
+      }
+      return '<div class="tg-mrnd"><div class="tg-mrh">Round ' + pr + '<span>' + played.length
+        + (played.length === 1 ? ' match' : ' matches') + '</span></div>' + body + '</div>';
+    }).join('');
+    return '<div class="tg-mon"><div class="tg-monin">' + cols + '</div></div>';
+  }
+
   async function openDraw() {
     var n = +((document.getElementById('tg-dsize') || {}).value) || 0;
     if (!n) { toast('Pick a draw size', 'error'); return; }
