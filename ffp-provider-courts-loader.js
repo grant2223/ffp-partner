@@ -14,7 +14,7 @@
   function root() { return document.getElementById('vc-root'); }
   function ic(n) { return '<span class="ms">' + n + '</span>'; }
   function pid() { return window.FFP_PROVIDER && window.FFP_PROVIDER.id; }
-  var S = { courts: [], edit: null, confirm: null, promos: [], pdel: null, draft: null };
+  var S = { courts: [], edit: null, confirm: null, promos: [], pdel: null, draft: null, tablets: [] };
 
   function css() {
     if (document.getElementById('vc-css')) return;
@@ -125,7 +125,21 @@
       /* both shipped just under AA on this panel: the warning line at 4.49:1 and
          the connected-tablets heading at 4.32:1. Last in the array so they win. */
       '.vc-ov .warn{color:#8c5f00;}',
-      '.vc-ov .tl h3{color:#61737f;}'
+      '.vc-ov .tl h3{color:#61737f;}',
+      // ── Tablets: rows on the panel, never cards. The mode is said in words
+      //    in its own column, so a row carries no icon to say it again.
+      '#vc-root .vt-hd{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin:34px 0 14px;}',
+      '#vc-root .vt-r{display:flex;align-items:center;gap:16px;padding:15px 2px;border-bottom:1px solid var(--ffp-line,#e7edf2);}',
+      '#vc-root .vt-r:last-child{border-bottom:0;}',
+      '#vc-root .vt-n{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;justify-content:center;}',
+      '#vc-root .vt-n b{font-size:15.5px;font-weight:900;color:var(--ffp-text,#12232f);letter-spacing:-.2px;}',
+      '#vc-root .vt-n span{font-size:12.5px;font-weight:700;color:var(--ffp-text-muted,#6a7c8a);}',
+      '#vc-root .vt-k{flex:0 0 168px;font-size:13px;font-weight:800;color:var(--ffp-blue,#1980AD);}',
+      '#vc-root .vt-s{flex:0 0 152px;font-size:13px;font-weight:800;color:#0a7d52;}',
+      '#vc-root .vt-s.dim{color:#7d8d99;}',
+      '#vc-root .vt-c{flex:0 0 118px;font-size:13px;font-weight:700;color:var(--ffp-text-muted,#6a7c8a);}',
+      '#vc-root .vt-none{padding:20px 2px;border-top:2px solid #12232f;font-size:14px;font-weight:600;color:#6a7c8a;}',
+      '@media (max-width:900px){#vc-root .vt-r{flex-wrap:wrap;gap:8px 14px;}#vc-root .vt-k,#vc-root .vt-s,#vc-root .vt-c{flex:0 0 auto;}}'
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -136,6 +150,9 @@
     S.courts = (r && r.data) || [];
     var q; try { q = await sb().rpc('vp_list', { p_provider: p }); } catch (e) { q = { error: e }; }
     S.promos = (q && q.data) || [];
+    // every tablet this provider has, whatever it is bound to
+    var t; try { t = await sb().rpc('provider_tablets', { p_provider: p }); } catch (e) { t = { error: e }; }
+    S.tablets = (t && t.data) || [];
   }
 
   function rowHtml(c) {
@@ -187,7 +204,7 @@
       + '<div><i>2</i><div><b>Type the court\'s code</b><span>Or the full address. Leave it open: the screen stays awake.</span></div></div>'
       + '<div><i>3</i><div><b>Play</b><span>Tournament and league matches on that court show up by themselves. At a club night, players scan the screen\'s QR code.</span></div></div>'
       + '</div>';
-    h.innerHTML = top + body + (S.courts.length ? promosHtml() : '') + how;
+    h.innerHTML = top + body + (S.courts.length ? promosHtml() : '') + tabletsHtml() + how;
     var f = document.getElementById('vc-ren'); if (f) { f.focus(); f.select(); }
   }
 
@@ -429,9 +446,115 @@
     } catch (e) { toast(t, 'info'); }
   }
 
+  // ── TABLETS ──────────────────────────────────────────────────────────────
+  // A tablet you cannot see is a tablet you cannot take away. An organiser
+  // tablet reaches every fixture that organiser runs, so being able to kill a
+  // lost one is the whole safety story — and until now there was nowhere in the
+  // portal that listed one, or could make one.
+  //
+  // No icon on a row: the mode column already says what the tablet is in words,
+  // and a glyph saying it again is a double-up (and the only thing in a row that
+  // could render as the word "tablet_mac" if the font were slow).
+  var TB_LABEL = { organiser: 'Travels with you', court: 'Bolted to a court', field: 'One pitch, one event' };
+
+  // fmt() is scoped inside tablet(); this list needs its own, and only wants
+  // the day it was connected, not the minute.
+  var TB_MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function tbDate(t) {
+    // Day then month, always. toLocaleDateString follows the machine's locale,
+    // so the same row read "2 Oct" on one laptop and "Oct 2" on another.
+    try {
+      if (!t) return '';
+      var d = new Date(t);
+      return isNaN(+d) ? '' : d.getDate() + ' ' + TB_MON[d.getMonth()];
+    } catch (e) { return ''; }
+  }
+
+  function seenTxt(iso) {
+    if (!iso) return { t: 'Never used', dim: true };
+    var ms = Date.now() - new Date(iso).getTime();
+    if (!isFinite(ms)) return { t: 'Never used', dim: true };
+    var mins = Math.floor(ms / 60000);
+    if (mins < 2)    return { t: 'Last seen just now', dim: false };
+    if (mins < 60)   return { t: 'Last seen ' + mins + ' min ago', dim: false };
+    var hrs = Math.floor(mins / 60);
+    if (hrs < 24)    return { t: 'Last seen ' + hrs + (hrs === 1 ? ' hour ago' : ' hours ago'), dim: false };
+    var d = Math.floor(hrs / 24);
+    return { t: 'Last seen ' + d + (d === 1 ? ' day ago' : ' days ago'), dim: true };
+  }
+
+  function tabletsHtml() {
+    var list = S.tablets || [];
+    var head = '<div class="vt-hd"><div><div class="vc-h1" style="font-size:19px">Tablets</div>'
+      + '<div class="vc-sub">Every tablet connected to you. Lost one? Disconnect it and it stops working immediately.</div></div>'
+      + '<span class="sp"></span>'
+      + '<button class="vc-btn gold" onclick="FFPCourts.newOrgTablet()">' + ic('hub') + 'New organiser tablet</button></div>';
+    if (!list.length) {
+      return head + '<div class="vt-none">No tablets connected yet. Connect one from a court above, or make an organiser tablet that travels with you.</div>';
+    }
+    return head + '<div class="vc-list">' + list.map(function (t) {
+      var sub = t.mode === 'organiser' ? '' : (t.where || '');
+      var sn = seenTxt(t.last_seen_at);
+      return '<div class="vt-r">'
+        + '<span class="vt-n"><b>' + esc(t.name || t.where || 'Tablet') + '</b>'
+        + (sub ? '<span>' + esc(sub) + '</span>' : '') + '</span>'
+        + '<span class="vt-k">' + esc(TB_LABEL[t.mode] || t.mode) + '</span>'
+        + '<span class="vt-s' + (sn.dim ? ' dim' : '') + '">' + esc(sn.t) + '</span>'
+        + '<span class="vt-c">Connected ' + esc(tbDate(t.created_at)) + '</span>'
+        + '<button class="vc-btn red" onclick="FFPCourts.unpairAny(\'' + t.id + '\')">' + ic('link_off') + 'Disconnect</button>'
+        + '</div>';
+    }).join('') + '</div>';
+  }
+
+  // One PIN for a tablet that belongs to the ORGANISER rather than a court, so
+  // it can score any fixture of any event they run, at any venue.
+  async function newOrgTablet() {
+    var p = pid(); if (!p) return;
+    var r; try { r = await sb().rpc('tablet_pair_start', { p_court: null, p_field: null, p_provider: p }); }
+    catch (e) { r = { error: e }; }
+    var m = String((r.error && r.error.message) || '');
+    if (r.error || !(r.data && r.data.pin)) {
+      toast(/not_yours/.test(m) ? 'That is not your organisation'
+        : /too_many_codes/.test(m) ? 'Too many PINs live. Wait a few minutes.'
+        : 'Could not make a PIN', 'error');
+      return;
+    }
+    orgTabletOv(r.data.pin);
+  }
+
+  function orgTabletOv(pin) {
+    closeOv();
+    var ov = document.createElement('div'); ov.id = 'vc-ov'; ov.className = 'vc-ov';
+    ov.innerHTML = '<div class="in">'
+      + '<h2>Connect an organiser tablet</h2>'
+      + '<p>On the tablet open <b>' + esc(TABLET_URL.replace(/^https?:\/\//, '')) + '</b> and type this PIN, or point its camera at the square. '
+      + 'It is not tied to a court: it finds any fixture in any of your competitions, at any venue, by round.</p>'
+      + '<div class="pin">' + esc(String(pin).slice(0, 3) + ' ' + String(pin).slice(3)) + '</div>'
+      + '<div class="qr" id="vc-qr"></div>'
+      + '<div class="warn">Good for 15 minutes, and works once. Anyone with this PIN can connect a tablet that scores ANY of your fixtures, so do not share it further than the person holding the tablet.</div>'
+      + '<div class="acts"><button class="vc-btn" onclick="FFPCourts.newOrgTablet()">' + ic('refresh') + 'New PIN</button>'
+      + '<button class="vc-btn pri" onclick="FFPCourts.closeOv();FFPCourts.refresh()">' + ic('check') + 'Done</button></div>'
+      + '</div>';
+    document.body.appendChild(ov);
+    loadQr(function () {
+      var h = document.getElementById('vc-qr');
+      if (h && window.QRCode) {
+        try { new window.QRCode(h, { text: TABLET_URL + '?pin=' + encodeURIComponent(pin), width: 208, height: 208, correctLevel: window.QRCode.CorrectLevel.M }); } catch (e) {}
+      }
+    });
+  }
+
+  async function unpairAny(tid) {
+    var r; try { r = await sb().rpc('tablet_revoke', { p_id: tid }); } catch (e) { r = { error: e }; }
+    if (r.error || (r.data && r.data.error)) { toast('Could not disconnect it', 'error'); return; }
+    toast('Tablet disconnected', 'success');
+    refresh();
+  }
+
   window.FFPCourts = { add: add, addMany: addMany, edit: edit, cancelEdit: cancelEdit, saveName: saveName, setAccess: setAccess,
     ask: ask, cancelAsk: cancelAsk, remove: remove, newCode: newCode, copy: copy, refresh: refresh,
     tablet: tablet, pairTablet: pairTablet, unpair: unpair, copyText: copyText, closeOv: closeOv,
+    newOrgTablet: newOrgTablet, unpairAny: unpairAny, orgTabletOv: orgTabletOv,
     promoEdit: promoEdit, promoField: promoField, promoCourt: promoCourt, promoPick: promoPick, promoSave: promoSave,
     promoActive: promoActive, promoMove: promoMove, promoAsk: promoAsk, promoRemove: promoRemove };
   window.ffpRenderCourts = function () {
