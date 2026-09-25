@@ -815,6 +815,20 @@
     if (r && r.error) { toast('Could not add the break', 'error'); return; }
     renderTab();
   }
+  // Saving a break is not enough on its own: anything already booked inside it
+  // has to come out. Only the matches a break displaces move, and the ones
+  // behind them follow, so the order of play is kept. Courts without a break
+  // are never touched.
+  async function applyBreaks(said) {
+    var P = S.plan || {};
+    var r; try {
+      r = await sb().rpc('tourn_breaks_apply', { p_tourn: S.eventId, p_match_len: P.len || 30, p_tz: evTz() });
+    } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Breaks saved, but the matches could not be moved', 'error'); return 0; }
+    var n = r.data || 0;
+    if (said) toast(n ? n + (n === 1 ? ' match moved out of the break' : ' matches moved out of the breaks') : 'No match was inside a break', 'success');
+    return n;
+  }
   async function breakSave(id) {
     var row = document.querySelector('.sc-brk .b[data-id="' + id + '"]'); if (!row) return;
     var s = row.querySelector('.bk-s').value, e2 = row.querySelector('.bk-e').value;
@@ -823,11 +837,13 @@
                   starts_at: s, ends_at: e2, label: row.querySelector('.bk-l').value || null };
     var r; try { r = await sb().from('tourn_breaks').update(patch).eq('id', id); } catch (e) { r = { error: e }; }
     if (r && r.error) { toast('Could not save the break', 'error'); return; }
-    toast('Break saved', 'success'); renderTab();
+    await applyBreaks(true); renderTab();
   }
   async function breakRemove(id) {
     var r; try { r = await sb().from('tourn_breaks').delete().eq('id', id); } catch (e) { r = { error: e }; }
     if (r && r.error) { toast('Could not remove it', 'error'); return; }
+    // Matches are not pulled back into the freed time: a schedule people have
+    // already been given only ever moves when the organiser asks for it.
     renderTab();
   }
 
@@ -2211,7 +2227,7 @@
 
   // Printed on load so a deploy can be confirmed in one look, without
   // guessing from the screen: open the console and read this line.
-  var BUILD = '2026-09-24.6';
+  var BUILD = '2026-09-24.7';
   console.log('[FFP Tournaments] build ' + BUILD);
   window.FFPTourn = {
     build: BUILD,
@@ -2252,7 +2268,7 @@
     confirmBracket: confirmBracket, cancelBracket: cancelBracket, doBracket: doBracket, monradOpen: monradOpen, setDrawFormat: setDrawFormat, setSideDraws: setSideDraws, setDraw: setDraw, monradRound: monradRound, awardPanel: awardPanel, doAward: doAward, saveBracketResults: saveBracketResults,
     pickImg: pickImg, entLogo: entLogo, addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap,
     autoplan: autoplan, schedSet: schedSet,
-    setSchedDiv: setSchedDiv, planSet: planSet, setAddDiv: setAddDiv,
+    setSchedDiv: setSchedDiv, planSet: planSet, setAddDiv: setAddDiv, applyBreaks: applyBreaks,
     openDivDraw: openDivDraw, openDrawCancel: openDrawCancel,
     breakAdd: breakAdd, breakSave: breakSave, breakRemove: breakRemove,
     rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
