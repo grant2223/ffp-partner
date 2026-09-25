@@ -3392,13 +3392,15 @@ const sampleRsvps = [];
 // ════════════════════════════════════════════════
 const NAV = [
   // ── Account (your FFP account. Always free — never gated.)
-  //    Order is deliberate: Check-ins first (used daily), Settings last. ──
-  { id: 'checkins',    icon: 'qr_code_scanner', label: 'Check-ins',        section: 'account' },
-  { id: 'courts',      icon: 'connected_tv',    label: 'Courts & screens', section: 'account' },
+  //    Order is deliberate: Profile first (the listing everything else hangs off),
+  //    then the day-to-day, then the two setup screens — Courts & screens and
+  //    Settings — together at the bottom, since they are touched once. ──
   { id: 'profile',     icon: 'storefront',      label: 'Profile',          section: 'account' },
+  { id: 'checkins',    icon: 'qr_code_scanner', label: 'Check-ins',        section: 'account' },
   { id: 'payments',    icon: 'account_balance', label: 'Connect Payments', section: 'account' },
   { id: 'refer',       icon: 'redeem',          label: 'Refer & earn',     section: 'account' },
   { id: 'announcements',icon: 'campaign',       label: 'Announcements',    section: 'account' },
+  { id: 'courts',      icon: 'connected_tv',    label: 'Courts & screens', section: 'account' },
   { id: 'settings',    icon: 'settings',        label: 'Settings',         section: 'account' },
   // ── Business section (paid $99/mo add-on; admin-granted access. Gated when !FFP_PROVIDER.business_access)
   //    free:true items sit in this section for layout but stay open to every provider. ──
@@ -3544,7 +3546,7 @@ function toggleNavSection(sec) {
 
 // v12: load a panel's data loader the first time that panel is opened.
 // Overview/identity loaders stay eager; only clearly panel-scoped ones defer.
-var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=5', 'scheduling': 'ffp-provider-scheduling-loader.js?v=3', 'members': 'ffp-provider-members-loader.js?v=12', 'plans': 'ffp-provider-plans-loader.js?v=3', 'announcements': 'ffp-provider-announcements-loader.js?v=2', 'billing': 'ffp-provider-billing-loader.js?v=5', 'staff': 'ffp-provider-staff-loader.js?v=5', 'experiences': 'ffp-provider-experiences-loader.js?v=8', 'appointments': 'ffp-provider-appointments-loader.js?v=16', 'offers': 'ffp-provider-offers-loader.js?v=12', 'competitions': 'ffp-provider-competitions-loader.js?v=31', 'leagues': 'ffp-provider-leagues-loader.js?v=45', 'tournaments': 'ffp-provider-tournaments-loader.js?v=40', 'courts': 'ffp-provider-courts-loader.js?v=4', 'loyalty': 'ffp-provider-loyalty-loader.js?v=5' };
+var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=5', 'scheduling': 'ffp-provider-scheduling-loader.js?v=3', 'members': 'ffp-provider-members-loader.js?v=12', 'plans': 'ffp-provider-plans-loader.js?v=3', 'announcements': 'ffp-provider-announcements-loader.js?v=2', 'billing': 'ffp-provider-billing-loader.js?v=5', 'staff': 'ffp-provider-staff-loader.js?v=5', 'experiences': 'ffp-provider-experiences-loader.js?v=8', 'appointments': 'ffp-provider-appointments-loader.js?v=16', 'offers': 'ffp-provider-offers-loader.js?v=12', 'competitions': 'ffp-provider-competitions-loader.js?v=31', 'leagues': 'ffp-provider-leagues-loader.js?v=45', 'tournaments': 'ffp-provider-tournaments-loader.js?v=40', 'courts': 'ffp-provider-courts-loader.js?v=5', 'loyalty': 'ffp-provider-loyalty-loader.js?v=5' };
 var _provLoaded = {};
 function _loadScriptOnce(src) {
   if (_provLoaded[src]) return;
@@ -3713,8 +3715,12 @@ function showPanel(id) {
   const navBtn = document.querySelector('.ni[data-nav="' + id + '"]');
   if (navBtn) navBtn.classList.add('active');
   const item = NAV.find(x => x.id === id);
-  // If the active panel lives in a collapsed section, open that section.
-  if (item && _navCollapsed[item.section]) toggleNavSection(item.section);
+  // If the active panel lives in a collapsed section, open that section — EXCEPT
+  // for a free:true item. Overview and Analytics sit in BUSINESS for layout only;
+  // they are open to every provider. Since the portal lands on Overview, that one
+  // line was throwing the whole paid Business section open on every single load,
+  // which is why Business never stayed hidden by default.
+  if (item && !item.free && _navCollapsed[item.section]) toggleNavSection(item.section);
   document.getElementById('tb-title').textContent = item ? item.label : '';
   // GA4 per-panel page_view (SPA — no real page reload on panel switch)
   try { if (window.ffpTrackView) window.ffpTrackView('partner/' + id, 'Partner, ' + (item ? item.label : id)); } catch (e) {}
