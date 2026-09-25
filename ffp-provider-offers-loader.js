@@ -126,7 +126,7 @@
     var foot =
       '<button class="btn po-cancel" onclick="closeModal()">Cancel</button>' +
       '<button class="btn po-draft" onclick="ffpOffers.save(\'draft\')">Save draft</button>' +
-      '<button class="btn po-submit" onclick="ffpOffers.save(\'pending\')">Submit for review</button>';
+      '<button class="btn po-submit" onclick="ffpOffers.save(\'live\')">Publish offer</button>';
     if (typeof window.openModalShell === 'function') {
       window.openModalShell('lg', (editingId ? 'Edit offer' : 'Add offer'), body, foot);
     }
@@ -200,7 +200,7 @@
     document.head.appendChild(s);
   }
   async function save(mode) {
-    mode = (mode === 'draft') ? 'draft' : 'pending';
+    mode = (mode === 'draft') ? 'draft' : 'live';
     if (!prov().id) { toast('Provider not ready — reload.', 'error'); return; }
     var info = await providerInfo();
     if (!val('po-benefit')) { toast('Add what members get', 'error'); return; }
@@ -211,10 +211,10 @@
     var perLimit = typ === 'perk' ? 0 : (parseInt(val('po-limit') || '1', 10) || 1);
     var slot = document.getElementById('listing-photo-slot');
     var imgUrl = slot ? (slot.dataset.url || '') : '';
-    // Full checks only when SUBMITTING for review. Drafts save with just a title.
-    if (mode === 'pending') {
-      if (!profileComplete()) { toast('Add your ' + profileMissing().join(', ') + ' to your profile to submit — or Save draft for now.', 'error'); return; }
-      if (!benefit) { toast('Add what members get to submit', 'error'); return; }
+    // Full checks only when PUBLISHING. Drafts save with just a title.
+    if (mode === 'live') {
+      if (!profileComplete()) { toast('Add your ' + profileMissing().join(', ') + ' to your profile to publish — or Save draft for now.', 'error'); return; }
+      if (!benefit) { toast('Add what members get to publish', 'error'); return; }
       if (typ === 'bogo' && (!saving || saving < 20)) { toast('A Signature Deal needs at least a $20 saving', 'error'); return; }
       if (!imgUrl) { toast('Add an offer image to submit (no words on the image)', 'error'); return; }
     }
@@ -239,14 +239,17 @@
       updated_at: new Date().toISOString()
     };
     try {
-      // Draft = saved but not submitted (never shown to members). Pending = submitted for admin review.
-      row.status = mode;   // 'draft' | 'pending'
+      /* Draft = saved but not published (never shown to members). Live = in
+         front of members straight away: a partner's own offer for their own
+         venue does not wait on a review queue. Admin can still pause, edit or
+         reject it from the admin Offers screen afterwards. */
+      row.status = mode;   // 'draft' | 'live'
       var res;
       if (editingId) res = await sb().from('partner_offers').update(row).eq('id', editingId);
       else res = await sb().from('partner_offers').insert(row);
       if (res.error) throw res.error;
       if (window.closeModal) window.closeModal();
-      toast(mode === 'draft' ? 'Draft saved' : (editingId ? 'Offer updated — sent for review' : 'Offer submitted for review'), 'success'); editingId = null; render();
+      toast(mode === 'draft' ? 'Draft saved' : (editingId ? 'Offer updated — live now' : 'Offer is live'), 'success'); editingId = null; render();
     } catch (e) { toast(e.message || 'Save failed', 'error'); }
   }
 
@@ -275,13 +278,13 @@
         var toggle = (o.status === 'live' || o.status === 'paused')
           ? '<button onclick="ffpOffers.setStatus(\'' + o.id + '\',\'' + (o.status === 'live' ? 'paused' : 'live') + '\')" title="' + (o.status === 'live' ? 'Pause' : 'Resume') + '" style="border:none;background:none;cursor:pointer;color:#5b6b75;"><span class="ms">' + (o.status === 'live' ? 'pause_circle' : 'play_circle') + '</span></button>'
           : '';
-        // Draft or rejected → let the partner submit it for review in one tap.
+        // Draft or rejected → one tap puts it in front of members.
         var submit = (o.status === 'draft' || o.status === 'rejected')
-          ? '<button onclick="ffpOffers.setStatus(\'' + o.id + '\',\'pending\')" style="border:1px solid #1980AD;background:#eef6fb;color:#1980AD;border-radius:18px;padding:6px 12px;font-family:inherit;font-weight:800;font-size:12px;cursor:pointer;">Submit</button>'
+          ? '<button onclick="ffpOffers.setStatus(\'' + o.id + '\',\'live\')" style="border:1px solid #1980AD;background:#eef6fb;color:#1980AD;border-radius:18px;padding:6px 12px;font-family:inherit;font-weight:800;font-size:12px;cursor:pointer;">Publish</button>'
           : '';
         return '<div style="background:#fff;border:1px solid #eef2f5;border-radius:12px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">' +
           '<div style="flex:1;min-width:0;"><div style="font-weight:800;color:#12232f;">' + esc(o.title) + '</div>' +
-          '<div style="font-size:12px;color:#8a99a8;">' + esc(valid) + ' · ' + (o.redeemed_count || 0) + ' redeemed</div></div>' +
+          '<div style="font-size:12px;color:#8a99a8;">' + esc(valid) + ', ' + (o.redeemed_count || 0) + ' redeemed</div></div>' +
           statusBadge(o.status) +
           submit +
           '<button onclick=\'ffpOffers.edit(' + JSON.stringify(o).replace(/'/g, "&#39;") + ')\' title="Edit" style="border:none;background:none;cursor:pointer;color:#1980AD;"><span class="ms">edit</span></button>' +
