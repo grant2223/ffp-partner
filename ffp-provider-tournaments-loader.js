@@ -223,6 +223,17 @@
     return _grades;
   }
   function dlOpts(arr) { return (arr || []).map(function (x) { return '<option value="' + esc(x) + '">'; }).join(''); }
+  // The sport can only ever be a value from the activity taxonomy: the database
+  // refuses anything else, so the form must not be able to offer anything else.
+  // A stored value that has since left the list is kept at the top rather than
+  // silently dropped when an old event is opened.
+  function actOpts(cur) {
+    var a = actNames().slice();
+    if (cur && a.indexOf(cur) < 0) a.unshift(cur);
+    return a.map(function (n) {
+      return '<option value="' + esc(n) + '"' + (n === cur ? ' selected' : '') + '>' + esc(n) + '</option>';
+    }).join('');
+  }
   function schemaForActivity(act) { var s = (S.sports || []).find(function (x) { return (x.match_activities || []).some(function (a) { return String(a).toLowerCase() === String(act || '').toLowerCase(); }); }); return s ? s.name : 'Generic points'; }
   function sportHint() { var a = (document.getElementById('tg-sport') || {}).value; var h = document.getElementById('tg-sporthint'); if (h) h.textContent = 'Scoring and stats set: ' + schemaForActivity(a); }
 
@@ -1075,8 +1086,10 @@
     var head =
       '<div class="tg-sec">'
       + '<div class="lg-fld"><div class="lg-lab">Which sport is this tournament for?</div>'
-      + '<input class="lg-in" id="tg-sport" list="tg-actl" value="' + esc(ev.activity || '') + '" placeholder="Search sport…" oninput="FFPTourn.sportHint()">'
-      + '<datalist id="tg-actl">' + dlOpts(actNames()) + '</datalist>'
+      + '<select class="lg-sel" id="tg-sport" onchange="FFPTourn.sportHint()">'
+      +   '<option value="">Choose a sport\u2026</option>'
+      +   actOpts(ev.activity)
+      + '</select>'
       + '<div class="tg-hint" id="tg-sporthint">Scoring and stats set: ' + esc(schemaForActivity(ev.activity)) + '</div></div>'
       + '<div class="lg-fld"><div class="lg-lab">Who competes?</div><div class="lg-seg" id="tg-mode">' + modeSeg + '</div>'
       + '<div class="tg-hint" id="tg-modehint">' + esc(modeHint) + '</div></div>'
