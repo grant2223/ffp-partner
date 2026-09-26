@@ -10,7 +10,7 @@
   function root() { return document.getElementById('lg-root'); }
   function ic(n) { return '<span class="ms">' + n + '</span>'; }
 
-  var S = { view: 'list', eventId: null, detail: null, tab: 'details', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, fxConfirm: false };
+  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, fxConfirm: false };
 
   function injectCss() {
     if (document.getElementById('lgb-css')) return;
@@ -76,7 +76,25 @@
       '.lg-per{display:flex;align-items:center;gap:10px;margin-bottom:14px;} .lg-per .sp{flex:1;} .lg-perchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;padding:7px 12px;border-radius:20px;background:#eef2f5;color:#5b6b75;} .lg-perchip.live{background:#fdeaea;color:#d6353b;} .lg-perchip.live .d{width:7px;height:7px;border-radius:50%;background:#d6353b;} .lg-perchip.ht{background:#fff4d6;color:#8a6d00;} .lg-perchip.ft{background:#e3f6ec;color:#0a8f5f;} .lg-perset{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);}',
       '.lg-trk{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:14px 16px;margin-bottom:18px;} .lg-trk-clock{display:flex;align-items:center;gap:12px;margin-bottom:14px;} .lg-trk-clock .t{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ffp-text);} .lg-trk-clock .sp{flex:1;}',
       '.lg-trk-grp{margin-bottom:12px;} .lg-trk-lab{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8a99a6;margin-bottom:6px;} .lg-trk-btns{display:flex;gap:10px;} .lg-trk-b{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:11px 10px;font:inherit;font-size:13.5px;font-weight:800;color:var(--ffp-text);cursor:pointer;} .lg-trk-b span{font-size:12px;font-weight:900;color:#8a99a6;} .lg-trk-b.on{border-color:var(--ffp-blue);background:#eaf4fb;color:var(--ffp-blue);} .lg-trk-b.on span{color:var(--ffp-blue);}',
-      '.lg-trk-apply{display:flex;align-items:center;gap:12px;margin-top:4px;flex-wrap:wrap;} .lg-trk-apply .sum{flex:1;font-size:12.5px;font-weight:700;color:var(--ffp-text-muted);min-width:180px;}'
+      '.lg-trk-apply{display:flex;align-items:center;gap:12px;margin-top:4px;flex-wrap:wrap;} .lg-trk-apply .sum{flex:1;font-size:12.5px;font-weight:700;color:var(--ffp-text-muted);min-width:180px;}',
+      '.lgf-phase{font-size:10.5px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#8a99a8;align-self:center;margin-right:4px;}',
+      '.lgf-sec{border-top:1px solid var(--ffp-border);padding-top:18px;margin-top:22px;}',
+      '.lgf-sec:first-child{border-top:none;padding-top:0;margin-top:0;}',
+      '.lgf-sech{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:#19313e;border-radius:8px;padding:7px 13px;margin-bottom:14px;}',
+      '.lgf-hint{font-size:12px;font-weight:700;color:#5c6f7c;margin-top:6px;}',
+      '.lgf-row{display:flex;align-items:center;gap:12px;padding:13px 2px;border-top:1px solid var(--ffp-border);cursor:pointer;}',
+      '.lgf-row:last-of-type{border-bottom:1px solid var(--ffp-border);}',
+      '.lgf-row.on{box-shadow:inset 3px 0 0 #17789f;padding-left:12px;}',
+      '.lgf-row .cv{color:#5c6f7c;font-size:20px;} .lgf-row.on .cv{color:#17789f;}',
+      '.lgf-row .g{flex:1;min-width:0;}',
+      '.lgf-row .g b{display:block;font-size:14px;font-weight:800;color:#12232f;}',
+      '.lgf-row.on .g b{color:#17789f;}',
+      '.lgf-row .g span{display:block;font-size:12px;font-weight:600;color:#5c6f7c;margin-top:2px;}',
+      '.lgf-row .st{flex:none;font-size:12px;font-weight:800;color:#5c6f7c;} .lgf-row .st.done{color:#12232f;}',
+      '.lgf-edit{padding:16px 0 20px 14px;border-bottom:1px solid var(--ffp-border);}',
+      '.lgf-acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}',
+      '.lg-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}',
+      '.lg-seg button.on{background:#17789f;border-color:#17789f;}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -129,13 +147,14 @@
     var ev = S.detail.event || {};
     el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(', ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPLeague.back()">' + ic('arrow_back') + 'All leagues</button></div>'
-      + '<div class="lg-nav">' + tabBtn('details', 'Details') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('sponsors', 'Sponsors') + tabBtn('schedule', 'Schedule') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
+      + '<div class="lg-nav"><span class="lgf-phase">Set up</span>' + tabBtn('information', 'Information') + tabBtn('setup', 'Setup') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('sponsors', 'Sponsors') + tabBtn('schedule', 'Schedule') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
     renderTab();
   }
   function tabBtn(id, label) { return '<button class="' + (S.tab === id ? 'on' : '') + '" onclick="FFPLeague.tab(\'' + id + '\')">' + label + '</button>'; }
   function renderTab() {
     var host = document.getElementById('lg-tab'); if (!host) return;
-    if (S.tab === 'details') return renderDetails(host);
+    if (S.tab === 'information') return renderInformation(host);
+    if (S.tab === 'setup') return renderSetup(host);
     if (S.tab === 'divisions') return renderDivisions(host);
     if (S.tab === 'entrants') return renderEntrants(host);
     if (S.tab === 'fixtures') return S.matchOpen ? renderMatchCentre() : renderFixtures(host);
@@ -495,24 +514,115 @@
   async function offRemove(id) { await sb().rpc('lt_match_official_remove', { p_id: id }); renderTab(); }
 
   // ---------- DETAILS ----------
-  async function renderDetails(host) {
+  async function renderInformation(host) {
     var ev = S.detail.event || {}; await loadSports(); await taxReady();
     host.innerHTML =
       '<div class="lg-fld"><div class="lg-lab">Status</div><div class="lg-seg lg-status4" id="lg-status">' + statusSegBtns(ev.status, 'FFPLeague') + '</div></div>'
       + '<div class="lg-fld"><div class="lg-lab">League name</div><input class="lg-in" id="lg-name" value="' + esc(ev.name) + '"></div>'
       + '<div class="lg-fld"><div class="lg-lab">Logo</div><div class="lg-logo" onclick="FFPLeague.pickImg(\'logo\')" style="' + (ev.logo_url ? 'background-image:url(\'' + esc(ev.logo_url) + '\')' : '') + '">' + (ev.logo_url ? '' : '<span class="ms">add_photo_alternate</span><span>Logo</span>') + '</div></div>'
       + '<div class="lg-fld"><div class="lg-lab">Banner (16:9, as shown in the app)</div><div class="lg-banner16" onclick="FFPLeague.pickImg(\'cover\')" style="' + (ev.cover_url ? 'background-image:url(\'' + esc(ev.cover_url) + '\')' : '') + '">' + (ev.cover_url ? '' : '<span class="ms">image</span><span>Add banner</span>') + '</div></div>'
-      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Sport</div><input class="lg-in" id="lg-sport" list="lg-actl" value="' + esc(ev.activity || '') + '" placeholder="Search sport…" oninput="FFPLeague.sportHint()"><datalist id="lg-actl">' + dlOpts(actNames()) + '</datalist><div class="lg-lab" id="lg-sporthint" style="margin:6px 0 0;font-weight:700;color:#6a7c8a">Stats set: ' + esc(schemaForActivity(ev.activity)) + '</div></div>'
-      + '<div class="lg-fld"><div class="lg-lab">Schedule</div><div class="lg-seg" id="lg-mode"><button data-v="single" class="' + (ev.schedule_mode !== 'home_away' ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-mode\')">Single</button><button data-v="home_away" class="' + (ev.schedule_mode === 'home_away' ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-mode\')">Home &amp; away</button></div></div></div>'
       + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">City</div><input class="lg-in" id="lg-city" list="lg-cityl" value="' + esc(ev.city || '') + '"><datalist id="lg-cityl">' + dlOpts(cityNames()) + '</datalist></div><div class="lg-fld"><div class="lg-lab">Country</div><input class="lg-in" id="lg-country" list="lg-cntl" value="' + esc(ev.country || '') + '"><datalist id="lg-cntl">' + dlOpts(countryNames()) + '</datalist></div></div>'
       + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Season starts</div><input class="lg-in" id="lg-start" type="date" value="' + esc(ev.starts_at || '') + '"></div><div class="lg-fld"><div class="lg-lab">Season ends</div><input class="lg-in" id="lg-end" type="date" value="' + esc(ev.ends_at || '') + '"></div></div>'
-      + '<div class="lg-3"><div class="lg-fld"><div class="lg-lab">Win pts</div><input class="lg-in" id="lg-win" type="number" value="' + (ev.win_pts != null ? ev.win_pts : 3) + '"></div><div class="lg-fld"><div class="lg-lab">Draw pts</div><input class="lg-in" id="lg-draw" type="number" value="' + (ev.draw_pts != null ? ev.draw_pts : 1) + '"></div><div class="lg-fld"><div class="lg-lab">Loss pts</div><input class="lg-in" id="lg-loss" type="number" value="' + (ev.loss_pts != null ? ev.loss_pts : 0) + '"></div></div>'
-      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Finals series</div><select class="lg-sel" id="lg-finals"><option value="none"' + (ev.finals_mode === 'none' ? ' selected' : '') + '>None</option><option value="top4"' + (ev.finals_mode === 'top4' ? ' selected' : '') + '>Top 4</option><option value="top8"' + (ev.finals_mode === 'top8' ? ' selected' : '') + '>Top 8</option></select></div>'
-      + '<div class="lg-fld"><div class="lg-lab">3rd-place play-off</div><div class="lg-seg" id="lg-third"><button data-v="true" class="' + (ev.third_place ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-third\')">Yes</button><button data-v="false" class="' + (!ev.third_place ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-third\')">No</button></div></div></div>'
       + '<div class="lg-fld"><div class="lg-lab">About</div><textarea class="lg-in" id="lg-desc" rows="3">' + esc(ev.description || '') + '</textarea></div>'
       + '<div class="lg-fld"><div class="lg-lab">Rules</div><textarea class="lg-in" id="lg-rules" rows="3">' + esc(ev.rules || '') + '</textarea></div>'
       + '<button class="lg-btn pri" onclick="FFPLeague.saveDetails()">' + ic('check') + 'Save</button>';
   }
+  // ── SETUP ───────────────────────────────────────────────────────────────
+  // How the league is RUN, and it is a division's business, not the whole
+  // league's: Juniors can play a single round for 2/1/0 while the Open plays
+  // home and away for 5/3/0. A division that has never been touched inherits
+  // the league's numbers, which is what every existing league does.
+  var FINALS_MODES = [['none', 'None', 'The table decides it. Nothing follows the season.'],
+                      ['top2', 'Top 2, grand final', 'First and second meet in one final.'],
+                      ['top4', 'Top 4, semi-finals', 'Top four play semi-finals, then a final.'],
+                      ['top8', 'Top 8, quarter-finals', 'Top eight play quarters, semis, then a final.']];
+  function lgFmt(d) {
+    var ev = (S.detail && S.detail.event) || {};
+    var pick = function (a, b, c) { return a != null && a !== '' ? a : (b != null && b !== '' ? b : c); };
+    return { win: pick(d.win_pts, ev.win_pts, 3), draw: pick(d.draw_pts, ev.draw_pts, 1),
+             loss: pick(d.loss_pts, ev.loss_pts, 0),
+             sched: pick(d.schedule_mode, ev.schedule_mode, 'single'),
+             finals: pick(d.finals_mode, ev.finals_mode, 'none'),
+             third: !!pick(d.third_place, ev.third_place, false),
+             own: (d.win_pts != null || d.draw_pts != null || d.loss_pts != null
+                   || d.schedule_mode != null || d.finals_mode != null || d.third_place != null) };
+  }
+  function lgFmtLine(d) {
+    var f = lgFmt(d);
+    var fin = (FINALS_MODES.find(function (x) { return x[0] === f.finals; }) || FINALS_MODES[0]);
+    return (f.sched === 'home_away' ? 'Home & away' : 'Single round') + ', '
+      + f.win + '/' + f.draw + '/' + f.loss + ' points, '
+      + (f.finals === 'none' ? 'no finals' : fin[1].toLowerCase())
+      + (d.entrant_count != null ? ', ' + d.entrant_count + (d.entrant_count === 1 ? ' team' : ' teams') : '');
+  }
+  function lgDivFormat(d) {
+    var f = lgFmt(d);
+    var cur = FINALS_MODES.find(function (x) { return x[0] === f.finals; }) || FINALS_MODES[0];
+    return '<div class="lgf-edit">'
+      + '<div class="lg-fld"><div class="lg-lab">Schedule</div><div class="lg-seg" id="lgf-mode">'
+      +   '<button data-v="single" class="' + (f.sched !== 'home_away' ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lgf-mode\')">Single round</button>'
+      +   '<button data-v="home_away" class="' + (f.sched === 'home_away' ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lgf-mode\')">Home &amp; away</button></div>'
+      +   '<div class="lgf-hint">' + (f.sched === 'home_away' ? 'Everyone plays everyone twice, home and away.' : 'Everyone plays everyone once.') + '</div></div>'
+      + '<div class="lg-3">'
+      +   '<div class="lg-fld"><div class="lg-lab">Win pts</div><input class="lg-in" id="lgf-win" type="number" value="' + f.win + '"></div>'
+      +   '<div class="lg-fld"><div class="lg-lab">Draw pts</div><input class="lg-in" id="lgf-draw" type="number" value="' + f.draw + '"></div>'
+      +   '<div class="lg-fld"><div class="lg-lab">Loss pts</div><input class="lg-in" id="lgf-loss" type="number" value="' + f.loss + '"></div></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Finals series</div><select class="lg-sel" id="lgf-finals" onchange="FFPLeague.finalsHint()">'
+      +   FINALS_MODES.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === f.finals ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('')
+      +   '</select><div class="lgf-hint" id="lgf-finalshint">' + esc(cur[2]) + '</div></div>'
+      + (f.finals === 'none' ? '' :
+          '<div class="lg-fld"><div class="lg-lab">3rd-place play-off</div><div class="lg-seg" id="lgf-third">'
+          + '<button data-v="true" class="' + (f.third ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lgf-third\')">Yes</button>'
+          + '<button data-v="false" class="' + (!f.third ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lgf-third\')">No</button></div></div>')
+      + '<div class="lgf-acts"><button class="lg-btn pri" onclick="FFPLeague.saveDivFormat(\'' + d.id + '\')">' + ic('check') + 'Save format</button>'
+      +   (lgFmt(d).own ? '<button class="lg-btn ghost" onclick="FFPLeague.clearDivFormat(\'' + d.id + '\')">Use the league default</button>' : '')
+      +   '</div></div>';
+  }
+  async function renderSetup(host) {
+    await loadSports(); await taxReady();
+    var ev = S.detail.event || {}, divs = S.detail.divisions || [];
+    if (!S.divId && divs.length) S.divId = divs[0].id;
+    var head = '<div class="lgf-sec">'
+      + '<div class="lg-fld"><div class="lg-lab">Which sport is this league for?</div>'
+      + '<input class="lg-in" id="lg-sport" list="lg-actl" value="' + esc(ev.activity || '') + '" placeholder="Search sport…" oninput="FFPLeague.sportHint()">'
+      + '<datalist id="lg-actl">' + dlOpts(actNames()) + '</datalist>'
+      + '<div class="lgf-hint" id="lg-sporthint">Scoring and stats set: ' + esc(schemaForActivity(ev.activity)) + '</div></div>'
+      + '<button class="lg-btn pri" onclick="FFPLeague.saveSport()">' + ic('check') + 'Save</button></div>';
+    if (!divs.length) {
+      host.innerHTML = head + '<div class="lgf-sec"><div class="lgf-sech">Format, per division</div>'
+        + '<div class="lg-empty" style="text-align:left;padding:4px 0">Add a division first, then set how each one is run.</div></div>';
+      return;
+    }
+    var rows = divs.map(function (d) {
+      var on = d.id === S.divId;
+      var made = (d.fixture_count || 0) > 0;
+      var row = '<div class="lgf-row' + (on ? ' on' : '') + '" onclick="FFPLeague.setSetupDiv(\'' + d.id + '\')">'
+        + '<span class="ms cv">' + (on ? 'expand_more' : 'chevron_right') + '</span>'
+        + '<div class="g"><b>' + esc(d.name) + '</b><span>' + esc(lgFmtLine(d)) + '</span></div>'
+        + '<span class="st' + (made ? ' done' : '') + '">' + (made ? 'Fixtures made' : 'Not generated') + '</span></div>';
+      return on ? row + lgDivFormat(d) : row;
+    }).join('');
+    host.innerHTML = head + '<div class="lgf-sec"><div class="lgf-sech">Format, per division</div>' + rows + '</div>';
+  }
+  async function saveSport() {
+    var r; try { r = await sb().rpc('league_event_save', { p_id: S.eventId, p: { activity: v('lg-sport') } }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Save failed', 'error'); return; } toast('Saved', 'success'); open(S.eventId);
+  }
+  async function saveDivFormat(id) {
+    var p = { win_pts: v('lgf-win'), draw_pts: v('lgf-draw'), loss_pts: v('lgf-loss'),
+              schedule_mode: segVal('lgf-mode'), finals_mode: v('lgf-finals') };
+    if (document.getElementById('lgf-third')) p.third_place = segVal('lgf-third') === 'true';
+    var r; try { r = await sb().rpc('league_division_save', { p_league: S.eventId, p_id: id, p: p }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not save the format', 'error'); return; }
+    toast('Format saved', 'success'); refreshDetail();
+  }
+  async function clearDivFormat(id) {
+    var p = { win_pts: null, draw_pts: null, loss_pts: null, schedule_mode: null, finals_mode: null, third_place: null };
+    var r; try { r = await sb().rpc('league_division_save', { p_league: S.eventId, p_id: id, p: p }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not reset it', 'error'); return; }
+    toast('Back to the league default', 'success'); refreshDetail();
+  }
+
   function segVal(id) { var b = document.querySelector('#' + id + ' button.on'); return b ? b.getAttribute('data-v') : null; }
   var STATUSES = [['draft', 'Draft'], ['live', 'Go Live'], ['final', 'Completed']];
   function statusSegBtns(cur, ns) { cur = (cur === 'open' ? 'live' : cur) || 'draft'; return STATUSES.map(function (s) { return '<button data-v="' + s[0] + '" class="st-' + s[0] + (s[0] === cur ? ' on' : '') + '" onclick="' + ns + '.statusPick(this,\'' + s[0] + '\')">' + s[1] + '</button>'; }).join(''); }
@@ -541,9 +651,10 @@
   }
   function v(id) { var e = document.getElementById(id); return e ? e.value : ''; }
   async function saveDetails() {
-    var p = { name: v('lg-name'), activity: v('lg-sport'), schedule_mode: segVal('lg-mode'), city: v('lg-city'), country: v('lg-country'),
-      starts_at: v('lg-start') || null, ends_at: v('lg-end') || null, win_pts: +v('lg-win'), draw_pts: +v('lg-draw'), loss_pts: +v('lg-loss'),
-      finals_mode: v('lg-finals'), third_place: segVal('lg-third') === 'true', status: segVal('lg-status') || 'draft', description: v('lg-desc'), rules: v('lg-rules') };
+    // Sport, schedule, points and finals live on the Setup tab now, per division
+    var p = { name: v('lg-name'), city: v('lg-city'), country: v('lg-country'),
+      starts_at: v('lg-start') || null, ends_at: v('lg-end') || null,
+      status: segVal('lg-status') || 'draft', description: v('lg-desc'), rules: v('lg-rules') };
     var r; try { r = await sb().rpc('league_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Save failed', 'error'); return; } toast('Saved', 'success'); open(S.eventId);
   }
@@ -1151,10 +1262,15 @@
   }
   async function tsPut(num, squadId) {
     var m = S._mc || {}; var cur = (S._slots || []).filter(function (x) { return Number(x.number) === Number(num); })[0] || {};
+    // Both sides have a number 11. Emptying a slot sends no squad id, so without
+    // the entrant the database cannot tell whose 11 it is and used to delete the
+    // other team's player. p_entrant is the side on screen.
+    var tm = (S._tsTeam === 'away' ? m.away : m.home) || {};
     var r;
     try {
       r = await sb().rpc('lt_teamsheet_assign', { p_match: m.id, p_number: Number(num),
-        p_squad: squadId || null, p_captain: null, p_position: cur.grp === 'replacements' ? (cur.position || null) : null });
+        p_squad: squadId || null, p_captain: null, p_position: cur.grp === 'replacements' ? (cur.position || null) : null,
+        p_entrant: tm.id || null });
     } catch (e) { r = { error: e }; }
     if (r && r.error) { toast(r.error.message || 'Could not fill that position', 'error'); return; }
     tsReload();
@@ -1162,15 +1278,21 @@
   async function tsCovers(num, pos) {
     var m = S._mc || {}; var cur = (S._slots || []).filter(function (x) { return Number(x.number) === Number(num); })[0] || {};
     if (!cur.squad_id) return;
-    try { await sb().rpc('lt_teamsheet_assign', { p_match: m.id, p_number: Number(num), p_squad: cur.squad_id, p_captain: null, p_position: pos || null }); }
-    catch (e) { toast('Could not set the cover', 'error'); }
+    var r;
+    try { r = await sb().rpc('lt_teamsheet_assign', { p_match: m.id, p_number: Number(num), p_squad: cur.squad_id, p_captain: null, p_position: pos || null }); }
+    catch (e) { r = { error: e }; }
+    // supabase-js RETURNS {error}; it does not throw. Without this the call
+    // failed and the screen said nothing at all.
+    if (r && r.error) { toast(r.error.message || 'Could not set the cover', 'error'); return; }
     tsReload();
   }
   async function tsCap(num) {
     var m = S._mc || {}; var cur = (S._slots || []).filter(function (x) { return Number(x.number) === Number(num); })[0] || {};
     if (!cur.squad_id) { toast('Put a player in that position first', 'error'); return; }
-    try { await sb().rpc('lt_teamsheet_assign', { p_match: m.id, p_number: Number(num), p_squad: cur.squad_id, p_captain: !cur.captain, p_position: cur.grp === 'replacements' ? (cur.position || null) : null }); }
-    catch (e) { toast('Could not set the captain', 'error'); }
+    var r;
+    try { r = await sb().rpc('lt_teamsheet_assign', { p_match: m.id, p_number: Number(num), p_squad: cur.squad_id, p_captain: !cur.captain, p_position: cur.grp === 'replacements' ? (cur.position || null) : null }); }
+    catch (e) { r = { error: e }; }
+    if (r && r.error) { toast(r.error.message || 'Could not set the captain', 'error'); return; }
     tsReload();
   }
   function tsCoach() { return S._coach || ''; }
@@ -1549,7 +1671,16 @@
     setDiv: function (val, tab) { S.divId = val; S.tab = tab; S.entEdit = null; S.entDel = null; S.sqOpen = null; renderTab(); },
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
     statusPick: statusPick,
-    saveDetails: saveDetails, sportHint: sportHint, pickImg: pickImg, entLogo: entLogo, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
+    saveDetails: saveDetails, sportHint: sportHint,
+    saveSport: saveSport, saveDivFormat: saveDivFormat, clearDivFormat: clearDivFormat,
+    setSetupDiv: function (id) { S.divId = id; renderTab(); },
+    finalsHint: function () {
+      var v2 = (document.getElementById('lgf-finals') || {}).value;
+      var m = FINALS_MODES.find(function (x) { return x[0] === v2; }) || FINALS_MODES[0];
+      var h = document.getElementById('lgf-finalshint'); if (h) h.textContent = m[2];
+      var t = document.getElementById('lgf-third');
+      if (t) t.parentNode.style.display = (v2 === 'none' ? 'none' : '');
+    }, pickImg: pickImg, entLogo: entLogo, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, bulkAthletes: bulkAthletes, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit,
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
