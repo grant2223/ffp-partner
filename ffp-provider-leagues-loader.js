@@ -107,6 +107,17 @@
   function cityNames() { var t = window.FFP_TAX; return (t && t.allCities) ? t.allCities() : []; }
   function countryNames() { var t = window.FFP_TAX; return t && t.cities ? Object.keys(t.cities) : []; }
   function dlOpts(arr) { return (arr || []).map(function (x) { return '<option value="' + esc(x) + '">'; }).join(''); }
+  // The sport can only ever be a value from the activity taxonomy: the database
+  // refuses anything else, so the form must not be able to offer anything else.
+  // A stored value that has since left the list is kept at the top rather than
+  // silently dropped when an old event is opened.
+  function actOpts(cur) {
+    var a = actNames().slice();
+    if (cur && a.indexOf(cur) < 0) a.unshift(cur);
+    return a.map(function (n) {
+      return '<option value="' + esc(n) + '"' + (n === cur ? ' selected' : '') + '>' + esc(n) + '</option>';
+    }).join('');
+  }
   function schemaForActivity(act) { var s = (S.sports || []).find(function (x) { return (x.match_activities || []).some(function (a) { return String(a).toLowerCase() === String(act || '').toLowerCase(); }); }); return s ? s.name : 'Generic points'; }
   function sportHint() { var a = (document.getElementById('lg-sport') || {}).value; var h = document.getElementById('lg-sporthint'); if (h) h.textContent = 'Stats set: ' + schemaForActivity(a); }
 
@@ -584,8 +595,10 @@
     if (!S.divId && divs.length) S.divId = divs[0].id;
     var head = '<div class="lgf-sec">'
       + '<div class="lg-fld"><div class="lg-lab">Which sport is this league for?</div>'
-      + '<input class="lg-in" id="lg-sport" list="lg-actl" value="' + esc(ev.activity || '') + '" placeholder="Search sport…" oninput="FFPLeague.sportHint()">'
-      + '<datalist id="lg-actl">' + dlOpts(actNames()) + '</datalist>'
+      + '<select class="lg-sel" id="lg-sport" onchange="FFPLeague.sportHint()">'
+      +   '<option value="">Choose a sport\u2026</option>'
+      +   actOpts(ev.activity)
+      + '</select>'
       + '<div class="lgf-hint" id="lg-sporthint">Scoring and stats set: ' + esc(schemaForActivity(ev.activity)) + '</div></div>'
       + '<button class="lg-btn pri" onclick="FFPLeague.saveSport()">' + ic('check') + 'Save</button></div>';
     if (!divs.length) {
