@@ -135,11 +135,13 @@
     document.head.appendChild(s);
   }
 
-  function boardOpts(entrants, cur) {
-    var o = '<option value=""' + (!cur ? ' selected' : '') + '>Event sponsors</option>';
+  function boardOpts(entrants, cur, eventCount) {
+    var o = '<option value=""' + (!cur ? ' selected' : '') + '>Event sponsors'
+      + (eventCount ? ' (' + eventCount + ')' : '') + '</option>';
     (entrants || []).forEach(function (e) {
+      var n = (e.sponsors != null) ? e.sponsors : null;
       o += '<option value="' + esc(e.id) + '"' + (e.id === cur ? ' selected' : '') + '>'
-        + esc(e.team_name || e.name || 'Team') + '</option>';
+        + esc(e.team_name || e.name || 'Team') + (n ? ' (' + n + ')' : '') + '</option>';
     });
     return o;
   }
@@ -147,6 +149,7 @@
   var W = {
     _host: null, _scope: null, _event: null, _entrants: [],
     _board: null,           // null = the event's own board
+    _eventCount: 0,
     _logo: null, _alpha: null, _scale: null,
 
     render: async function (host, opt) {
@@ -160,6 +163,23 @@
       W._logo = null; W._alpha = null; W._scale = null;
       host.innerHTML = '<div class="spx"><div class="spx-hint">Loading sponsors…</div></div>';
 
+      /* The clubs come from the database, not from the loader. S._entrants is
+         only filled by the Entrants tab and only for the division being
+         viewed, so opening Sponsors first left the team picker empty and a
+         team sponsor could not be added at all - with nothing on screen to say
+         why. This asks for every club in the event, across every division. */
+      var br;
+      try {
+        br = await sb().rpc('event_sponsor_boards',
+          { p_scope: W._scope, p_event: W._event });
+      } catch (e) { br = { error: e }; }
+      if (br && br.error) {
+        toast(br.error.message || 'Could not load the teams', 'error');
+      } else if (br && br.data && Array.isArray(br.data.teams)) {
+        W._entrants = br.data.teams;
+        W._eventCount = Number(br.data.event_sponsors) || 0;
+      }
+
       var r;
       try {
         r = await sb().rpc('event_sponsors_list',
@@ -171,7 +191,7 @@
       var whose = W._board
         ? (function () {
             for (var i = 0; i < W._entrants.length; i++)
-              if (W._entrants[i].id === W._board) return W._entrants[i].team_name || W._entrants[i].name;
+              if (W._entrants[i].id === W._board) return W._entrants[i].team_name || W._entrants[i].name || 'this club';
             return 'this club';
           })()
         : 'the event';
@@ -206,7 +226,7 @@
             'share a board.</div>' +
           '<div class="spx-scope"><div class="f"><label>Who are these sponsors for?</label>' +
             '<select id="spx-board" onchange="FFPSponsors.setBoard(this.value)">' +
-            boardOpts(W._entrants, W._board) + '</select></div></div>' +
+            boardOpts(W._entrants, W._board, W._eventCount) + '</select></div></div>' +
           '<div class="spx-count">' + list.length + ' sponsor' + (list.length === 1 ? '' : 's')
             + ' for ' + esc(whose) + '. Event sponsors are a separate board and are never mixed '
             + 'in with a club\'s.</div>' +
