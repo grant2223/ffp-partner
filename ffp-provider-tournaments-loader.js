@@ -307,7 +307,10 @@
     if (S.tab === 'sponsors') return renderSponsors(host);
   }
   function renderSponsors(host) {
-    if (window.FFPSponsors) window.FFPSponsors.render(host, { scope: 'tourn', eventId: S.eventId });
+    if (window.FFPSponsors) window.FFPSponsors.render(host, { scope: 'tourn', eventId: S.eventId,
+      // the editor needs the clubs so it can offer a board per team.
+      // A board belongs to ONE owner: the event's own, or a club's.
+      entrants: (S._entrants || []) });
     else host.innerHTML = '<div style="padding:20px;color:#8a99a8;">Sponsor editor unavailable.</div>';
   }
 
@@ -408,8 +411,27 @@
       var meta = sc
         ? (o.member_id ? 'Can score in the app' : (o.email ? esc(o.email) + ', needs an FFP account to score' : 'Add their FFP email to enable scoring'))
         : (o.member_id ? 'FFP linked' : (o.email ? esc(o.email) : 'Match official'));
-      return '<div class="lg-row"><span class="lg-av" style="' + (o.photo ? 'background-image:url(\'' + esc(o.photo) + '\')' : '') + '">' + (o.photo ? '' : esc((o.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(o.name || o.email || 'Official') + (sc ? ' <span class="lg-scpill">SCORER</span>' : '') + '</b><span>' + meta + '</span></div><select class="lg-sel lg-ocap" onchange="FFPTourn.setOfficialCap(\'' + o.id + '\',this.value)">' + capOpts(role) + '</select><span class="ms act" onclick="FFPTourn.removeOfficial(\'' + o.id + '\')">close</span></div>';
+      return '<div class="lg-row"><span class="lg-av" style="' + (o.photo ? 'background-image:url(\'' + esc(o.photo) + '\')' : '') + '">' + (o.photo ? '' : esc((o.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(o.name || o.email || 'Official') + (sc ? ' <span class="lg-scpill">SCORER</span>' : '') + '</b><span>' + meta + '</span></div><select class="lg-sel lg-ocap" onchange="FFPTourn.setOfficialCap(\'' + o.id + '\',this.value)">' + capOpts(role) + '</select><span class="ms act" title="Replace photo" onclick="FFPTourn.ofPhoto(\'' + o.id + '\')">photo_camera</span><span class="ms act" onclick="FFPTourn.removeOfficial(\'' + o.id + '\')">close</span></div>';
     }).join('') : '<div class="lg-empty">No officials yet.</div>';
+  }
+
+  /* An official's photo. It shows beside them on the match screen in the app
+     and fills their cell on the broadcast officials card. An official linked
+     to an FFP account already falls back to their profile picture, so this is
+     only needed for someone without one — or to override it. */
+  function ofPhoto(id) {
+    if (!window.FFPUpload) { toast('Uploader not ready — refresh', 'error'); return; }
+    window.FFPUpload.pick({
+      bucket: 'provider-logos', key: 'tgofficial-' + id + '-' + Date.now(),
+      aspect: 1, outW: 400, outH: 400, title: 'Official photo (square)',
+      onDone: function (url) {
+        sb().rpc('lt_official_set_photo', { p_id: id, p_url: url }).then(function (r) {
+          if (r && r.error) { toast(r.error.message || 'Could not save the photo', 'error'); return; }
+          toast('Photo saved', 'success'); renderTab();
+        });
+      },
+      onError: function () { toast('Upload failed', 'error'); }
+    });
   }
   var _ofTmr;
   function ofSearch(q) {
@@ -2300,7 +2322,7 @@
     sqToggle: sqToggle, sqSearch: sqSearch, sqAddMember: sqAddMember, sqNameOnly: sqNameOnly, sqInvite: sqInvite, sqRemove: sqRemove,
     doGroups: doGroups, saveGroupResults: saveGroupResults,
     confirmBracket: confirmBracket, cancelBracket: cancelBracket, doBracket: doBracket, monradOpen: monradOpen, setDrawFormat: setDrawFormat, setSideDraws: setSideDraws, setDraw: setDraw, monradRound: monradRound, awardPanel: awardPanel, doAward: doAward, saveBracketResults: saveBracketResults,
-    pickImg: pickImg, entLogo: entLogo, addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap,
+    pickImg: pickImg, entLogo: entLogo, addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap, ofPhoto: ofPhoto,
     autoplan: autoplan, schedSet: schedSet,
     setSchedDiv: setSchedDiv, planSet: planSet, setAddDiv: setAddDiv, applyBreaks: applyBreaks,
     openDivDraw: openDivDraw, openDrawCancel: openDrawCancel,
