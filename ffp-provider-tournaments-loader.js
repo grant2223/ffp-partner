@@ -226,9 +226,22 @@
   function schemaForActivity(act) { var s = (S.sports || []).find(function (x) { return (x.match_activities || []).some(function (a) { return String(a).toLowerCase() === String(act || '').toLowerCase(); }); }); return s ? s.name : 'Generic points'; }
   function sportHint() { var a = (document.getElementById('tg-sport') || {}).value; var h = document.getElementById('tg-sporthint'); if (h) h.textContent = 'Scoring and stats set: ' + schemaForActivity(a); }
 
+  // The one place that turns a supabase error into something a human can act on.
+  // code is what tells us whether it is the schema cache (PGRST202), a missing
+  // grant (42501) or the function itself.
+  function errText(e, fallback) {
+    if (!e) return fallback;
+    var bits = [e.message || e.error_description || e.error || '', e.code ? '[' + e.code + ']' : '',
+                e.details || '', e.hint || ''].filter(Boolean);
+    return bits.length ? bits.join(' ') : fallback;
+  }
+
   async function renderList() {
     injectCss(); var el = root(); if (!el) return;
     var r; try { r = await sb().rpc('tourn_my_events'); } catch (e) { r = { error: e }; }
+    // A failed list used to render as "you have no tournaments", which is the
+    // same picture as a working empty account. Never again.
+    if (r && r.error) { toast(errText(r.error, 'Could not load your tournaments'), 'error'); }
     var list = (r && r.data) || [];
     var cards = list.map(function (ev) {
       var cov = ev.cover_url || ev.logo_url;
@@ -245,7 +258,10 @@
   async function doCreate() {
     var nm = (document.getElementById('tg-newname') || {}).value; if (!nm || !nm.trim()) return;
     var r; try { r = await sb().rpc('tourn_event_save', { p_id: null, p: { name: nm.trim() } }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not create', 'error'); return; } S.creating = false; open(r.data);
+    // Say what actually went wrong. "Could not create" hid a real error for long
+    // enough that the database had to be cleared of suspicion by hand.
+    if (r.error) { toast(errText(r.error, 'Could not create'), 'error'); return; }
+    S.creating = false; open(r.data);
   }
   async function open(id) {
     S.eventId = id; S.view = 'editor'; S.tab = 'information'; S.divEdit = null; S.entAdd = false; S.grpDraw = false; S.brkConfirm = false;
@@ -1063,7 +1079,7 @@
       + '<datalist id="tg-actl">' + dlOpts(actNames()) + '</datalist>'
       + '<div class="tg-hint" id="tg-sporthint">Scoring and stats set: ' + esc(schemaForActivity(ev.activity)) + '</div></div>'
       + '<div class="lg-fld"><div class="lg-lab">Who competes?</div><div class="lg-seg" id="tg-mode">' + modeSeg + '</div>'
-      + '<div class="tg-hint">' + esc(modeHint) + '</div></div>'
+      + '<div class="tg-hint" id="tg-modehint">' + esc(modeHint) + '</div></div>'
       + '<button class="lg-btn pri" onclick="FFPTourn.saveSetup()">' + ic('check') + 'Save</button>'
       + '</div>';
 
@@ -1173,7 +1189,12 @@
   function setEntrantMode(m) {
     var ev = S.detail.event || {}; ev.entrant_mode = m;
     document.querySelectorAll('#tg-mode button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-v') === m); });
-    renderTab();
+    // NOT renderTab(): that rebuilds the sport input from the SAVED activity,
+    // so picking Teams wiped whatever sport had just been typed and put the old
+    // one back. The buttons above already toggled themselves; the only other
+    // thing the mode changes on this tab is the line underneath.
+    var h = document.getElementById('tg-modehint');
+    if (h) h.textContent = (ENTRANT_MODES.find(function (x) { return x[0] === m; }) || ENTRANT_MODES[0])[2];
   }
   async function saveSetup() {
     var p = { activity: v('tg-sport'), entrant_mode: (S.detail.event || {}).entrant_mode || 'individual' };
