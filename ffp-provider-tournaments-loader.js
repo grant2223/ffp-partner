@@ -216,7 +216,7 @@
   }
   function injectCss() { injectBaseCss(); injectExtraCss(); }
 
-  async function loadSports() { if (S.sports) return S.sports; var r = await sb().from('lt_sport_schemas').select('key,name,icon,match_activities,player_fields,team_match_fields,scoring_kinds').eq('active', true).order('sort'); S.sports = r.data || []; return S.sports; }
+  async function loadSports() { if (S.sports) return S.sports; var r = await sb().from('lt_sport_schemas').select('key,name,icon,match_activities,player_fields,team_match_fields,scoring_kinds,game_rules').eq('active', true).order('sort'); S.sports = r.data || []; return S.sports; }
   async function taxReady() { try { if (window.FFP_TAX_READY) await window.FFP_TAX_READY; } catch (e) {} return window.FFP_TAX || {}; }
   function actNames() { return ((window.FFP_TAX && window.FFP_TAX.activities) || []).map(function (a) { return a && a.n ? a.n : a; }); }
   function genderNames() { return ((window.FFP_TAX && window.FFP_TAX.genders) || ['Male', 'Female']).filter(function (g) { return g !== 'Prefer not to say'; }); }
@@ -264,6 +264,64 @@
      loader already makes for the hint, so it covers a taxonomy outage; and
      the hardcoded list in ffp-taxonomy.js covers both being unreachable.
      An organiser must never be unable to choose a sport. */
+
+  /* ── HOW THIS COMPETITION IS RUN ────────────────────────────────────────
+     The ruleset and the match length are the competition's DEFAULTS. A match
+     still overrides its own from the scorer, and a division can override the
+     competition; this is what both fall back to.
+
+     The rulesets on offer come from the SPORT (lt_sport_schemas.game_rules
+     .variants), so a sport with one ruleset shows no picker and nothing about
+     which sports have rulesets is written down here. The database validates
+     the choice as well, so a stale page cannot store one the scorer would not
+     understand. */
+  function sportVariants(k) {
+    var s = (S.sports || []).find(function (x) { return x.key === k; });
+    var v = s && s.game_rules && s.game_rules.variants;
+    if (!v) return [];
+    return Object.keys(v).map(function (id) {
+      return { id: id, label: (v[id] && v[id].label) || id, note: (v[id] && v[id].note) || '' }; });
+  }
+  var LEN_COUNTS = [['', 'Sport default'], ['1', 'One period'], ['2', 'Two halves'], ['4', 'Four quarters']];
+  function rulesBlock(ev) {
+    var vs = sportVariants(ev.sport_key), out = '';
+    if (vs.length > 1) {
+      var cur = vs.find(function (x) { return x.id === ev.rules_variant; }) || vs[0];
+      out += '<div class="lg-fld"><div class="lg-lab">Ruleset</div>'
+        + '<select class="lg-sel" id="tgr-variant" onchange="FFPTourn.rulesHint()">'
+        +   vs.map(function (x) {
+              return '<option value="' + esc(x.id) + '"' + (x.id === cur.id ? ' selected' : '')
+                   + '>' + esc(x.label) + '</option>'; }).join('')
+        + '</select><div class="tg-hint" id="tgr-varianthint">' + esc(cur.note) + '</div></div>';
+    }
+    var cnt = ev.period_count == null ? '' : String(ev.period_count);
+    return out + '<div class="lg-2">'
+      + '<div class="lg-fld"><div class="lg-lab">Minutes a period</div>'
+      +   '<input class="lg-in" id="tgr-min" type="number" min="1" max="60" placeholder="Sport default" value="'
+      +   (ev.period_minutes == null ? '' : ev.period_minutes) + '"></div>'
+      + '<div class="lg-fld"><div class="lg-lab">How many</div><select class="lg-sel" id="tgr-cnt">'
+      +   LEN_COUNTS.map(function (x) {
+            return '<option value="' + x[0] + '"' + (cnt === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('')
+      +   '</select></div></div>'
+      + '<div class="tg-hint">Left empty, a match runs to whatever the sport plays. '
+      + 'A single match can still be changed from the scorer.</div>';
+  }
+  function rulesHint() {
+    var s = document.getElementById('tgr-variant'), h = document.getElementById('tgr-varianthint');
+    if (!s || !h) return;
+    var ev = (S.detail && S.detail.event) || {};
+    var x = sportVariants(ev.sport_key).find(function (y) { return y.id === s.value; });
+    h.textContent = (x && x.note) || '';
+  }
+  /* The three keys are always sent, so clearing a field back to empty actually
+     clears it - the save RPCs use `p ? key` for exactly this reason. */
+  function rulesPayload() {
+    var p = { period_minutes: v('tgr-min') || null, period_count: v('tgr-cnt') || null };
+    var s = document.getElementById('tgr-variant');
+    if (s) p.rules_variant = s.value || null;
+    return p;
+  }
+
   function sportList() {
     var t = (window.FFP_TAX && window.FFP_TAX.sports) || [];
     if (t.length) return t;
@@ -1229,7 +1287,7 @@
     return '<div class="lg-fld bp-blk"><div class="lg-lab">Bonus points</div>'
       + '<div id="bp-list">' + bpHtml() + '</div>'
       + '<button class="lg-btn bp-add" onclick="FFPTourn.bpAdd()">' + ic('add') + 'Add a bonus point</button>'
-      + '<div class="lgf-hint">Counted from what the scorer records. A scoring bonus reads the events '
+      + '<div class="tg-hint">Counted from what the scorer records. A scoring bonus reads the events '
       + 'logged in the match, named player or not. A margin bonus reads the final score.</div></div>';
   }
 
@@ -1296,6 +1354,7 @@
       +   sportOpts(ev.sport_key)
       + '</select>'
       + '<div class="tg-hint" id="tg-sporthint">Scoring and stats set: ' + esc(schemaNameForSport(ev.sport_key)) + '</div></div>'
+      + rulesBlock(ev)
       + '<div class="lg-fld"><div class="lg-lab">Who competes?</div><div class="lg-seg" id="tg-mode">' + modeSeg + '</div>'
       + '<div class="tg-hint" id="tg-modehint">' + esc(modeHint) + '</div></div>'
       + '<button class="lg-btn pri" onclick="FFPTourn.saveSetup()">' + ic('check') + 'Save</button>'
@@ -1418,7 +1477,8 @@
   async function saveSetup() {
     var k = v('tg-sport');
     if (!k) { toast('Choose a sport first', 'error'); return; }
-    var p = { sport_key: k, entrant_mode: (S.detail.event || {}).entrant_mode || 'individual' };
+    var p = rulesPayload();
+    p.sport_key = k; p.entrant_mode = (S.detail.event || {}).entrant_mode || 'individual';
     var r; try { r = await sb().rpc('tourn_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast(said(r.error) || 'Could not save the sport', 'error'); return; }
     toast('Saved', 'success'); refreshDetail();
@@ -2478,6 +2538,7 @@
   var BUILD = '2026-09-24.7';
   console.log('[FFP Tournaments] build ' + BUILD);
   window.FFPTourn = {
+    rulesHint: rulesHint,
     build: BUILD,
     open: open, startCreate: startCreate, cancelCreate: cancelCreate, doCreate: doCreate,
     back: function () { S.view = 'list'; renderList(); }, tab: function (t) { S.tab = t; S.matchOpen = null; renderEditor(); },
