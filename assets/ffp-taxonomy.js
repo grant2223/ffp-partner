@@ -243,6 +243,11 @@
     'Recovery': 'wellness', 'Padel': 'sports', 'Combat sports': 'sports', 'Adventure': 'adventure',
     'Climbing': 'adventure', 'Nutrition': 'food', 'Retail': 'food'
   };
+  /* SPORTS — not activities. An activity is something a member does; a
+     sport is a scoring engine the platform has actually built, and its key
+     IS lt_sport_schemas.key. Kept as {key,label} because the picker has to
+     STORE the key and SHOW the name. Fallback only: the DB hydrates it. */
+  T.sports = [];
   T.ageGroups = ['18-24', '25-34', '35-44', '45-54', '55+'];
   // Provider classification lists (fallbacks; DB taxonomy_items is the source of truth and hydrates these).
   // provider_type = the single facility/provider kind, used by the provider profile AND admin rankings.
@@ -344,6 +349,13 @@
       fill(window.FFP_CONST.providerCategories, vals('category'));
     }
     if (by.experience_type) { T.experienceTypes = vals('experience_type'); }
+    /* the sport list keeps value AND label: the form stores the key and shows
+       the name, so the two cannot be collapsed into one array of strings */
+    if (by.sport && by.sport.length) {
+      T.sports = by.sport.slice()
+        .sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); })
+        .map(function (r) { return { key: r.value, label: r.label || r.value }; });
+    }
     if (by.provider_type)   fill(T.providerTypes, vals('provider_type'));
     if (by.gym_size)        fill(T.gymSizes, vals('gym_size'));
     // Professions (Professionals Portal) — grouped by `parent` = one of the 6 standard categories.
