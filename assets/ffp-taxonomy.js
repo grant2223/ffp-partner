@@ -247,7 +247,18 @@
      sport is a scoring engine the platform has actually built, and its key
      IS lt_sport_schemas.key. Kept as {key,label} because the picker has to
      STORE the key and SHOW the name. Fallback only: the DB hydrates it. */
-  T.sports = [];
+  T.sports = [
+    { key: 'football', label: 'Football / Soccer' }, { key: 'futsal', label: 'Futsal / 5-a-side' },
+    { key: 'basketball', label: 'Basketball' }, { key: 'netball', label: 'Netball' },
+    { key: 'touch', label: 'Touch rugby' }, { key: 'flag_football', label: 'Flag football' },
+    { key: 'rugby_league', label: 'Rugby league' }, { key: 'afl', label: 'Australian rules' },
+    { key: 'american_football', label: 'American football' }, { key: 'rugby', label: 'Rugby union' },
+    { key: 'volleyball', label: 'Volleyball' }, { key: 'tennis', label: 'Tennis' },
+    { key: 'padel', label: 'Padel' }, { key: 'squash', label: 'Squash' },
+    { key: 'racket', label: 'Table tennis / Racquetball' }, { key: 'badminton', label: 'Badminton' },
+    { key: 'pickleball', label: 'Pickleball' }, { key: 'running', label: 'Running / Swimming / Racing' },
+    { key: 'points', label: 'Generic points' }
+  ];
   T.ageGroups = ['18-24', '25-34', '35-44', '45-54', '55+'];
   // Provider classification lists (fallbacks; DB taxonomy_items is the source of truth and hydrates these).
   // provider_type = the single facility/provider kind, used by the provider profile AND admin rankings.
