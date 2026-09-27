@@ -248,7 +248,28 @@
      guess the sport from the activity, which is how American football came
      out scored as Australian rules. A sport that is stored but no longer on
      the list is kept at the top rather than silently dropped. */
-  function sportList() { return (window.FFP_TAX && window.FFP_TAX.sports) || []; }
+
+  /* The database refuses with a reason - "unknown sport: quidditch", "a bonus
+     rule is worth 1 to 10 points". Showing "Save failed" throws that away and
+     leaves the organiser guessing. Postgres codes and RLS noise are not for
+     them, so only a readable message is passed through. */
+  function said(e) {
+    var m = (e && (e.message || e.msg || e.details)) || '';
+    m = String(m).replace(/^.*violates row-level security.*$/i, '');
+    if (!m || /^[A-Z0-9_]+$/.test(m) || m.length > 160) return '';
+    return m.charAt(0).toUpperCase() + m.slice(1);
+  }
+  /* Three sources, best first. The taxonomy is what admin edits, but it is
+     one fetch that can fail; lt_sport_schemas is a SEPARATE live query this
+     loader already makes for the hint, so it covers a taxonomy outage; and
+     the hardcoded list in ffp-taxonomy.js covers both being unreachable.
+     An organiser must never be unable to choose a sport. */
+  function sportList() {
+    var t = (window.FFP_TAX && window.FFP_TAX.sports) || [];
+    if (t.length) return t;
+    var s = (S.sports || []).map(function (x) { return { key: x.key, label: x.name || x.key }; });
+    return s.length ? s : [];
+  }
   function sportOpts(cur) {
     var a = sportList().slice();
     if (cur && !a.some(function (s) { return s.key === cur; })) a.unshift({ key: cur, label: cur });
@@ -1399,7 +1420,7 @@
     if (!k) { toast('Choose a sport first', 'error'); return; }
     var p = { sport_key: k, entrant_mode: (S.detail.event || {}).entrant_mode || 'individual' };
     var r; try { r = await sb().rpc('tourn_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Save failed', 'error'); return; }
+    if (r.error) { toast(said(r.error) || 'Could not save the sport', 'error'); return; }
     toast('Saved', 'success'); refreshDetail();
   }
   function setDivFmt(k) {
@@ -1432,7 +1453,7 @@
       p.bonus_rules = bpRead();
     }
     var r; try { r = await sb().rpc('tourn_division_save', { p_tourn: S.eventId, p_id: S.divId, p: p }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not save the format', 'error'); return false; }
+    if (r.error) { toast(said(r.error) || 'Could not save the format', 'error'); return false; }
     if (quiet) return true;
     toast('Format saved', 'success'); await refreshDetail(); return true;
   }
