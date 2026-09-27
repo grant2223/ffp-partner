@@ -196,6 +196,20 @@
       '.tg-opendraw.warn{background:#fff7e6;border:1px solid #e8cf9a;border-radius:12px;padding:12px 14px;}',
       '.tg-opendraw.warn b{font-size:14px;font-weight:900;color:#12232f;}',
       '.tg-opendraw.warn span:not(.sp){font-size:12.5px;font-weight:600;color:#5c4a22;}',
+      '.bp-blk .bp-r{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--ffp-border);}',
+      '.bp-blk .bp-r:first-of-type{border-top:1px solid var(--ffp-border);}',
+      '/* an input renders 45px and a select 43px in this shell; they have never sat on one line before */',
+      '.bp-blk .bp-r .lg-in,.bp-blk .bp-r .lg-sel{height:44px;box-sizing:border-box;}',
+      '.bp-blk .bp-t{width:182px;flex:none;min-width:0;}',
+      '.bp-blk .bp-mid{flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}',
+      '.bp-blk .bp-k{width:148px;flex:none;min-width:0;}',
+      '.bp-blk .bp-n{width:72px;flex:none;min-width:0;text-align:center;}',
+      '.bp-blk .bp-pts .bp-n{width:60px;}',
+      '.bp-blk .bp-w{font-size:13px;font-weight:700;color:#5c6f7c;white-space:nowrap;}',
+      '.bp-blk .bp-pts{flex:none;display:flex;align-items:center;gap:7px;}',
+      '.bp-blk .bp-x{flex:none;font-size:19px;color:#93a3ae;cursor:pointer;}',
+      '.bp-blk .bp-add{margin-top:12px;}',
+      '.bp-blk .bp-none{font-size:13px;font-weight:600;color:#5c6f7c;padding:11px 0;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);}',
       '.tg-opendraw .sp{flex:1;}'
     ].join('\n');
     document.head.appendChild(css);
@@ -1071,6 +1085,132 @@
     ['ko', 'Knockout', 'Single elimination, losers are out'],
     ['monrad', 'Monrad', 'Everyone keeps playing, every place decided']
   ];
+
+  /* ── BONUS POINTS ───────────────────────────────────────────────────────
+     A rule is one sentence the organiser completes: a type, a number, a
+     scoring kind where the type needs one, and what it is worth. The kinds
+     come from the sport's own scoring_kinds - never typed - and the database
+     validates the whole array again on save, so a stale page cannot store a
+     rule the table is unable to evaluate.
+
+     One wrinkle worth knowing: rugby's default counts ["try","penalty_try"]
+     together, because a penalty try IS a try. The picker shows one kind, so
+     leaving it alone keeps the pair, and changing it replaces the pair with
+     the single kind chosen. */
+  var BP_TYPES = [['kind_count', 'Scoring bonus'], ['losing_margin', 'Losing bonus'],
+                  ['kind_diff', 'Scoring difference'], ['winning_margin', 'Winning margin']];
+  function bpKinds() {
+    var s = (S.detail && S.detail.schema) || {};
+    return (s.scoring_kinds || []).filter(function (k) {
+      return k && k.key && Number(k.points || 0) > 0;
+    });
+  }
+  function bpInherited(d) {
+    var ev = (S.detail && S.detail.event) || {}, sc = (S.detail && S.detail.schema) || {};
+    var r = (d && d.bonus_rules) || ev.bonus_rules || sc.bonus_rules || [];
+    return Array.isArray(r) ? r.slice(0, 8) : [];
+  }
+  function bpStart(d) {
+    S._bp = bpInherited(d).map(function (r) { return JSON.parse(JSON.stringify(r)); });
+  }
+  /* read the rows back into the working copy BEFORE re-rendering, or changing
+     a type would throw away the number beside it */
+  function bpSync() {
+    (S._bp || []).forEach(function (r, i) {
+      var t = v('bp' + i + '-t'); if (t) r.type = t;
+      var n = v('bp' + i + '-n'); if (n !== '' && n != null) r.n = +n;
+      var p = v('bp' + i + '-p'); if (p !== '' && p != null) r.pts = +p;
+      var k = v('bp' + i + '-k');
+      if (k && !(r.kinds && r.kinds[0] === k)) r.kinds = [k];
+    });
+  }
+  function bpRow(r, i) {
+    var kinds = bpKinds();
+    var kv = (r.kinds && r.kinds[0]) || (kinds[0] && kinds[0].key) || '';
+    var ksel = '<select class="lg-sel bp-k" id="bp' + i + '-k">'
+      + kinds.map(function (k) {
+          return '<option value="' + esc(k.key) + '"' + (k.key === kv ? ' selected' : '')
+               + '>' + esc(k.label || k.key) + '</option>'; }).join('')
+      + '</select>';
+    var n = '<input class="lg-in bp-n" id="bp' + i + '-n" type="number" min="1" value="' + (r.n || 1) + '">';
+    var mid = r.type === 'losing_margin'
+        ? '<span class="bp-w">lose by</span>' + n + '<span class="bp-w">or fewer</span>'
+      : r.type === 'winning_margin'
+        ? '<span class="bp-w">win by</span>' + n + '<span class="bp-w">or more</span>'
+      : r.type === 'kind_diff'
+        ? n + '<span class="bp-w">or more</span>' + ksel + '<span class="bp-w">than the opponent</span>'
+        : n + '<span class="bp-w">or more</span>' + ksel;
+    return '<div class="bp-r">'
+      + '<select class="lg-sel bp-t" id="bp' + i + '-t" onchange="FFPTourn.bpType()">'
+      +   BP_TYPES.map(function (t) {
+            return '<option value="' + t[0] + '"' + (t[0] === r.type ? ' selected' : '')
+                 + '>' + t[1] + '</option>'; }).join('')
+      + '</select>'
+      + '<div class="bp-mid">' + mid + '</div>'
+      + '<div class="bp-pts"><input class="lg-in bp-n" id="bp' + i + '-p" type="number" min="1" value="'
+      +   (r.pts || 1) + '"><span class="bp-w">pt</span></div>'
+      + '<span class="ms bp-x" title="Remove" onclick="FFPTourn.bpDel(' + i + ')">close</span>'
+      + '</div>';
+  }
+  function bpHtml() {
+    return (S._bp || []).map(bpRow).join('')
+      || '<div class="bp-none">No bonus points. Teams score on the win, draw and loss values above.</div>';
+  }
+  function bpRender() { var h = document.getElementById('bp-list'); if (h) h.innerHTML = bpHtml(); }
+  function bpType() { bpSync(); bpRender(); }
+  function bpDel(i) { bpSync(); (S._bp || []).splice(i, 1); bpRender(); }
+  function bpAdd() {
+    bpSync(); S._bp = S._bp || [];
+    if (S._bp.length >= 8) { toast('Eight bonus points is the limit', 'error'); return; }
+    var k = bpKinds()[0];
+    S._bp.push(k ? { type: 'kind_count', n: 4, pts: 1, kinds: [k.key] }
+                 : { type: 'losing_margin', n: 7, pts: 1 });
+    bpRender();
+  }
+  /* what goes to the database. A scoring rule with no kind cannot be
+     evaluated, so it is dropped here rather than being refused on save. */
+  function bpRead() {
+    bpSync();
+    return (S._bp || []).map(function (r) {
+      var o = { type: r.type, n: Math.max(1, +r.n || 1), pts: Math.max(1, +r.pts || 1) };
+      if (r.type === 'kind_count' || r.type === 'kind_diff') {
+        o.kinds = (r.kinds && r.kinds.length) ? r.kinds : null;
+      }
+      return o;
+    }).filter(function (o) {
+      return (o.type === 'kind_count' || o.type === 'kind_diff') ? !!o.kinds : true;
+    });
+  }
+  function bpBlock(d) {
+    bpStart(d);
+    return '<div class="lg-fld bp-blk"><div class="lg-lab">Bonus points</div>'
+      + '<div id="bp-list">' + bpHtml() + '</div>'
+      + '<button class="lg-btn bp-add" onclick="FFPTourn.bpAdd()">' + ic('add') + 'Add a bonus point</button>'
+      + '<div class="lgf-hint">Counted from what the scorer records. A scoring bonus reads the events '
+      + 'logged in the match, named player or not. A margin bonus reads the final score.</div></div>';
+  }
+
+  /* A tournament could never set its own points: the table used whatever the
+     sport said. These resolve the same way leagues do - division, then event,
+     then the sport - and they are only offered where there is a table to
+     rank. A straight knockout has nothing for points to do. */
+  function tgPts(dv) {
+    var ev = (S.detail && S.detail.event) || {}, sc = (S.detail && S.detail.schema) || {};
+    var pick = function (a, b, c, d) {
+      return a != null && a !== '' ? a : (b != null && b !== '' ? b : (c != null && c !== '' ? c : d)); };
+    return { win: pick(dv.win_pts, ev.win_pts, sc.win_pts, 3),
+             draw: pick(dv.draw_pts, ev.draw_pts, sc.draw_pts, 1),
+             loss: pick(dv.loss_pts, ev.loss_pts, sc.loss_pts, 0) };
+  }
+  function tgPtsBlock(dv) {
+    var p = tgPts(dv);
+    return '<div class="lg-3">'
+      + '<div class="lg-fld"><div class="lg-lab">Win pts</div><input class="lg-in" id="tg-win" type="number" value="' + p.win + '"></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Draw pts</div><input class="lg-in" id="tg-draw" type="number" value="' + p.draw + '"></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Loss pts</div><input class="lg-in" id="tg-loss" type="number" value="' + p.loss + '"></div></div>'
+      + bpBlock(dv);
+  }
+
   function fmtOfDiv(d) { return d.draw_format === 'monrad' ? 'monrad' : (d.group_stage ? (d.groups_advance ? 'gk' : 'grp') : 'ko'); }
   function fmtLabel(k) { var f = FORMATS.find(function (x) { return x[0] === k; }); return f ? f[1] : 'Knockout'; }
   function koRounds(n) {
@@ -1159,6 +1299,7 @@
         + '</select><div class="tg-hint" id="tg-sidehint">' + esc(cur[2]) + '</div></div>';
       incl += '<div class="lg-fld"><div class="lg-lab">3rd-place play-off</div><div class="lg-seg" id="tg-third"><button data-v="true" class="' + (dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">Yes</button><button data-v="false" class="' + (!dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">No</button></div></div>';
     }
+    if (k === 'grp' || k === 'gk') incl += tgPtsBlock(dv);
     if (k === 'monrad') incl += '<div class="tg-hint">Monrad re-ranks everyone after every round, so nobody is knocked out and every place is decided. There are no extra draws to add.</div>';
     if (k === 'grp') incl += '<div class="tg-hint">Everyone plays everyone in their group and the table decides it. Nothing follows the groups.</div>';
     return '<div class="tg-dvedit"><div class="tg-fmts">' + cards + '</div>'
@@ -1260,6 +1401,12 @@
       // to — it belongs with the rest of the format, not only with the draw
       draw_size: +v('tg-dsize') || null
     };
+    // only sent when the block is on screen; leaving the keys out leaves the
+    // stored values alone, which is how a knockout keeps whatever it had
+    if (k === 'grp' || k === 'gk') {
+      p.win_pts = v('tg-win'); p.draw_pts = v('tg-draw'); p.loss_pts = v('tg-loss');
+      p.bonus_rules = bpRead();
+    }
     var r; try { r = await sb().rpc('tourn_division_save', { p_tourn: S.eventId, p_id: S.divId, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not save the format', 'error'); return false; }
     if (quiet) return true;
@@ -2315,7 +2462,7 @@
     pinClose: function () { S.pinFor = null; S.pin = null; renderVenues(document.getElementById('tg-body') || document.body); },
     copy: function (t) { try { navigator.clipboard.writeText(t); toast('Copied', 'success'); } catch (e) {} },
     saveDetails: saveDetails, sportHint: sportHint,
-    divKind: divKind, setEntrantMode: setEntrantMode, saveSetup: saveSetup, sideHint: sideHint, setDivFmt: setDivFmt, saveDivFormat: saveDivFormat, buildDivDraw: buildDivDraw, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
+    divKind: divKind, setEntrantMode: setEntrantMode, saveSetup: saveSetup, sideHint: sideHint, setDivFmt: setDivFmt, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, buildDivDraw: buildDivDraw, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, bulkAthletes: bulkAthletes, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit,
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
