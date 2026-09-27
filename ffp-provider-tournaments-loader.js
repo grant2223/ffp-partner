@@ -241,6 +241,28 @@
   // refuses anything else, so the form must not be able to offer anything else.
   // A stored value that has since left the list is kept at the top rather than
   // silently dropped when an old event is opened.
+
+  /* ── THE SPORT PICKER ──────────────────────────────────────────────────
+     Reads taxonomy_items list_key='sport', whose value is the scoring
+     schema's own key. It used to read the 185-entry ACTIVITY list and then
+     guess the sport from the activity, which is how American football came
+     out scored as Australian rules. A sport that is stored but no longer on
+     the list is kept at the top rather than silently dropped. */
+  function sportList() { return (window.FFP_TAX && window.FFP_TAX.sports) || []; }
+  function sportOpts(cur) {
+    var a = sportList().slice();
+    if (cur && !a.some(function (s) { return s.key === cur; })) a.unshift({ key: cur, label: cur });
+    return a.map(function (s) {
+      return '<option value="' + esc(s.key) + '"' + (s.key === cur ? ' selected' : '')
+           + '>' + esc(s.label) + '</option>'; }).join('');
+  }
+  /* a direct lookup now the key is stored, instead of matching the activity
+     against every schema's match_activities and hoping */
+  function schemaNameForSport(k) {
+    var s = (S.sports || []).find(function (x) { return x.key === k; });
+    return s ? s.name : 'Generic points';
+  }
+
   function actOpts(cur) {
     var a = actNames().slice();
     if (cur && a.indexOf(cur) < 0) a.unshift(cur);
@@ -249,7 +271,7 @@
     }).join('');
   }
   function schemaForActivity(act) { var s = (S.sports || []).find(function (x) { return (x.match_activities || []).some(function (a) { return String(a).toLowerCase() === String(act || '').toLowerCase(); }); }); return s ? s.name : 'Generic points'; }
-  function sportHint() { var a = (document.getElementById('tg-sport') || {}).value; var h = document.getElementById('tg-sporthint'); if (h) h.textContent = 'Scoring and stats set: ' + schemaForActivity(a); }
+  function sportHint() { var a = (document.getElementById('tg-sport') || {}).value; var h = document.getElementById('tg-sporthint'); if (h) h.textContent = 'Scoring and stats set: ' + schemaNameForSport(a); }
 
   // The one place that turns a supabase error into something a human can act on.
   // code is what tells us whether it is the schema cache (PGRST202), a missing
@@ -1250,9 +1272,9 @@
       + '<div class="lg-fld"><div class="lg-lab">Which sport is this tournament for?</div>'
       + '<select class="lg-sel" id="tg-sport" onchange="FFPTourn.sportHint()">'
       +   '<option value="">Choose a sport\u2026</option>'
-      +   actOpts(ev.activity)
+      +   sportOpts(ev.sport_key)
       + '</select>'
-      + '<div class="tg-hint" id="tg-sporthint">Scoring and stats set: ' + esc(schemaForActivity(ev.activity)) + '</div></div>'
+      + '<div class="tg-hint" id="tg-sporthint">Scoring and stats set: ' + esc(schemaNameForSport(ev.sport_key)) + '</div></div>'
       + '<div class="lg-fld"><div class="lg-lab">Who competes?</div><div class="lg-seg" id="tg-mode">' + modeSeg + '</div>'
       + '<div class="tg-hint" id="tg-modehint">' + esc(modeHint) + '</div></div>'
       + '<button class="lg-btn pri" onclick="FFPTourn.saveSetup()">' + ic('check') + 'Save</button>'
@@ -1373,7 +1395,9 @@
     if (h) h.textContent = (ENTRANT_MODES.find(function (x) { return x[0] === m; }) || ENTRANT_MODES[0])[2];
   }
   async function saveSetup() {
-    var p = { activity: v('tg-sport'), entrant_mode: (S.detail.event || {}).entrant_mode || 'individual' };
+    var k = v('tg-sport');
+    if (!k) { toast('Choose a sport first', 'error'); return; }
+    var p = { sport_key: k, entrant_mode: (S.detail.event || {}).entrant_mode || 'individual' };
     var r; try { r = await sb().rpc('tourn_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Save failed', 'error'); return; }
     toast('Saved', 'success'); refreshDetail();
