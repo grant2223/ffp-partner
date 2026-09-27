@@ -94,6 +94,20 @@
       '.lgf-edit{padding:16px 0 20px 14px;border-bottom:1px solid var(--ffp-border);}',
       '.lgf-acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}',
       '.lg-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}',
+      '.bp-blk .bp-r{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--ffp-border);}',
+      '.bp-blk .bp-r:first-of-type{border-top:1px solid var(--ffp-border);}',
+      '/* an input renders 45px and a select 43px in this shell; they have never sat on one line before */',
+      '.bp-blk .bp-r .lg-in,.bp-blk .bp-r .lg-sel{height:44px;box-sizing:border-box;}',
+      '.bp-blk .bp-t{width:182px;flex:none;min-width:0;}',
+      '.bp-blk .bp-mid{flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}',
+      '.bp-blk .bp-k{width:148px;flex:none;min-width:0;}',
+      '.bp-blk .bp-n{width:72px;flex:none;min-width:0;text-align:center;}',
+      '.bp-blk .bp-pts .bp-n{width:60px;}',
+      '.bp-blk .bp-w{font-size:13px;font-weight:700;color:#5c6f7c;white-space:nowrap;}',
+      '.bp-blk .bp-pts{flex:none;display:flex;align-items:center;gap:7px;}',
+      '.bp-blk .bp-x{flex:none;font-size:19px;color:#93a3ae;cursor:pointer;}',
+      '.bp-blk .bp-add{margin-top:12px;}',
+      '.bp-blk .bp-none{font-size:13px;font-weight:600;color:#5c6f7c;padding:11px 0;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);}',
       '.lg-seg button.on{background:#17789f;border-color:#17789f;}'
     ].join('\n');
     document.head.appendChild(css);
@@ -577,14 +591,122 @@
              sched: pick(d.schedule_mode, ev.schedule_mode, 'single'),
              finals: pick(d.finals_mode, ev.finals_mode, 'none'),
              third: !!pick(d.third_place, ev.third_place, false),
+             bonus: bpInherited(d),
              own: (d.win_pts != null || d.draw_pts != null || d.loss_pts != null
-                   || d.schedule_mode != null || d.finals_mode != null || d.third_place != null) };
+                   || d.schedule_mode != null || d.finals_mode != null || d.third_place != null
+                   || d.bonus_rules != null) };
   }
+
+  /* ── BONUS POINTS ───────────────────────────────────────────────────────
+     A rule is one sentence the organiser completes: a type, a number, a
+     scoring kind where the type needs one, and what it is worth. The kinds
+     come from the sport's own scoring_kinds - never typed - and the database
+     validates the whole array again on save, so a stale page cannot store a
+     rule the table is unable to evaluate.
+
+     One wrinkle worth knowing: rugby's default counts ["try","penalty_try"]
+     together, because a penalty try IS a try. The picker shows one kind, so
+     leaving it alone keeps the pair, and changing it replaces the pair with
+     the single kind chosen. */
+  var BP_TYPES = [['kind_count', 'Scoring bonus'], ['losing_margin', 'Losing bonus'],
+                  ['kind_diff', 'Scoring difference'], ['winning_margin', 'Winning margin']];
+  function bpKinds() {
+    var s = (S.detail && S.detail.schema) || {};
+    return (s.scoring_kinds || []).filter(function (k) {
+      return k && k.key && Number(k.points || 0) > 0;
+    });
+  }
+  function bpInherited(d) {
+    var ev = (S.detail && S.detail.event) || {}, sc = (S.detail && S.detail.schema) || {};
+    var r = (d && d.bonus_rules) || ev.bonus_rules || sc.bonus_rules || [];
+    return Array.isArray(r) ? r.slice(0, 8) : [];
+  }
+  function bpStart(d) {
+    S._bp = bpInherited(d).map(function (r) { return JSON.parse(JSON.stringify(r)); });
+  }
+  /* read the rows back into the working copy BEFORE re-rendering, or changing
+     a type would throw away the number beside it */
+  function bpSync() {
+    (S._bp || []).forEach(function (r, i) {
+      var t = v('bp' + i + '-t'); if (t) r.type = t;
+      var n = v('bp' + i + '-n'); if (n !== '' && n != null) r.n = +n;
+      var p = v('bp' + i + '-p'); if (p !== '' && p != null) r.pts = +p;
+      var k = v('bp' + i + '-k');
+      if (k && !(r.kinds && r.kinds[0] === k)) r.kinds = [k];
+    });
+  }
+  function bpRow(r, i) {
+    var kinds = bpKinds();
+    var kv = (r.kinds && r.kinds[0]) || (kinds[0] && kinds[0].key) || '';
+    var ksel = '<select class="lg-sel bp-k" id="bp' + i + '-k">'
+      + kinds.map(function (k) {
+          return '<option value="' + esc(k.key) + '"' + (k.key === kv ? ' selected' : '')
+               + '>' + esc(k.label || k.key) + '</option>'; }).join('')
+      + '</select>';
+    var n = '<input class="lg-in bp-n" id="bp' + i + '-n" type="number" min="1" value="' + (r.n || 1) + '">';
+    var mid = r.type === 'losing_margin'
+        ? '<span class="bp-w">lose by</span>' + n + '<span class="bp-w">or fewer</span>'
+      : r.type === 'winning_margin'
+        ? '<span class="bp-w">win by</span>' + n + '<span class="bp-w">or more</span>'
+      : r.type === 'kind_diff'
+        ? n + '<span class="bp-w">or more</span>' + ksel + '<span class="bp-w">than the opponent</span>'
+        : n + '<span class="bp-w">or more</span>' + ksel;
+    return '<div class="bp-r">'
+      + '<select class="lg-sel bp-t" id="bp' + i + '-t" onchange="FFPLeague.bpType()">'
+      +   BP_TYPES.map(function (t) {
+            return '<option value="' + t[0] + '"' + (t[0] === r.type ? ' selected' : '')
+                 + '>' + t[1] + '</option>'; }).join('')
+      + '</select>'
+      + '<div class="bp-mid">' + mid + '</div>'
+      + '<div class="bp-pts"><input class="lg-in bp-n" id="bp' + i + '-p" type="number" min="1" value="'
+      +   (r.pts || 1) + '"><span class="bp-w">pt</span></div>'
+      + '<span class="ms bp-x" title="Remove" onclick="FFPLeague.bpDel(' + i + ')">close</span>'
+      + '</div>';
+  }
+  function bpHtml() {
+    return (S._bp || []).map(bpRow).join('')
+      || '<div class="bp-none">No bonus points. Teams score on the win, draw and loss values above.</div>';
+  }
+  function bpRender() { var h = document.getElementById('bp-list'); if (h) h.innerHTML = bpHtml(); }
+  function bpType() { bpSync(); bpRender(); }
+  function bpDel(i) { bpSync(); (S._bp || []).splice(i, 1); bpRender(); }
+  function bpAdd() {
+    bpSync(); S._bp = S._bp || [];
+    if (S._bp.length >= 8) { toast('Eight bonus points is the limit', 'error'); return; }
+    var k = bpKinds()[0];
+    S._bp.push(k ? { type: 'kind_count', n: 4, pts: 1, kinds: [k.key] }
+                 : { type: 'losing_margin', n: 7, pts: 1 });
+    bpRender();
+  }
+  /* what goes to the database. A scoring rule with no kind cannot be
+     evaluated, so it is dropped here rather than being refused on save. */
+  function bpRead() {
+    bpSync();
+    return (S._bp || []).map(function (r) {
+      var o = { type: r.type, n: Math.max(1, +r.n || 1), pts: Math.max(1, +r.pts || 1) };
+      if (r.type === 'kind_count' || r.type === 'kind_diff') {
+        o.kinds = (r.kinds && r.kinds.length) ? r.kinds : null;
+      }
+      return o;
+    }).filter(function (o) {
+      return (o.type === 'kind_count' || o.type === 'kind_diff') ? !!o.kinds : true;
+    });
+  }
+  function bpBlock(d) {
+    bpStart(d);
+    return '<div class="lg-fld bp-blk"><div class="lg-lab">Bonus points</div>'
+      + '<div id="bp-list">' + bpHtml() + '</div>'
+      + '<button class="lg-btn bp-add" onclick="FFPLeague.bpAdd()">' + ic('add') + 'Add a bonus point</button>'
+      + '<div class="lgf-hint">Counted from what the scorer records. A scoring bonus reads the events '
+      + 'logged in the match, named player or not. A margin bonus reads the final score.</div></div>';
+  }
+
   function lgFmtLine(d) {
     var f = lgFmt(d);
     var fin = (FINALS_MODES.find(function (x) { return x[0] === f.finals; }) || FINALS_MODES[0]);
     return (f.sched === 'home_away' ? 'Home & away' : 'Single round') + ', '
       + f.win + '/' + f.draw + '/' + f.loss + ' points, '
+      + (f.bonus.length ? f.bonus.length + (f.bonus.length === 1 ? ' bonus point, ' : ' bonus points, ') : '')
       + (f.finals === 'none' ? 'no finals' : fin[1].toLowerCase())
       + (d.entrant_count != null ? ', ' + d.entrant_count + (d.entrant_count === 1 ? ' team' : ' teams') : '');
   }
@@ -600,6 +722,7 @@
       +   '<div class="lg-fld"><div class="lg-lab">Win pts</div><input class="lg-in" id="lgf-win" type="number" value="' + f.win + '"></div>'
       +   '<div class="lg-fld"><div class="lg-lab">Draw pts</div><input class="lg-in" id="lgf-draw" type="number" value="' + f.draw + '"></div>'
       +   '<div class="lg-fld"><div class="lg-lab">Loss pts</div><input class="lg-in" id="lgf-loss" type="number" value="' + f.loss + '"></div></div>'
+      + bpBlock(d)
       + '<div class="lg-fld"><div class="lg-lab">Finals series</div><select class="lg-sel" id="lgf-finals" onchange="FFPLeague.finalsHint()">'
       +   FINALS_MODES.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === f.finals ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('')
       +   '</select><div class="lgf-hint" id="lgf-finalshint">' + esc(cur[2]) + '</div></div>'
@@ -645,14 +768,16 @@
   }
   async function saveDivFormat(id) {
     var p = { win_pts: v('lgf-win'), draw_pts: v('lgf-draw'), loss_pts: v('lgf-loss'),
-              schedule_mode: segVal('lgf-mode'), finals_mode: v('lgf-finals') };
+              schedule_mode: segVal('lgf-mode'), finals_mode: v('lgf-finals'),
+              bonus_rules: bpRead() };
     if (document.getElementById('lgf-third')) p.third_place = segVal('lgf-third') === 'true';
     var r; try { r = await sb().rpc('league_division_save', { p_league: S.eventId, p_id: id, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not save the format', 'error'); return; }
     toast('Format saved', 'success'); refreshDetail();
   }
   async function clearDivFormat(id) {
-    var p = { win_pts: null, draw_pts: null, loss_pts: null, schedule_mode: null, finals_mode: null, third_place: null };
+    var p = { win_pts: null, draw_pts: null, loss_pts: null, schedule_mode: null, finals_mode: null,
+              third_place: null, bonus_rules: null };
     var r; try { r = await sb().rpc('league_division_save', { p_league: S.eventId, p_id: id, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not reset it', 'error'); return; }
     toast('Back to the league default', 'success'); refreshDetail();
@@ -1707,7 +1832,7 @@
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
     statusPick: statusPick,
     saveDetails: saveDetails, sportHint: sportHint,
-    saveSport: saveSport, saveDivFormat: saveDivFormat, clearDivFormat: clearDivFormat,
+    saveSport: saveSport, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, clearDivFormat: clearDivFormat,
     setSetupDiv: function (id) { S.divId = id; renderTab(); },
     finalsHint: function () {
       var v2 = (document.getElementById('lgf-finals') || {}).value;
