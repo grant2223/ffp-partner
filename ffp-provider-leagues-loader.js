@@ -160,7 +160,11 @@
   }
 
   async function open(id) {
-    S.eventId = id; S.view = 'editor'; S.tab = 'details'; S.divEdit = null; S.entAdd = false; S.fxConfirm = false;
+    /* renderTab has no 'details' branch - the tab was renamed to
+       'information' and this was never updated, so opening a league, or
+       saving anything (both saveDetails and saveSport call open()), left
+       every branch unmatched and the body blank. */
+    S.eventId = id; S.view = 'editor'; S.tab = 'information'; S.divEdit = null; S.entAdd = false; S.fxConfirm = false;
     var r; try { r = await sb().rpc('league_detail', { p_league: id }); } catch (e) { r = { error: e }; }
     S.detail = (r && r.data) || null;
     S.divId = (S.detail && S.detail.divisions && S.detail.divisions[0] && S.detail.divisions[0].id) || null;
