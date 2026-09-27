@@ -113,7 +113,7 @@
     document.head.appendChild(css);
   }
 
-  async function loadSports() { if (S.sports) return S.sports; var r = await sb().from('lt_sport_schemas').select('key,name,icon,match_activities,player_fields,team_match_fields,scoring_kinds').eq('active', true).order('sort'); S.sports = r.data || []; return S.sports; }
+  async function loadSports() { if (S.sports) return S.sports; var r = await sb().from('lt_sport_schemas').select('key,name,icon,match_activities,player_fields,team_match_fields,scoring_kinds,game_rules').eq('active', true).order('sort'); S.sports = r.data || []; return S.sports; }
   // ---- Taxonomy (shared window.FFP_TAX — activity / gender / city / country) ----
   async function taxReady() { try { if (window.FFP_TAX_READY) await window.FFP_TAX_READY; } catch (e) {} return window.FFP_TAX || {}; }
   function actNames() { return ((window.FFP_TAX && window.FFP_TAX.activities) || []).map(function (a) { return a && a.n ? a.n : a; }); }
@@ -148,6 +148,64 @@
      loader already makes for the hint, so it covers a taxonomy outage; and
      the hardcoded list in ffp-taxonomy.js covers both being unreachable.
      An organiser must never be unable to choose a sport. */
+
+  /* ── HOW THIS COMPETITION IS RUN ────────────────────────────────────────
+     The ruleset and the match length are the competition's DEFAULTS. A match
+     still overrides its own from the scorer, and a division can override the
+     competition; this is what both fall back to.
+
+     The rulesets on offer come from the SPORT (lt_sport_schemas.game_rules
+     .variants), so a sport with one ruleset shows no picker and nothing about
+     which sports have rulesets is written down here. The database validates
+     the choice as well, so a stale page cannot store one the scorer would not
+     understand. */
+  function sportVariants(k) {
+    var s = (S.sports || []).find(function (x) { return x.key === k; });
+    var v = s && s.game_rules && s.game_rules.variants;
+    if (!v) return [];
+    return Object.keys(v).map(function (id) {
+      return { id: id, label: (v[id] && v[id].label) || id, note: (v[id] && v[id].note) || '' }; });
+  }
+  var LEN_COUNTS = [['', 'Sport default'], ['1', 'One period'], ['2', 'Two halves'], ['4', 'Four quarters']];
+  function rulesBlock(ev) {
+    var vs = sportVariants(ev.sport_key), out = '';
+    if (vs.length > 1) {
+      var cur = vs.find(function (x) { return x.id === ev.rules_variant; }) || vs[0];
+      out += '<div class="lg-fld"><div class="lg-lab">Ruleset</div>'
+        + '<select class="lg-sel" id="lgr-variant" onchange="FFPLeague.rulesHint()">'
+        +   vs.map(function (x) {
+              return '<option value="' + esc(x.id) + '"' + (x.id === cur.id ? ' selected' : '')
+                   + '>' + esc(x.label) + '</option>'; }).join('')
+        + '</select><div class="lgf-hint" id="lgr-varianthint">' + esc(cur.note) + '</div></div>';
+    }
+    var cnt = ev.period_count == null ? '' : String(ev.period_count);
+    return out + '<div class="lg-2">'
+      + '<div class="lg-fld"><div class="lg-lab">Minutes a period</div>'
+      +   '<input class="lg-in" id="lgr-min" type="number" min="1" max="60" placeholder="Sport default" value="'
+      +   (ev.period_minutes == null ? '' : ev.period_minutes) + '"></div>'
+      + '<div class="lg-fld"><div class="lg-lab">How many</div><select class="lg-sel" id="lgr-cnt">'
+      +   LEN_COUNTS.map(function (x) {
+            return '<option value="' + x[0] + '"' + (cnt === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('')
+      +   '</select></div></div>'
+      + '<div class="lgf-hint">Left empty, a match runs to whatever the sport plays. '
+      + 'A single match can still be changed from the scorer.</div>';
+  }
+  function rulesHint() {
+    var s = document.getElementById('lgr-variant'), h = document.getElementById('lgr-varianthint');
+    if (!s || !h) return;
+    var ev = (S.detail && S.detail.event) || {};
+    var x = sportVariants(ev.sport_key).find(function (y) { return y.id === s.value; });
+    h.textContent = (x && x.note) || '';
+  }
+  /* The three keys are always sent, so clearing a field back to empty actually
+     clears it - the save RPCs use `p ? key` for exactly this reason. */
+  function rulesPayload() {
+    var p = { period_minutes: v('lgr-min') || null, period_count: v('lgr-cnt') || null };
+    var s = document.getElementById('lgr-variant');
+    if (s) p.rules_variant = s.value || null;
+    return p;
+  }
+
   function sportList() {
     var t = (window.FFP_TAX && window.FFP_TAX.sports) || [];
     if (t.length) return t;
@@ -792,6 +850,7 @@
       +   sportOpts(ev.sport_key)
       + '</select>'
       + '<div class="lgf-hint" id="lg-sporthint">Scoring and stats set: ' + esc(schemaNameForSport(ev.sport_key)) + '</div></div>'
+      + rulesBlock(ev)
       + '<button class="lg-btn pri" onclick="FFPLeague.saveSport()">' + ic('check') + 'Save</button></div>';
     if (!divs.length) {
       host.innerHTML = head + '<div class="lgf-sec"><div class="lgf-sech">Format, per division</div>'
@@ -812,7 +871,8 @@
   async function saveSport() {
     var k = v('lg-sport');
     if (!k) { toast('Choose a sport first', 'error'); return; }
-    var r; try { r = await sb().rpc('league_event_save', { p_id: S.eventId, p: { sport_key: k } }); } catch (e) { r = { error: e }; }
+    var p = rulesPayload(); p.sport_key = k;
+    var r; try { r = await sb().rpc('league_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast(said(r.error) || 'Could not save the sport', 'error'); return; }
     toast('Saved', 'success'); open(S.eventId);
   }
@@ -1876,6 +1936,7 @@
   function divOpts() { return (S.detail.divisions || []).map(function (d) { return '<option value="' + d.id + '"' + (d.id === S.divId ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join(''); }
 
   window.FFPLeague = {
+    rulesHint: rulesHint,
     open: open, startCreate: startCreate, cancelCreate: cancelCreate, doCreate: doCreate,
     back: function () { S.view = 'list'; renderList(); }, tab: function (t) { S.tab = t; S.matchOpen = null; renderEditor(); },
     setDiv: function (val, tab) { S.divId = val; S.tab = tab; S.entEdit = null; S.entDel = null; S.sqOpen = null; renderTab(); },
