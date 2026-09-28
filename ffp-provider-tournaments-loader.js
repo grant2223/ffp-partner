@@ -85,6 +85,21 @@
       '.tg-rlbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#b7c2cc;margin:9px 0 1px;} .tg-gfx{display:grid;grid-template-columns:1fr 116px 1fr auto;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid #f0f3f6;} .tg-gfx .t{font-size:13.5px;font-weight:700} .tg-gfx .t.a{text-align:right} .tg-gfx .sc{display:flex;gap:6px;justify-content:center} .tg-gfx .sc input{width:42px;height:34px;text-align:center;border:1.5px solid #d7dee5;border-radius:8px;font:inherit;font-weight:800;} .fxlab{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#9aa8b4;margin:10px 0 2px;}',
       '.tg-fmts{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px;} .tg-fmt{border:1.5px solid var(--ffp-border);border-radius:14px;padding:16px 12px;cursor:pointer;text-align:center;} .tg-fmt.on{border-color:var(--ffp-blue);box-shadow:0 0 0 3px rgba(25,128,173,.12);} .tg-fmt .dia{height:74px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;} .tg-fmt b{display:block;font-size:13.5px;font-weight:900;} .tg-fmt span{display:block;font-size:11.5px;color:var(--ffp-text-muted);font-weight:600;margin-top:3px;line-height:1.4;} .tgd rect{fill:none;stroke:#c3ced6;stroke-width:2.4;} .tgd line{stroke:#c3ced6;stroke-width:2.4;} .tg-fmt.on .tgd rect,.tg-fmt.on .tgd line{stroke:var(--ffp-blue);}',
       '.tg-fmtset{margin-top:18px;border-top:1px solid var(--ffp-border);padding-top:16px;}',
+      /* TIERED POOLS. Flat rows on the canvas, hairline separated - the tier
+         chip and the band's lit edge carry the weight, so nothing is a card
+         inside a card. A one-digit count does not need the full field width,
+         hence tg-num, scoped so .lg-in is untouched everywhere else. */
+      '.tg-num{max-width:118px;min-width:0;box-sizing:border-box;text-align:center;}',
+      '.tg-quota{margin-top:4px;} .tg-qrow{display:flex;align-items:center;gap:13px;padding:11px 2px;border-bottom:1px solid var(--ffp-border);} .tg-qrow:last-child{border-bottom:0;}',
+      '.tg-qp{width:26px;height:26px;flex:none;display:grid;place-items:center;border-radius:8px;font-size:13px;font-weight:900;color:#7a5600;background:linear-gradient(160deg,#ffd868,#f2a900);}',
+      '.tg-qrow:nth-child(2) .tg-qp{background:linear-gradient(160deg,#ffe6a8,#f6c95e);} .tg-qrow:nth-child(n+3) .tg-qp{background:#e7edf1;color:#7b8f9c;}',
+      '.tg-qn{flex:1;min-width:0;font-size:14px;font-weight:800;color:#12232f;} .tg-qn small{display:block;font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);}',
+      '.tg-qin{width:74px;flex:none;min-width:0;box-sizing:border-box;text-align:center;}',
+      '.tg-lhead{margin-top:18px;} .tg-ladder{margin:2px 0 4px;}',
+      '.tg-lrow{display:flex;align-items:center;gap:14px;padding:12px 2px 12px 12px;border-bottom:1px solid var(--ffp-border);position:relative;} .tg-lrow:last-child{border-bottom:0;}',
+      '.tg-lrow::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:2px;background:#d7dee5;} .tg-lrow.tg-top::before{background:linear-gradient(180deg,#ffd868,#f2a900);}',
+      '.tg-lpl{width:74px;flex:none;font-size:15px;font-weight:900;color:#12232f;font-variant-numeric:tabular-nums;} .tg-lpl small{display:block;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#a86a00;}',
+      '.tg-lties{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:8px 16px;} .tg-tie{font-size:13.5px;font-weight:800;color:#33485a;font-variant-numeric:tabular-nums;} .tg-tie i{font-style:normal;font-weight:700;color:#9aa8b4;padding:0 2px;} .tg-tie.tg-none{font-weight:700;color:var(--ffp-text-muted);}',
       '.lg-fldbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .lg-fldchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--ffp-border-mid);border-radius:12px;padding:7px 11px;font-size:12.5px;font-weight:800;} .lg-fldchip .t{color:var(--ffp-text-muted);font-weight:700;} .lg-fldchip .x{color:#9aa8b4;font-size:16px;cursor:pointer;} .lg-fldchip.add{border-style:dashed;gap:4px;}',
       '.lg-srow{display:grid;grid-template-columns:1fr 132px 92px 120px 140px;gap:9px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .lg-srow .mt{font-size:13.5px;font-weight:800;color:var(--ffp-text);min-width:0;} .lg-srow .mt span{display:block;font-size:11px;color:var(--ffp-text-muted);font-weight:600;} .lg-srow .lg-in,.lg-srow .lg-sel{padding:8px 9px;font-size:12.5px;width:100%;}',
       '.lg-brand{display:flex;gap:12px;align-items:stretch;} .lg-logo{width:76px;height:76px;flex:none;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:10px;font-weight:800;} .lg-logo .ms{font-size:22px;} .lg-banner{flex:1;height:76px;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:11px;font-weight:800;} .lg-banner .ms{font-size:22px;} .lg-row .act{margin-left:auto;color:#9aa8b4;font-size:19px;cursor:pointer;} .lg-banner16{width:100%;max-width:520px;aspect-ratio:16/9;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9aa8b4;cursor:pointer;font-size:12px;font-weight:800;} .lg-banner16 .ms{font-size:28px;} .lg-offadd{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;} .lg-offsrch{position:relative;} .lg-offres{margin-top:6px;display:flex;flex-direction:column;gap:4px;} .lg-offopt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid #e6ecf1;background:#fff;border-radius:11px;padding:8px 11px;cursor:pointer;} .lg-offopt .av{width:34px;height:34px;border-radius:8px;flex:none;background:#e7ecef center/cover no-repeat;} .lg-offopt .g{flex:1;min-width:0;} .lg-offopt .g b{font-size:14px;font-weight:800;color:#12232f;display:block;} .lg-offopt .g span{font-size:11.5px;color:#7c8b97;font-weight:600;} .lg-offopt .pk{font-size:12px;font-weight:800;color:#1980AD;} .lg-offnone{font-size:12.5px;color:#7c8b97;font-weight:600;padding:8px 4px;} .lg-offpicked{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#0a8f5f;padding:6px 4px;} .lg-offrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}',
@@ -1184,7 +1199,8 @@
     ['grp', 'Groups only', 'Round-robin, final table'],
     ['gk', 'Groups, then knockout', 'Top entrants advance to a bracket'],
     ['ko', 'Knockout', 'Single elimination, losers are out'],
-    ['monrad', 'Monrad', 'Everyone keeps playing, every place decided']
+    ['monrad', 'Monrad', 'Everyone keeps playing, every place decided'],
+    ['tiered', 'Tiered pools', 'Pools by ability, every team placed']
   ];
 
   /* ── BONUS POINTS ───────────────────────────────────────────────────────
@@ -1312,7 +1328,89 @@
       + bpBlock(dv);
   }
 
-  function fmtOfDiv(d) { return d.draw_format === 'monrad' ? 'monrad' : (d.group_stage ? (d.groups_advance ? 'gk' : 'grp') : 'ko'); }
+  function fmtOfDiv(d) {
+    if (d.draw_format === 'tiered') return 'tiered';
+    return d.draw_format === 'monrad' ? 'monrad' : (d.group_stage ? (d.groups_advance ? 'gk' : 'grp') : 'ko');
+  }
+
+  /* ── THE TIERED LADDER ──────────────────────────────────────────────────
+     The same rule the database runs, so the preview cannot promise a draw the
+     engine would not build. Pools are TIERS, A strongest. Each sends the
+     number its tier earns into the top band; everyone left is ranked by
+     FINISHING POSITION first and pool tier second, then cut into bands. That
+     ordering is the whole thing - 1C sorts above 3A, so the bottom pool's
+     winner meets the top pool's straggler.
+     An odd band gives its foot to the lowest slot on pool record and the rest
+     cross above it, never the middle team. */
+  function tierSizes(n, g) {
+    var base = Math.floor(n / g), rem = n % g, out = [];
+    for (var i = 0; i < g; i++) out.push(base + (i >= g - rem ? 1 : 0));
+    return out;
+  }
+  function tierBands(sizes, quota, bandSize) {
+    var all = [], cup = [], i, pos;
+    for (i = 0; i < sizes.length; i++) {
+      for (pos = 1; pos <= sizes[i]; pos++) all.push({ pos: pos, tier: i });
+      for (pos = 1; pos <= Math.min(quota[i] || 0, sizes[i]); pos++) cup.push({ pos: pos, tier: i });
+    }
+    var nm = function (s) { return s.pos + String.fromCharCode(65 + s.tier); };
+    var by = function (a, b) { return (a.pos - b.pos) || (a.tier - b.tier); };
+    var taken = {}; cup.forEach(function (s) { taken[nm(s)] = 1; });
+    var rest = all.filter(function (s) { return !taken[nm(s)]; }).sort(by);
+    var bands = [cup.slice().sort(by)];
+    for (i = 0; i < rest.length; i += bandSize) bands.push(rest.slice(i, i + bandSize));
+    var place = 1;
+    return bands.filter(function (b) { return b.length; }).map(function (b) {
+      var from = place, to = place + b.length - 1; place = to + 1;
+      var play = b.length % 2 === 1 ? b.slice(0, -1) : b, ties = [];
+      for (var j = 0; j < play.length / 2; j++) ties.push([nm(play[j]), nm(play[play.length - 1 - j])]);
+      return { from: from, to: to, slots: b.map(nm), ties: ties };
+    });
+  }
+  function tierCfg(dv) {
+    var g = Math.max(2, +(document.getElementById('tg-np') || {}).value || dv.num_groups || 3);
+    var bs = Math.max(2, +(document.getElementById('tg-bs') || {}).value || dv.band_size || 4);
+    var q = [], el, i;
+    for (i = 0; i < g; i++) {
+      el = document.getElementById('tg-q' + i);
+      q.push(el ? Math.max(0, +el.value || 0) : ((dv.tier_quota || [])[i] != null ? dv.tier_quota[i] : (i < 2 ? 2 : 0)));
+    }
+    return { g: g, bs: bs, q: q, n: dv.entrant_count || 0 };
+  }
+  function tierQuotaHtml(dv) {
+    var c = tierCfg(dv), sizes = tierSizes(c.n, c.g);
+    return sizes.map(function (sz, i) {
+      return '<div class="tg-qrow"><span class="tg-qp">' + String.fromCharCode(65 + i) + '</span>'
+        + '<span class="tg-qn">Pool ' + String.fromCharCode(65 + i)
+        + '<small>' + sz + ' team' + (sz === 1 ? '' : 's') + (i === 0 ? ', strongest' : '') + '</small></span>'
+        + '<input class="lg-in tg-qin" id="tg-q' + i + '" type="number" min="0" max="' + sz + '" value="'
+        + Math.min(c.q[i], sz) + '" oninput="FFPTourn.tierPreview()"></div>';
+    }).join('');
+  }
+  function tierLadderHtml(dv) {
+    var c = tierCfg(dv);
+    if (!c.n) return '<div class="tg-hint">Add entrants and the bands appear here.</div>';
+    return tierBands(tierSizes(c.n, c.g), c.q, c.bs).map(function (b, i) {
+      var range = b.from + (b.to > b.from ? '&ndash;' + b.to : '');
+      var ties = b.ties.length
+        ? b.ties.map(function (t) { return '<span class="tg-tie">' + t[0] + ' <i>v</i> ' + t[1] + '</span>'; }).join('')
+        : '<span class="tg-tie tg-none">decided on pool record</span>';
+      return '<div class="tg-lrow' + (i === 0 ? ' tg-top' : '') + '"><span class="tg-lpl">' + range
+        + '<small>' + (i === 0 ? 'Cup' : '') + '</small></span><span class="tg-lties">' + ties + '</span></div>';
+    }).join('');
+  }
+  function tierPreview() {
+    var dv = (S.detail.divisions || []).find(function (x) { return x.id === S.divId; }); if (!dv) return;
+    var l = document.getElementById('tg-ladder'); if (l) l.innerHTML = tierLadderHtml(dv);
+  }
+  /* the pool count changes how many quota rows there are, so that one rebuilds
+     the rows as well - and only that one, or typing in a quota box would tear
+     the box out from under the cursor */
+  function tierPools() {
+    var dv = (S.detail.divisions || []).find(function (x) { return x.id === S.divId; }); if (!dv) return;
+    var q = document.getElementById('tg-quota'); if (q) q.innerHTML = tierQuotaHtml(dv);
+    tierPreview();
+  }
   function fmtLabel(k) { var f = FORMATS.find(function (x) { return x[0] === k; }); return f ? f[1] : 'Knockout'; }
   function koRounds(n) {
     if (!n || n < 2) return [];
@@ -1331,6 +1429,7 @@
     if (k === 'monrad') { var r = monradRounds(n); return n + ' entrants, ' + r + ' rounds, every place from 1 to ' + n + ' is played off'; }
     if (k === 'ko') { var rr = koRounds(n); return n + ' entrants, ' + rr.length + ' rounds, ' + rr.join(' to ').toLowerCase(); }
     var ng = d.num_groups || Math.max(2, Math.round(n / 4));
+    if (k === 'tiered') return n + ' teams in ' + ng + ' pools by ability, every team placed 1 to ' + n;
     if (k === 'grp') return n + ' entrants in ' + ng + ' groups, ranked into one table';
     return n + ' entrants in ' + ng + ' groups, top ' + (d.groups_advance || 2) + ' of each into a knockout';
   }
@@ -1401,6 +1500,20 @@
         + '</select><div class="tg-hint" id="tg-sidehint">' + esc(cur[2]) + '</div></div>';
       incl += '<div class="lg-fld"><div class="lg-lab">3rd-place play-off</div><div class="lg-seg" id="tg-third"><button data-v="true" class="' + (dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">Yes</button><button data-v="false" class="' + (!dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">No</button></div></div>';
     }
+    if (k === 'tiered') {
+      var tc = tierCfg(dv);
+      incl += '<div class="lg-2">'
+        + '<div class="lg-fld"><div class="lg-lab">Number of pools</div>'
+        +   '<input class="lg-in tg-num" id="tg-np" type="number" min="2" max="8" value="' + tc.g + '" oninput="FFPTourn.tierPools()"></div>'
+        + '<div class="lg-fld"><div class="lg-lab">Places per band</div>'
+        +   '<input class="lg-in tg-num" id="tg-bs" type="number" min="2" max="8" value="' + tc.bs + '" oninput="FFPTourn.tierPreview()"></div></div>'
+        + '<div class="lg-fld"><div class="lg-lab">Into the top band</div>'
+        +   '<div class="tg-quota" id="tg-quota">' + tierQuotaHtml(dv) + '</div>'
+        +   '<div class="tg-hint">Pools are listed strongest first. A pool set to none sends nobody to the top band however well it plays &mdash; that is what makes it tiered rather than even.</div></div>'
+        + '<div class="lg-lab tg-lhead">What that gives you</div>'
+        + '<div class="tg-ladder" id="tg-ladder">' + tierLadderHtml(dv) + '</div>'
+        + '<div class="tg-hint">Every team finishes with a place. Winners meet winners and losers meet losers down each band, and the pool slots fill in as results land.</div>';
+    }
     if (k === 'grp' || k === 'gk') incl += tgPtsBlock(dv);
     if (k === 'monrad') incl += '<div class="tg-hint">Monrad re-ranks everyone after every round, so nobody is knocked out and every place is decided. There are no extra draws to add.</div>';
     if (k === 'grp') incl += '<div class="tg-hint">Everyone plays everyone in their group and the table decides it. Nothing follows the groups.</div>';
@@ -1416,7 +1529,7 @@
   // tournament can be scheduled and the names dropped in as results come.
   var DRAW_SIZES = [4, 8, 16, 32, 64, 128];
   function drawSizeRow(dv, k) {
-    if (k === 'grp') return '';
+    if (k === 'grp' || k === 'tiered') return '';
     var cur = dv.draw_size || 0;
     var sel = (cur ? '' : '<option value="">Not set</option>')
       + DRAW_SIZES.map(function (n) {
@@ -1461,6 +1574,7 @@
   function fmtDia(k) {
     if (k === 'grp') return '<svg width="56" height="60" viewBox="0 0 56 60" class="tgd"><rect x="2" y="4" width="52" height="12" rx="2"/><rect x="2" y="18" width="52" height="12" rx="2"/><rect x="2" y="32" width="52" height="12" rx="2"/><rect x="2" y="46" width="52" height="12" rx="2"/></svg>';
     if (k === 'gk') return '<svg width="86" height="74" viewBox="0 0 86 74" class="tgd"><rect x="2" y="4" width="34" height="10"/><rect x="2" y="17" width="34" height="10"/><rect x="2" y="30" width="34" height="10"/><rect x="52" y="10" width="32" height="10"/><line x1="36" y1="9" x2="52" y2="15"/><line x1="36" y1="35" x2="52" y2="15"/><rect x="16" y="52" width="24" height="9"/><rect x="16" y="63" width="24" height="9"/><rect x="48" y="57" width="24" height="9"/><line x1="40" y1="56" x2="48" y2="61"/><line x1="40" y1="67" x2="48" y2="61"/></svg>';
+    if (k === 'tiered') return '<svg width="80" height="70" viewBox="0 0 80 70" class="tgd"><rect x="2" y="6" width="26" height="10"/><rect x="2" y="19" width="26" height="10"/><rect x="2" y="36" width="26" height="10"/><rect x="2" y="49" width="26" height="10"/><rect x="52" y="6" width="26" height="10"/><rect x="52" y="19" width="26" height="10"/><rect x="52" y="36" width="26" height="10"/><rect x="52" y="49" width="26" height="10"/><line x1="28" y1="11" x2="52" y2="11"/><line x1="28" y1="24" x2="52" y2="24"/><line x1="28" y1="41" x2="52" y2="41"/><line x1="28" y1="54" x2="52" y2="54"/></svg>';
     if (k === 'monrad') return '<svg width="80" height="70" viewBox="0 0 80 70" class="tgd"><rect x="2" y="6" width="24" height="9"/><rect x="2" y="19" width="24" height="9"/><rect x="2" y="36" width="24" height="9"/><rect x="2" y="49" width="24" height="9"/><rect x="38" y="6" width="24" height="9"/><rect x="38" y="19" width="24" height="9"/><rect x="38" y="36" width="24" height="9"/><rect x="38" y="49" width="24" height="9"/><line x1="26" y1="10" x2="38" y2="10"/><line x1="26" y1="23" x2="38" y2="40"/><line x1="26" y1="40" x2="38" y2="23"/><line x1="26" y1="53" x2="38" y2="53"/></svg>';
     return '<svg width="80" height="66" viewBox="0 0 80 66" class="tgd"><rect x="2" y="8" width="26" height="10"/><rect x="2" y="22" width="26" height="10"/><rect x="2" y="40" width="26" height="10"/><rect x="2" y="54" width="26" height="10"/><rect x="40" y="14" width="26" height="10"/><rect x="40" y="46" width="26" height="10"/><line x1="28" y1="13" x2="40" y2="19"/><line x1="28" y1="27" x2="40" y2="19"/><line x1="28" y1="45" x2="40" y2="51"/><line x1="28" y1="59" x2="40" y2="51"/></svg>';
   }
@@ -1486,9 +1600,14 @@
   function setDivFmt(k) {
     var divs = S.detail.divisions || [];
     var dv = divs.find(function (x) { return x.id === S.divId; }); if (!dv) return;
-    dv.draw_format = (k === 'monrad') ? 'monrad' : 'ko';
-    dv.group_stage = (k === 'grp' || k === 'gk');
+    dv.draw_format = (k === 'monrad') ? 'monrad' : (k === 'tiered' ? 'tiered' : 'ko');
+    dv.group_stage = (k === 'grp' || k === 'gk' || k === 'tiered');
     if (k === 'grp') dv.groups_advance = 0; else if (!dv.groups_advance) dv.groups_advance = 2;
+    if (k === 'tiered') {
+      if (!dv.num_groups) dv.num_groups = 3;
+      if (!dv.band_size) dv.band_size = 4;
+      if (!dv.tier_quota) dv.tier_quota = [2, 2, 0].slice(0, dv.num_groups);
+    }
     renderTab();
   }
   async function saveDivFormat(quiet) {
@@ -1496,8 +1615,8 @@
     var dv = divs.find(function (x) { return x.id === S.divId; }); if (!dv) return;
     var k = fmtOfDiv(dv);
     var p = {
-      draw_format: k === 'monrad' ? 'monrad' : 'ko',
-      group_stage: (k === 'grp' || k === 'gk'),
+      draw_format: k === 'monrad' ? 'monrad' : (k === 'tiered' ? 'tiered' : 'ko'),
+      group_stage: (k === 'grp' || k === 'gk' || k === 'tiered'),
       num_groups: +v('tg-ng') || null,
       groups_advance: k === 'gk' ? (+v('tg-adv') || 2) : (k === 'grp' ? 0 : (dv.groups_advance || 2)),
       third_place: segVal('tg-third') === 'true',
@@ -1512,6 +1631,15 @@
       p.win_pts = v('tg-win'); p.draw_pts = v('tg-draw'); p.loss_pts = v('tg-loss');
       p.bonus_rules = bpRead();
     }
+    /* the ladder. Sent on EVERY save so switching a division back to an
+       ordinary format clears it rather than leaving a stale ladder behind -
+       the RPC uses the presence idiom for exactly this. */
+    if (k === 'tiered') {
+      var tc = tierCfg(dv);
+      p.num_groups = tc.g; p.band_size = tc.bs; p.tier_quota = tc.q;
+      p.groups_advance = tc.n || 2;   // everyone is placed, so everyone goes on
+      p.side_draws = 'places';
+    } else { p.tier_quota = null; p.band_size = null; }
     var r; try { r = await sb().rpc('tourn_division_save', { p_tourn: S.eventId, p_id: S.divId, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast(said(r.error) || 'Could not save the format', 'error'); return false; }
     if (quiet) return true;
@@ -1537,6 +1665,18 @@
       try { r = await sb().rpc('tourn_monrad_open', { p_division: S.divId }); } catch (e) { r = { error: e }; }
       if (r.error) { toast('Could not make the draw', 'error'); return; }
       toast('Draw made', 'success'); S.tab = 'bracket'; S.drawKey = null; await refreshDetail(); return;
+    }
+    /* A tiered draw is TWO steps and the order matters: the pools are dealt in
+       ability blocks first, then the ladder is built on top of the pools that
+       produces. Building the ladder first would have nothing to hang the slots
+       on. */
+    if (k === 'tiered') {
+      var tg = tierCfg(dv).g;
+      try { r = await sb().rpc('tourn_groups_generate', { p_division: S.divId, p_num_groups: tg }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast(said(r.error) || 'Could not draw the pools', 'error'); return; }
+      try { r = await sb().rpc('tourn_tiered_build', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast(said(r.error) || 'Could not build the ladder', 'error'); return; }
+      toast('Pools and placings drawn', 'success'); S.tab = 'groups'; S.drawKey = null; await refreshDetail(); return;
     }
     if (k === 'grp' || k === 'gk') {
       var ng = +v('tg-ng') || Math.max(2, Math.round((dv.entrant_count || 8) / 4));
@@ -2539,6 +2679,7 @@
   console.log('[FFP Tournaments] build ' + BUILD);
   window.FFPTourn = {
     rulesHint: rulesHint,
+    tierPreview: tierPreview, tierPools: tierPools,
     build: BUILD,
     open: open, startCreate: startCreate, cancelCreate: cancelCreate, doCreate: doCreate,
     back: function () { S.view = 'list'; renderList(); }, tab: function (t) { S.tab = t; S.matchOpen = null; renderEditor(); },
