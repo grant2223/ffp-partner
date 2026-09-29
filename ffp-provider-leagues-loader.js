@@ -81,10 +81,22 @@
       '.sc-m .g{flex:1;min-width:0;}',
       '.sc-m .g b{display:block;font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
       '.sc-m .g span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-      '.sc-m .c{width:170px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}',
+      '.sc-m .g span.off{color:var(--ffp-text-dim);}',
+      /* Where it is played, stated rather than offered: the venue over the
+         surface. Changing it is a decision, so it lives in the row menu. */
+      '.sc-m .v{width:178px;flex:none;min-width:0;text-align:right;}',
+      '.sc-m .v b{display:block;font-size:12.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.sc-m .v span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.sc-m .v.none b{color:var(--ffp-text-dim);font-weight:700;}',
       '.sc-ic{flex:none;border:0;background:none;padding:4px;cursor:pointer;color:#8a99a8;line-height:0;border-radius:6px;}.sc-ic:hover{background:#eef2f5;color:var(--ffp-text);}.sc-ic:disabled{opacity:.28;cursor:default;background:none;}.sc-ic .ms{font-size:19px;}',
       '.sc-more{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:4px 2px 14px 155px;border-bottom:1px solid var(--ffp-border);}',
-      '.sc-more .lg-in,.sc-more .lg-sel{padding:7px 9px;font-size:13px;}.sc-more .sp{flex:1;}',
+      /* These sit in a flex row, and .lg-in/.lg-sel are width:100% by default,
+         so each one grabbed a line of its own and left a hole beside it. Fixed
+         widths, min-width:0 and one shared height keep them on one line. */
+      '.sc-more .lg-in,.sc-more .lg-sel{padding:7px 9px;font-size:13px;width:auto;min-width:0;flex:none;height:36px;box-sizing:border-box;}',
+      '.sc-more .st-d{width:158px;}.sc-more .st-f{width:186px;}',
+      '.sc-more .a-role{width:168px;}.sc-more .a-off{width:186px;}',
+      '.sc-more .sp{flex:1;}',
       '.sc-plan{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);padding:2px 2px 6px;}',
       '.sc-plan .lg-in{width:64px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-plan .lg-in.w{width:136px;}',
       '.sc-plan+.sc-plan{padding-top:0;}',
@@ -799,12 +811,12 @@
       var list = days[d];
       list.sort(function (a, b) { return new Date(a.scheduled_at) - new Date(b.scheduled_at) || fxRank(a) - fxRank(b); });
       var rw = roundWord(list);
+      // A fixture is created on the Fixtures tab, where the round and the
+      // entrants are chosen properly. This screen places what already exists.
       html += '<div class="sc-ch"><b>' + esc(lgDayLong(d)) + '</b>'
         + (rw ? '<span class="mn">' + esc(rw) + '</span>' : '')
-        + '<span class="ct">' + list.length + (list.length === 1 ? ' match, ' : ' matches, ') + esc(tzLabel()) + ' time</span>'
-        + '<button class="sc-add" onclick="FFPLeague.addMatch(\'' + d + '\')">' + ic('add') + 'Add match</button></div>'
-        + list.map(function (m) { return schedRow(m); }).join('')
-        + (S.addMatch === d ? matchEditor() : '');
+        + '<span class="ct">' + list.length + (list.length === 1 ? ' match, ' : ' matches, ') + esc(tzLabel()) + ' time</span></div>'
+        + list.map(function (m) { return schedRow(m); }).join('');
     });
 
     if (loose.length) {
@@ -821,7 +833,7 @@
         if (rl !== lastR) { html += '<div class="sc-rd">' + esc(rl) + '</div>'; lastR = rl; }
         html += schedRow(m);
       });
-      html += (S.addMatch === 'loose' ? matchEditor() : '');
+
     }
     if (!html) html = '<div class="lg-empty">Nothing matches that filter.</div>';
     box.innerHTML = html + (S.rbAsk ? rebuildConfirm() : '');
@@ -879,15 +891,21 @@
     var open = S.schedOpen === m.id;
     var offTxt = (m._offs || []).map(function (o) { return (o.role ? o.role + ' ' : '') + o.name; }).join(', ');
     /* WHO PLAYS WHO, IN WHAT ROUND. That is the line an organiser is looking
-       for, so it leads; the division qualifies it and the officials trail it.
-       There are no reorder arrows: a league plays one or two matches on a date,
-       so there is no running order to nudge, only a time to set. */
-    var sub = (m._dnm ? m._dnm + ', ' : '') + fxLabel(m) + (offTxt ? ', ' + offTxt : '');
+       for, so it leads. The division and round qualify it on the next line, and
+       the officials get a line of their own rather than trailing off the end of
+       that one. Where it is played is stated, venue over surface; changing it
+       is a decision and belongs in the menu with the rest of them. */
+    var sub = (m._dnm ? m._dnm + ', ' : '') + fxLabel(m);
+    var fld = (S._fields || []).filter(function (f) { return f.id === m.field_id; })[0] || null;
+    var place = fld
+      ? '<div class="v"><b>' + esc(fld.venue || 'Venue not set') + '</b><span>' + esc(fld.name || '') + '</span></div>'
+      : '<div class="v none"><b>No surface yet</b><span>Set it in the menu</span></div>';
     var row = '<div class="sc-m lg-d' + (m._dix || 0) + (open ? ' open' : '') + '" data-id="' + m.id + '">'
       + '<input class="lg-in t st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + m.id + '\')">'
       + '<div class="g"><b>' + esc(names[m.home_entrant] || 'TBD') + ' v ' + esc(names[m.away_entrant] || 'TBD') + '</b>'
-      + '<span>' + esc(sub) + '</span></div>'
-      + '<select class="lg-sel c st-f" title="Move to another surface" onchange="FFPLeague.schedSet(\'' + m.id + '\')">' + surfaceOpts(S._fields, m.field_id) + '</select>'
+      + '<span>' + esc(sub) + '</span>'
+      + (offTxt ? '<span class="off">' + esc(offTxt) + '</span>' : '') + '</div>'
+      + place
       + '<button class="sc-ic" title="More" onclick="FFPLeague.schedToggle(\'' + m.id + '\')">' + ic(open ? 'expand_less' : 'more_horiz') + '</button>'
       + '</div>';
     if (!open) return row;
@@ -898,6 +916,8 @@
     }).join('');
     return row + '<div class="sc-more" data-id="' + m.id + '">'
       + '<span class="lg-lab" style="margin:0">Day</span><input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPLeague.schedSet(\'' + m.id + '\')">'
+      + '<span class="lg-lab" style="margin:0">Surface</span>'
+      + '<select class="lg-sel st-f" onchange="FFPLeague.schedSet(\'' + m.id + '\')">' + surfaceOpts(S._fields, m.field_id) + '</select>'
       + '<button class="lg-btn sm" onclick="FFPLeague.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + 'Match centre</button>'
       + '<span class="sp"></span>' + (tags ? '<div class="lg-offlist">' + tags + '</div>' : '')
       + '<select class="lg-sel a-role">' + roleOpts + '</select><select class="lg-sel a-off">' + offOpts + '</select>'
@@ -924,7 +944,11 @@
     var row = document.querySelector('.sc-m[data-id="' + id + '"]'); if (!row) return;
     var more = document.querySelector('.sc-more[data-id="' + id + '"]');
     var dv = ((more && more.querySelector('.st-d')) || {}).value;
-    var tv = row.querySelector('.st-t').value, fid = row.querySelector('.st-f').value || null;
+    var tv = row.querySelector('.st-t').value;
+    // the surface lives in the menu now, so a closed menu means "leave it alone"
+    var fsel = more && more.querySelector('.st-f');
+    var cur = (S._sched || []).filter(function (x) { return x.id === id; })[0] || {};
+    var fid = fsel ? (fsel.value || null) : (cur.field_id || null);
     var base = dv || (S.detail.event && S.detail.event.starts_at) || lgDateStr(new Date().toISOString());
     var when = (tv || dv) ? lgIso(base, tv || '00:00') : null;
     await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null });
