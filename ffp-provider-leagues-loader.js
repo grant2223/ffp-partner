@@ -1847,7 +1847,7 @@
   // ---------- MATCH CENTRE (organiser enters the scoring timeline) ----------
   var KIND_PTS = { try: 5, conversion: 2, penalty: 3, drop_goal: 3, goal: 1, point: 1, yellow_card: 0, red_card: 0 };
   var KIND_LBL = { try: 'Try', conversion: 'Conversion', penalty: 'Penalty', drop_goal: 'Drop goal', goal: 'Goal', point: 'Point', yellow_card: 'Yellow card', red_card: 'Red card' };
-  function openMatch(id) { S.matchOpen = id; S.mcTab = 'timeline'; S._mcDiv = null; S.mcStatPlayer = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = null; S._htSnap = null; S._mcSetTime = '40:00'; S._tsTeam = 'home'; S._ts = []; renderMatchCentre(); tsReload(); }
+  function openMatch(id) { S.matchOpen = id; S.mcTab = 'timeline'; S._mcDiv = null; S.mcStatPlayer = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = null; S._htSnap = null; S._mcSetTime = null; S._tsTeam = 'home'; S._ts = []; renderMatchCentre(); tsReload(); }
   function closeMatch() { S.matchOpen = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } renderTab(); }
   async function renderMatchCentre() {
     var host = document.getElementById('lg-tab'); if (!host) return;
@@ -2194,19 +2194,43 @@
   function trkReset() { if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = { running: false, poss: null, half: null, ph: 0, pa: 0, hh: 0, ha: 0, total: 0 }; renderMatchCentre(); }
   function trkPoss(s) { var t = _trk(); t.poss = s; trkRefresh(); }
   function trkHalf(s) { var t = _trk(); t.half = s; trkRefresh(); }
-  // ---- match period — per-sport (halves, or quarters for netball/basketball/AFL) ----
+  // ---- match period — driven by the sport's own period_minutes / period_count ----
+  /* THE CLOCK BELONGS TO THE SPORT, NOT TO RUGBY. lt_match_detail hands down
+     period_minutes + period_count (match -> division -> event -> sport schema),
+     so netball runs four 15s and sevens two 7s. Nothing here is hardcoded. */
+  function mcPeriodCount(m) { return parseInt((m || {}).period_count, 10) || 2; }
+  function mcPeriodMins(m) {
+    var pm = parseInt((m || {}).period_minutes, 10) || 0;
+    if (pm) return pm;
+    return Math.max(1, Math.round(matchMins() / mcPeriodCount(m)));
+  }
   function mcPeriods(m) {
-    var q = ['netball', 'basketball', 'afl'].indexOf((m || {}).sport_key) > -1;
-    return q
-      ? [['pre', 'Not started', false], ['q1', '1st quarter', true], ['qt1', 'Quarter-time', false], ['q2', '2nd quarter', true], ['ht', 'Half-time', false], ['q3', '3rd quarter', true], ['qt3', '3-quarter time', false], ['q4', '4th quarter', true], ['ft', 'Full time', false]]
-      : [['pre', 'Not started', false], ['h1', '1st half', true], ['ht', 'Half-time', false], ['h2', '2nd half', true], ['ft', 'Full time', false]];
+    var n = mcPeriodCount(m);
+    if (n === 4) return [['pre', 'Not started', false], ['q1', '1st quarter', true], ['qt1', 'Quarter-time', false], ['q2', '2nd quarter', true], ['ht', 'Half-time', false], ['q3', '3rd quarter', true], ['qt3', '3-quarter time', false], ['q4', '4th quarter', true], ['ft', 'Full time', false]];
+    if (n <= 1) return [['pre', 'Not started', false], ['h1', 'Match', true], ['ft', 'Full time', false]];
+    if (n === 2) return [['pre', 'Not started', false], ['h1', '1st half', true], ['ht', 'Half-time', false], ['h2', '2nd half', true], ['ft', 'Full time', false]];
+    var ORD = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'], seq = [['pre', 'Not started', false]];
+    for (var i = 1; i <= n; i++) {
+      seq.push(['p' + i, (ORD[i] || i + 'th') + ' period', true]);
+      if (i < n) seq.push([i * 2 === n ? 'ht' : 'b' + i, i * 2 === n ? 'Half-time' : 'Break', false]);
+    }
+    seq.push(['ft', 'Full time', false]);
+    return seq;
+  }
+  /* "Resume clock at" = the minutes already played, from the sport's own period
+     length: 40:00 at rugby half-time, 15:00 at netball quarter-time. */
+  function mcResumeAt(m) {
+    var seq = mcPeriods(m), period = (S._mc && S._mc.period) || 'pre', mins = mcPeriodMins(m), done = 0;
+    for (var i = 0; i < seq.length; i++) { if (seq[i][0] === period) break; if (seq[i][2]) done++; }
+    var t = done * mins;
+    return (t < 10 ? '0' : '') + t + ':00';
   }
   function mcPeriodHtml(m) {
     var seq = mcPeriods(m); var period = (S._mc && S._mc.period) || 'pre';
     var idx = 0; for (var i = 0; i < seq.length; i++) { if (seq[i][0] === period) { idx = i; break; } }
     var cur = seq[idx], next = seq[idx + 1];
     var chip = period === 'pre' ? '' : (cur[2] ? 'live' : (period === 'ft' ? 'ft' : 'ht'));
-    var st = (S._mcSetTime == null ? '40:00' : S._mcSetTime);
+    var st = (S._mcSetTime == null ? mcResumeAt(m) : S._mcSetTime);
     var btn = '';
     if (next) {
       var nk = next[0], nlab = next[1], nplay = next[2];
@@ -2246,12 +2270,13 @@
     if (p === 'ht') { if (t.running) trkToggle(); mcSaveHalves(1); }
     else if (p === 'ft') { if (t.running) trkToggle(); mcSaveHalves(2); }
     else if (isPlay && p === firstPlay) { if (!t.running) trkToggle(); }
-    else if (isPlay) { var q = String(S._mcSetTime || '40:00').split(':'); t.total = (parseInt(q[0] || '0', 10) * 60) + (parseInt(q[1] || '0', 10) || 0); if (!t.running) trkToggle(); }
+    else if (isPlay) { var q = String(S._mcSetTime || mcResumeAt(m)).split(':'); t.total = (parseInt(q[0] || '0', 10) * 60) + (parseInt(q[1] || '0', 10) || 0); if (!t.running) trkToggle(); }
     else if (p !== 'ft') { if (t.running) trkToggle(); }   // pre or a break
     try { await sb().rpc('lt_match_set_period', { p_scope: 'league', p_match: S.matchOpen, p_period: p }); } catch (e) {}
     if (p === 'ft') { if ((m.events || []).length) { try { await saveResultFromEvents(); } catch (e) {} } else { try { await sb().rpc('lt_match_status', { p_scope: 'league', p_match: S.matchOpen, p_status: 'final' }); } catch (e) {} } }
     else { try { await sb().rpc('lt_match_status', { p_scope: 'league', p_match: S.matchOpen, p_status: p === 'pre' ? 'scheduled' : 'live' }); } catch (e) {} }
     if (S._mc) S._mc.period = p;
+    S._mcSetTime = null;
     renderMatchCentre();
   }
   function trkApply() {
