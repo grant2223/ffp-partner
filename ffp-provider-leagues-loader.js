@@ -100,6 +100,10 @@
       '.sc-plan{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);padding:2px 2px 6px;}',
       '.sc-plan .lg-in{width:64px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-plan .lg-in.w{width:136px;}',
       '.sc-plan+.sc-plan{padding-top:0;}',
+      '.sc-plan .mlen{font-weight:900;color:var(--ffp-text);}',
+      '.sc-mlenb{border:0;background:none;padding:0 0 0 7px;font:inherit;font-size:12px;font-weight:800;color:var(--ffp-blue);cursor:pointer;}',
+      '.sc-mlenb:hover{text-decoration:underline;}',
+      '.sc-why{font-size:11.5px;font-weight:600;color:var(--ffp-text-dim);padding:0 2px 8px;}',
       '.sc-rd{font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#5c6f7c;padding:14px 2px 5px;}',
       '.sc-key{display:flex;flex-wrap:wrap;gap:8px 16px;padding:4px 2px 10px;}',
       '.sc-key .k{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;color:var(--ffp-text-muted);}',
@@ -202,7 +206,7 @@
     document.head.appendChild(css);
   }
 
-  async function loadSports() { if (S.sports) return S.sports; var r = await sb().from('lt_sport_schemas').select('key,name,icon,match_activities,player_fields,team_match_fields,scoring_kinds,game_rules').eq('active', true).order('sort'); S.sports = r.data || []; return S.sports; }
+  async function loadSports() { if (S.sports) return S.sports; var r = await sb().from('lt_sport_schemas').select('key,name,icon,match_activities,player_fields,team_match_fields,scoring_kinds,game_rules,period_minutes,period_count,break_minutes,slot_minutes,turnaround_minutes,surface_word,surface_word_plural').eq('active', true).order('sort'); S.sports = r.data || []; return S.sports; }
   // ---- Taxonomy (shared window.FFP_TAX — activity / gender / city / country) ----
   async function taxReady() { try { if (window.FFP_TAX_READY) await window.FFP_TAX_READY; } catch (e) {} return window.FFP_TAX || {}; }
   function actNames() { return ((window.FFP_TAX && window.FFP_TAX.activities) || []).map(function (a) { return a && a.n ? a.n : a; }); }
@@ -501,7 +505,7 @@
       + '<div class="lg-cfm-t">Scoreboard, ' + esc(court) + '</div>'
       + '<div class="lg-scrlab">On the TV, open a browser and go to</div>'
       + '<div class="lg-scrurl" id="lg-scrurl">' + esc(url) + '</div>'
-      + '<div class="lg-scrnote">' + (permanent ? 'This is the court\'s own screen. The code never changes, and it shows every match played on this court.' : 'This screen is for this event only.') + '</div>'
+      + '<div class="lg-scrnote">' + (permanent ? 'This is the ' + surfWord() + '\'s own screen. The code never changes, and it shows every match played on this ' + surfWord() + '.' : 'This screen is for this event only.') + '</div>'
       + '<div class="lg-scrsteps">'
       +   '<div><b>1</b><span>Open the browser on the TV, or on a stick plugged into it.</span></div>'
       +   '<div><b>2</b><span>Type that address and leave it. The board keeps its own screen awake.</span></div>'
@@ -612,7 +616,7 @@
 
   // ---------- VENUES ----------
   async function renderVenues(host) {
-    host.innerHTML = '<div class="lg-tool"><div><div class="lg-h1" style="font-size:18px">Venues &amp; surfaces</div><div class="lg-sub">A venue can hold many pitches, courts, ovals or lanes</div></div><span class="sp"></span><button class="lg-btn pri" onclick="FFPLeague.addVenue()">' + ic('add') + 'Add venue</button></div>'
+    host.innerHTML = '<div class="lg-tool"><div><div class="lg-h1" style="font-size:18px">Venues and ' + surfWord(true) + '</div><div class="lg-sub">A venue can hold many ' + surfWord(true) + '</div></div><span class="sp"></span><button class="lg-btn pri" onclick="FFPLeague.addVenue()">' + ic('add') + 'Add venue</button></div>'
       + (S.venAdd ? venueEditor(null) : '') + '<div id="lg-venlist"><div class="lg-empty">Loading…</div></div>';
     var r; try { r = await sb().rpc('lt_venues_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { r = { error: e }; }
     var vs = (r && r.data) || []; var h2 = document.getElementById('lg-venlist');
@@ -623,7 +627,7 @@
     var mine = (mc && mc.data) || []; S._vcMine = mine;
     var provs = []; mine.forEach(function (c) { if (!provs.some(function (p) { return p.id === c.provider_id; })) provs.push({ id: c.provider_id, name: c.venue }); });
     var useBar = provs.length ? '<div class="lg-tool" style="margin-top:0">' + provs.map(function (p) {
-        return '<button class="lg-btn" onclick="FFPLeague.useMyCourts(\'' + p.id + '\')">' + ic('connected_tv') + 'Add courts from ' + esc(p.name) + '</button>';
+        return '<button class="lg-btn" onclick="FFPLeague.useMyCourts(\'' + p.id + '\')">' + ic('connected_tv') + 'Add ' + surfWord(true) + ' from ' + esc(p.name) + '</button>';
       }).join('') + '</div>' : '';
     if (useBar) h2.insertAdjacentHTML('beforebegin', '<div id="lg-vcbar">' + useBar + '</div>');
     if (!vs.length && !S.venAdd) { h2.innerHTML = '<div class="lg-empty">No venues yet. Add a venue, then its pitches/courts.</div>'; return; }
@@ -643,8 +647,8 @@
       }).join('');
       var vmeta = [v.city, (v.maps_url ? '<a class="lg-maplink" href="' + esc(v.maps_url) + '" target="_blank" rel="noopener">' + ic('map') + 'Map</a>' : '')].filter(Boolean).join(', ');
       var addS = (S.surfAdd === v.id)
-        ? '<div class="lg-edit" style="margin-left:44px;border:none;padding-top:8px"><input class="lg-in" id="lg-sfname" placeholder="Pitch / court / oval name" style="max-width:260px" onkeydown="if(event.key===\'Enter\')FFPLeague.saveSurface(\'' + v.id + '\')"><button class="lg-btn pri" onclick="FFPLeague.saveSurface(\'' + v.id + '\')">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPLeague.cancelSurface()">Cancel</button></div>'
-        : '<div class="lg-addsurf"><button class="lg-btn ghostb" onclick="FFPLeague.addSurface(\'' + v.id + '\')">' + ic('add') + 'Add surface</button></div>';
+        ? '<div class="lg-edit" style="margin-left:44px;border:none;padding-top:8px"><input class="lg-in" id="lg-sfname" placeholder="' + Surf() + ' name" style="max-width:260px" onkeydown="if(event.key===\'Enter\')FFPLeague.saveSurface(\'' + v.id + '\')"><button class="lg-btn pri" onclick="FFPLeague.saveSurface(\'' + v.id + '\')">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPLeague.cancelSurface()">Cancel</button></div>'
+        : '<div class="lg-addsurf"><button class="lg-btn ghostb" onclick="FFPLeague.addSurface(\'' + v.id + '\')">' + ic('add') + Surf() + '</button></div>';
       return '<div class="lg-venue"><div class="lg-vh"><span class="lg-vpin"><span class="ms">location_on</span></span><div class="g"><b>' + esc(v.name) + '</b><span>' + vmeta + '</span></div><span class="ms act" onclick="FFPLeague.editVenue(\'' + v.id + '\')">edit</span><span class="ms act" onclick="FFPLeague.removeVenue(\'' + v.id + '\')">delete</span></div>'
         + (surfaces ? '<div class="lg-surfs">' + surfaces + '</div>' : '') + addS + '</div>';
     }).join('');
@@ -671,14 +675,14 @@
   function addSurface(vid) { S.surfAdd = vid; renderTab(); }
   async function useMyCourts(pid) {
     var r; try { r = await sb().rpc('lt_fields_from_venue', { p_scope: 'league', p_event: S.eventId, p_provider: pid }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not add the courts', 'error'); return; }
-    toast(r.data ? (r.data + ' court' + (r.data === 1 ? '' : 's') + ' added, on their own screens') : 'All your courts are already here', 'success');
+    if (r.error) { toast('Could not add the ' + surfWord(true), 'error'); return; }
+    toast(r.data ? (r.data + ' ' + (r.data === 1 ? surfWord() : surfWord(true)) + ' added, on their own screens') : 'All your ' + surfWord(true) + ' are already here', 'success');
     renderTab();
   }
   async function linkCourt(fid, cid) {
     var r; try { r = await sb().rpc('lt_field_link', { p_field: fid, p_court: cid || null }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not change the screen', 'error'); return; }
-    toast(cid ? 'Now on that court\'s screen' : 'Back to an event-only screen', 'success');
+    toast(cid ? 'Now on that ' + surfWord() + '\'s screen' : 'Back to an event-only screen', 'success');
     renderTab();
   }
   function cancelSurface() { S.surfAdd = null; renderTab(); }
@@ -706,11 +710,60 @@
   }
   function tzLabel() { return String(evTz()).split('/').pop().replace(/_/g, ' '); }
   function dayKey(f) { return f.scheduled_at ? lgDateStr(f.scheduled_at) : ''; }
+  function sportRow() {
+    var k = (S.detail && S.detail.event && S.detail.event.sport_key) || null;
+    return (S.sports || []).filter(function (s) { return s.key === k; })[0] || null;
+  }
+  /* NOT EVERYTHING IS A COURT. A football club plays on a pitch, an AFL club on
+     an oval, a table tennis club on a table. The sport supplies the word and a
+     venue may override it, so no label assumes. */
+  function surfWord(plural) {
+    var v = (S._fields || []).filter(function (x) { return x.surface_word; })[0];
+    if (v) {
+      var w = String(v.surface_word).trim();
+      return plural ? (/(ch|sh|s|x|z)$/.test(w) ? w + 'es' : w + 's') : w;
+    }
+    var s = sportRow();
+    var sw = s && (plural ? s.surface_word_plural : s.surface_word);
+    return sw || (plural ? 'courts' : 'court');
+  }
+  function Surf(plural) { var w = surfWord(plural); return w.charAt(0).toUpperCase() + w.slice(1); }
+  // an oval, a pitch: the article follows the word, not the other way round
+  function aSurf(plural) { var w = surfWord(plural); return (/^[aeiou]/i.test(w) ? 'an ' : 'a ') + w; }
+
+  /* THE SPORT KNOWS HOW LONG ITS MATCH TAKES, so nobody is asked to type it.
+     A sport played to a clock states its periods and its break; one played to a
+     score states how long a surface is held for. The organiser is left with the
+     one thing the sport cannot know: the gap on that surface afterwards. */
+  function matchMins() {
+    var ev = (S.detail && S.detail.event) || {}, s = sportRow() || {};
+    if (ev.plan_match_len) return +ev.plan_match_len;
+    var pm = ev.period_minutes || s.period_minutes, pc = ev.period_count || s.period_count;
+    if (pm && pc) return (pm * pc) + (+s.break_minutes || 0);
+    return +s.slot_minutes || 30;
+  }
+  function matchMinsWhy() {
+    var ev = (S.detail && S.detail.event) || {}, s = sportRow() || {};
+    if (ev.plan_match_len) return 'Set by hand';
+    var pm = ev.period_minutes || s.period_minutes, pc = ev.period_count || s.period_count;
+    if (pm && pc) return pc + ' periods of ' + pm + ' min'
+      + (s.break_minutes ? ', plus ' + s.break_minutes + ' at the break' : '') + ', from the sport';
+    if (s.slot_minutes) return 'What ' + (s.name || 'this sport') + ' is usually given';
+    return 'No sport set yet, so 30 min is assumed';
+  }
+  function turnMins() {
+    var ev = (S.detail && S.detail.event) || {}, s = sportRow() || {};
+    return ev.plan_turnaround != null ? +ev.plan_turnaround : (+s.turnaround_minutes || 0);
+  }
+  function mlenEdit() { S.mlenEdit = !S.mlenEdit; renderTab(); }
   function planNow() {
     var g = function (id, d) { var el = document.getElementById(id); var v2 = el ? String(el.value || '').trim() : ''; return v2 || d; };
-    return { len: Math.max(5, +g('lg-mlen', '30') || 30), start: g('lg-dstart', '09:00'), end: g('lg-dend', '21:00'),
+    var ml = document.getElementById('lg-mlen');
+    return { len: ml ? Math.max(5, +ml.value || matchMins()) : matchMins(),
+             start: g('lg-dstart', '09:00'), end: g('lg-dend', '21:00'),
              days: Math.max(1, +g('lg-days', String(seasonDays())) || 1),
-             gap: Math.max(0, +g('lg-rgap', '0') || 0), rest: Math.max(0, +g('lg-rest', '0') || 0) };
+             gap: Math.max(0, +g('lg-rgap', '0') || 0), rest: Math.max(0, +g('lg-rest', '0') || 0),
+             turn: Math.max(0, +g('lg-turn', String(turnMins())) || 0) };
   }
   function hm5(t) { return t ? String(t).slice(0, 5) : null; }
   /* THE PLAYING DAY IS A SETTING, NOT A FORM. It used to be typed into this tab
@@ -719,27 +772,32 @@
      changed. */
   function planFromEvent(ev, defDays) {
     ev = ev || {};
-    return { len:   +ev.plan_match_len || 30,
+    return { len:   matchMins(),
              start: hm5(ev.plan_day_start) || '09:00',
              end:   hm5(ev.plan_day_end)   || '21:00',
              days:  +ev.plan_days || defDays || 1,
              gap:   +ev.plan_round_gap || 0,
-             rest:  +ev.plan_rest || 0 };
+             rest:  +ev.plan_rest || 0,
+             turn:  turnMins() };
   }
   var _planT = null;
   function planSave() {
     var P = S.plan || planNow();
     var ev = (S.detail && S.detail.event) || null;
     if (ev) {
-      ev.plan_match_len = P.len; ev.plan_day_start = P.start; ev.plan_day_end = P.end;
+      ev.plan_day_start = P.start; ev.plan_day_end = P.end;
       ev.plan_days = P.days; ev.plan_round_gap = P.gap; ev.plan_rest = P.rest;
+      ev.plan_turnaround = P.turn;
+      if (S.mlenEdit) ev.plan_match_len = P.len;
     }
     // a setting saved mid-typing is not worth a toast, and a failure is retried
     // by the next keystroke
     try {
-      sb().rpc('league_event_save', { p_id: S.eventId, p: {
-        plan_match_len: String(P.len), plan_day_start: P.start, plan_day_end: P.end,
-        plan_days: String(P.days), plan_round_gap: String(P.gap), plan_rest: String(P.rest) } });
+      var patch = { plan_day_start: P.start, plan_day_end: P.end, plan_days: String(P.days),
+        plan_round_gap: String(P.gap), plan_rest: String(P.rest), plan_turnaround: String(P.turn) };
+      // only an explicit override is stored, so the sport keeps driving the rest
+      if (S.mlenEdit) patch.plan_match_len = String(P.len);
+      sb().rpc('league_event_save', { p_id: S.eventId, p: patch });
     } catch (e) {}
   }
   function planSet() { S.plan = planNow(); clearTimeout(_planT); _planT = setTimeout(planSave, 700); }
@@ -756,6 +814,10 @@
   function setSchedRound(v2) { S.schedRound = v2 || ''; renderTab(); }
 
   async function renderSchedule(host) {
+    /* The sport supplies the match length and the word for a playing surface,
+       and S.sports is only filled by the Setup tab, so a schedule opened first
+       had no sport at all and fell back to "30 min" and "court". */
+    await loadSports();
     var divs = S.detail.divisions || [];
     if (!S.divId && divs.length) S.divId = divs[0].id;
     var P = S.plan || (S.plan = planFromEvent(S.detail.event, seasonDays()));
@@ -785,10 +847,10 @@
       return m.status !== 'void' && m.status !== 'bye' && String(m.stage || '') !== 'bye';
     });
     if (!ms.length) { box.innerHTML = '<div class="lg-empty">No fixtures yet. Generate them on the <b>Fixtures &amp; results</b> tab.</div>'; return; }
-    if (!fields.length) { box.innerHTML = '<div class="lg-empty">Add a venue and its surfaces on the <b>Venues</b> tab and the schedule builds itself.</div>'; return; }
+    if (!fields.length) { box.innerHTML = '<div class="lg-empty">Add a venue and its ' + surfWord(true) + ' on the <b>Venues</b> tab and the schedule builds itself.</div>'; return; }
     if (!(S.detail.event && S.detail.event.starts_at)) {
       box.innerHTML = '<div class="lg-empty act"><div class="t">When does the season start?</div>'
-        + '<div class="s">Set the season start on Information and every fixture is given a date, a time and a surface straight away.</div>'
+        + '<div class="s">Set the season start on Information and every fixture is given a date, a time and ' + aSurf() + ' straight away.</div>'
         + '<div class="row"><button class="lg-btn pri" onclick="FFPLeague.tab(\'information\')">' + ic('event') + 'Go to Information</button></div></div>';
       return;
     }
@@ -800,10 +862,10 @@
       var ap; try {
         ap = await sb().rpc('league_autoplan_all', { p_league: S.eventId, p_match_len: P.len,
           p_day_start: P.start, p_day_end: P.end, p_days: P.days, p_round_gap: P.gap,
-          p_rest: P.rest, p_divisions: null, p_tz: evTz() });
+          p_rest: P.rest, p_divisions: null, p_tz: evTz(), p_turnaround: P.turn });
       } catch (e) { ap = null; }
       if (ap && !ap.error && ap.data && (ap.data.placed || 0) > 0) {
-        toast(ap.data.placed + ' matches given a time and a surface', 'success');
+        toast(ap.data.placed + ' matches given a time and ' + aSurf(), 'success');
         return renderSchedule(host);
       }
     }
@@ -877,7 +939,7 @@
       loose.sort(function (a, b) { return fxRank(a) - fxRank(b) || (a.round || 0) - (b.round || 0) || (a.sort || 0) - (b.sort || 0); });
       html += '<div class="sc-ch warn"><b>Not on the schedule yet</b>'
         + '<span class="ct">' + loose.length + (loose.length === 1 ? ' match has' : ' matches have')
-        + ' no date, no time and no surface</span>'
+        + ' no date, no time and no ' + surfWord() + '</span>'
         + '<button class="sc-add" onclick="FFPLeague.autoplan()">' + ic('auto_awesome') + 'Auto-plan now</button></div>';
       var lastR = '\u0000';
       loose.forEach(function (m) {
@@ -916,7 +978,14 @@
         ? '<button class="lg-btn ghost" onclick="FFPLeague.rebuildAsk()">' + ic('warning') + 'Rebuild schedule</button>'
         : '<button class="lg-btn pri" onclick="FFPLeague.autoplan()">' + ic('auto_awesome') + 'Auto-plan the season</button>')
       + '</div>'
-      + '<div class="sc-plan">Matches of <input class="lg-in" id="lg-mlen" type="number" value="' + P.len + '" oninput="FFPLeague.planSet()"> min, '
+      + '<div class="sc-plan">A match takes '
+      + (S.mlenEdit
+          ? '<input class="lg-in" id="lg-mlen" type="number" min="5" value="' + P.len + '" oninput="FFPLeague.planSet()"> min'
+          : '<b class="mlen">' + matchMins() + ' min</b>')
+      + '<button class="sc-mlenb" onclick="FFPLeague.mlenEdit()">' + (S.mlenEdit ? 'use the sport' : 'change') + '</button>, '
+      + '<input class="lg-in" id="lg-turn" type="number" min="0" value="' + P.turn + '" oninput="FFPLeague.planSet()"> min between matches on ' + esc(aSurf()) + '</div>'
+      + '<div class="sc-why">' + esc(matchMinsWhy()) + '</div>'
+      + '<div class="sc-plan">Playing '
       + '<input class="lg-in w" id="lg-dstart" type="time" value="' + esc(P.start) + '" oninput="FFPLeague.planSet()"> to '
       + '<input class="lg-in w" id="lg-dend" type="time" value="' + esc(P.end) + '" oninput="FFPLeague.planSet()">, '
       + 'over <input class="lg-in" id="lg-days" type="number" min="1" value="' + P.days + '" oninput="FFPLeague.planSet()"> day(s)</div>'
@@ -951,7 +1020,7 @@
     var fld = (S._fields || []).filter(function (f) { return f.id === m.field_id; })[0] || null;
     var place = fld
       ? '<div class="v"><b>' + esc(fld.venue || 'Venue not set') + '</b><span>' + esc(fld.name || '') + '</span></div>'
-      : '<div class="v none"><b>No surface yet</b><span>Set it in the menu</span></div>';
+      : '<div class="v none"><b>No ' + surfWord() + ' yet</b><span>Set it in the menu</span></div>';
     var row = '<div class="sc-m lg-d' + (m._dix || 0) + (open ? ' open' : '') + '" data-id="' + m.id + '">'
       + '<input class="lg-in t st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + m.id + '\')">'
       + '<div class="g"><b>' + esc(names[m.home_entrant] || 'TBD') + ' v ' + esc(names[m.away_entrant] || 'TBD') + '</b>'
@@ -968,7 +1037,7 @@
     }).join('');
     return row + '<div class="sc-more" data-id="' + m.id + '">'
       + '<span class="lg-lab" style="margin:0">Day</span><input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPLeague.schedSet(\'' + m.id + '\')">'
-      + '<span class="lg-lab" style="margin:0">Surface</span>'
+      + '<span class="lg-lab" style="margin:0">' + Surf() + '</span>'
       + '<select class="lg-sel st-f" onchange="FFPLeague.schedSet(\'' + m.id + '\')">' + surfaceOpts(S._fields, m.field_id) + '</select>'
       + '<button class="lg-btn sm" onclick="FFPLeague.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + 'Match centre</button>'
       + '<span class="sp"></span>' + (tags ? '<div class="lg-offlist">' + tags + '</div>' : '')
@@ -984,10 +1053,11 @@
   async function autoplan(isRebuild) {
     var P = planNow(); S.plan = P;
     var args = { p_league: S.eventId, p_match_len: P.len, p_day_start: P.start, p_day_end: P.end,
-                 p_days: P.days, p_round_gap: P.gap, p_rest: P.rest, p_divisions: null, p_tz: evTz() };
+                 p_days: P.days, p_round_gap: P.gap, p_rest: P.rest, p_divisions: null,
+      p_tz: evTz(), p_turnaround: P.turn };
     var r; try { r = await sb().rpc('league_autoplan_all', args); } catch (e) { r = { error: e }; }
     S.rbAsk = false;
-    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a surface first (Venues tab)' : 'Could not plan', 'error'); renderTab(); return; }
+    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add ' + aSurf() + ' first (Venues tab)' : 'Could not plan', 'error'); renderTab(); return; }
     var d = r.data || {}, n = d.placed || 0, over = d.over || 0;
     toast(n + (n === 1 ? ' match planned' : ' matches planned') + (over ? ', ' + over + ' ran past the last day' : ''), over ? 'error' : 'success');
     renderTab();
@@ -2382,7 +2452,7 @@
     back: function () { S.view = 'list'; renderList(); }, tab: function (t) { S.tab = t; S.matchOpen = null; renderEditor(); },
     setDiv: function (val, tab) { S.divId = val; S.tab = tab; S.entEdit = null; S.entDel = null; S.sqOpen = null; renderTab(); },
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
-    statusPick: statusPick, eventState: eventState, eventDelete: eventDelete, toggleArchived: toggleArchived,
+    statusPick: statusPick, mlenEdit: mlenEdit, eventState: eventState, eventDelete: eventDelete, toggleArchived: toggleArchived,
     saveDetails: saveDetails, sportHint: sportHint,
     saveSport: saveSport, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, clearDivFormat: clearDivFormat,
     setSetupDiv: function (id) { S.divId = id; renderTab(); },
