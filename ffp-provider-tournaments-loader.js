@@ -946,6 +946,8 @@
     return sw || (plural ? 'courts' : 'court');
   }
   function Surf(plural) { var w = surfWord(plural); return w.charAt(0).toUpperCase() + w.slice(1); }
+  // an oval, a pitch: the article follows the word, not the other way round
+  function aSurf(plural) { var w = surfWord(plural); return (/^[aeiou]/i.test(w) ? 'an ' : 'a ') + w; }
 
   /* THE SPORT KNOWS HOW LONG ITS MATCH TAKES, so nobody is asked to type it.
      A sport played to a clock states its periods and its break; one played to a
@@ -968,9 +970,12 @@
     if (s.slot_minutes) return 'What ' + (s.name || 'this sport') + ' is usually given';
     return 'No sport set yet, so 30 min is assumed';
   }
+  /* TIME BETWEEN MATCHES. A tournament runs matches back to back on the same
+     surface, so the default gap is 5 minutes (Grant) whatever the sport says it
+     wants between fixtures. The organiser can set any number on the Schedule. */
   function turnMins() {
-    var ev = (S.detail && S.detail.event) || {}, s = sportRow() || {};
-    return ev.plan_turnaround != null ? +ev.plan_turnaround : (+s.turnaround_minutes || 0);
+    var ev = (S.detail && S.detail.event) || {};
+    return ev.plan_turnaround != null ? +ev.plan_turnaround : 5;
   }
   function mlenEdit() { S.mlenEdit = !S.mlenEdit; renderTab(); }
   function planNow() {
@@ -1085,7 +1090,7 @@
           p_rest: P.rest, p_divisions: null, p_tz: evTz(), p_turnaround: P.turn });
       } catch (e) { ap = null; }
       if (ap && !ap.error && ap.data && (ap.data.placed || 0) > 0) {
-        toast(ap.data.placed + ' matches given a time and a ' + surfWord(), 'success');
+        toast(ap.data.placed + ' matches given a time and ' + aSurf(), 'success');
         return renderSchedule(host);
       }
     }
@@ -1203,7 +1208,7 @@
           ? '<input class="lg-in" id="tg-mlen" type="number" min="5" value="' + P.len + '" oninput="FFPTourn.planSet()"> min'
           : '<b class="mlen">' + matchMins() + ' min</b>')
       + '<button class="sc-mlenb" onclick="FFPTourn.mlenEdit()">' + (S.mlenEdit ? 'use the sport' : 'change') + '</button>, '
-      + '<input class="lg-in" id="tg-turn" type="number" min="0" value="' + P.turn + '" oninput="FFPTourn.planSet()"> min between matches on a ' + esc(surfWord()) + '</div>'
+      + '<input class="lg-in" id="tg-turn" type="number" min="0" value="' + P.turn + '" oninput="FFPTourn.planSet()"> min between matches on ' + esc(aSurf()) + '</div>'
       + '<div class="sc-why">' + esc(matchMinsWhy()) + '</div>'
       + '<div class="sc-plan">Playing '
       + '<input class="lg-in w" id="tg-dstart" type="time" value="' + esc(P.start) + '" oninput="FFPTourn.planSet()"> to '
@@ -1406,7 +1411,7 @@
                  p_tz: evTz(), p_turnaround: P.turn };
     var r; try { r = await sb().rpc('tourn_autoplan_all', args); } catch (e) { r = { error: e }; }
     S.rbAsk = false;
-    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a ' + surfWord() + ' first (Venues tab)' : 'Could not plan', 'error'); renderTab(); return; }
+    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add ' + aSurf() + ' first (Venues tab)' : 'Could not plan', 'error'); renderTab(); return; }
     var d = r.data || {}, n = d.placed || 0, over = d.over || 0;
     toast(n + (n === 1 ? ' match planned' : ' matches planned') + (over ? ', ' + over + ' ran past the last day' : ''), over ? 'error' : 'success');
     renderTab();
@@ -2908,7 +2913,7 @@
   // ---------- MATCH CENTRE (organiser enters timeline + player stats) ----------
   var KIND_PTS = { try: 5, conversion: 2, penalty: 3, drop_goal: 3, goal: 1, point: 1, yellow_card: 0, red_card: 0 };
   var KIND_LBL = { try: 'Try', conversion: 'Conversion', penalty: 'Penalty', drop_goal: 'Drop goal', goal: 'Goal', point: 'Point', yellow_card: 'Yellow card', red_card: 'Red card' };
-  function openMatch(id) { S.matchOpen = id; S.mcTab = 'timeline'; S._mcDiv = null; S.mcStatPlayer = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = null; S._htSnap = null; S._mcSetTime = '40:00'; renderMatchCentre(); }
+  function openMatch(id) { S.matchOpen = id; S.mcTab = 'timeline'; S._mcDiv = null; S.mcStatPlayer = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = null; S._htSnap = null; S._mcSetTime = null; renderMatchCentre(); }
   function closeMatch() { S.matchOpen = null; renderTab(); }
   async function renderMatchCentre() {
     var host = document.getElementById('tg-tab'); if (!host) return;
@@ -3161,18 +3166,42 @@
     if (t.hh + t.ha > 0) { var teH = trkPct(t.ha, t.hh); setRow('territory', teH, 100 - teH); }
     toast('Applied — tap Save team stats to store', 'success');
   }
+  /* THE CLOCK BELONGS TO THE SPORT, NOT TO RUGBY. lt_match_detail hands down
+     period_minutes + period_count (match -> division -> event -> sport schema),
+     so netball runs four 15s and sevens two 7s. Nothing here is hardcoded. */
+  function mcPeriodCount(m) { return parseInt((m || {}).period_count, 10) || 2; }
+  function mcPeriodMins(m) {
+    var pm = parseInt((m || {}).period_minutes, 10) || 0;
+    if (pm) return pm;
+    return Math.max(1, Math.round(matchMins() / mcPeriodCount(m)));
+  }
   function mcPeriods(m) {
-    var q = ['netball', 'basketball', 'afl'].indexOf((m || {}).sport_key) > -1;
-    return q
-      ? [['pre', 'Not started', false], ['q1', '1st quarter', true], ['qt1', 'Quarter-time', false], ['q2', '2nd quarter', true], ['ht', 'Half-time', false], ['q3', '3rd quarter', true], ['qt3', '3-quarter time', false], ['q4', '4th quarter', true], ['ft', 'Full time', false]]
-      : [['pre', 'Not started', false], ['h1', '1st half', true], ['ht', 'Half-time', false], ['h2', '2nd half', true], ['ft', 'Full time', false]];
+    var n = mcPeriodCount(m);
+    if (n === 4) return [['pre', 'Not started', false], ['q1', '1st quarter', true], ['qt1', 'Quarter-time', false], ['q2', '2nd quarter', true], ['ht', 'Half-time', false], ['q3', '3rd quarter', true], ['qt3', '3-quarter time', false], ['q4', '4th quarter', true], ['ft', 'Full time', false]];
+    if (n <= 1) return [['pre', 'Not started', false], ['h1', 'Match', true], ['ft', 'Full time', false]];
+    if (n === 2) return [['pre', 'Not started', false], ['h1', '1st half', true], ['ht', 'Half-time', false], ['h2', '2nd half', true], ['ft', 'Full time', false]];
+    var ORD = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'], seq = [['pre', 'Not started', false]];
+    for (var i = 1; i <= n; i++) {
+      seq.push(['p' + i, (ORD[i] || i + 'th') + ' period', true]);
+      if (i < n) seq.push([i * 2 === n ? 'ht' : 'b' + i, i * 2 === n ? 'Half-time' : 'Break', false]);
+    }
+    seq.push(['ft', 'Full time', false]);
+    return seq;
+  }
+  /* "Resume clock at" = the minutes already played, from the sport's own period
+     length: 40:00 at rugby half-time, 15:00 at netball quarter-time. */
+  function mcResumeAt(m) {
+    var seq = mcPeriods(m), period = (S._mc && S._mc.period) || 'pre', mins = mcPeriodMins(m), done = 0;
+    for (var i = 0; i < seq.length; i++) { if (seq[i][0] === period) break; if (seq[i][2]) done++; }
+    var t = done * mins;
+    return (t < 10 ? '0' : '') + t + ':00';
   }
   function mcPeriodHtml(m) {
     var seq = mcPeriods(m); var period = (S._mc && S._mc.status === 'final') ? 'ft' : ((S._mc && S._mc.period) || 'pre');
     var idx = 0; for (var i = 0; i < seq.length; i++) { if (seq[i][0] === period) { idx = i; break; } }
     var cur = seq[idx], next = seq[idx + 1];
     var chip = period === 'pre' ? '' : (cur[2] ? 'live' : (period === 'ft' ? 'ft' : 'ht'));
-    var st = (S._mcSetTime == null ? '40:00' : S._mcSetTime);
+    var st = (S._mcSetTime == null ? mcResumeAt(m) : S._mcSetTime);
     var btn = '';
     if (next) {
       var nk = next[0], nlab = next[1], nplay = next[2];
@@ -3212,12 +3241,13 @@
     if (p === 'ht') { if (t.running) trkToggle(); mcSaveHalves(1); }
     else if (p === 'ft') { if (t.running) trkToggle(); mcSaveHalves(2); }
     else if (isPlay && p === firstPlay) { if (!t.running) trkToggle(); }
-    else if (isPlay) { var q = String(S._mcSetTime || '40:00').split(':'); t.total = (parseInt(q[0] || '0', 10) * 60) + (parseInt(q[1] || '0', 10) || 0); if (!t.running) trkToggle(); }
+    else if (isPlay) { var q = String(S._mcSetTime || mcResumeAt(m)).split(':'); t.total = (parseInt(q[0] || '0', 10) * 60) + (parseInt(q[1] || '0', 10) || 0); if (!t.running) trkToggle(); }
     else if (p !== 'ft') { if (t.running) trkToggle(); }
     try { await sb().rpc('lt_match_set_period', { p_scope: 'tourn', p_match: S.matchOpen, p_period: p }); } catch (e) {}
     if (p === 'ft') { if ((m.events || []).length) { try { await saveResultFromEvents(); } catch (e) {} } else { try { await sb().rpc('lt_match_status', { p_scope: 'tourn', p_match: S.matchOpen, p_status: 'final' }); } catch (e) {} } }
     else { try { await sb().rpc('lt_match_status', { p_scope: 'tourn', p_match: S.matchOpen, p_status: p === 'pre' ? 'scheduled' : 'live' }); } catch (e) {} }
     if (S._mc) S._mc.period = p;
+    S._mcSetTime = null;
     renderMatchCentre();
   }
   async function saveResultFromEvents() {
@@ -3274,7 +3304,7 @@
 
   // Printed on load so a deploy can be confirmed in one look, without
   // guessing from the screen: open the console and read this line.
-  var BUILD = '2026-09-24.7';
+  var BUILD = '2026-09-29.1';
   console.log('[FFP Tournaments] build ' + BUILD);
   window.FFPTourn = {
     rulesHint: rulesHint,
