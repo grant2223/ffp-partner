@@ -234,7 +234,14 @@
     }).join('');
   }
   function schemaForActivity(act) { var s = (S.sports || []).find(function (x) { return (x.match_activities || []).some(function (a) { return String(a).toLowerCase() === String(act || '').toLowerCase(); }); }); return s ? s.name : 'Generic points'; }
-  function sportHint() { var a = (document.getElementById('lg-sport') || {}).value; var h = document.getElementById('lg-sporthint'); if (h) h.textContent = 'Stats set: ' + schemaNameForSport(a); }
+  /* A league no longer carries a sport until the organiser picks one: it used
+     to be born as Football (soccer), which is how a netball league came to be
+     labelled Football. */
+  function sportSetHint(k) {
+    return k ? 'Scoring and stats set: ' + schemaNameForSport(k)
+             : 'Pick a sport and the scoring and stats set follows.';
+  }
+  function sportHint() { var a = (document.getElementById('lg-sport') || {}).value; var h = document.getElementById('lg-sporthint'); if (h) h.textContent = sportSetHint(a); }
 
   // ---------- LIST ----------
   async function renderList() {
@@ -849,7 +856,7 @@
       +   '<option value="">Choose a sport\u2026</option>'
       +   sportOpts(ev.sport_key)
       + '</select>'
-      + '<div class="lgf-hint" id="lg-sporthint">Scoring and stats set: ' + esc(schemaNameForSport(ev.sport_key)) + '</div></div>'
+      + '<div class="lgf-hint" id="lg-sporthint">' + esc(sportSetHint(ev.sport_key)) + '</div></div>'
       + rulesBlock(ev)
       + '<button class="lg-btn pri" onclick="FFPLeague.saveSport()">' + ic('check') + 'Save</button></div>';
     if (!divs.length) {
