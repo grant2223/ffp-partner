@@ -204,7 +204,7 @@
       '.tg-d8{--dc:#b5399b;--db:rgba(181,57,155,.10);--dcd:#8e2a79;}',
       '.tg-d9{--dc:#4a6572;--db:rgba(74,101,114,.10);--dcd:#3a515b;}',
       '.sc-day .tz{font-size:12.5px;font-weight:700;color:#5c6f7c;}',
-      '.lg-btn.ghost.sc-rb{color:#8a5a00;border-color:#e0cfa4;}',
+      '.lg-btn.ghost.sc-rb .ms{color:var(--ffp-gold);}',
       '.sc-plan+.sc-plan{padding-top:0;}',
       '/* Breaks: a court shut for part of a day. Saved, not typed, so a later',
       '   Rebuild steps over the same ones. */',
@@ -225,8 +225,9 @@
       '.sc-bar b{font-size:12.5px;font-weight:900;color:#3c4d59;}',
       '.sc-bar span{font-size:12px;font-weight:700;color:#475763;}',
       '/* Nothing should sit here: Auto-plan places every match, decided or not. */',
-      '.sc-ch.warn{background:linear-gradient(92deg,#5c3d06,#7a5a12);}',
-      '.sc-ch.warn .ct{color:#ffe2ab;}',
+      '.sc-ch.warn{box-shadow:inset 4px 0 0 var(--ffp-gold),0 2px 8px rgba(14,37,49,.18);}',
+      '.sc-ch.warn .sc-add{background:var(--ffp-gold);border-color:var(--ffp-gold);color:#12232f;}',
+      '.sc-ch.warn .sc-add:hover{background:#e0af3a;}',
       '.lg-surf .lg-vcnote{font-size:12px;font-weight:700;color:#7c8b97;margin-left:8px;}',
       '/* Open an empty draw: the format decides the shape, not the entry list. */',
       '.tg-opendraw{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--ffp-border);}'
@@ -1105,7 +1106,7 @@
   function rebuildCancel() { S.rbAsk = false; renderTab(); }
   function rebuildConfirm() {
     return '<div class="lg-cfm"><div class="lg-cfm-in">'
-      + '<span class="ms lg-cfm-ic" style="color:#b07800">warning</span>'
+      + '<span class="ms lg-cfm-ic" style="color:var(--ffp-gold)">warning</span>'
       + '<div class="lg-cfm-t">Rebuild the whole schedule?</div>'
       + '<div class="lg-cfm-b">This replans every match in every division and will move matches that ' + nouns(curDv()).many + ' and officials have already been given times for. Results already entered are kept.</div>'
       + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPTourn.rebuildCancel()">Cancel</button>'
