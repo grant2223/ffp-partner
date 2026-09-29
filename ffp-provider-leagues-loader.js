@@ -41,6 +41,43 @@
     var css = document.createElement('style'); css.id = 'lgb-css';
     css.textContent = [
       '.lg-wrap{max-width:1000px;}',
+      /* ── SCHEDULE, the tournament layout ────────────────────────────────
+         A day, then a court, then the order of play down it. One row per
+         match: its time, who is in it, which court, and a menu for the rest.
+         Same shapes as the tournaments console so an organiser running both
+         is never learning two screens. */
+      '.sc-day{font-size:16px;font-weight:900;color:var(--ffp-text);margin:26px 0 2px;}.sc-day:first-child{margin-top:8px;}',
+      '.sc-day .tz{margin-left:9px;font-size:11px;font-weight:700;color:#9aa8b4;}',
+      '.sc-ch{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:9px;margin:12px 0 0;background:linear-gradient(92deg,#12242f,#21404f);box-shadow:0 2px 8px rgba(14,37,49,.18);}',
+      '.sc-ch b{font-size:13.5px;font-weight:900;color:#fff;letter-spacing:.01em;}',
+      '.sc-ch .mn{font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#f0b736;}',
+      '.sc-mkm{border:0;background:none;padding:0;font:inherit;font-size:11.5px;font-weight:700;color:#7ec9e8;cursor:pointer;}.sc-mkm:hover{color:#fff;}',
+      '.sc-ch .ct{margin-left:auto;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.58);}',
+      '.sc-add{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.12);border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;font-weight:800;color:#fff;cursor:pointer;}.sc-add:hover{background:rgba(255,255,255,.2);}.sc-add .ms{font-size:16px;}',
+      /* Nothing on the schedule yet is the SAME bar, marked by a gold edge and
+         a gold action. The old mustard block was neither blue nor gold and
+         read as a different product. */
+      '.sc-ch.warn{box-shadow:inset 4px 0 0 var(--ffp-gold),0 2px 8px rgba(14,37,49,.18);}',
+      '.sc-ch.warn .sc-add{background:var(--ffp-gold);border-color:var(--ffp-gold);color:#12232f;}',
+      '.sc-ch.warn .sc-add:hover{background:#e0af3a;}',
+      '.sc-m{display:flex;align-items:center;gap:10px;padding:9px 2px 9px 9px;border-bottom:1px solid var(--ffp-border);border-left:3px solid var(--dc,transparent);}',
+      '.sc-m.open{border-bottom:0;}',
+      '.sc-m .t{width:136px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}',
+      '.sc-m .g{flex:1;min-width:0;}',
+      '.sc-m .g b{display:block;font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.sc-m .g span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.sc-m .c{width:170px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}',
+      '.sc-ic{flex:none;border:0;background:none;padding:4px;cursor:pointer;color:#8a99a8;line-height:0;border-radius:6px;}.sc-ic:hover{background:#eef2f5;color:var(--ffp-text);}.sc-ic:disabled{opacity:.28;cursor:default;background:none;}.sc-ic .ms{font-size:19px;}',
+      '.sc-more{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:4px 2px 14px 155px;border-bottom:1px solid var(--ffp-border);}',
+      '.sc-more .lg-in,.sc-more .lg-sel{padding:7px 9px;font-size:13px;}.sc-more .sp{flex:1;}',
+      '.sc-plan{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);padding:2px 2px 6px;}',
+      '.sc-plan .lg-in{width:64px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-plan .lg-in.w{width:136px;}',
+      '.sc-plan+.sc-plan{padding-top:0;}',
+      '.sc-key{display:flex;flex-wrap:wrap;gap:8px 16px;padding:4px 2px 10px;}',
+      '.sc-key .k{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;color:var(--ffp-text-muted);}',
+      '.sc-key .k i{width:10px;height:10px;border-radius:3px;background:var(--dc);display:block;}',
+      '.lg-d0{--dc:#1980AD;}.lg-d1{--dc:#127a52;}.lg-d2{--dc:#c79a2e;}.lg-d3{--dc:#8e44ad;}.lg-d4{--dc:#c0392b;}',
+      '.lg-d5{--dc:#2c7a7b;}.lg-d6{--dc:#b7791f;}.lg-d7{--dc:#4a5568;}.lg-d8{--dc:#2b6cb0;}.lg-d9{--dc:#9b2c2c;}',
       '.lg-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap;}',
       '.lg-h1{font-size:21px;font-weight:900;color:var(--ffp-text);} .lg-sub{font-size:13px;color:var(--ffp-text-muted);font-weight:600;margin-top:2px;}',
       '.lg-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ffp-border-mid);background:#fff;border-radius:10px;padding:9px 14px;font:inherit;font-size:13px;font-weight:800;color:var(--ffp-text);cursor:pointer;} .lg-btn .ms{font-size:18px;}',
@@ -617,78 +654,252 @@
   async function removeSurface(id) { await sb().rpc('lt_field_remove', { p_id: id }); renderTab(); }
 
   // ---------- SCHEDULE ----------
+  /* The schedule belongs to the LEAGUE, not to one division. A court takes
+     whatever fits, so every division is laid out together in one pass and each
+     row carries its division's colour. Auto-plan is pressed once; after that
+     the grid is edited by hand and Rebuild has to be asked for. */
+  function hm(t) { return String(t || '').slice(0, 5); }
+  function lgDateStr(iso) { return iso ? zoneDate(iso, evTz()) : ''; }
+  function lgTimeStr(iso) { return iso ? zoneTime(iso, evTz()) : ''; }
+  function lgIso(day, time) { return zoneToISO(day, time || '00:00', evTz()); }
+  function lgDayLong(ymd) {
+    var a = String(ymd).split('-'); if (a.length !== 3) return String(ymd);
+    var p = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2], 12, 0, 0));
+    return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][p.getUTCDay()]
+      + ' ' + (+a[2]) + ' ' + MON[+a[1] - 1] + ' ' + a[0];
+  }
+  function tzLabel() { return String(evTz()).split('/').pop().replace(/_/g, ' '); }
+  function dayKey(f) { return f.scheduled_at ? lgDateStr(f.scheduled_at) : ''; }
+  function planNow() {
+    var g = function (id, d) { var el = document.getElementById(id); var v2 = el ? String(el.value || '').trim() : ''; return v2 || d; };
+    return { len: Math.max(5, +g('lg-mlen', '30') || 30), start: g('lg-dstart', '09:00'), end: g('lg-dend', '21:00'),
+             days: Math.max(1, +g('lg-days', String(seasonDays())) || 1),
+             gap: Math.max(0, +g('lg-rgap', '0') || 0), rest: Math.max(0, +g('lg-rest', '0') || 0) };
+  }
+  function planSet() { S.plan = planNow(); }
+  // A league runs over a season, not an afternoon, so the day count starts at
+  // the length of the season rather than at 1.
+  function seasonDays() {
+    var ev = (S.detail && S.detail.event) || {};
+    if (!ev.starts_at || !ev.ends_at) return 1;
+    var a = new Date(ev.starts_at + 'T12:00:00Z'), b = new Date(ev.ends_at + 'T12:00:00Z');
+    var n = Math.round((b - a) / 86400000) + 1;
+    return (n > 0 && n < 400) ? n : 1;
+  }
+  function setSchedDiv(v2) { S.schedDiv = v2 || ''; renderTab(); }
+
   async function renderSchedule(host) {
     var divs = S.detail.divisions || [];
     if (!S.divId && divs.length) S.divId = divs[0].id;
+    var P = S.plan || (S.plan = { len: 30, start: '09:00', end: '21:00', days: seasonDays(), gap: 0, rest: 0 });
     var fr; try { fr = await sb().rpc('lt_fields_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { fr = { error: e }; }
-    var fields = (fr && fr.data) || [];
-    if (S.divId) await loadEntrants();
-    host.innerHTML =
-      '<div class="lg-tool">' + (divs.length > 1 ? '<select class="lg-sel" onchange="FFPLeague.setDiv(this.value,\'schedule\')">' + divOpts() + '</select>' : '')
-      + '<span class="lg-lab" style="margin:0">Match length</span><input class="lg-in" id="lg-mlen" type="number" value="30" style="width:64px"><span style="font-size:12px;color:var(--ffp-text-muted)">min</span>'
-      // The playing window, so a big draw rolls onto the next day instead of
-      // running to midnight. Days counts from the event start date.
-      + '<span class="lg-lab" style="margin:0">Each day</span>'
-      + '<input class="lg-in" id="lg-dstart" type="time" value="09:00" style="width:112px">'
-      + '<span style="font-size:12px;color:var(--ffp-text-muted)">to</span>'
-      + '<input class="lg-in" id="lg-dend" type="time" value="21:00" style="width:112px">'
-      + '<span class="lg-lab" style="margin:0">Days</span><input class="lg-in" id="lg-days" type="number" min="1" value="1" style="width:58px">'
-      + '<span class="lg-lab" style="margin:0">Between rounds</span><input class="lg-in" id="lg-rgap" type="number" min="0" value="0" style="width:58px"><span style="font-size:12px;color:var(--ffp-text-muted)">min</span>'
-      + '<span class="sp"></span><button class="lg-btn" onclick="FFPLeague.addMatch(\'schedule\')">' + ic('add') + 'Add match</button><button class="lg-btn pri" onclick="FFPLeague.autoplan()">' + ic('auto_awesome') + 'Auto-plan</button></div>'
-      + (S.addMatch === 'schedule' ? matchEditor() : '')
-      + '<div id="lg-schedlist"><div class="lg-empty">Loading…</div></div>';
-    if (!fields.length) { document.getElementById('lg-schedlist').innerHTML = '<div class="lg-empty">Add a venue + surfaces on the <b>Venues</b> tab, then Auto-plan.</div>'; }
-    if (!S.divId) { document.getElementById('lg-schedlist').innerHTML = '<div class="lg-empty">Add a division + generate fixtures first.</div>'; return; }
-    await loadEntrants();
-    var r; try { r = await sb().rpc('league_fixtures_list', { p_division: S.divId }); } catch (e) { r = { error: e }; }
-    var fx = ((r && r.data) || []).filter(function (f) { return !f.bye; });
+    var fields = (fr && fr.data) || []; S._fields = fields;
+    host.innerHTML = '<div id="lg-schedtop"></div><div id="lg-schedlist"><div class="lg-empty">Loading…</div></div>';
+    var top = document.getElementById('lg-schedtop'), box = document.getElementById('lg-schedlist');
+    if (!divs.length) { box.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
+
+    var divIx = {}, divNm = {};
+    divs.forEach(function (d, i) { divIx[d.id] = i % 10; divNm[d.id] = d.name; });
+
+    // Names are per division, so they are gathered per division and merged.
+    var names = {};
+    for (var i = 0; i < divs.length; i++) {
+      var rr; try { rr = await sb().rpc('league_roster', { p_division: divs[i].id }); } catch (e) { rr = null; }
+      ((rr && rr.data) || []).forEach(function (en) { names[en.id] = en.name; });
+    }
+
+    var mr; try {
+      mr = await sb().from('league_fixtures')
+        .select('id,division_id,stage,round,sort,status,home_entrant,away_entrant,scheduled_at,court,field_id')
+        .eq('league_id', S.eventId);
+    } catch (e) { mr = { error: e }; }
+    // A bye is not a match: nobody turns up for it and it takes no court.
+    var ms = ((mr && mr.data) || []).filter(function (m) {
+      return m.status !== 'void' && m.status !== 'bye' && String(m.stage || '') !== 'bye';
+    });
+    if (!ms.length) { box.innerHTML = '<div class="lg-empty">No fixtures yet. Generate them on the <b>Fixtures &amp; results</b> tab.</div>'; return; }
+    if (!fields.length) { box.innerHTML = '<div class="lg-empty">Add a venue and its surfaces on the <b>Venues</b> tab, then Auto-plan.</div>'; return; }
+
     var offr; try { offr = await sb().rpc('lt_officials_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { offr = null; }
-    var offs = (offr && offr.data) || [];
-    var host2 = document.getElementById('lg-schedlist');
-    if (!fx.length) { host2.innerHTML = '<div class="lg-empty">No fixtures yet — generate them on the Fixtures tab.</div>'; return; }
-    S._fields = fields; S._offs = offs;
-    host2.innerHTML = fxGroups(fx).map(function (g) {
-      return roundHead(g.label, g.list.length, roundRange(g.list)) + '<div class="lg-rbody">' + g.list.map(schedRow).join('') + '</div>';
-    }).join('');
+    S._offs = (offr && offr.data) || [];
+    var moMap = {};
+    try {
+      var mo = await sb().from('lt_match_officials').select('id,match_id,role,official_id')
+        .eq('scope', 'league').in('match_id', ms.map(function (m) { return m.id; }));
+      var offName = {}; S._offs.forEach(function (o) { offName[o.id] = o.name || o.email; });
+      ((mo && mo.data) || []).forEach(function (x) {
+        (moMap[x.match_id] = moMap[x.match_id] || []).push({ id: x.id, role: x.role, name: offName[x.official_id] || 'Official' });
+      });
+    } catch (e) {}
+    ms.forEach(function (m) {
+      m._names = names; m._offs = moMap[m.id] || [];
+      m._dix = divIx[m.division_id] || 0; m._dnm = divNm[m.division_id] || '';
+    });
+    S._sched = ms;
+
+    var fById = {}; fields.forEach(function (f) { fById[f.id] = f; });
+    var placed = function (m) { return !!(m.scheduled_at && m.field_id && fById[m.field_id]); };
+    var built = ms.length > 0 && ms.every(placed);
+    var shown = S.schedDiv ? ms.filter(function (m) { return m.division_id === S.schedDiv; }) : ms;
+
+    var days = {}, loose = [];
+    shown.forEach(function (m) {
+      if (!placed(m)) { loose.push(m); return; }
+      var d = dayKey(m); (days[d] = days[d] || {}); (days[d][m.field_id] = days[d][m.field_id] || []).push(m);
+    });
+    var dayList = Object.keys(days).sort();
+
+    top.innerHTML = schedTop(built, divs, P) + (built ? divKey(divs) : '');
+
+    var html = '';
+    dayList.forEach(function (d) {
+      html += '<div class="sc-day">' + esc(lgDayLong(d)) + '<span class="tz">' + esc(tzLabel()) + ' time</span></div>';
+      fields.forEach(function (f) {
+        var list = days[d][f.id]; if (!list || !list.length) return;
+        list.sort(function (a, b) { return new Date(a.scheduled_at) - new Date(b.scheduled_at) || fxRank(a) - fxRank(b); });
+        var slot = d + '|' + f.id;
+        html += '<div class="sc-ch"><b>' + esc(f.name) + '</b>'
+          + (f.is_main ? '<span class="mn">Main court</span>'
+                       : '<button class="sc-mkm" onclick="FFPLeague.setMainCourt(\'' + f.id + '\')">Make main court</button>')
+          + '<span class="ct">' + list.length + (list.length === 1 ? ' match' : ' matches') + '</span>'
+          + '<button class="sc-add" onclick="FFPLeague.addMatch(\'' + slot + '\')">' + ic('add') + 'Add match</button></div>'
+          + list.map(function (m, i2) { return schedRow(m, f.id, i2 === 0, i2 === list.length - 1); }).join('')
+          + (S.addMatch === slot ? matchEditor() : '');
+      });
+    });
+    if (loose.length) {
+      loose.sort(function (a, b) { return fxRank(a) - fxRank(b) || (a.round || 0) - (b.round || 0) || (a.sort || 0) - (b.sort || 0); });
+      html += '<div class="sc-day">Not on the schedule yet</div>'
+        + '<div class="sc-ch warn"><b>' + loose.length + (loose.length === 1 ? ' match has' : ' matches have') + ' no court and no time</b>'
+        + '<span class="ct">Auto-plan gives them one</span>'
+        + '<button class="sc-add" onclick="FFPLeague.autoplan()">' + ic('auto_awesome') + 'Auto-plan now</button></div>'
+        + loose.map(function (m) { return schedRow(m, null, true, true); }).join('')
+        + (S.addMatch === 'loose' ? matchEditor() : '');
+    }
+    if (!html) html = '<div class="lg-empty">No schedule yet. Auto-plan builds every division in one go, so no two are given the same surface at the same moment.</div>';
+    box.innerHTML = html + (S.rbAsk ? rebuildConfirm() : '');
   }
-  function schedRow(f) {
-    var tz = evTz();
-    var tv = f.scheduled_at ? zoneTime(f.scheduled_at, tz) : '';
-    var dv = f.scheduled_at ? zoneDate(f.scheduled_at, tz) : ((S.detail.event && S.detail.event.starts_at) || '');
-    var offs = f.officials || [];
-    var tags = offs.map(function (o) {
-      return '<div class="lg-offtag"><span class="role">' + esc(o.role || 'Official') + '</span><span class="nm">' + esc(o.name) + '</span><span class="sp"></span><span class="ms x" onclick="FFPLeague.offRemove(\'' + o.id + '\')">close</span></div>';
+
+  function divKey(divs) {
+    if (divs.length < 2) return '';
+    return '<div class="sc-key">' + divs.map(function (d, i) {
+      return '<span class="k lg-d' + (i % 10) + '"><i></i>' + esc(d.name) + '</span>';
+    }).join('') + '</div>';
+  }
+
+  function schedTop(built, divs, P) {
+    var dopt = '<option value="">All divisions</option>' + divs.map(function (d) {
+      return '<option value="' + d.id + '"' + (S.schedDiv === d.id ? ' selected' : '') + '>' + esc(d.name) + '</option>';
     }).join('');
+    var N = evNouns();
+    return '<div class="lg-tool">'
+      + (divs.length > 1 ? '<select class="lg-sel" style="width:auto;min-width:190px" title="Filters what you are looking at. Auto-plan always builds every division." onchange="FFPLeague.setSchedDiv(this.value)">' + dopt + '</select>' : '')
+      + '<span class="sp"></span>'
+      + (built
+        ? '<button class="lg-btn ghost" onclick="FFPLeague.rebuildAsk()">' + ic('warning') + 'Rebuild schedule</button>'
+        : '<button class="lg-btn pri" onclick="FFPLeague.autoplan()">' + ic('auto_awesome') + 'Auto-plan the season</button>')
+      + '</div>'
+      + '<div class="sc-plan">Matches of <input class="lg-in" id="lg-mlen" type="number" value="' + P.len + '" oninput="FFPLeague.planSet()"> min, '
+      + '<input class="lg-in w" id="lg-dstart" type="time" value="' + esc(P.start) + '" oninput="FFPLeague.planSet()"> to '
+      + '<input class="lg-in w" id="lg-dend" type="time" value="' + esc(P.end) + '" oninput="FFPLeague.planSet()">, '
+      + 'over <input class="lg-in" id="lg-days" type="number" min="1" value="' + P.days + '" oninput="FFPLeague.planSet()"> day(s)</div>'
+      + '<div class="sc-plan"><input class="lg-in" id="lg-rgap" type="number" min="0" value="' + P.gap + '" oninput="FFPLeague.planSet()"> min between rounds, '
+      + '<input class="lg-in" id="lg-rest" type="number" min="0" value="' + P.rest + '" oninput="FFPLeague.planSet()"> min rest between ' + N.poss + ' matches</div>';
+  }
+
+  function rebuildAsk() { S.rbAsk = true; renderTab(); }
+  function rebuildCancel() { S.rbAsk = false; renderTab(); }
+  function rebuildConfirm() {
+    return '<div class="lg-cfm"><div class="lg-cfm-in">'
+      + '<span class="ms lg-cfm-ic" style="color:var(--ffp-gold)">warning</span>'
+      + '<div class="lg-cfm-t">Rebuild the whole schedule?</div>'
+      + '<div class="lg-cfm-b">This replans every match in every division and will move matches that '
+      + evNouns().many + ' and officials have already been given times for. Results already entered are kept.</div>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPLeague.rebuildCancel()">Cancel</button>'
+      + '<button class="lg-btn pri" onclick="FFPLeague.autoplan(1)">Yes, rebuild</button></div></div></div>';
+  }
+
+  function schedRow(m, fieldId, isFirst, isLast) {
+    var names = m._names || {};
+    var tv = lgTimeStr(m.scheduled_at);
+    var dv = lgDateStr(m.scheduled_at) || ((S.detail.event && S.detail.event.starts_at) || '');
+    var open = S.schedOpen === m.id;
+    var offTxt = (m._offs || []).map(function (o) { return (o.role ? o.role + ' ' : '') + o.name; }).join(', ');
+    // One surface hosts several divisions in a day, so the row says which this is.
+    var sub = (m._dnm ? m._dnm + ', ' : '') + fxLabel(m) + (offTxt ? ', ' + offTxt : '');
+    var row = '<div class="sc-m lg-d' + (m._dix || 0) + (open ? ' open' : '') + '" data-id="' + m.id + '">'
+      + '<input class="lg-in t st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + m.id + '\')">'
+      + '<div class="g"><b>' + esc(names[m.home_entrant] || 'TBD') + ' v ' + esc(names[m.away_entrant] || 'TBD') + '</b>'
+      + '<span>' + esc(sub) + '</span></div>'
+      + '<select class="lg-sel c st-f" title="Move to another surface" onchange="FFPLeague.schedSet(\'' + m.id + '\')">' + surfaceOpts(S._fields, m.field_id) + '</select>'
+      + '<button class="sc-ic" title="Earlier" ' + (isFirst ? 'disabled' : '') + ' onclick="FFPLeague.schedMove(\'' + m.id + '\',-1)">' + ic('arrow_upward') + '</button>'
+      + '<button class="sc-ic" title="Later" ' + (isLast ? 'disabled' : '') + ' onclick="FFPLeague.schedMove(\'' + m.id + '\',1)">' + ic('arrow_downward') + '</button>'
+      + '<button class="sc-ic" title="More" onclick="FFPLeague.schedToggle(\'' + m.id + '\')">' + ic(open ? 'expand_less' : 'more_horiz') + '</button>'
+      + '</div>';
+    if (!open) return row;
     var roleOpts = '<option value="">Role…</option>' + ROLES.map(function (r) { return '<option>' + r + '</option>'; }).join('');
     var offOpts = '<option value="">Official…</option>' + (S._offs || []).map(function (x) { return '<option value="' + x.id + '">' + esc(x.name || x.email) + '</option>'; }).join('');
-    return '<div class="lg-srow2" data-id="' + f.id + '"><div class="s-match"><b>' + esc((f.home && f.home.name) || 'TBD') + ' v ' + esc((f.away && f.away.name) || 'TBD') + '</b><small>' + esc(fxLabel(f)) + '</small>'
-      + '<div class="s-when"><input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"><input class="lg-in st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + f.id + '\')"></div></div>'
-      + '<div class="s-right"><div class="fl">Surface</div><select class="lg-sel st-f" onchange="FFPLeague.schedSet(\'' + f.id + '\')">' + surfaceOpts(S._fields, f.field_id) + '</select>'
-      + '<div class="fl">Officials</div>' + (tags ? '<div class="lg-offlist">' + tags + '</div>' : '')
-      + '<div class="lg-assign"><select class="lg-sel a-role">' + roleOpts + '</select><select class="lg-sel a-off">' + offOpts + '</select><button class="lg-btn sm pri" onclick="FFPLeague.offAdd(\'' + f.id + '\')">Add</button></div></div></div>';
+    var tags = (m._offs || []).map(function (o) {
+      return '<div class="lg-offtag"><span class="role">' + esc(o.role || 'Official') + '</span><span class="nm">' + esc(o.name) + '</span><span class="sp"></span><span class="ms x" onclick="FFPLeague.offRemove(\'' + o.id + '\')">close</span></div>';
+    }).join('');
+    return row + '<div class="sc-more" data-id="' + m.id + '">'
+      + '<span class="lg-lab" style="margin:0">Day</span><input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPLeague.schedSet(\'' + m.id + '\')">'
+      + '<button class="lg-btn sm" onclick="FFPLeague.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + 'Match centre</button>'
+      + '<span class="sp"></span>' + (tags ? '<div class="lg-offlist">' + tags + '</div>' : '')
+      + '<select class="lg-sel a-role">' + roleOpts + '</select><select class="lg-sel a-off">' + offOpts + '</select>'
+      + '<button class="lg-btn sm pri" onclick="FFPLeague.offAdd(\'' + m.id + '\')">Add official</button></div>';
   }
-  async function autoplan() {
-    if (!S.divId) { toast('Pick a division', 'error'); return; }
-    var gv = function (k, d) { var el = document.getElementById(k); var v = el ? String(el.value || '').trim() : ''; return v || d; };
-    var len = +((document.getElementById('lg-mlen') || {}).value) || 30;
-    var args = { p_scope: 'league', p_division: S.divId, p_match_len: len,
-      p_day_start: gv('lg-dstart', '09:00'), p_day_end: gv('lg-dend', '21:00'),
-      p_days: Math.max(1, +gv('lg-days', '1') || 1),
-      p_round_gap: Math.max(0, +gv('lg-rgap', '0') || 0), p_round_barrier: true };
-    var r; try { r = await sb().rpc('lt_autoplan', args); } catch (e) { r = { error: e }; }
-    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a surface first (Venues tab)' : 'Could not plan', 'error'); return; }
-    toast((r.data || 0) + ' matches planned', 'success'); renderTab();
+  function schedToggle(id) { S.schedOpen = (S.schedOpen === id) ? null : id; renderTab(); }
+
+  // Reordering swaps this match's time with its neighbour on the same surface,
+  // so the order of play changes without anyone typing a time.
+  async function schedMove(id, dir) {
+    var all = S._sched || [];
+    var me = all.filter(function (x) { return x.id === id; })[0]; if (!me || !me.scheduled_at) return;
+    var mine = all.filter(function (x) { return x.field_id === me.field_id && x.scheduled_at && dayKey(x) === dayKey(me); })
+      .sort(function (a, b) { return new Date(a.scheduled_at) - new Date(b.scheduled_at); });
+    var i = -1; mine.forEach(function (x, ix) { if (x.id === id) i = ix; });
+    var j = i + dir;
+    if (i < 0 || j < 0 || j >= mine.length) return;
+    var other = mine[j], a = me.scheduled_at, b = other.scheduled_at;
+    try {
+      await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: me.id, p_when: b, p_field: me.field_id, p_court: null, p_official: null });
+      await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: other.id, p_when: a, p_field: other.field_id, p_court: null, p_official: null });
+    } catch (e) { toast('Could not move it', 'error'); return; }
+    me.scheduled_at = b; other.scheduled_at = a;
+    renderTab();
+  }
+  async function setMainCourt(fieldId) {
+    try { await sb().rpc('lt_field_set_main', { p_id: fieldId, p_on: true }); } catch (e) { toast('Could not set the main court', 'error'); return; }
+    toast('Main court set', 'success'); renderTab();
+  }
+
+  /* One press plans every division at once, so two divisions cannot be handed
+     the same surface at the same moment. Pressed once; after that the grid is
+     edited by hand and replanning has to be asked for. */
+  async function autoplan(isRebuild) {
+    var P = planNow(); S.plan = P;
+    var args = { p_league: S.eventId, p_match_len: P.len, p_day_start: P.start, p_day_end: P.end,
+                 p_days: P.days, p_round_gap: P.gap, p_rest: P.rest, p_divisions: null, p_tz: evTz() };
+    var r; try { r = await sb().rpc('league_autoplan_all', args); } catch (e) { r = { error: e }; }
+    S.rbAsk = false;
+    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a surface first (Venues tab)' : 'Could not plan', 'error'); renderTab(); return; }
+    var d = r.data || {}, n = d.placed || 0, over = d.over || 0;
+    toast(n + (n === 1 ? ' match planned' : ' matches planned') + (over ? ', ' + over + ' ran past the last day' : ''), over ? 'error' : 'success');
+    renderTab();
   }
   async function schedSet(id) {
-    var row = document.querySelector('.lg-srow2[data-id="' + id + '"]'); if (!row) return;
-    var dv = (row.querySelector('.st-d') || {}).value, tv = row.querySelector('.st-t').value, fid = row.querySelector('.st-f').value || null;
-    var base = dv || (S.detail.event && S.detail.event.starts_at) || new Date().toISOString().slice(0, 10);
-    var when = (tv || dv) ? zoneToISO(base, tv || '00:00', evTz()) : null;
+    var row = document.querySelector('.sc-m[data-id="' + id + '"]'); if (!row) return;
+    var more = document.querySelector('.sc-more[data-id="' + id + '"]');
+    var dv = ((more && more.querySelector('.st-d')) || {}).value;
+    var tv = row.querySelector('.st-t').value, fid = row.querySelector('.st-f').value || null;
+    var base = dv || (S.detail.event && S.detail.event.starts_at) || lgDateStr(new Date().toISOString());
+    var when = (tv || dv) ? lgIso(base, tv || '00:00') : null;
     await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null });
-    toast('Rescheduled', 'success');
+    toast('Rescheduled', 'success'); renderTab();
   }
   async function offAdd(matchId) {
-    var row = document.querySelector('.lg-srow2[data-id="' + matchId + '"]'); if (!row) return;
+    var row = document.querySelector('.sc-more[data-id="' + matchId + '"]'); if (!row) return;
     var role = (row.querySelector('.a-role') || {}).value || null, off = (row.querySelector('.a-off') || {}).value || null;
     if (!off) { toast('Pick an official', 'error'); return; }
     var r; try { r = await sb().rpc('lt_match_official_add', { p_scope: 'league', p_match: matchId, p_official: off, p_role: role }); } catch (e) { r = { error: e }; }
@@ -1306,7 +1517,14 @@
   }
   function matchEditor() {
     var bye = S.addBye, pre = S.addPre && !bye;
-    return '<div class="lg-maed"><div class="ttl">Add ' + (bye ? 'a bye' : (pre ? 'a preseason match' : 'a fixture')) + '</div>'
+    /* On the schedule the editor opens under a surface, where the tab no
+       longer says which division this belongs to, so it asks. */
+    var divs = (S.detail && S.detail.divisions) || [];
+    var dsel = divs.length < 2 ? '' :
+      '<select class="lg-sel" style="width:auto;min-width:170px;margin-bottom:9px" onchange="FFPLeague.setAddDiv(this.value)">'
+      + divs.map(function (d) { return '<option value="' + d.id + '"' + (d.id === S.divId ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join('')
+      + '</select>';
+    return '<div class="lg-maed"><div class="ttl">Add ' + (bye ? 'a bye' : (pre ? 'a preseason match' : 'a fixture')) + '</div>' + dsel
       + '<label class="fe-byetog"><input type="checkbox" id="lg-mm-pre" ' + (pre ? 'checked' : '') + ' onchange="FFPLeague.togglePre(this.checked)"> Preseason / friendly (doesn\'t count towards the table)</label>'
       + '<label class="fe-byetog"><input type="checkbox" id="lg-mm-bye" ' + (bye ? 'checked' : '') + ' onchange="FFPLeague.toggleBye(this.checked)"> This is a bye (' + nouns(curDv()).one + ' sits out this round)</label>'
       + '<div class="edrow" style="margin-top:11px"><select class="lg-sel" id="lg-mm-h" style="flex:1;min-width:150px">' + entOpts(null) + '</select>'
@@ -1317,6 +1535,8 @@
       + '<div class="edfoot"><span class="sp"></span><button class="lg-btn ghost" onclick="FFPLeague.cancelMatch()">Cancel</button><button class="lg-btn pri" onclick="FFPLeague.saveMatch()">' + ic('check') + (bye ? 'Add bye' : (pre ? 'Add preseason match' : 'Add fixture')) + '</button></div></div>';
   }
   function addMatch(tab) { S.addMatch = tab; S.addBye = false; S.addPre = false; renderTab(); }
+  // Changing the division changes who can be picked, so the roster is reloaded.
+  async function setAddDiv(id) { S.divId = id; await loadEntrants(); renderTab(); }
   function cancelMatch() { S.addMatch = null; S.addBye = false; S.addPre = false; renderTab(); }
   function toggleBye(v) { S.addBye = v; if (v) S.addPre = false; renderTab(); }
   function togglePre(v) { S.addPre = v; if (v) S.addBye = false; renderTab(); }
@@ -1332,6 +1552,16 @@
     if (!h || !a || h === a) { toast('Pick two different ' + nouns(curDv()).many, 'error'); return; }
     var dv = (document.getElementById('lg-mm-d') || {}).value, tv = (document.getElementById('lg-mm-t') || {}).value, fid = (document.getElementById('lg-mm-f') || {}).value || null;
     var when = (dv || tv) ? zoneToISO(dv || zoneDate(Date.now(), evTz()), tv || '00:00', evTz()) : null;
+    /* Added from a surface on the schedule means it belongs there, after
+       whatever is already on it that day. */
+    var slot = String(S.addMatch || '');
+    if (!fid && slot.indexOf('|') > -1) {
+      var sday = slot.split('|')[0]; fid = slot.split('|')[1];
+      var same = (S._sched || []).filter(function (x) { return x.field_id === fid && x.scheduled_at && lgDateStr(x.scheduled_at) === sday; });
+      var lastMs = same.reduce(function (acc, x) { return Math.max(acc, new Date(x.scheduled_at).getTime()); }, 0);
+      var mlen = Math.max(5, +((document.getElementById('lg-mlen') || {}).value) || 30);
+      when = lastMs ? new Date(lastMs + mlen * 60000).toISOString() : lgIso(sday, '09:00');
+    }
     var r; try { r = await sb().rpc('lt_match_add', { p_scope: 'league', p_division: S.divId, p_round: pre ? 0 : rd, p_home: h, p_away: a, p_when: when, p_field: fid, p_stage: pre ? 'preseason' : 'regular' }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not add', 'error'); return; } S.addMatch = null; S.addPre = false; toast(pre ? 'Preseason match added' : 'Fixture added', 'success'); renderTab();
   }
@@ -1992,8 +2222,8 @@
     tsPut: tsPut, tsCovers: tsCovers, tsCap: tsCap, tsTeam: tsTeam, tsSaveCoach: tsSaveCoach, hexSync: hexSync,
     gfxOpen: gfxOpen, gfxCopy: gfxCopy, gfxLink: gfxLink,
     confirmGen: confirmGen, cancelGen: cancelGen, doGen: doGen, saveResults: saveResults,
-    addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap, ofPhoto: ofPhoto, autoplan: autoplan, schedSet: schedSet,
-    togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch, toggleBye: toggleBye, togglePre: togglePre,
+    addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap, ofPhoto: ofPhoto, autoplan: autoplan, schedSet: schedSet, schedMove: schedMove, schedToggle: schedToggle, setMainCourt: setMainCourt, setSchedDiv: setSchedDiv, planSet: planSet, rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
+    togRound: togRound, addMatch: addMatch, setAddDiv: setAddDiv, cancelMatch: cancelMatch, saveMatch: saveMatch, toggleBye: toggleBye, togglePre: togglePre,
     editFx: editFx, fxStageChange: fxStageChange, cancelEditFx: cancelEditFx, saveFx: saveFx, delAsk: delAsk, delCancel: delCancel, delFx: delFx,
     addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
     addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface, screenPanel: screenPanel, useMyCourts: useMyCourts, linkCourt: linkCourt, copyScreen: copyScreen,
