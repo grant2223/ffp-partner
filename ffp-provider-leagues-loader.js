@@ -369,6 +369,7 @@
        saving anything (both saveDetails and saveSport call open()), left
        every branch unmatched and the body blank. */
     S.eventId = id; S.view = 'editor'; S.tab = 'information'; S.divEdit = null; S.entAdd = false; S.fxConfirm = false;
+    S.plan = null; S._autoPlanned = false;   // a different event, a different playing day
     var r; try { r = await sb().rpc('league_detail', { p_league: id }); } catch (e) { r = { error: e }; }
     S.detail = (r && r.data) || null;
     S.divId = (S.detail && S.detail.divisions && S.detail.divisions[0] && S.detail.divisions[0].id) || null;
@@ -711,7 +712,37 @@
              days: Math.max(1, +g('lg-days', String(seasonDays())) || 1),
              gap: Math.max(0, +g('lg-rgap', '0') || 0), rest: Math.max(0, +g('lg-rest', '0') || 0) };
   }
-  function planSet() { S.plan = planNow(); }
+  function hm5(t) { return t ? String(t).slice(0, 5) : null; }
+  /* THE PLAYING DAY IS A SETTING, NOT A FORM. It used to be typed into this tab
+     and thrown away on reload, so nobody could rely on it and the schedule could
+     never lay itself out. It lives on the event now and is saved as it is
+     changed. */
+  function planFromEvent(ev, defDays) {
+    ev = ev || {};
+    return { len:   +ev.plan_match_len || 30,
+             start: hm5(ev.plan_day_start) || '09:00',
+             end:   hm5(ev.plan_day_end)   || '21:00',
+             days:  +ev.plan_days || defDays || 1,
+             gap:   +ev.plan_round_gap || 0,
+             rest:  +ev.plan_rest || 0 };
+  }
+  var _planT = null;
+  function planSave() {
+    var P = S.plan || planNow();
+    var ev = (S.detail && S.detail.event) || null;
+    if (ev) {
+      ev.plan_match_len = P.len; ev.plan_day_start = P.start; ev.plan_day_end = P.end;
+      ev.plan_days = P.days; ev.plan_round_gap = P.gap; ev.plan_rest = P.rest;
+    }
+    // a setting saved mid-typing is not worth a toast, and a failure is retried
+    // by the next keystroke
+    try {
+      sb().rpc('league_event_save', { p_id: S.eventId, p: {
+        plan_match_len: String(P.len), plan_day_start: P.start, plan_day_end: P.end,
+        plan_days: String(P.days), plan_round_gap: String(P.gap), plan_rest: String(P.rest) } });
+    } catch (e) {}
+  }
+  function planSet() { S.plan = planNow(); clearTimeout(_planT); _planT = setTimeout(planSave, 700); }
   // A league runs over a season, not an afternoon, so the day count starts at
   // the length of the season rather than at 1.
   function seasonDays() {
@@ -727,7 +758,7 @@
   async function renderSchedule(host) {
     var divs = S.detail.divisions || [];
     if (!S.divId && divs.length) S.divId = divs[0].id;
-    var P = S.plan || (S.plan = { len: 30, start: '09:00', end: '21:00', days: seasonDays(), gap: 0, rest: 0 });
+    var P = S.plan || (S.plan = planFromEvent(S.detail.event, seasonDays()));
     var fr; try { fr = await sb().rpc('lt_fields_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { fr = { error: e }; }
     var fields = (fr && fr.data) || []; S._fields = fields;
     host.innerHTML = '<div id="lg-schedtop"></div><div id="lg-schedlist"><div class="lg-empty">Loading…</div></div>';
@@ -754,7 +785,28 @@
       return m.status !== 'void' && m.status !== 'bye' && String(m.stage || '') !== 'bye';
     });
     if (!ms.length) { box.innerHTML = '<div class="lg-empty">No fixtures yet. Generate them on the <b>Fixtures &amp; results</b> tab.</div>'; return; }
-    if (!fields.length) { box.innerHTML = '<div class="lg-empty">Add a venue and its surfaces on the <b>Venues</b> tab, then Auto-plan.</div>'; return; }
+    if (!fields.length) { box.innerHTML = '<div class="lg-empty">Add a venue and its surfaces on the <b>Venues</b> tab and the schedule builds itself.</div>'; return; }
+    if (!(S.detail.event && S.detail.event.starts_at)) {
+      box.innerHTML = '<div class="lg-empty act"><div class="t">When does the season start?</div>'
+        + '<div class="s">Set the season start on Information and every fixture is given a date, a time and a surface straight away.</div>'
+        + '<div class="row"><button class="lg-btn pri" onclick="FFPLeague.tab(\'information\')">' + ic('event') + 'Go to Information</button></div></div>';
+      return;
+    }
+    /* The schedule builds itself once the fixtures, the surfaces and the season
+       start all exist. Only when nothing is placed, so an edited schedule is
+       never moved. */
+    if (!S._autoPlanned && !ms.some(function (m) { return m.scheduled_at; })) {
+      S._autoPlanned = true;
+      var ap; try {
+        ap = await sb().rpc('league_autoplan_all', { p_league: S.eventId, p_match_len: P.len,
+          p_day_start: P.start, p_day_end: P.end, p_days: P.days, p_round_gap: P.gap,
+          p_rest: P.rest, p_divisions: null, p_tz: evTz() });
+      } catch (e) { ap = null; }
+      if (ap && !ap.error && ap.data && (ap.data.placed || 0) > 0) {
+        toast(ap.data.placed + ' matches given a time and a surface', 'success');
+        return renderSchedule(host);
+      }
+    }
 
     var offr; try { offr = await sb().rpc('lt_officials_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { offr = null; }
     S._offs = (offr && offr.data) || [];
