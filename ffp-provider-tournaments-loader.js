@@ -1622,13 +1622,17 @@
      filled, which drops entrants into the slots and leaves every time and court
      alone. Rebuilding would delete every match and take the schedule with it,
      so it is only offered once somebody is actually standing in the draw. */
+  /* Three different jobs, and the label has to say which one.
+       nothing there yet          -> lay it out from the format
+       laid out, nobody in it     -> drop the entrants into the slots, which
+                                     keeps every time and court already set
+       entrants standing in it    -> a real re-draw, which rebuilds it
+     A pooled format is never "filled" from a seed list: its slots are pool
+     places that resolve as the pools finish, so it only ever lays out again. */
   function drawBtnLabel(dv) {
-    var kk = fmtOfDiv(dv);
-    /* A tiered ladder is never "filled" from a seed list: its slots are pool
-       places, and they resolve as the pools finish. So it only ever offers to
-       lay the ladder out, or to lay it out again. */
-    if (kk === 'tiered') return (dv.match_count || 0) ? 'Lay it out again' : 'Lay out the ladder';
-    if (!(dv.match_count || 0)) return 'Make the draw';
+    var kk = fmtOfDiv(dv), pooled = (kk === 'tiered' || kk === 'grp' || kk === 'gk');
+    if (!(dv.match_count || 0)) return pooled ? 'Lay out the draw' : 'Make the draw';
+    if (pooled) return 'Lay it out again';
     if (!(dv.placed_count || 0)) return 'Fill the draw';
     return 'Draw again';
   }
@@ -1637,12 +1641,9 @@
   // tournament can be scheduled and the names dropped in as results come.
   var DRAW_SIZES = [4, 8, 16, 32, 64, 128];
   function drawSizeRow(dv, k) {
-    /* A tiered ladder is decided by its shape, not by who has entered: pools,
-       band size and how many go up. Give it the capacity and every place from
-       1st to last exists as a slot (A1 v B2, and so on) before a single entry,
-       so the whole thing can be scheduled. Groups alone have no ladder to lay
-       out, so they still wait for entrants. */
-    if (k === 'grp') return '';
+    /* Every format is laid out from its shape, and the capacity is what the
+       shape is laid out to: a knockout's bracket, a pool's fixtures, a ladder's
+       bands, a Monrad's rounds. It is asked for on all of them. */
     var cur = dv.draw_size || 0;
     var sel = (cur ? '' : '<option value="">Not set</option>')
       + DRAW_SIZES.map(function (n) {
@@ -1689,6 +1690,17 @@
       + 'before a single entry is in. Names drop into the slots as entrants are seeded.</div>'
       + '<div class="row">' + sizeCtl + open + '</div></div>';
   }
+  /* Say what was actually made, because "Saved" tells an organiser nothing
+     about whether their whole event now exists. */
+  function laidOutMsg(d) {
+    d = d || {};
+    var pool = d.pool_matches || 0, draw = d.draw_matches || 0;
+    var bits = [];
+    if (pool) bits.push(pool + ' pool match' + (pool === 1 ? '' : 'es'));
+    if (draw) bits.push(draw + ' in the draw');
+    if (!bits.length) return 'Nothing to lay out yet';
+    return 'Laid out: ' + bits.join(' and ') + ', ready to schedule';
+  }
   function openDrawCancel() { S.openDrawAsk = null; renderTab(); }
   async function openDivDraw(confirmed) {
     var dv = ((S.detail && S.detail.divisions) || []).find(function (d) { return d.id === S.divId; }) || {};
@@ -1699,38 +1711,27 @@
     /* No size given is fine: the database works it out from the entrants the
        division already holds, rounded up to the next power of two. It only
        asks when there is nobody to work it out from. */
-    var kk = fmtOfDiv(dv), r, em;
-    /* A tiered ladder is built by its own builder from the shape, not by the
-       knockout one. The capacity is saved first, because that is what the
-       ladder is laid out to. */
-    if (kk === 'tiered') {
-      if (!size) { toast('Pick how many players this division takes first', 'error'); return; }
-      try { r = await sb().rpc('tourn_division_save',
-        { p_tourn: S.eventId, p_id: S.divId, p: { draw_size: size } }); } catch (e) { r = { error: e }; }
-      if (r.error) { toast(said(r.error) || 'Could not save the size', 'error'); return; }
-      try { r = await sb().rpc('tourn_tiered_build', { p_division: S.divId }); } catch (e) { r = { error: e }; }
-      if (r.error) {
-        em = r.error.message || '';
-        toast(/matches_played/.test(em) ? 'A match has already been played in this division'
-            : (said(r.error) || 'Could not lay out the ladder'), 'error');
-        renderTab(); return;
-      }
-      var made = (r.data && r.data.matches) || 0;
-      if (!made) { toast('Set the pools and band size first', 'error'); renderTab(); return; }
-      toast(made + ' matches laid out across ' + ((r.data && r.data.bands) || 0) + ' bands', 'success');
-      S.tab = 'bracket'; S.drawKey = null; await refreshDetail(); return;
-    }
+    /* ONE call, whatever the format is. The database lays out the pools, the
+       ladder, the bracket and every round from the shape the organiser set, on
+       slot names rather than entrants, so it can all be scheduled before a
+       single entry arrives. The options are saved first so it lays out to what
+       is on screen, not to what was last stored. */
+    var r, em;
+    if (!(await saveDivFormat(true))) return;
     var args = { p_division: S.divId }; if (size) args.p_size = size;
-    try { r = await sb().rpc('tourn_bracket_open', args); } catch (e) { r = { error: e }; }
+    try { r = await sb().rpc('tourn_draw_open', args); } catch (e) { r = { error: e }; }
     if (r.error) {
       em = r.error.message || '';
       toast(/matches_played/.test(em) ? 'A match has already been played in this division'
-          : /no_size/.test(em) ? 'Pick how many players this division takes, or add the entrants first'
-          : 'Could not open the draw', 'error');
+          : /no_size/.test(em)  ? 'Set how many this division takes first'
+          : /no_groups/.test(em) ? 'Set the number of pools first'
+          : (said(r.error) || 'Could not lay out the draw'), 'error');
       renderTab(); return;
     }
-    toast('Draw opened for ' + (r.data || size) + ' players', 'success');
-    S.tab = 'bracket'; S.drawKey = null; await refreshDetail();
+    toast(laidOutMsg(r.data), 'success');
+    S.tab = (((r.data && r.data.pool_matches) || 0) > 0 && !((r.data && r.data.draw_matches) || 0))
+      ? 'groups' : 'bracket';
+    S.drawKey = null; await refreshDetail();
   }
   function sideHint() {
     var sel = document.getElementById('tg-side'), h = document.getElementById('tg-sidehint');
@@ -1815,30 +1816,27 @@
        then: the Draw and Schedule tabs have something in them immediately and
        the event can be scheduled before a single entry arrives. Only when the
        division has no matches yet, so this never touches a live draw. */
-    var opened = 0, laid = 0, o;
-    if (k === 'ko' && !(dv.match_count || 0)) {
-      try { o = await sb().rpc('tourn_bracket_open', { p_division: S.divId }); } catch (e) { o = { error: e }; }
-      if (o && !o.error && o.data) { opened = o.data; }
+    /* The draw follows the format. Change the pools, the number who advance or
+       the band size and the whole thing is laid out again to match, because a
+       draw that still shows the old shape is worse than no draw.
+
+       Two things stop it: a result already entered, and entrants already
+       standing in the draw. Past that point the draw is real and is only
+       rebuilt when the organiser asks for it. */
+    var laid = null, o, sizeNow = (dv.draw_size || +v('tg-dsize') || 0);
+    if (sizeNow && !(dv.played_count || 0) && !(dv.placed_count || 0)) {
+      var a2 = { p_division: S.divId, p_size: sizeNow };
+      try { o = await sb().rpc('tourn_draw_open', a2); } catch (e) { o = { error: e }; }
+      if (o && !o.error && o.data) { laid = o.data; }
     }
-    /* A tiered division knows its whole shape from the settings just saved, so
-       the ladder is laid out here too. It needs a capacity to lay out to; with
-       none set yet this quietly does nothing and the size row still asks. */
-    if (k === 'tiered' && !(dv.match_count || 0) && (dv.draw_size || +v('tg-dsize'))) {
-      try { o = await sb().rpc('tourn_tiered_build', { p_division: S.divId }); } catch (e) { o = { error: e }; }
-      if (o && !o.error && o.data && o.data.matches) { laid = o.data.matches; }
-    }
-    toast(opened ? ('Format saved, draw opened for ' + opened)
-        : laid ? ('Format saved, ' + laid + ' matches laid out')
-        : 'Format saved', 'success');
+    toast(laid ? ('Format saved. ' + laidOutMsg(laid)) : 'Format saved', 'success');
     await refreshDetail(); return true;
   }
   function buildDivDraw() {
     var divs = S.detail.divisions || [];
     var dv = divs.find(function (x) { return x.id === S.divId; }); if (!dv) return;
-    /* A tiered ladder needs nobody: its slots are pool places. Everything else
-       still needs entrants before it can be drawn. */
-    if (!(dv.entrant_count || 0) && fmtOfDiv(dv) !== 'tiered') {
-      toast('Add entrants first — the draw is already open and waiting for them', 'error'); return; }
+    /* No entrants is not a blocker any more: the draw is laid out from the
+       format and the entrants drop into it later. */
     if ((dv.played_count || 0) > 0) {
       showConfirm('replay', 'Draw ' + dv.name + ' again?',
         (dv.played_count === 1 ? 'One result has' : dv.played_count + ' results have')
@@ -1851,6 +1849,27 @@
   async function _buildDivDraw(dv) {
     if (!(await saveDivFormat(true))) return;
     var k = fmtOfDiv(dv), r;
+    /* Nobody has entered yet: lay the whole thing out from the format instead.
+       One call builds the pools, the ladder or the bracket on slot names, so
+       the event exists and can be scheduled before the first entry. Once there
+       are entrants the builders below deal them into it properly. */
+    if (!(dv.entrant_count || 0)) {
+      var sz0 = (dv.draw_size || +v('tg-dsize') || 0);
+      var a0 = { p_division: S.divId }; if (sz0) a0.p_size = sz0;
+      try { r = await sb().rpc('tourn_draw_open', a0); } catch (e) { r = { error: e }; }
+      if (r.error) {
+        var e0 = r.error.message || '';
+        toast(/no_size/.test(e0)   ? 'Set how many this division takes first'
+            : /no_groups/.test(e0) ? 'Set the number of pools first'
+            : /matches_played/.test(e0) ? 'A match has already been played in this division'
+            : (said(r.error) || 'Could not lay out the draw'), 'error');
+        return;
+      }
+      toast(laidOutMsg(r.data), 'success');
+      S.tab = (((r.data && r.data.pool_matches) || 0) > 0 && !((r.data && r.data.draw_matches) || 0))
+        ? 'groups' : 'bracket';
+      S.drawKey = null; await refreshDetail(); return;
+    }
     if (k === 'monrad') {
       try { r = await sb().rpc('tourn_monrad_open', { p_division: S.divId }); } catch (e) { r = { error: e }; }
       if (r.error) { toast('Could not make the draw', 'error'); return; }
