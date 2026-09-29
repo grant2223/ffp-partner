@@ -356,6 +356,18 @@
     var s = (S.sports || []).find(function (x) { return x.key === k; });
     return s ? s.name : 'Generic points';
   }
+  /* A tournament no longer carries a sport until the organiser picks one: it
+     used to be born as Padel, whatever the tournament was. Nothing is shown
+     for an unchosen sport rather than a sport nobody chose. */
+  function sportLabelFor(k) {
+    if (!k) return '';
+    var s = sportList().find(function (x) { return x.key === k; });
+    return (s && s.label) || k;
+  }
+  function sportSetHint(k) {
+    return k ? 'Scoring and stats set: ' + schemaNameForSport(k)
+             : 'Pick a sport and the scoring and stats set follows.';
+  }
 
   function actOpts(cur) {
     var a = actNames().slice();
@@ -365,7 +377,7 @@
     }).join('');
   }
   function schemaForActivity(act) { var s = (S.sports || []).find(function (x) { return (x.match_activities || []).some(function (a) { return String(a).toLowerCase() === String(act || '').toLowerCase(); }); }); return s ? s.name : 'Generic points'; }
-  function sportHint() { var a = (document.getElementById('tg-sport') || {}).value; var h = document.getElementById('tg-sporthint'); if (h) h.textContent = 'Scoring and stats set: ' + schemaNameForSport(a); }
+  function sportHint() { var a = (document.getElementById('tg-sport') || {}).value; var h = document.getElementById('tg-sporthint'); if (h) h.textContent = sportSetHint(a); }
 
   // The one place that turns a supabase error into something a human can act on.
   // code is what tells us whether it is the schema cache (PGRST202), a missing
@@ -414,7 +426,7 @@
   function renderEditor() {
     injectCss(); var el = root(); if (!el || !S.detail) return;
     var ev = S.detail.event || {};
-    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.activity || ev.sport_key].filter(Boolean).join(', ')) + '</div></div>'
+    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.activity || sportLabelFor(ev.sport_key)].filter(Boolean).join(', ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPTourn.back()">' + ic('arrow_back') + 'All tournaments</button></div>'
       + '<div class="lg-nav"><span class="tg-phase">Set up</span>' + tabBtn('information', 'Information') + tabBtn('setup', 'Setup') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', 'Entrants') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials')
       + '<span class="tg-navsep"></span><span class="tg-phase">Run</span>' + (anyGroups() ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Draw') + tabBtn('schedule', 'Schedule') + tabBtn('sponsors', 'Sponsors') + '</div><div id="tg-tab"></div></div>';
@@ -1452,7 +1464,7 @@
       +   '<option value="">Choose a sport\u2026</option>'
       +   sportOpts(ev.sport_key)
       + '</select>'
-      + '<div class="tg-hint" id="tg-sporthint">Scoring and stats set: ' + esc(schemaNameForSport(ev.sport_key)) + '</div></div>'
+      + '<div class="tg-hint" id="tg-sporthint">' + esc(sportSetHint(ev.sport_key)) + '</div></div>'
       + rulesBlock(ev)
       + '<div class="lg-fld"><div class="lg-lab">Who competes?</div><div class="lg-seg" id="tg-mode">' + modeSeg + '</div>'
       + '<div class="tg-hint" id="tg-modehint">' + esc(modeHint) + '</div></div>'
