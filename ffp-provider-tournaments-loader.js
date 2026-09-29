@@ -150,7 +150,21 @@
       '.lg-teamstat .hd{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;padding:8px 2px 12px;border-bottom:1px solid var(--ffp-border);} .lg-teamstat .hd span{font-size:13px;font-weight:800;text-align:center;} .lg-teamstat .hd span:first-child{text-align:left;} .lg-teamstat .hd span:last-child{text-align:right;}',
       '.lg-tsrow{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #f0f3f6;} .lg-tsrow .lab{text-align:center;font-size:12.5px;font-weight:700;color:#43525c;} .lg-tsrow .lg-in{padding:8px 10px;text-align:center;}',
       '#tg-root .lg-nav{gap:15px;align-items:center;}#tg-root .lg-nav .tg-phase{padding:0 2px 0 0;}#tg-root .lg-nav .tg-navsep{margin:0 2px;}',
-      '.tg-unit{font-size:12px;color:var(--ffp-text-muted);}.sc-day{font-size:16px;font-weight:900;color:var(--ffp-text);margin:26px 0 2px;}.sc-day:first-child{margin-top:8px;}.sc-ch{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:9px;margin:12px 0 0;background:linear-gradient(92deg,#12242f,#21404f);box-shadow:0 2px 8px rgba(14,37,49,.18);}.sc-ch b{font-size:13.5px;font-weight:900;color:#fff;letter-spacing:.01em;}.sc-ch .mn{font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#f0b736;}.sc-mkm{border:0;background:none;padding:0;font:inherit;font-size:11.5px;font-weight:700;color:#7ec9e8;cursor:pointer;}.sc-mkm:hover{color:#fff;}.sc-ch .ct{margin-left:auto;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.58);}.sc-add{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.12);border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;font-weight:800;color:#fff;cursor:pointer;}.sc-add:hover{background:rgba(255,255,255,.2);}.sc-add .ms{font-size:16px;}.sc-day .tz{margin-left:9px;font-size:11px;font-weight:700;color:#9aa8b4;}.sc-m{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--ffp-border);}.sc-m.open{border-bottom:0;}.sc-m .t{width:136px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-plan{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);padding:2px 2px 6px;}.sc-plan .lg-in{width:64px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-plan .lg-in.w{width:136px;}.sc-m .g{flex:1;min-width:0;}.sc-m .g b{display:block;font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.sc-m .g span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.sc-m .c{width:170px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-ic{flex:none;border:0;background:none;padding:4px;cursor:pointer;color:#8a99a8;line-height:0;border-radius:6px;}.sc-ic:hover{background:#eef2f5;color:var(--ffp-text);}.sc-ic:disabled{opacity:.28;cursor:default;background:none;}.sc-ic .ms{font-size:19px;}.sc-more{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:4px 2px 14px 146px;border-bottom:1px solid var(--ffp-border);}.sc-more .lg-in,.sc-more .lg-sel{padding:7px 9px;font-size:13px;}.sc-more .sp{flex:1;}',
+      '.tg-unit{font-size:12px;color:var(--ffp-text-muted);}.sc-day{font-size:16px;font-weight:900;color:var(--ffp-text);margin:26px 0 2px;}.sc-day:first-child{margin-top:8px;}.sc-ch{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:9px;margin:12px 0 0;background:linear-gradient(92deg,#12242f,#21404f);box-shadow:0 2px 8px rgba(14,37,49,.18);}.sc-ch b{font-size:13.5px;font-weight:900;color:#fff;letter-spacing:.01em;}.sc-ch .mn{font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#f0b736;}.sc-mkm{border:0;background:none;padding:0;font:inherit;font-size:11.5px;font-weight:700;color:#7ec9e8;cursor:pointer;}.sc-mkm:hover{color:#fff;}.sc-ch .ct{margin-left:auto;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.58);}.sc-add{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.12);border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;font-weight:800;color:#fff;cursor:pointer;}.sc-add:hover{background:rgba(255,255,255,.2);}.sc-add .ms{font-size:16px;}.sc-day .tz{margin-left:9px;font-size:11px;font-weight:700;color:#9aa8b4;}.sc-m{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--ffp-border);}.sc-m.open{border-bottom:0;}.sc-m .t{width:136px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-plan{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);padding:2px 2px 6px;}.sc-plan .lg-in{width:64px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-plan .lg-in.w{width:136px;}.sc-m .g{flex:1;min-width:0;}.sc-m .g b{display:block;font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.sc-m .g span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.sc-m .c{width:170px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-ic{flex:none;border:0;background:none;padding:4px;cursor:pointer;color:#8a99a8;line-height:0;border-radius:6px;}.sc-ic:hover{background:#eef2f5;color:var(--ffp-text);}.sc-ic:disabled{opacity:.28;cursor:default;background:none;}.sc-ic .ms{font-size:19px;}.sc-more{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:4px 2px 14px 146px;border-bottom:1px solid var(--ffp-border);}.sc-more .lg-in,.sc-more .lg-sel{padding:7px 9px;font-size:13px;width:auto;min-width:0;flex:none;height:36px;box-sizing:border-box;}.sc-more .st-d{width:158px;}.sc-more .st-f{width:196px;}.sc-more .a-role{width:168px;}.sc-more .a-off{width:186px;}.sc-more .sp{flex:1;}',
+      /* the venue the court belongs to, on the court bar rather than repeated
+         down every row underneath it */
+      '.sc-ch .vn{font-size:11.5px;font-weight:700;color:rgba(255,255,255,.62);}',
+      '.sc-m .g span.off{color:var(--ffp-text-dim);}',
+      /* a match with no court yet has no bar above it to say where it is, so it
+         carries the venue over the surface itself */
+      '.sc-m .v{width:178px;flex:none;min-width:0;text-align:right;}',
+      '.sc-m .v b{display:block;font-size:12.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.sc-m .v span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.sc-m .v.none b{color:var(--ffp-text-dim);font-weight:700;}',
+      /* the main field, chosen on the Venues tab */
+      '.lg-mainb{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--ffp-border-mid);background:#fff;color:var(--ffp-text-muted);border-radius:9px;padding:5px 10px;font:inherit;font-size:11.5px;font-weight:800;cursor:pointer;margin-right:10px;}',
+      '.lg-mainb .ms{font-size:15px;}',
+      '.lg-mainb.on{border-color:var(--ffp-gold);background:#fdf6e6;color:#8a6200;}',
       '.tg-sec{padding:2px 0 22px;}.tg-sec+.tg-sec{border-top:1px solid var(--ffp-border);padding-top:20px;}.tg-sech{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:linear-gradient(92deg,#12242f,#21404f);padding:7px 13px;border-radius:7px;margin:0 0 16px;}.tg-hint{font-size:12px;font-weight:700;color:#6a7c8a;margin-top:7px;}.tg-dvrow{display:flex;align-items:center;gap:12px;padding:13px 2px;border-top:1px solid var(--ffp-border);cursor:pointer;}.tg-dvrow:last-of-type{border-bottom:1px solid var(--ffp-border);}.tg-dvrow .g{flex:1;min-width:0;}.tg-dvrow .g b{display:block;font-size:14px;font-weight:800;color:var(--ffp-text);}.tg-dvrow .g span{display:block;font-size:12px;font-weight:600;color:var(--ffp-text-muted);margin-top:2px;}.tg-dvrow .st{font-size:11px;font-weight:800;color:#8a99a8;white-space:nowrap;}.tg-dvrow .st.done{color:var(--ffp-green);}.tg-dvrow.on{box-shadow:inset 3px 0 0 var(--ffp-blue);padding-left:12px;}.tg-dvrow.on .g b{color:var(--ffp-blue);}.tg-fmts{margin-top:18px;}.tg-dvrow .cv{font-size:20px;color:#9aa8b4;}.tg-dvrow.on .cv{color:var(--ffp-blue);}.tg-dvedit{padding:4px 0 22px 32px;border-bottom:1px solid var(--ffp-border);}.tg-dvedit .tg-fmts{margin-top:4px;}.tg-fmtnow{display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:800;color:var(--ffp-text);}.tg-fmtnow a{font-size:12px;font-weight:700;color:var(--ffp-blue);cursor:pointer;}.tg-shape{font-size:12.5px;font-weight:700;color:#6a7c8a;margin:14px 0 0;}.tg-acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}',
       /* ── CONNECT A SCORING TABLET ─────────────────────────────────── */
       '.tg-conn{border-top:2px solid #1980AD;margin:10px 0 4px;padding:16px 4px 6px;display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;}',
@@ -756,7 +770,11 @@
             + S._vcMine.map(function (c) { var one = S._vcMine.every(function (x) { return x.provider_id === c.provider_id; }); return '<option value="' + c.id + '"' + (c.id === s.venue_court_id ? ' selected' : '') + '>' + esc(one ? c.name + ' screen' : c.name + ', ' + c.venue) + '</option>'; }).join('')
             + '</select>' : '';
         return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name)
-          + '<span class="sp"></span>' + link
+          + '<span class="sp"></span>'
+          + '<button class="lg-mainb' + (s.is_main ? ' on' : '') + '"'
+          +   ' title="' + (s.is_main ? 'The final is played here' : 'Make this the main field, where the final is played') + '"'
+          +   ' onclick="FFPTourn.setMainCourt(\'' + s.id + '\',' + (s.is_main ? 'false' : 'true') + ')">'
+          +   ic('stadium') + (s.is_main ? 'Main field' : 'Set as main') + '</button>' + link
           // The code a TV is set up with — see screenPanel().
           + (s.screen_code ? '<button class="lg-scrbtn' + (s.permanent ? ' perm' : '') + '" title="Scoreboard for this court" onclick="FFPTourn.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\',' + (s.permanent ? 'true' : 'false') + ')"><span class="ms">' + (s.permanent ? 'connected_tv' : 'cast') + '</span>' + esc(s.screen_code) + '</button>' : '')
           + '<button class="lg-btn sm" title="Connect a scoring tablet to this pitch" onclick="FFPTourn.pinPanel(\'' + s.id + '\',\'' + esc(s.name) + '\')"><span class="ms">tablet_android</span>Connect a tablet</button>'
@@ -1016,9 +1034,12 @@
           .concat(bks.map(function (b) { return { t: hm(b.starts_at), b: b }; }))
           .sort(function (x, y) { return String(x.t).localeCompare(String(y.t)); });
         var mi = -1;
+        /* The bar already says which court this is, so the venue goes here
+           rather than being repeated on all twelve rows beneath it. The main
+           field is chosen once on the Venues tab, so this only reports it. */
         html += '<div class="sc-ch"><b>' + esc(f.name) + '</b>'
-          + (f.is_main ? '<span class="mn">Main court</span>'
-                       : '<button class="sc-mkm" onclick="FFPTourn.setMainCourt(\'' + f.id + '\')">Make main court</button>')
+          + (f.venue ? '<span class="vn">' + esc(f.venue) + '</span>' : '')
+          + (f.is_main ? '<span class="mn">Main field</span>' : '')
           + '<span class="ct">' + list.length + (list.length === 1 ? ' match' : ' matches') + '</span>'
           + '<button class="sc-add" onclick="FFPTourn.addMatch(\'' + slot + '\')">' + ic('add') + 'Add match</button></div>'
           + items.map(function (it) {
@@ -1151,13 +1172,22 @@
     var dv = (m.scheduled_at ? evDateStr(m.scheduled_at) : '') || ((S.detail.event && S.detail.event.starts_at) || '');
     var open = S.schedOpen === m.id;
     var offTxt = (m._offs || []).map(function (o) { return (o.role ? o.role + ' ' : '') + o.name; }).join(', ');
-    // One court hosts several divisions in a day, so the row says which this is.
-    var sub = (m._dnm ? m._dnm + ', ' : '') + matchLabel(m) + (offTxt ? ', ' + offTxt : '');
+    /* One court hosts several divisions in a day, so the row says which this
+       is, and the officials get a line of their own rather than trailing off
+       the end of it. Moving the match to another court is a decision and lives
+       in the menu; a row already sits under the bar that names its court, so
+       only a match with no court yet says where it is. */
+    var sub = (m._dnm ? m._dnm + ', ' : '') + matchLabel(m);
+    var fld = (S._fields || []).filter(function (f) { return f.id === m.field_id; })[0] || null;
+    var place = fieldId ? ''
+      : (fld ? '<div class="v"><b>' + esc(fld.venue || 'Venue not set') + '</b><span>' + esc(fld.name || '') + '</span></div>'
+             : '<div class="v none"><b>No court yet</b><span>Set it in the menu</span></div>');
     var row = '<div class="sc-m tg-d' + (m._dix || 0) + (open ? ' open' : '') + '" data-id="' + m.id + '">'
       + '<input class="lg-in t st-t" type="time" value="' + tv + '" onchange="FFPTourn.schedSet(\'' + m.id + '\')">'
       + '<div class="g"><b>' + esc(names[m.home_entrant] || 'TBD') + ' v ' + esc(names[m.away_entrant] || 'TBD') + '</b>'
-      + '<span>' + esc(sub) + '</span></div>'
-      + '<select class="lg-sel c st-f" title="Move to another court" onchange="FFPTourn.schedSet(\'' + m.id + '\')">' + surfaceOpts(S._fields, m.field_id) + '</select>'
+      + '<span>' + esc(sub) + '</span>'
+      + (offTxt ? '<span class="off">' + esc(offTxt) + '</span>' : '') + '</div>'
+      + place
       + '<button class="sc-ic" title="Earlier" ' + (isFirst ? 'disabled' : '') + ' onclick="FFPTourn.schedMove(\'' + m.id + '\',-1)">' + ic('arrow_upward') + '</button>'
       + '<button class="sc-ic" title="Later" ' + (isLast ? 'disabled' : '') + ' onclick="FFPTourn.schedMove(\'' + m.id + '\',1)">' + ic('arrow_downward') + '</button>'
       + '<button class="sc-ic" title="More" onclick="FFPTourn.schedToggle(\'' + m.id + '\')">' + ic(open ? 'expand_less' : 'more_horiz') + '</button>'
@@ -1170,6 +1200,8 @@
     }).join('');
     return row + '<div class="sc-more" data-id="' + m.id + '">'
       + '<span class="lg-lab" style="margin:0">Day</span><input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPTourn.schedSet(\'' + m.id + '\')">'
+      + '<span class="lg-lab" style="margin:0">Court</span>'
+      + '<select class="lg-sel st-f" onchange="FFPTourn.schedSet(\'' + m.id + '\')">' + surfaceOpts(S._fields, m.field_id) + '</select>'
       + '<button class="lg-btn sm" onclick="FFPTourn.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + 'Match centre</button>'
       + '<span class="sp"></span>' + (tags ? '<div class="lg-offlist">' + tags + '</div>' : '')
       + '<select class="lg-sel a-role">' + roleOpts + '</select><select class="lg-sel a-off">' + offOpts + '</select>'
@@ -1194,9 +1226,14 @@
     me.scheduled_at = b; other.scheduled_at = a;
     renderTab();
   }
-  async function setMainCourt(fieldId) {
-    try { await sb().rpc('lt_field_set_main', { p_id: fieldId, p_on: true }); } catch (e) { toast('Could not set the main court', 'error'); return; }
-    toast('Main court set', 'success'); renderTab();
+  /* The main field is a property of the venue, not of a day's grid, and the
+     plan needs to know it BEFORE the draw is made so the final is sent there.
+     So it is set on the Venues tab and only reported on the schedule. */
+  async function setMainCourt(fieldId, on) {
+    try { await sb().rpc('lt_field_set_main', { p_id: fieldId, p_on: on !== false }); }
+    catch (e) { toast('Could not set the main field', 'error'); return; }
+    toast(on === false ? 'No main field set' : 'Main field set, the final will be played there', 'success');
+    renderTab();
   }
   function matchEditor() {
     // The schedule shows every division at once, so an added match has to say
@@ -1251,7 +1288,11 @@
   async function schedSet(id) {
     var row = document.querySelector('.sc-m[data-id="' + id + '"]'); if (!row) return;
     var more = document.querySelector('.sc-more[data-id="' + id + '"]');
-    var dv = ((more && more.querySelector('.st-d')) || {}).value, tv = row.querySelector('.st-t').value, fid = row.querySelector('.st-f').value || null;
+    var dv = ((more && more.querySelector('.st-d')) || {}).value, tv = row.querySelector('.st-t').value;
+    // the court lives in the menu now, so a closed menu means "leave it alone"
+    var fsel = more && more.querySelector('.st-f');
+    var cur0 = (S._sched || []).filter(function (x) { return x.id === id; })[0] || {};
+    var fid = fsel ? (fsel.value || null) : (cur0.field_id || null);
     var base = dv || (S.detail.event && S.detail.event.starts_at) || evDateStr(new Date().toISOString());
     var when = (tv || dv) ? evIso(base, tv || '00:00') : null;
     await sb().rpc('lt_match_schedule', { p_scope: 'tourn', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null });
