@@ -226,6 +226,22 @@
       '.sc-bar span{font-size:12px;font-weight:700;color:#475763;}',
       '/* Nothing should sit here: Auto-plan places every match, decided or not. */',
       '.sc-ch.warn{box-shadow:inset 4px 0 0 var(--ffp-gold),0 2px 8px rgba(14,37,49,.18);}',
+      /* Where an event ends. Plain rows on the canvas, not a boxed "danger
+         zone": the weight comes from the wording and from red being reserved
+         for the one action that cannot be undone. */
+      '.lg-end{border-top:1px solid var(--ffp-border);margin-top:34px;padding-top:18px;}',
+      '.lg-end .hd{font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#8a99a8;margin-bottom:6px;}',
+      '.lg-end .row{display:flex;align-items:flex-start;gap:16px;padding:13px 0;border-bottom:1px solid var(--ffp-border);}',
+      '.lg-end .row:last-child{border-bottom:0;}',
+      '.lg-end .g{flex:1;min-width:0;}',
+      '.lg-end .g b{display:block;font-size:13.5px;font-weight:800;color:var(--ffp-text);}',
+      '.lg-end .g span{display:block;font-size:12px;font-weight:600;color:var(--ffp-text-muted);margin-top:3px;line-height:1.55;}',
+      '.lg-end .lg-btn{flex:none;margin-top:1px;}',
+      '.lg-end .lg-btn:disabled{opacity:.38;cursor:default;}',
+      '.lg-cover .bd.archived,.lg-cover .bd.cancelled{color:#8a99a8;}',
+      '.lg-pill.archived{background:#eef2f5;color:#8a99a8;}',
+      '.lg-pill.cancelled{background:#fdeaea;color:#d6353b;}',
+      '.lg-archrow{margin-top:20px;}',
       '.sc-ch.warn .sc-add{background:var(--ffp-gold);border-color:var(--ffp-gold);color:#12232f;}',
       '.sc-ch.warn .sc-add:hover{background:#e0af3a;}',
       '.lg-surf .lg-vcnote{font-size:12px;font-weight:700;color:#7c8b97;margin-left:8px;}',
@@ -455,6 +471,9 @@
     // same picture as a working empty account. Never again.
     if (r && r.error) { toast(errText(r.error, 'Could not load your tournaments'), 'error'); }
     var list = (r && r.data) || [];
+    // Archived tournaments are out of the way by default, but never out of reach.
+    var arch = list.filter(function (ev) { return ev.status === 'archived'; });
+    if (!S.showArchived) list = list.filter(function (ev) { return ev.status !== 'archived'; });
     var cards = list.map(function (ev) {
       var cov = ev.cover_url || ev.logo_url;
       return '<div class="lg-card" onclick="FFPTourn.open(\'' + ev.id + '\')"><div class="lg-cover" style="' + (cov ? 'background-image:url(\'' + esc(cov) + '\')' : '') + '"><div class="scr"></div><div class="bd ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</div></div><div class="lg-cbody"><b>' + esc(ev.name) + '</b><span>' + esc([ev.city, ev.sport].filter(Boolean).join(', ')) + '</span></div></div>';
@@ -462,7 +481,11 @@
     var newCard = S.creating
       ? '<div class="lg-card" style="cursor:default"><div class="lg-cover"><div class="scr"></div></div><div class="lg-cbody"><input class="lg-in" id="tg-newname" placeholder="Tournament name" onkeydown="if(event.key===\'Enter\')FFPTourn.doCreate()"><div style="display:flex;gap:8px;margin-top:8px"><button class="lg-btn pri" onclick="FFPTourn.doCreate()">Create</button><button class="lg-btn ghost" onclick="FFPTourn.cancelCreate()">Cancel</button></div></div></div>'
       : '<div class="lg-new" onclick="FFPTourn.startCreate()">' + ic('add') + 'Create a tournament</div>';
-    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">Tournaments</div><div class="lg-sub">Groups + knockout bracket.</div></div></div><div class="lg-grid">' + cards + newCard + '</div></div>';
+    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">Tournaments</div><div class="lg-sub">Groups + knockout bracket.</div></div></div><div class="lg-grid">' + cards + newCard + '</div>'
+      + (arch.length ? '<div class="lg-archrow"><button class="lg-btn ghost" onclick="FFPTourn.toggleArchived()">'
+          + ic(S.showArchived ? 'visibility_off' : 'inventory_2')
+          + (S.showArchived ? 'Hide archived' : arch.length + ' archived') + '</button></div>' : '')
+      + '</div>';
     if (S.creating) { var i = document.getElementById('tg-newname'); if (i) i.focus(); }
   }
   function startCreate() { S.creating = true; renderList(); }
@@ -1259,7 +1282,8 @@
       + '<div class="lg-fld"><div class="lg-lab">About</div><textarea class="lg-in" id="tg-desc" rows="3">' + esc(ev.description || '') + '</textarea></div>'
       + '<div class="lg-fld"><div class="lg-lab">Rules</div><textarea class="lg-in" id="tg-rules" rows="3">' + esc(ev.rules || '') + '</textarea></div>'
       + '<div class="lg-fld"><div class="lg-lab">Live stream URL <span style="font-weight:500;color:#8a99a8;">— the tournament\'s main channel, YouTube, Twitch or Facebook</span></div><input class="lg-in" id="tg-stream" value="' + esc(ev.stream_url || '') + '" placeholder="https://…"></div>'
-      + '<button class="lg-btn pri" onclick="FFPTourn.saveDetails()">' + ic('check') + 'Save</button>';
+      + '<button class="lg-btn pri" onclick="FFPTourn.saveDetails()">' + ic('check') + 'Save</button>'
+      + endBlock(ev);
   }
 
   // ---------- SETUP (how the tournament is run) ----------
@@ -1997,6 +2021,76 @@
       saveDetails();
     });
   }
+  /* WHERE AN EVENT ENDS. There was nowhere at all before this: a mistyped
+     tournament sat in the list for ever. Three different jobs, and they are
+     not interchangeable.
+       ARCHIVE   hides it from members and from this list, keeps everything,
+                 and Restore brings it back.
+       CANCEL    keeps it in the app with a cancelled banner and shuts sign-ups,
+                 because anyone already registered has to be told rather than
+                 watch it disappear.
+       DELETE    is the mistake case only: a draft with nobody in it. The
+                 database refuses anything else, so this cannot destroy a
+                 member's record even if the button were reached another way. */
+  function endBlock(ev) {
+    var st = ev.status || 'draft';
+    if (st === 'archived' || st === 'cancelled') {
+      return '<div class="lg-end"><div class="hd">This tournament is ' + esc(st) + '</div>'
+        + '<div class="row"><div class="g"><b>Bring it back</b><span>'
+        + (st === 'archived'
+            ? 'It returns as a draft, hidden from members until you go live again. Nothing was lost.'
+            : 'It returns as a draft and the cancelled banner comes off. Nothing was lost.')
+        + '</span></div>'
+        + '<button class="lg-btn" onclick="FFPTourn.eventState(\'draft\')">' + ic('undo') + 'Restore</button></div></div>';
+    }
+    var canDelete = st === 'draft';
+    return '<div class="lg-end"><div class="hd">Ending this tournament</div>'
+      + '<div class="row"><div class="g"><b>Archive it</b>'
+      +   '<span>Hides it from members and from your list. Every entrant, fixture and result is kept, and you can bring it back.</span></div>'
+      +   '<button class="lg-btn" onclick="FFPTourn.eventState(\'archived\')">' + ic('inventory_2') + 'Archive</button></div>'
+      + '<div class="row"><div class="g"><b>Call it off</b>'
+      +   '<span>Stays in the app with a cancelled banner and sign-ups close, so anyone already registered is told rather than finding it gone.</span></div>'
+      +   '<button class="lg-btn" onclick="FFPTourn.eventState(\'cancelled\')">' + ic('event_busy') + 'Call it off</button></div>'
+      + '<div class="row"><div class="g"><b>Delete it</b><span>' + (canDelete
+            ? 'Only while it is a draft with nobody entered and nothing drawn. It is gone for good.'
+            : 'Not available. This has been published or already holds entrants, so archive it instead.')
+      +   '</span></div>'
+      +   '<button class="lg-btn danger"' + (canDelete ? '' : ' disabled')
+      +     ' onclick="FFPTourn.eventDelete()">' + ic('delete_forever') + 'Delete</button></div></div>';
+  }
+  async function eventState(state) {
+    var ev = (S.detail && S.detail.event) || {}, nm = esc(ev.name || 'this tournament');
+    var M = {
+      archived:  ['inventory_2', 'Archive ' + nm + '?', 'It disappears from the FFP app and from your list. Every entrant, fixture and result is kept, and Restore brings it back as a draft.', 'Yes, archive it', 'final'],
+      cancelled: ['event_busy', 'Call off ' + nm + '?', 'Members keep seeing it, with a cancelled banner, and sign-ups close. Nothing is deleted and you can restore it.', 'Yes, call it off', 'final'],
+      draft:     ['undo', 'Restore ' + nm + '?', 'It comes back as a draft, hidden from members until you go live again.', 'Yes, restore it', 'draft']
+    }[state];
+    if (!M) return;
+    showConfirm(M[0], M[1], M[2], M[3], M[4], async function () {
+      var r; try { r = await sb().rpc('lt_event_set_state', { p_scope: 'tourn', p_id: S.eventId, p_state: state }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast(/not_owner/.test(r.error.message || '') ? 'Not your tournament' : 'Could not change it', 'error'); return; }
+      toast(state === 'draft' ? 'Restored as a draft' : (state === 'archived' ? 'Archived' : 'Called off'), 'success');
+      if (state === 'archived') { S.view = 'list'; renderList(); } else { refreshDetail(); }
+    });
+  }
+  async function eventDelete() {
+    var ev = (S.detail && S.detail.event) || {}, nm = esc(ev.name || 'this tournament');
+    showConfirm('delete_forever', 'Delete ' + nm + '?',
+      'This removes the tournament and everything set up on it. It cannot be undone.',
+      'Yes, delete it', 'final', async function () {
+      var r; try { r = await sb().rpc('lt_event_delete', { p_scope: 'tourn', p_id: S.eventId }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast(/not_owner/.test(r.error.message || '') ? 'Not your tournament' : 'Could not delete it', 'error'); return; }
+      var d = r.data || {};
+      if (d.ok === false) {
+        toast(d.reason === 'not_draft'
+            ? 'Only a draft can be deleted. Archive it instead.'
+            : 'It already holds ' + (d.entrants || 0) + ' entrants and ' + (d.matches || 0) + ' matches. Archive it instead.', 'error');
+        return;
+      }
+      toast('Deleted', 'success'); S.view = 'list'; renderList();
+    });
+  }
+  function toggleArchived() { S.showArchived = !S.showArchived; renderList(); }
   function showConfirm(icon, title, body, okLabel, tone, onOk) {
     var old = document.getElementById('tg-cfm'); if (old) old.remove();
     var bk = document.createElement('div'); bk.id = 'tg-cfm'; bk.className = 'lg-cfm';
@@ -2995,7 +3089,7 @@
     back: function () { S.view = 'list'; renderList(); }, tab: function (t) { S.tab = t; S.matchOpen = null; renderEditor(); },
     setDiv: function (val, tab) { if (S.divId !== val) S.drawKey = null; S.divId = val; S.tab = tab; S.entEdit = null; S.entDel = null; S.sqOpen = null; renderTab(); },
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
-    statusPick: statusPick,
+    statusPick: statusPick, eventState: eventState, eventDelete: eventDelete, toggleArchived: toggleArchived,
     pinPanel: async function (fid, nm) {
       S.pinFor = fid; S.pin = {}; renderVenues(document.getElementById('tg-body') || document.body);
       var r; try { r = await sb().rpc('tablet_pair_start', { p_court: null, p_field: fid }); } catch (e) { r = { error: e }; }
