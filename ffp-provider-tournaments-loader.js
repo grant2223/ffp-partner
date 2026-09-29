@@ -34,7 +34,19 @@
     return String(s).replace(/\{(one|many|One|Many|poss)\}/g, function (_, k) { return n[k]; });
   }
   var STAGE = { r64: 'Round of 64', r32: 'Round of 32', r16: 'Round of 16', quarter: 'Quarter-finals', semi: 'Semi-finals', final: 'Final', third: '3rd place' };
-  function stageLbl(m) { return m.stage === 'round' ? 'Round ' + (m.round || 1) : (STAGE[m.stage] || m.stage); }
+  /* A PLAY-OFF IS NAMED BY THE PLACE IT DECIDES. Every band of a tiered draw
+     has one, and calling them all "3rd place" is wrong everywhere but the Cup:
+     the play-off under Places 5-8 is for 7th. plays_for carries the answer. */
+  function ordNum(n) {
+    n = Number(n); if (!n) return '';
+    var t = n % 100, s = (t >= 11 && t <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th');
+    return n + s;
+  }
+  function stageLbl(m) {
+    if (m.stage === 'round') return 'Round ' + (m.round || 1);
+    if (m.stage === 'third') return (m.plays_for ? ordNum(m.plays_for) : '3rd') + ' place';
+    return STAGE[m.stage] || m.stage;
+  }
   // Extra draws a knockout can carry. Every loser of the named round plays on
   // in the next draw down, so nobody travels to an event for one match.
   var SIDE_DRAWS = [
@@ -2790,7 +2802,11 @@
     }).join('');
     var third = dms.find(function (m) { return m.stage === 'third'; });
     host2.innerHTML = drawCtl + '<div class="tg-brk"><div class="tg-brkin">' + cols + '</div></div>'
-      + (third ? '<div class="tg-thirdwrap"><div class="rh" style="text-align:left;margin-bottom:8px">3rd / 4th play-off</div><div style="max-width:230px">' + mHtml(third) + '</div></div>' : '');
+      + (third ? '<div class="tg-thirdwrap"><div class="rh" style="text-align:left;margin-bottom:8px">' + esc(thirdLbl(third)) + '</div><div style="max-width:230px">' + mHtml(third) + '</div></div>' : '');
+  }
+  function thirdLbl(m) {
+    var n = Number((m || {}).plays_for || 3);
+    return ordNum(n) + ' / ' + ordNum(n + 1) + ' play-off';
   }
   function seedTag(side) { return (side && side.seed != null) ? '<span class="sd">' + esc(side.seed) + '</span>' : ''; }
   function whenLine(m) {
@@ -3304,7 +3320,7 @@
 
   // Printed on load so a deploy can be confirmed in one look, without
   // guessing from the screen: open the console and read this line.
-  var BUILD = '2026-09-29.1';
+  var BUILD = '2026-09-29.2';
   console.log('[FFP Tournaments] build ' + BUILD);
   window.FFPTourn = {
     rulesHint: rulesHint,
