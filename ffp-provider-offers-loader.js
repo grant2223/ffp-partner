@@ -80,6 +80,7 @@
     o = o || {}; editingId = o.id || null;
     var pinfo = await providerInfo();
     var cityName = (pinfo && pinfo.city) || prov().city || 'your city';
+    await featLoad(editingId);
     var incomplete = !profileComplete();
     injectOfferCss();
     var T = o.tiers || {};
@@ -113,15 +114,7 @@
       secT('Photo') +
       '<div id="listing-photo-slot"></div>' +
       '<div style="font-size:12px;color:#8a99a8;margin-top:8px;line-height:1.5;">A clean photo of the offer — <b>no words or text on the image.</b></div>' +
-      '<div class="po-feat">' +
-        '<div class="fx"><span class="kick"><span class="ms">star</span> Featured placement</span>' +
-        '<h3>Be the first offer members see in ' + esc(cityName) + '</h3>' +
-        '<div class="sub">Top of the Offers page all month — in front of every active member in your area.</div>' +
-        '<span class="urg"><span class="ms">bolt</span> Only 1 spot left this month</span></div>' +
-        '<div class="fbuy"><div class="price"><b>$99</b><span>/month</span></div>' +
-        '<button type="button" class="fbtn" onclick="ffpOffers.feature()">Feature my offer</button>' +
-        '<span class="paynote">Pay now, live instantly</span></div>' +
-      '</div>' +
+      featPanel(cityName) +
       '</div>';
     var foot =
       '<button class="btn po-cancel" onclick="closeModal()">Cancel</button>' +
@@ -189,6 +182,32 @@
       + '.po-feat .fbtn{height:52px;padding:0 30px;border:none;border-radius:14px;font-family:inherit;font-weight:900;font-size:14.5px;cursor:pointer;background:linear-gradient(135deg,#ffe488 0%,#f7c02a 45%,#e59000 100%);color:#3a2600;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.6),0 9px 22px rgba(230,150,0,.55)}'
       + '.po-feat .fbtn:hover{filter:brightness(1.05)}'
       + '.po-feat .paynote{font-size:11.5px;font-weight:700;color:rgba(255,255,255,.6)}'
+      /* the launch rate sits beside the list price: a special that hides the
+         real price is not a special */
+      + '.po-feat .was{font-size:12px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.2px}'
+      + '.po-feat .was s{text-decoration-color:rgba(255,220,85,.9)}'
+      /* the panel flips from selling to choosing IN PLACE — no card inside the
+         navy, no modal stacked on the modal */
+      + '.po-feat .fpick{flex:none;position:relative;z-index:1;display:flex;flex-direction:column;gap:12px;align-items:flex-end}'
+      + '.po-feat .frow{display:flex;gap:12px}'
+      + '.po-feat .fld{display:flex;flex-direction:column;gap:6px;width:186px}'
+      + '.po-feat .fld label{font-size:10.5px;font-weight:900;letter-spacing:1.1px;text-transform:uppercase;color:rgba(255,255,255,.62)}'
+      /* the shell forces input/select to 16px !important, so this must shout back */
+      + '.po-feat select{width:100%;min-width:0;flex:none;box-sizing:border-box;height:46px;padding:0 40px 0 15px;border:none;border-radius:12px;font-family:inherit;font-size:14px!important;font-weight:800;color:#fff;background:rgba(255,255,255,.13);appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 width=%2713%27 height=%2713%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27rgb(255,255,255)%27 stroke-width=%272.5%27><polyline points=%276 9 12 15 18 9%27/></svg>");background-repeat:no-repeat;background-position:right 15px center}'
+      + '.po-feat select:focus{outline:none;box-shadow:0 0 0 4px rgba(255,255,255,.18)}'
+      + '.po-feat select option{color:#12232f}'
+      + '.po-feat .tot{display:flex;align-items:baseline;gap:8px;color:#fff}'
+      + '.po-feat .tot b{font-size:34px;font-weight:900;letter-spacing:-1.2px}'
+      + '.po-feat .tot span{font-size:12.5px;font-weight:700;color:rgba(255,255,255,.66)}'
+      /* once requested the buy column becomes the state of the request */
+      + '.po-feat .fstate{flex:none;position:relative;z-index:1;display:flex;flex-direction:column;align-items:flex-end;gap:10px;text-align:right}'
+      + '.po-feat .fstate .big{display:inline-flex;align-items:center;gap:9px;font-size:16px;font-weight:900;color:#fff}'
+      + '.po-feat .fstate .big .ms{font-size:24px}'
+      + '.po-feat .fstate .small{font-size:12.5px;font-weight:700;color:rgba(255,255,255,.66);max-width:250px;line-height:1.45}'
+      + '.po-feat .fstate.wait .big{color:#9fd4f2}'
+      + '.po-feat .fstate.gold .big{color:#FFCC00}'
+      + '.po-feat .fstate.liveon .big{color:#7ee6b0}'
+      + '.po-feat .payb{height:48px;padding:0 26px;border:none;border-radius:13px;font-family:inherit;font-weight:900;font-size:14px;cursor:pointer;margin-top:3px;background:linear-gradient(135deg,#ffe488 0%,#f7c02a 45%,#e59000 100%);color:#3a2600;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.6),0 9px 22px rgba(230,150,0,.55)}'
       /* footer buttons (approved) — dimensional gradient, never flat */
       + '.po-cancel,.po-draft,.po-submit{height:48px;padding:0 26px;border-radius:13px;font-weight:800;letter-spacing:.2px;font-size:13.5px;text-transform:none;border:none;cursor:pointer}'
       + '.po-cancel{background:#fff;box-shadow:inset 0 0 0 1.5px #c9d3db;color:#516069}'
@@ -295,8 +314,202 @@
     } catch (e) { el.innerHTML = '<div style="padding:16px;color:#d9534f;">Couldn’t load offers: ' + esc(e.message || '') + '</div>'; }
   }
 
-  function feature() { toast('Save your offer first, then feature it for $99/month — featured checkout is being set up.', 'success'); }
-  window.ffpOffers = { add: function () { openForm(); }, edit: function (o) { openForm(o); }, save: save, setType: setType, savingHint: savingHint, setStatus: setStatus, remove: remove, feature: feature, _close: closeModal };
+  /* ══ FEATURED PLACEMENT ══════════════════════════════════════════════════
+     The panel used to raise a toast and call nothing. It now writes a real
+     request through provider_request_feature_days, which the admin Featured
+     queue approves and sets live, exactly as it already does for Events.
+
+     Rates are read from platform_config, never hardcoded here: feature_day_usd
+     is the list price, feature_offer_month_usd is the launch rate for offers.
+     Clear that key in Admin and every offer falls back to the day rate with no
+     deploy. The server prices the request itself, so nothing here is trusted. */
+  var FEAT = { day: 99, month: 99, req: null, start: null, months: 3, mode: 'sell' };
+  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  /* Placements start on the FIRST of a month, and never the current one: a
+     partner buying on the 29th would pay a whole month for two days, because
+     the server drops days before today. The first sellable month is the next
+     one. */
+  function featMonthList() {
+    var out = [], d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + 1);
+    for (var i = 0; i < 12; i++) {
+      var mm = d.getMonth() + 1;
+      out.push({ v: d.getFullYear() + '-' + (mm < 10 ? '0' : '') + mm + '-01',
+                 l: d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) });
+      d.setMonth(d.getMonth() + 1);
+    }
+    return out;
+  }
+  function fdate(d) { return d.getDate() + ' ' + MON[d.getMonth()]; }
+  function fdateY(s) { if (!s) return ''; var d = new Date(String(s) + 'T00:00:00');
+    return isNaN(d) ? String(s) : fdate(d) + ' ' + d.getFullYear(); }
+
+  /* The same sum the server does, so the panel never shows a price the
+     database would not charge. Days before today are dropped, matching the
+     >= current_date filter in provider_request_feature_days. */
+  function featQuote() {
+    var months = featMonthList();
+    var s = FEAT.start || months[0].v;
+    var m = Math.max(parseInt(FEAT.months, 10) || 1, 1);
+    var a = new Date(s + 'T00:00:00');
+    var b = new Date(a.getFullYear(), a.getMonth() + m, 0);
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var from = (a < today) ? today : a;
+    var days = Math.round((b - from) / 86400000) + 1;
+    var byMonth = (FEAT.month != null);
+    return { start: s, from: from, to: b, days: days, months: m,
+             unit: byMonth ? 'month' : 'day',
+             total: byMonth ? (FEAT.month * m) : (FEAT.day * days) };
+  }
+
+  async function featLoad(offerId) {
+    FEAT.req = null; FEAT.mode = 'sell'; FEAT.start = null; FEAT.months = 3;
+    try {
+      var r = await sb().from('platform_config').select('key,value')
+        .in('key', ['feature_day_usd', 'feature_offer_month_usd']);
+      (r && r.data || []).forEach(function (x) {
+        var n = parseFloat(x.value);
+        if (x.key === 'feature_day_usd') { if (isFinite(n)) FEAT.day = n; }
+        if (x.key === 'feature_offer_month_usd') { FEAT.month = isFinite(n) ? n : null; }
+      });
+    } catch (e) {}
+    if (!offerId || !prov().id) return;
+    try {
+      var q = await sb().rpc('provider_feature_requests', { p_provider: prov().id });
+      var list = (q && q.data) || [];
+      for (var i = 0; i < list.length; i++) {
+        var x = list[i];
+        if (x.item_type === 'offer' && x.item_id === offerId
+            && ['pending', 'approved', 'live'].indexOf(x.status) >= 0) { FEAT.req = x; break; }
+      }
+    } catch (e) {}
+  }
+
+  function featPanel(cityName) {
+    var kick = '<span class="kick"><span class="ms">star</span> Featured placement</span>';
+    var r = FEAT.req;
+
+    /* ── requested: the buy column becomes the state ── */
+    if (r) {
+      var span = (r.starts_on && r.ends_on)
+        ? fdateY(r.starts_on) + ' to ' + fdateY(r.ends_on) : '';
+      var how = (r.billing_unit === 'month')
+        ? r.units + ' month' + (r.units === 1 ? '' : 's') + ' at the $' + FEAT.month + ' launch rate'
+        : r.units + ' day' + (r.units === 1 ? '' : 's') + ' at $' + FEAT.day + ' a day';
+      var cls, icon, big, small, btn = '';
+      if (r.status === 'pending') {
+        cls = 'wait'; icon = 'schedule'; big = 'Waiting on FFP';
+        small = 'Requested ' + fdateY(String(r.created_at || '').slice(0, 10))
+              + '. We review it, then send you the payment link.';
+      } else if (r.status === 'approved') {
+        cls = 'gold'; icon = 'verified'; big = 'Approved';
+        small = 'Pay to lock the placement. It goes live on ' + fdateY(r.starts_on) + '.';
+        btn = '<button type="button" class="payb" onclick="ffpOffers.featPay()">Pay $'
+            + (r.total_usd != null ? r.total_usd : '') + '</button>';
+      } else {
+        cls = 'liveon'; icon = 'star'; big = 'Featured until ' + fdateY(r.ends_on);
+        small = 'Top of the Offers page in ' + esc(cityName) + ' every day until then.';
+      }
+      return '<div class="po-feat"><div class="fx">' + kick
+        + '<h3>Top of the Offers page in ' + esc(cityName) + '</h3>'
+        + '<div class="sub">' + esc(span) + (span ? ', ' : '') + esc(how) + '.</div></div>'
+        + '<div class="fstate ' + cls + '">'
+        +   '<span class="big"><span class="ms">' + icon + '</span>' + esc(big) + '</span>'
+        +   '<span class="small">' + esc(small) + '</span>' + btn
+        + '</div></div>';
+    }
+
+    /* ── choosing ── */
+    if (FEAT.mode === 'pick') {
+      var q = featQuote(), months = featMonthList();
+      var opts = months.map(function (m) {
+        return '<option value="' + m.v + '"' + (m.v === q.start ? ' selected' : '') + '>'
+          + esc(m.l) + '</option>'; }).join('');
+      var lens = [1, 2, 3, 6, 12].map(function (n) {
+        return '<option value="' + n + '"' + (n === q.months ? ' selected' : '') + '>'
+          + n + ' month' + (n === 1 ? '' : 's') + '</option>'; }).join('');
+      return '<div class="po-feat"><div class="fx">' + kick
+        + '<h3>How long should it run?</h3>'
+        + '<div class="sub">Top of the Offers page in ' + esc(cityName)
+        +   ' for every day of the months you pick. FFP reviews the request, then you pay '
+        +   'before it goes live.</div></div>'
+        + '<div class="fpick"><div class="frow">'
+        +   '<div class="fld"><label>Starts</label>'
+        +     '<select id="po-feat-start" onchange="ffpOffers.featSet()">' + opts + '</select></div>'
+        +   '<div class="fld"><label>For</label>'
+        +     '<select id="po-feat-len" onchange="ffpOffers.featSet()">' + lens + '</select></div>'
+        + '</div>'
+        + '<div class="tot"><b>$' + q.total + '</b><span>' + fdate(q.from) + ' to ' + fdate(q.to)
+        +   ', ' + q.days + ' days</span></div>'
+        + '<button type="button" class="fbtn" onclick="ffpOffers.featSubmit()">'
+        +   'Request featured placement</button>'
+        + '</div></div>';
+    }
+
+    /* ── selling ── */
+    var byMonth = (FEAT.month != null);
+    return '<div class="po-feat"><div class="fx">' + kick
+      + '<h3>Be the first offer members see in ' + esc(cityName) + '</h3>'
+      + '<div class="sub">Top of the Offers page, in front of every active member in your area, '
+      +   'for as long as you book it.</div></div>'
+      + '<div class="fbuy">'
+      +   (byMonth ? '<span class="kick"><span class="ms">bolt</span> Launch special</span>' : '')
+      +   '<div class="price"><b>$' + (byMonth ? FEAT.month : FEAT.day) + '</b><span>/'
+      +     (byMonth ? 'month' : 'day') + '</span></div>'
+      +   (byMonth ? '<div class="was">Normally <s>$' + FEAT.day + ' a day</s></div>' : '')
+      +   '<button type="button" class="fbtn" onclick="ffpOffers.feature()">Feature my offer</button>'
+      + '</div></div>';
+  }
+
+  /* Repaint only the panel, so nothing the partner has typed into the form is lost. */
+  function featRepaint() {
+    var el = document.querySelector('#po-form .po-feat');
+    if (!el) return;
+    var city = (_info && _info.city) || prov().city || 'your city';
+    var wrap = document.createElement('div');
+    wrap.innerHTML = featPanel(city);
+    el.parentNode.replaceChild(wrap.firstChild, el);
+  }
+
+  function feature() {
+    if (!editingId) {
+      toast('Save the offer first, then feature it \u2014 a featured placement needs a saved offer.', 'info');
+      return;
+    }
+    FEAT.mode = 'pick'; featRepaint();
+  }
+  function featSet() {
+    var a = document.getElementById('po-feat-start'), b = document.getElementById('po-feat-len');
+    if (a) FEAT.start = a.value;
+    if (b) FEAT.months = parseInt(b.value, 10) || 1;
+    featRepaint();
+  }
+  async function featSubmit() {
+    if (!editingId || !prov().id) { toast('Save the offer first.', 'info'); return; }
+    var q = featQuote();
+    try {
+      var r = await sb().rpc('provider_request_feature_days', {
+        p_provider: prov().id, p_kind: 'offer', p_id: editingId,
+        p_days: null, p_unit: q.unit, p_units: q.months, p_start: q.start
+      });
+      if (r.error) throw r.error;
+      var d = r.data || {};
+      if (!d.ok) {
+        toast(d.error === 'already_requested'
+          ? 'This offer already has a featured request with FFP.'
+          : d.error === 'notfound' ? 'Save the offer first.'
+          : 'Could not send the request. Try again.', 'error');
+        return;
+      }
+      toast('Requested. FFP reviews it, then sends your payment link.', 'success');
+      await featLoad(editingId);
+      featRepaint();
+    } catch (e) { console.error(e); toast(e.message || 'Could not send the request.', 'error'); }
+  }
+  /* Featured checkout is not built yet: FFP sends the link by hand after
+     approving, which is exactly what the admin queue's own flow says. */
+  function featPay() { toast('FFP sends your payment link by email once the request is approved.', 'info'); }
+  window.ffpOffers = { add: function () { openForm(); }, edit: function (o) { openForm(o); }, save: save, setType: setType, savingHint: savingHint, setStatus: setStatus, remove: remove, feature: feature, featSet: featSet, featSubmit: featSubmit, featPay: featPay, _close: closeModal };
   window.ffpRenderOffers = render;
   loadCats();
   try { render(); } catch (e) {}
