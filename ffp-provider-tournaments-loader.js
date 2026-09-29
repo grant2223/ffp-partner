@@ -267,13 +267,23 @@
       + '.tg-fmt .nfo .ms{font-size:19px;}'
       + '.tg-fmt.on .nfo{color:var(--ffp-blue);}'
       /* and it opens under the WHOLE row, so no tile grows a box inside it */
-      + '.tg-nfobox{grid-column:1 / -1;border-top:1.5px solid var(--ffp-blue);padding:15px 2px 2px;margin-top:2px;}'
+      + '.tg-nfobox{grid-column:1 / -1;background:#eff7fb;border:1px solid #cfe4ef;border-left:3px solid var(--ffp-blue);border-radius:12px;padding:15px 17px;margin-top:6px;}'
       + '.tg-nfobox h4{font-size:14px;font-weight:900;color:var(--ffp-text);margin-bottom:8px;display:flex;align-items:center;gap:8px;}'
       + '.tg-nfobox h4 .ms{font-size:19px;color:var(--ffp-blue);}'
-      + '.tg-nfobox p{font-size:13px;font-weight:600;color:var(--ffp-text-muted);line-height:1.6;max-width:760px;}'
+      + '.tg-nfobox p{font-size:13px;font-weight:600;color:#3f5765;line-height:1.6;max-width:760px;}'
       + '.tg-nfobox p+p{margin-top:7px;}'
       + '.tg-nfobox p b{color:var(--ffp-text);font-weight:800;}'
-      + '.tg-nfobox .close{float:right;border:none;background:none;cursor:pointer;color:#9aa8b4;padding:2px;display:flex;}'
+      + '.tg-nfobox .close{float:right;border:none;background:none;cursor:pointer;color:#7b93a3;padding:2px;display:flex;}'
+      /* the same field used on its own under a field label, not across the grid */
+      + '.tg-nfobox.solo{grid-column:auto;margin:8px 0 0;}'
+      + '.tg-nfobox .opt{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid #d9e8f1;}'
+      + '.tg-nfobox .opt:first-of-type{border-top:0;padding-top:2px;}'
+      + '.tg-nfobox .opt b{flex:0 0 190px;font-size:12.5px;font-weight:800;color:var(--ffp-text);}'
+      + '.tg-nfobox .opt span{flex:1;min-width:0;font-size:12.5px;font-weight:600;color:#3f5765;line-height:1.55;}'
+      /* an info button beside a field label, a bare icon with no tile behind it */
+      + '.lg-lab .nfo-i{border:none;background:none;padding:0 5px 0 0;cursor:pointer;color:#9aa8b4;line-height:1;vertical-align:-4px;}'
+      + '.lg-lab .nfo-i .ms{font-size:17px;}'
+      + '.lg-lab .nfo-i:hover{color:var(--ffp-blue);}'
       + '.tg-nfobox .close .ms{font-size:20px;}'
       /* the two dead ends carry the action that fixes them */
       + '.lg-empty.act{padding:30px 10px 26px;text-align:center;}'
@@ -1326,6 +1336,18 @@
       + '<p><b>When to pick it.</b> ' + esc(say(i[2])) + '</p></div>';
   }
   function fmtInfo(k) { S.fmtInfo = (S.fmtInfo === k) ? null : k; renderTab(); }
+  /* Every extra draw in one place, so an organiser can compare them instead of
+     clicking through the dropdown one at a time to read each hint. */
+  function sideInfoBox(dv) {
+    return '<div class="tg-nfobox solo">'
+      + '<button class="close" onclick="FFPTourn.sideInfo()" title="Close">' + ic('close') + '</button>'
+      + '<h4>' + ic('info') + 'What happens to a beaten ' + nouns(dv).one + '</h4>'
+      + SIDE_DRAWS.map(function (x) {
+          return '<div class="opt"><b>' + esc(x[1]) + '</b><span>' + esc(say(x[2], dv)) + '</span></div>';
+        }).join('')
+      + '</div>';
+  }
+  function sideInfo() { S.sideInfo = !S.sideInfo; renderTab(); }
 
   var FORMATS = [
     ['grp', 'Groups only', 'Round-robin, final table'],
@@ -1642,10 +1664,16 @@
     if (k === 'ko' || k === 'gk') {
       var side = dv.side_draws || 'none';
       var cur = SIDE_DRAWS.find(function (x) { return x[0] === side; }) || SIDE_DRAWS[0];
-      incl += '<div class="lg-fld"><div class="lg-lab">Do beaten ' + N.many + ' keep playing?</div>'
+      incl += '<div class="lg-fld"><div class="lg-lab">'
+        + '<button class="nfo-i" title="What each of these means"'
+        +   ' onclick="FFPTourn.sideInfo()">' + ic('info') + '</button>'
+        + 'Do beaten ' + N.many + ' keep playing?</div>'
         + '<select class="lg-sel" id="tg-side" onchange="FFPTourn.sideHint()">'
         + SIDE_DRAWS.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === side ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('')
-        + '</select><div class="tg-hint" id="tg-sidehint">' + esc(say(cur[2], dv)) + '</div></div>';
+        + '</select><div class="tg-hint" id="tg-sidehint">' + esc(say(cur[2], dv)) + '</div>'
+        // the explainer opens UNDER the field, so the dropdown never gets
+        // pushed away from the question it answers
+        + (S.sideInfo ? sideInfoBox(dv) : '') + '</div>';
       incl += '<div class="lg-fld"><div class="lg-lab">3rd-place play-off</div><div class="lg-seg" id="tg-third"><button data-v="true" class="' + (dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">Yes</button><button data-v="false" class="' + (!dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">No</button></div></div>';
     }
     if (k === 'tiered') {
@@ -3113,7 +3141,7 @@
     pinClose: function () { S.pinFor = null; S.pin = null; renderVenues(document.getElementById('tg-body') || document.body); },
     copy: function (t) { try { navigator.clipboard.writeText(t); toast('Copied', 'success'); } catch (e) {} },
     saveDetails: saveDetails, sportHint: sportHint,
-    divKind: divKind, setEntrantMode: setEntrantMode, saveSetup: saveSetup, sideHint: sideHint, capHint: capHint, setDivFmt: setDivFmt, fmtInfo: fmtInfo, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, buildDivDraw: buildDivDraw, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
+    divKind: divKind, setEntrantMode: setEntrantMode, saveSetup: saveSetup, sideHint: sideHint, capHint: capHint, setDivFmt: setDivFmt, fmtInfo: fmtInfo, sideInfo: sideInfo, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, buildDivDraw: buildDivDraw, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, bulkAthletes: bulkAthletes, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit,
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
