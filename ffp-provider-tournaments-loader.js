@@ -220,6 +220,10 @@
       '.sc-day .tz{font-size:12.5px;font-weight:700;color:#5c6f7c;}',
       '.lg-btn.ghost.sc-rb .ms{color:var(--ffp-gold);}',
       '.sc-plan+.sc-plan{padding-top:0;}',
+      '.sc-plan .mlen{font-weight:900;color:var(--ffp-text);}',
+      '.sc-mlenb{border:0;background:none;padding:0 0 0 7px;font:inherit;font-size:12px;font-weight:800;color:var(--ffp-blue);cursor:pointer;}',
+      '.sc-mlenb:hover{text-decoration:underline;}',
+      '.sc-why{font-size:11.5px;font-weight:600;color:var(--ffp-text-dim);padding:0 2px 8px;}',
       '/* Breaks: a court shut for part of a day. Saved, not typed, so a later',
       '   Rebuild steps over the same ones. */',
       '.sc-brk{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;padding:4px 2px 14px;border-bottom:1px solid var(--ffp-border);margin-bottom:4px;}',
@@ -330,7 +334,7 @@
   }
   function injectCss() { injectBaseCss(); injectExtraCss(); }
 
-  async function loadSports() { if (S.sports) return S.sports; var r = await sb().from('lt_sport_schemas').select('key,name,icon,match_activities,player_fields,team_match_fields,scoring_kinds,game_rules').eq('active', true).order('sort'); S.sports = r.data || []; return S.sports; }
+  async function loadSports() { if (S.sports) return S.sports; var r = await sb().from('lt_sport_schemas').select('key,name,icon,match_activities,player_fields,team_match_fields,scoring_kinds,game_rules,period_minutes,period_count,break_minutes,slot_minutes,turnaround_minutes,surface_word,surface_word_plural').eq('active', true).order('sort'); S.sports = r.data || []; return S.sports; }
   async function taxReady() { try { if (window.FFP_TAX_READY) await window.FFP_TAX_READY; } catch (e) {} return window.FFP_TAX || {}; }
   function actNames() { return ((window.FFP_TAX && window.FFP_TAX.activities) || []).map(function (a) { return a && a.n ? a.n : a; }); }
   function genderNames() { return ((window.FFP_TAX && window.FFP_TAX.genders) || ['Male', 'Female']).filter(function (g) { return g !== 'Prefer not to say'; }); }
@@ -608,7 +612,7 @@
       + '<div class="lg-cfm-t">Scoreboard, ' + esc(court) + '</div>'
       + '<div class="lg-scrlab">On the TV, open a browser and go to</div>'
       + '<div class="lg-scrurl" id="tg-scrurl">' + esc(url) + '</div>'
-      + '<div class="lg-scrnote">' + (permanent ? 'This is the court\'s own screen. The code never changes, and it shows every match played on this court.' : 'This screen is for this event only.') + '</div>'
+      + '<div class="lg-scrnote">' + (permanent ? 'This is the ' + surfWord() + '\'s own screen. The code never changes, and it shows every match played on this ' + surfWord() + '.' : 'This screen is for this event only.') + '</div>'
       + '<div class="lg-scrsteps">'
       +   '<div><b>1</b><span>Open the browser on the TV, or on a stick plugged into it.</span></div>'
       +   '<div><b>2</b><span>Type that address and leave it. The board keeps its own screen awake.</span></div>'
@@ -723,7 +727,7 @@
 
   // ---------- VENUES ----------
   async function renderVenues(host) {
-    host.innerHTML = '<div class="lg-tool"><div><div class="lg-h1" style="font-size:18px">Venues &amp; surfaces</div><div class="lg-sub">A venue can hold many courts, pitches or ovals</div></div><span class="sp"></span><button class="lg-btn pri" onclick="FFPTourn.addVenue()">' + ic('add') + 'Add venue</button></div>'
+    host.innerHTML = '<div class="lg-tool"><div><div class="lg-h1" style="font-size:18px">Venues &amp; surfaces</div><div class="lg-sub">A venue can hold many ' + surfWord(true) + '</div></div><span class="sp"></span><button class="lg-btn pri" onclick="FFPTourn.addVenue()">' + ic('add') + 'Add venue</button></div>'
       + (S.venAdd ? venueEditor(null) : '') + '<div id="tg-venlist"><div class="lg-empty">Loading…</div></div>';
     var r; try { r = await sb().rpc('lt_venues_list', { p_scope: 'tourn', p_event: S.eventId }); } catch (e) { r = { error: e }; }
     var vs = (r && r.data) || []; var h2 = document.getElementById('tg-venlist');
@@ -737,7 +741,7 @@
     var allFields = (af && af.data) || [];
     var provs = []; mine.forEach(function (c) { if (!provs.some(function (p) { return p.id === c.provider_id; })) provs.push({ id: c.provider_id, name: c.venue }); });
     var useBar = provs.length ? '<div class="lg-tool" style="margin-top:0">' + provs.map(function (p) {
-        return '<button class="lg-btn" onclick="FFPTourn.useMyCourts(\'' + p.id + '\')">' + ic('connected_tv') + 'Add courts from ' + esc(p.name) + '</button>';
+        return '<button class="lg-btn" onclick="FFPTourn.useMyCourts(\'' + p.id + '\')">' + ic('connected_tv') + 'Add ' + surfWord(true) + ' from ' + esc(p.name) + '</button>';
       }).join('') + '</div>' : '';
     if (useBar) h2.insertAdjacentHTML('beforebegin', '<div id="tg-vcbar">' + useBar + '</div>');
     var claimed = {};
@@ -784,7 +788,7 @@
       }).join('');
       var vmeta = [v2.city, (v2.maps_url ? '<a class="lg-maplink" href="' + esc(v2.maps_url) + '" target="_blank" rel="noopener">' + ic('map') + 'Map</a>' : '')].filter(Boolean).join(', ');
       var addS = (S.surfAdd === v2.id)
-        ? '<div class="lg-edit" style="margin-left:44px;border:none;padding-top:8px"><input class="lg-in" id="tg-sfname" placeholder="Court / pitch / oval name" style="max-width:260px" onkeydown="if(event.key===\'Enter\')FFPTourn.saveSurface(\'' + v2.id + '\')"><button class="lg-btn pri" onclick="FFPTourn.saveSurface(\'' + v2.id + '\')">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPTourn.cancelSurface()">Cancel</button></div>'
+        ? '<div class="lg-edit" style="margin-left:44px;border:none;padding-top:8px"><input class="lg-in" id="tg-sfname" placeholder="' + Surf() + ' name" style="max-width:260px" onkeydown="if(event.key===\'Enter\')FFPTourn.saveSurface(\'' + v2.id + '\')"><button class="lg-btn pri" onclick="FFPTourn.saveSurface(\'' + v2.id + '\')">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPTourn.cancelSurface()">Cancel</button></div>'
         : '<div class="lg-addsurf"><button class="lg-btn ghostb" onclick="FFPTourn.addSurface(\'' + v2.id + '\')">' + ic('add') + 'Add surface</button></div>';
       return '<div class="lg-venue"><div class="lg-vh"><span class="lg-vpin"><span class="ms">location_on</span></span><div class="g"><b>' + esc(v2.name) + '</b><span>' + vmeta + '</span></div><span class="ms act" onclick="FFPTourn.editVenue(\'' + v2.id + '\')">edit</span><span class="ms act" onclick="FFPTourn.removeVenue(\'' + v2.id + '\')">delete</span></div>'
         + (surfaces ? '<div class="lg-surfs">' + surfaces + '</div>' : '') + addS + '</div>';
@@ -812,8 +816,8 @@
   function addSurface(vid) { S.surfAdd = vid; renderTab(); }
   async function useMyCourts(pid) {
     var r; try { r = await sb().rpc('lt_fields_from_venue', { p_scope: 'tourn', p_event: S.eventId, p_provider: pid }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not add the courts', 'error'); return; }
-    toast(r.data ? (r.data + ' court' + (r.data === 1 ? '' : 's') + ' added, on their own screens') : 'All your courts are already here', 'success');
+    if (r.error) { toast('Could not add the ' + surfWord(true), 'error'); return; }
+    toast(r.data ? (r.data + ' ' + (r.data === 1 ? surfWord() : surfWord(true)) + ' added, on their own screens') : 'All your ' + surfWord(true) + ' are already here', 'success');
     renderTab();
   }
   function pinHtml(s2) {
@@ -838,7 +842,7 @@
   async function linkCourt(fid, cid) {
     var r; try { r = await sb().rpc('lt_field_link', { p_field: fid, p_court: cid || null }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not change the screen', 'error'); return; }
-    toast(cid ? 'Now on that court\'s screen' : 'Back to an event-only screen', 'success');
+    toast(cid ? 'Now on that ' + surfWord() + '\'s screen' : 'Back to an event-only screen', 'success');
     renderTab();
   }
   function cancelSurface() { S.surfAdd = null; renderTab(); }
@@ -924,10 +928,59 @@
     var p = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2], 12, 0, 0));
     return DOW[p.getUTCDay()] + ' ' + (+a[2]) + ' ' + MON[+a[1] - 1];
   }
+  function sportRow() {
+    var k = (S.detail && S.detail.event && S.detail.event.sport_key) || null;
+    return (S.sports || []).filter(function (s) { return s.key === k; })[0] || null;
+  }
+  /* NOT EVERYTHING IS A COURT. A rugby club plays on a pitch, an AFL club on an
+     oval, a table tennis club on a table. The sport supplies the word and a
+     venue may override it, so no label assumes. */
+  function surfWord(plural) {
+    var v = (S._fields || []).filter(function (x) { return x.surface_word; })[0];
+    if (v) {
+      var w = String(v.surface_word).trim();
+      return plural ? (/(ch|sh|s|x|z)$/.test(w) ? w + 'es' : w + 's') : w;
+    }
+    var s = sportRow();
+    var sw = s && (plural ? s.surface_word_plural : s.surface_word);
+    return sw || (plural ? 'courts' : 'court');
+  }
+  function Surf(plural) { var w = surfWord(plural); return w.charAt(0).toUpperCase() + w.slice(1); }
+
+  /* THE SPORT KNOWS HOW LONG ITS MATCH TAKES, so nobody is asked to type it.
+     A sport played to a clock states its periods and its break; one played to a
+     score states how long a court is held for. Either way the organiser is left
+     with the one thing the sport cannot know: the gap on the surface afterwards.
+     An explicit override still wins, and is only stored once it is made. */
+  function matchMins() {
+    var ev = (S.detail && S.detail.event) || {}, s = sportRow() || {};
+    if (ev.plan_match_len) return +ev.plan_match_len;
+    var pm = ev.period_minutes || s.period_minutes, pc = ev.period_count || s.period_count;
+    if (pm && pc) return (pm * pc) + (+s.break_minutes || 0);
+    return +s.slot_minutes || 30;
+  }
+  function matchMinsWhy() {
+    var ev = (S.detail && S.detail.event) || {}, s = sportRow() || {};
+    if (ev.plan_match_len) return 'Set by hand';
+    var pm = ev.period_minutes || s.period_minutes, pc = ev.period_count || s.period_count;
+    if (pm && pc) return pc + ' periods of ' + pm + ' min'
+      + (s.break_minutes ? ', plus ' + s.break_minutes + ' at the break' : '') + ', from the sport';
+    if (s.slot_minutes) return 'What ' + (s.name || 'this sport') + ' is usually given';
+    return 'No sport set yet, so 30 min is assumed';
+  }
+  function turnMins() {
+    var ev = (S.detail && S.detail.event) || {}, s = sportRow() || {};
+    return ev.plan_turnaround != null ? +ev.plan_turnaround : (+s.turnaround_minutes || 0);
+  }
+  function mlenEdit() { S.mlenEdit = !S.mlenEdit; renderTab(); }
   function planNow() {
     var g = function (id, d) { var el = document.getElementById(id); var v = el ? String(el.value || '').trim() : ''; return v || d; };
-    return { len: Math.max(5, +g('tg-mlen', '30') || 30), start: g('tg-dstart', '09:00'), end: g('tg-dend', '21:00'),
-             days: Math.max(1, +g('tg-days', '1') || 1), gap: Math.max(0, +g('tg-rgap', '0') || 0), rest: Math.max(0, +g('tg-rest', '0') || 0) };
+    var ml = document.getElementById('tg-mlen');
+    return { len: ml ? Math.max(5, +ml.value || matchMins()) : matchMins(),
+             start: g('tg-dstart', '09:00'), end: g('tg-dend', '21:00'),
+             days: Math.max(1, +g('tg-days', '1') || 1), gap: Math.max(0, +g('tg-rgap', '0') || 0),
+             rest: Math.max(0, +g('tg-rest', '0') || 0),
+             turn: Math.max(0, +g('tg-turn', String(turnMins())) || 0) };
   }
   function hm5(t) { return t ? String(t).slice(0, 5) : null; }
   /* THE PLAYING DAY IS A SETTING, NOT A FORM. It used to be typed into this tab
@@ -936,33 +989,42 @@
      changed. */
   function planFromEvent(ev, defDays) {
     ev = ev || {};
-    return { len:   +ev.plan_match_len || 30,
+    return { len:   matchMins(),
              start: hm5(ev.plan_day_start) || '09:00',
              end:   hm5(ev.plan_day_end)   || '21:00',
              days:  +ev.plan_days || defDays || 1,
              gap:   +ev.plan_round_gap || 0,
-             rest:  +ev.plan_rest || 0 };
+             rest:  +ev.plan_rest || 0,
+             turn:  turnMins() };
   }
   var _planT = null;
   function planSave() {
     var P = S.plan || planNow();
     var ev = (S.detail && S.detail.event) || null;
     if (ev) {
-      ev.plan_match_len = P.len; ev.plan_day_start = P.start; ev.plan_day_end = P.end;
+      ev.plan_day_start = P.start; ev.plan_day_end = P.end;
       ev.plan_days = P.days; ev.plan_round_gap = P.gap; ev.plan_rest = P.rest;
+      ev.plan_turnaround = P.turn;
+      if (S.mlenEdit) ev.plan_match_len = P.len;
     }
     // a setting saved mid-typing is not worth a toast, and a failure is retried
     // by the next keystroke
     try {
-      sb().rpc('tourn_event_save', { p_id: S.eventId, p: {
-        plan_match_len: String(P.len), plan_day_start: P.start, plan_day_end: P.end,
-        plan_days: String(P.days), plan_round_gap: String(P.gap), plan_rest: String(P.rest) } });
+      var patch = { plan_day_start: P.start, plan_day_end: P.end, plan_days: String(P.days),
+        plan_round_gap: String(P.gap), plan_rest: String(P.rest), plan_turnaround: String(P.turn) };
+      // only an explicit override is stored, so the sport keeps driving the rest
+      if (S.mlenEdit) patch.plan_match_len = String(P.len);
+      sb().rpc('tourn_event_save', { p_id: S.eventId, p: patch });
     } catch (e) {}
   }
   function planSet() { S.plan = planNow(); clearTimeout(_planT); _planT = setTimeout(planSave, 700); }
   function setSchedDiv(v) { S.schedDiv = v || ''; renderTab(); }
 
   async function renderSchedule(host) {
+    /* The sport supplies the match length and the word for a playing surface,
+       and S.sports is only filled by the Setup tab, so a schedule opened first
+       had no sport at all and fell back to "30 min" and "court". */
+    await loadSports();
     var divs = S.detail.divisions || [];
     if (!S.divId && divs.length) S.divId = divs[0].id;
     var P = S.plan || (S.plan = planFromEvent(S.detail.event, 1));
@@ -1001,7 +1063,7 @@
     if (!ms.length) { box.innerHTML = openDrawEmpty('schedule'); return; }
     /* Courts only matter once there is something to put on them, so this is
        asked after the draw, not before it. */
-    if (!fields.length) { box.innerHTML = '<div class="lg-empty">Add a venue and its courts on the <b>Venues</b> tab and the schedule builds itself.</div>'; return; }
+    if (!fields.length) { box.innerHTML = '<div class="lg-empty">Add a venue and its ' + surfWord(true) + ' on the <b>Venues</b> tab and the schedule builds itself.</div>'; return; }
     if (!(S.detail.event && S.detail.event.starts_at)) {
       box.innerHTML = '<div class="lg-empty act"><div class="t">When does it start?</div>'
         + '<div class="s">Set the start date on Information and every match is given a time and a court straight away, '
@@ -1020,10 +1082,10 @@
       var ap; try {
         ap = await sb().rpc('tourn_autoplan_all', { p_tourn: S.eventId, p_match_len: P.len,
           p_day_start: P.start, p_day_end: P.end, p_days: P.days, p_round_gap: P.gap,
-          p_rest: P.rest, p_divisions: null, p_tz: evTz() });
+          p_rest: P.rest, p_divisions: null, p_tz: evTz(), p_turnaround: P.turn });
       } catch (e) { ap = null; }
       if (ap && !ap.error && ap.data && (ap.data.placed || 0) > 0) {
-        toast(ap.data.placed + ' matches given a time and a court', 'success');
+        toast(ap.data.placed + ' matches given a time and a ' + surfWord(), 'success');
         return renderSchedule(host);
       }
     }
@@ -1108,7 +1170,7 @@
     if (loose.length) {
       loose.sort(function (a, b) { return playRank(a) - playRank(b) || (a.slot || 0) - (b.slot || 0); });
       html += '<div class="sc-day">Not on the schedule yet</div>'
-        + '<div class="sc-ch warn"><b>' + loose.length + (loose.length === 1 ? ' match has' : ' matches have') + ' no court and no time</b>'
+        + '<div class="sc-ch warn"><b>' + loose.length + (loose.length === 1 ? ' match has' : ' matches have') + ' no ' + surfWord() + ' and no time</b>'
         + '<span class="ct">Auto-plan gives them one</span>'
         + '<button class="sc-add" onclick="FFPTourn.autoplan()">' + ic('auto_awesome') + 'Auto-plan now</button></div>'
         + loose.map(function (m) { return schedRow(m, null, true, true); }).join('')
@@ -1136,7 +1198,14 @@
         ? '<button class="lg-btn ghost sc-rb" onclick="FFPTourn.rebuildAsk()">' + ic('warning') + 'Rebuild schedule</button>'
         : '<button class="lg-btn pri" onclick="FFPTourn.autoplan()">' + ic('auto_awesome') + 'Auto-plan the tournament</button>')
       + '</div>'
-      + '<div class="sc-plan">Matches of <input class="lg-in" id="tg-mlen" type="number" value="' + P.len + '" oninput="FFPTourn.planSet()"> min, '
+      + '<div class="sc-plan">A match takes '
+      + (S.mlenEdit
+          ? '<input class="lg-in" id="tg-mlen" type="number" min="5" value="' + P.len + '" oninput="FFPTourn.planSet()"> min'
+          : '<b class="mlen">' + matchMins() + ' min</b>')
+      + '<button class="sc-mlenb" onclick="FFPTourn.mlenEdit()">' + (S.mlenEdit ? 'use the sport' : 'change') + '</button>, '
+      + '<input class="lg-in" id="tg-turn" type="number" min="0" value="' + P.turn + '" oninput="FFPTourn.planSet()"> min between matches on a ' + esc(surfWord()) + '</div>'
+      + '<div class="sc-why">' + esc(matchMinsWhy()) + '</div>'
+      + '<div class="sc-plan">Playing '
       + '<input class="lg-in w" id="tg-dstart" type="time" value="' + esc(P.start) + '" oninput="FFPTourn.planSet()"> to '
       + '<input class="lg-in w" id="tg-dend" type="time" value="' + esc(P.end) + '" oninput="FFPTourn.planSet()">, '
       + 'over <input class="lg-in" id="tg-days" type="number" min="1" value="' + P.days + '" oninput="FFPTourn.planSet()"> day(s)</div>'
@@ -1149,7 +1218,7 @@
   // planner, so a later Rebuild steps over the same ones.
   function breakBlock(fields, breaks, dayList) {
     var courtOpts = function (sel) {
-      return '<option value="">All courts</option>' + fields.map(function (f) {
+      return '<option value="">All ' + surfWord(true) + '</option>' + fields.map(function (f) {
         return '<option value="' + f.id + '"' + (sel === f.id ? ' selected' : '') + '>' + esc(f.name) + '</option>';
       }).join('');
     };
@@ -1158,7 +1227,7 @@
         return '<option value="' + d + '"' + (sel === d ? ' selected' : '') + '>' + esc(dayShortYmd(d)) + '</option>';
       }).join('');
     };
-    return '<div class="sc-brk"><span class="lb">Breaks, when a court is not in play</span>'
+    return '<div class="sc-brk"><span class="lb">Breaks, when a ' + surfWord() + ' is not in play</span>'
       + breaks.map(function (b) {
           return '<span class="b" data-id="' + b.id + '">'
             + '<select class="lg-sel bk-f" onchange="FFPTourn.breakSave(\'' + b.id + '\')">' + courtOpts(b.field_id) + '</select>'
@@ -1173,7 +1242,7 @@
   function breakBar(b) {
     return '<div class="sc-bar">' + ic('pause')
       + '<b>' + esc(b.label || 'Break') + '</b>'
-      + '<span>' + hm(b.starts_at) + ' to ' + hm(b.ends_at) + ', court closed</span></div>';
+      + '<span>' + hm(b.starts_at) + ' to ' + hm(b.ends_at) + ', ' + surfWord() + ' closed</span></div>';
   }
   async function breakAdd() {
     var r; try { r = await sb().from('tourn_breaks').insert({ tourn_id: S.eventId, starts_at: '13:00', ends_at: '14:00', label: 'Break', sort: (S._breaks || []).length }); } catch (e) { r = { error: e }; }
@@ -1237,7 +1306,7 @@
     var fld = (S._fields || []).filter(function (f) { return f.id === m.field_id; })[0] || null;
     var place = fieldId ? ''
       : (fld ? '<div class="v"><b>' + esc(fld.venue || 'Venue not set') + '</b><span>' + esc(fld.name || '') + '</span></div>'
-             : '<div class="v none"><b>No court yet</b><span>Set it in the menu</span></div>');
+             : '<div class="v none"><b>No ' + surfWord() + ' yet</b><span>Set it in the menu</span></div>');
     var row = '<div class="sc-m tg-d' + (m._dix || 0) + (open ? ' open' : '') + '" data-id="' + m.id + '">'
       + '<input class="lg-in t st-t" type="time" value="' + tv + '" onchange="FFPTourn.schedSet(\'' + m.id + '\')">'
       + '<div class="g"><b>' + esc(names[m.home_entrant] || 'TBD') + ' v ' + esc(names[m.away_entrant] || 'TBD') + '</b>'
@@ -1256,7 +1325,7 @@
     }).join('');
     return row + '<div class="sc-more" data-id="' + m.id + '">'
       + '<span class="lg-lab" style="margin:0">Day</span><input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPTourn.schedSet(\'' + m.id + '\')">'
-      + '<span class="lg-lab" style="margin:0">Court</span>'
+      + '<span class="lg-lab" style="margin:0">' + Surf() + '</span>'
       + '<select class="lg-sel st-f" onchange="FFPTourn.schedSet(\'' + m.id + '\')">' + surfaceOpts(S._fields, m.field_id) + '</select>'
       + '<button class="lg-btn sm" onclick="FFPTourn.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + 'Match centre</button>'
       + '<span class="sp"></span>' + (tags ? '<div class="lg-offlist">' + tags + '</div>' : '')
@@ -1333,10 +1402,11 @@
   async function autoplan(isRebuild) {
     var P = planNow(); S.plan = P;
     var args = { p_tourn: S.eventId, p_match_len: P.len, p_day_start: P.start, p_day_end: P.end,
-                 p_days: P.days, p_round_gap: P.gap, p_rest: P.rest, p_divisions: null, p_tz: evTz() };
+                 p_days: P.days, p_round_gap: P.gap, p_rest: P.rest, p_divisions: null,
+                 p_tz: evTz(), p_turnaround: P.turn };
     var r; try { r = await sb().rpc('tourn_autoplan_all', args); } catch (e) { r = { error: e }; }
     S.rbAsk = false;
-    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a surface first (Venues tab)' : 'Could not plan', 'error'); renderTab(); return; }
+    if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add a ' + surfWord() + ' first (Venues tab)' : 'Could not plan', 'error'); renderTab(); return; }
     var d = r.data || {}, n = d.placed || 0, over = d.over || 0;
     toast(n + (n === 1 ? ' match planned' : ' matches planned') + (over ? ', ' + over + ' ran past the last day' : ''), over ? 'error' : 'success');
     renderTab();
@@ -1903,7 +1973,7 @@
     if (which === 'schedule') {
       return '<div class="lg-empty act"><div class="t">Nothing to schedule yet</div>'
         + '<div class="s">The schedule is built from the draw. Open the draw and every round appears here, '
-        + 'ready for times and courts.' + need + '</div>'
+        + 'ready for times and ' + surfWord(true) + '.' + need + '</div>'
         + '<div class="row">' + row + '</div></div>';
     }
     return '<div class="lg-empty act"><div class="t">This division has no draw yet</div>'
@@ -3238,7 +3308,7 @@
     pinClose: function () { S.pinFor = null; S.pin = null; renderVenues(document.getElementById('tg-body') || document.body); },
     copy: function (t) { try { navigator.clipboard.writeText(t); toast('Copied', 'success'); } catch (e) {} },
     saveDetails: saveDetails, sportHint: sportHint,
-    divKind: divKind, setEntrantMode: setEntrantMode, saveSetup: saveSetup, sideHint: sideHint, capHint: capHint, setDivFmt: setDivFmt, fmtInfo: fmtInfo, sideInfo: sideInfo, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, buildDivDraw: buildDivDraw, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
+    divKind: divKind, setEntrantMode: setEntrantMode, saveSetup: saveSetup, sideHint: sideHint, capHint: capHint, setDivFmt: setDivFmt, fmtInfo: fmtInfo, sideInfo: sideInfo, mlenEdit: mlenEdit, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, buildDivDraw: buildDivDraw, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, bulkAthletes: bulkAthletes, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit,
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
