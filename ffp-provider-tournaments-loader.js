@@ -9,6 +9,30 @@
   function toast(m, k) { if (typeof window.showToast === 'function') { try { window.showToast(m, k || 'info'); return; } catch (e) {} } console.log('[FFP Tourn]', m); }
   function root() { return document.getElementById('tg-root'); }
   function ic(n) { return '<span class="ms">' + n + '</span>'; }
+  /* WHO COMPETES decides the language of the whole console. Setup asks
+     Individuals, Teams or Both, and every screen has to speak it back: a teams
+     event must never say "players" where it means teams. A division's own kind
+     wins where there is one, because a Both event holds divisions of each kind;
+     otherwise the event's answer does, and a Both event with no division in
+     hand stays on the neutral word. Constants carry {one}/{many}/{One}/{Many}
+     tokens and say() fills them in at render time. */
+  function nouns(d) {
+    var mode = (S.detail && S.detail.event && S.detail.event.entrant_mode) || 'individual';
+    var team;
+    if (d && d.kind) team = d.kind !== 'individual';
+    else if (mode === 'mixed') return { one: 'entrant', many: 'entrants', One: 'Entrant', Many: 'Entrants', poss: 'an entrant\u2019s' };
+    else team = (mode === 'team');
+    return team
+      ? { one: 'team', many: 'teams', One: 'Team', Many: 'Teams', poss: 'a team\u2019s' }
+      : { one: 'player', many: 'players', One: 'Player', Many: 'Players', poss: 'a player\u2019s' };
+  }
+  function curDv() {
+    return ((S.detail && S.detail.divisions) || []).find(function (d) { return d.id === S.divId; }) || null;
+  }
+  function say(s, d) {
+    var n = nouns(d === undefined ? curDv() : d);
+    return String(s).replace(/\{(one|many|One|Many|poss)\}/g, function (_, k) { return n[k]; });
+  }
   var STAGE = { r64: 'Round of 64', r32: 'Round of 32', r16: 'Round of 16', quarter: 'Quarter-finals', semi: 'Semi-finals', final: 'Final', third: '3rd place' };
   function stageLbl(m) { return m.stage === 'round' ? 'Round ' + (m.round || 1) : (STAGE[m.stage] || m.stage); }
   // Extra draws a knockout can carry. Every loser of the named round plays on
@@ -16,9 +40,9 @@
   var SIDE_DRAWS = [
     ['none', 'No, one loss and they are out', 'The shortest event. Lose your first match and you are finished.'],
     ['plate', 'Plate, for first-round losers', 'Everyone beaten in round 1 moves into a second draw, so nobody travels for one match.'],
-    ['plate_bowl', 'Plate and Bowl', 'Two draws below the main one. Most players get at least three matches.'],
+    ['plate_bowl', 'Plate and Bowl', 'Two draws below the main one. Most {many} get at least three matches.'],
     ['plate_bowl_shield', 'Plate, Bowl and Shield', 'Three draws below the main one. Nearly everyone plays in every round.'],
-    ['qf_plate', 'Plate, for quarter-final losers', 'Only the players who reach the quarter-finals and lose get a second draw.'],
+    ['qf_plate', 'Plate, for quarter-final losers', 'Only the {many} who reach the quarter-finals and lose get a second draw.'],
     ['consolation', 'Feed-in consolation', 'A loser joins the second draw at the round they went out, not back at its start.'],
     ['places', 'Every place played off', 'Nobody stops until their exact finishing position is decided, 1st to last.']
   ];
@@ -462,7 +486,7 @@
     var ev = S.detail.event || {};
     el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.activity || sportLabelFor(ev.sport_key)].filter(Boolean).join(', ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPTourn.back()">' + ic('arrow_back') + 'All tournaments</button></div>'
-      + '<div class="lg-nav"><span class="tg-phase">Set up</span>' + tabBtn('information', 'Information') + tabBtn('setup', 'Setup') + tabBtn('entrants', 'Entrants') + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials')
+      + '<div class="lg-nav"><span class="tg-phase">Set up</span>' + tabBtn('information', 'Information') + tabBtn('setup', 'Setup') + tabBtn('entrants', nouns(null).Many) + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials')
       + '<span class="tg-navsep"></span><span class="tg-phase">Run</span>' + (anyGroups() ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Draw') + tabBtn('schedule', 'Schedule') + tabBtn('sponsors', 'Sponsors') + '</div><div id="tg-tab"></div></div>';
     renderTab();
   }
@@ -1006,7 +1030,7 @@
       + '<input class="lg-in w" id="tg-dend" type="time" value="' + esc(P.end) + '" oninput="FFPTourn.planSet()">, '
       + 'over <input class="lg-in" id="tg-days" type="number" min="1" value="' + P.days + '" oninput="FFPTourn.planSet()"> day(s)</div>'
       + '<div class="sc-plan"><input class="lg-in" id="tg-rgap" type="number" min="0" value="' + P.gap + '" oninput="FFPTourn.planSet()"> min between rounds, '
-      + '<input class="lg-in" id="tg-rest" type="number" min="0" value="' + P.rest + '" oninput="FFPTourn.planSet()"> min rest between a player\'s matches</div>'
+      + '<input class="lg-in" id="tg-rest" type="number" min="0" value="' + P.rest + '" oninput="FFPTourn.planSet()"> min rest between ' + nouns(curDv()).poss + ' matches</div>'
       + breakBlock(fields, breaks, dayList);
   }
 
@@ -1083,7 +1107,7 @@
     return '<div class="lg-cfm"><div class="lg-cfm-in">'
       + '<span class="ms lg-cfm-ic" style="color:#b07800">warning</span>'
       + '<div class="lg-cfm-t">Rebuild the whole schedule?</div>'
-      + '<div class="lg-cfm-b">This replans every match in every division and will move matches that players and officials have already been given times for. Results already entered are kept.</div>'
+      + '<div class="lg-cfm-b">This replans every match in every division and will move matches that ' + nouns(curDv()).many + ' and officials have already been given times for. Results already entered are kept.</div>'
       + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPTourn.rebuildCancel()">Cancel</button>'
       + '<button class="lg-btn pri" onclick="FFPTourn.autoplan(1)">Yes, rebuild</button></div></div></div>';
   }
@@ -1160,7 +1184,7 @@
   function cancelMatch() { S.addMatch = null; renderTab(); }
   async function saveMatch() {
     var h = (document.getElementById('tg-mm-h') || {}).value || null, a = (document.getElementById('tg-mm-a') || {}).value || null, rd = +((document.getElementById('tg-mm-r') || {}).value) || 1;
-    if (!h || !a || h === a) { toast('Pick two different entrants', 'error'); return; }
+    if (!h || !a || h === a) { toast('Pick two different ' + nouns(curDv()).many, 'error'); return; }
     var r; try { r = await sb().rpc('lt_match_add', { p_scope: 'tourn', p_division: S.divId, p_round: rd, p_home: h, p_away: a, p_when: null, p_field: null, p_stage: 'bracket' }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not add', 'error'); return; }
     // Added from a court means it belongs on that court, after what is already on it.
@@ -1229,7 +1253,7 @@
       +   '<input class="lg-in" id="tg-rc-t" type="time" value="' + esc(tPart(ev.reg_closes_at)) + '"></div></div>'
       + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Entry fee, per entry</div><input class="lg-in" id="tg-fee" type="number" min="0" step="0.01" value="' + (ev.entry_fee != null ? esc(ev.entry_fee) : '') + '"></div>'
       +   '<div class="lg-fld"><div class="lg-lab">Currency</div><input class="lg-in" id="tg-cur" maxlength="3" placeholder="AED" value="' + esc(ev.currency || '') + '"></div></div>'
-      + '<div class="lg-fld"><div class="lg-lab">How to pay <span style="font-weight:500;color:#8a99a8;">\u2014 shown to the entrant after they sign up</span></div>'
+      + '<div class="lg-fld"><div class="lg-lab">How to pay <span style="font-weight:500;color:#8a99a8;">\u2014 shown after they sign up</span></div>'
       +   '<textarea class="lg-in" id="tg-payhow" rows="2" placeholder="Bank transfer to\u2026 , or pay on the day at the desk">' + esc(ev.pay_instructions || '') + '</textarea></div>'
       + '<div class="lg-fld"><div class="lg-lab">About</div><textarea class="lg-in" id="tg-desc" rows="3">' + esc(ev.description || '') + '</textarea></div>'
       + '<div class="lg-fld"><div class="lg-lab">Rules</div><textarea class="lg-in" id="tg-rules" rows="3">' + esc(ev.rules || '') + '</textarea></div>'
@@ -1251,19 +1275,19 @@
      PICK it. Kept in one place so the wording is edited once. */
   var FMT_INFO = {
     grp: ['Everyone in a pool plays everyone else in that pool. The final table decides it and there is no knockout after it.',
-          'With 8 entrants in 2 pools that is 6 matches a pool, 12 in all, and every entrant plays 3 times.',
+          'With 8 {many} in 2 pools that is 6 matches a pool, 12 in all, and every {one} plays 3 times.',
           'Pick it when guaranteed games matter more than a final, like a social league day.'],
     gk: ['Pools first, then the top few of each pool cross into a knockout bracket. You choose how many advance per pool.',
-         'With 16 in 4 pools taking the top 2, that is 24 pool matches and then an 8-team bracket to the final.',
+         'With 16 in 4 pools taking the top 2, that is 24 pool matches and then an 8-{one} bracket to the final.',
          'The usual shape for a weekend tournament: everyone is guaranteed pool games, and it still ends in a final.'],
     ko: ['A straight bracket. Lose once and you are out. The draw is built to the next power of two and anyone short of a first-round opponent gets a bye.',
-         'With 4 entrants that is 2 semi-finals and a final, 3 matches. With 12 it builds a 16 draw and 4 entrants get byes.',
+         'With 4 {many} that is 2 semi-finals and a final, 3 matches. With 12 it builds a 16 draw and 4 {many} get byes.',
          'Pick it when time is short, or when the seeding already tells you who should meet late.'],
     monrad: ['Nobody goes home. After each round winners are paired with winners and losers with losers, so every place from 1st to last is played off.',
-             'With 8 entrants every one plays 3 rounds and finishes with a ranking of 1 to 8, not just a champion.',
+             'With 8 {many} every one plays 3 rounds and finishes with a ranking of 1 to 8, not just a champion.',
              'Pick it for a one-day club event where everyone wants a full day of matches.'],
-    tiered: ['Entrants are banded by ability first, then pooled inside their band, so matches stay even.',
-             'With 12 entrants in 3 bands of 4, a strong team never draws a beginner in round one.',
+    tiered: ['{Many} are banded by ability first, then pooled inside their band, so matches stay even.',
+             'With 12 {many} in 3 bands of 4, a strong {one} never draws a beginner in round one.',
              'Pick it for a mixed-ability field where a lopsided first round would spoil the day.']
   };
   function fmtInfoBox(k) {
@@ -1272,18 +1296,18 @@
     return '<div class="tg-nfobox">'
       + '<button class="close" onclick="FFPTourn.fmtInfo(null)" title="Close">' + ic('close') + '</button>'
       + '<h4>' + ic('info') + esc(f[1]) + '</h4>'
-      + '<p>' + esc(i[0]) + '</p>'
-      + '<p><b>For example.</b> ' + esc(i[1]) + '</p>'
-      + '<p><b>When to pick it.</b> ' + esc(i[2]) + '</p></div>';
+      + '<p>' + esc(say(i[0])) + '</p>'
+      + '<p><b>For example.</b> ' + esc(say(i[1])) + '</p>'
+      + '<p><b>When to pick it.</b> ' + esc(say(i[2])) + '</p></div>';
   }
   function fmtInfo(k) { S.fmtInfo = (S.fmtInfo === k) ? null : k; renderTab(); }
 
   var FORMATS = [
     ['grp', 'Groups only', 'Round-robin, final table'],
-    ['gk', 'Groups, then knockout', 'Top entrants advance to a bracket'],
+    ['gk', 'Groups, then knockout', 'Top {many} advance to a bracket'],
     ['ko', 'Knockout', 'Single elimination, losers are out'],
     ['monrad', 'Monrad', 'Everyone keeps playing, every place decided'],
-    ['tiered', 'Tiered pools', 'Pools by ability, every team placed']
+    ['tiered', 'Tiered pools', 'Pools by ability, every {one} placed']
   ];
 
   /* ── BONUS POINTS ───────────────────────────────────────────────────────
@@ -1354,7 +1378,7 @@
   }
   function bpHtml() {
     return (S._bp || []).map(bpRow).join('')
-      || '<div class="bp-none">No bonus points. Teams score on the win, draw and loss values above.</div>';
+      || '<div class="bp-none">No bonus points. ' + nouns(curDv()).Many + ' score on the win, draw and loss values above.</div>';
   }
   function bpRender() { var h = document.getElementById('bp-list'); if (h) h.innerHTML = bpHtml(); }
   function bpType() { bpSync(); bpRender(); }
@@ -1461,18 +1485,18 @@
     return { g: g, bs: bs, q: q, n: dv.entrant_count || 0 };
   }
   function tierQuotaHtml(dv) {
-    var c = tierCfg(dv), sizes = tierSizes(c.n, c.g);
+    var c = tierCfg(dv), sizes = tierSizes(c.n, c.g), N = nouns(dv);
     return sizes.map(function (sz, i) {
       return '<div class="tg-qrow"><span class="tg-qp">' + String.fromCharCode(65 + i) + '</span>'
         + '<span class="tg-qn">Pool ' + String.fromCharCode(65 + i)
-        + '<small>' + sz + ' team' + (sz === 1 ? '' : 's') + (i === 0 ? ', strongest' : '') + '</small></span>'
+        + '<small>' + sz + ' ' + (sz === 1 ? N.one : N.many) + (i === 0 ? ', strongest' : '') + '</small></span>'
         + '<input class="lg-in tg-qin" id="tg-q' + i + '" type="number" min="0" max="' + sz + '" value="'
         + Math.min(c.q[i], sz) + '" oninput="FFPTourn.tierPreview()"></div>';
     }).join('');
   }
   function tierLadderHtml(dv) {
     var c = tierCfg(dv);
-    if (!c.n) return '<div class="tg-hint">Add entrants and the bands appear here.</div>';
+    if (!c.n) return '<div class="tg-hint">Add ' + nouns(dv).many + ' and the bands appear here.</div>';
     return tierBands(tierSizes(c.n, c.g), c.q, c.bs).map(function (b, i) {
       var range = b.from + (b.to > b.from ? '&ndash;' + b.to : '');
       var ties = b.ties.length
@@ -1507,14 +1531,14 @@
   }
   function monradRounds(n) { return (!n || n < 2) ? 0 : Math.ceil(Math.log(n) / Math.log(2)); }
   function shapeLine(d) {
-    var n = d.entrant_count || 0, k = fmtOfDiv(d);
-    if (!n) return 'no entrants yet';
-    if (k === 'monrad') { var r = monradRounds(n); return n + ' entrants, ' + r + ' rounds, every place from 1 to ' + n + ' is played off'; }
-    if (k === 'ko') { var rr = koRounds(n); return n + ' entrants, ' + rr.length + ' rounds, ' + rr.join(' to ').toLowerCase(); }
+    var n = d.entrant_count || 0, k = fmtOfDiv(d), N = nouns(d);
+    if (!n) return 'no ' + N.many + ' yet';
+    if (k === 'monrad') { var r = monradRounds(n); return n + ' ' + N.many + ', ' + r + ' rounds, every place from 1 to ' + n + ' is played off'; }
+    if (k === 'ko') { var rr = koRounds(n); return n + ' ' + N.many + ', ' + rr.length + ' rounds, ' + rr.join(' to ').toLowerCase(); }
     var ng = d.num_groups || Math.max(2, Math.round(n / 4));
-    if (k === 'tiered') return n + ' teams in ' + ng + ' pools by ability, every team placed 1 to ' + n;
-    if (k === 'grp') return n + ' entrants in ' + ng + ' groups, ranked into one table';
-    return n + ' entrants in ' + ng + ' groups, top ' + (d.groups_advance || 2) + ' of each into a knockout';
+    if (k === 'tiered') return n + ' ' + N.many + ' in ' + ng + ' pools by ability, every ' + N.one + ' placed 1 to ' + n;
+    if (k === 'grp') return n + ' ' + N.many + ' in ' + ng + ' groups, ranked into one table';
+    return n + ' ' + N.many + ' in ' + ng + ' groups, top ' + (d.groups_advance || 2) + ' of each into a knockout';
   }
   async function renderSetup(host) {
     await loadSports(); await taxReady();
@@ -1570,43 +1594,49 @@
       + '<div class="tg-sec"><div class="tg-sech">Divisions</div>' + rows + adder + '</div>';
   }
   function divFormatEditor(dv) {
-    var k = fmtOfDiv(dv), n = dv.entrant_count || 0;
+    var k = fmtOfDiv(dv), n = dv.entrant_count || 0, N = nouns(dv);
     var changed = !!(S._fmtSaved && S._fmtSaved[dv.id] && S._fmtSaved[dv.id] !== k);
     var cards = FORMATS.map(function (f) {
       return '<div class="tg-fmt' + (f[0] === k ? ' on' : '') + '" onclick="FFPTourn.setDivFmt(\'' + f[0] + '\')">'
         + '<button class="nfo" title="How ' + esc(f[1]) + ' runs"'
         +   ' onclick="event.stopPropagation();FFPTourn.fmtInfo(\'' + f[0] + '\')">' + ic('info') + '</button>'
-        + '<div class="dia">' + fmtDia(f[0]) + '</div><b>' + f[1] + '</b><span>' + f[2] + '</span></div>';
+        + '<div class="dia">' + fmtDia(f[0]) + '</div><b>' + f[1] + '</b><span>' + esc(say(f[2], dv)) + '</span></div>';
     }).join('') + (S.fmtInfo ? fmtInfoBox(S.fmtInfo) : '');
     var incl = '';
     if (k === 'grp' || k === 'gk') {
-      incl += '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Number of groups</div><input class="lg-in" id="tg-ng" type="number" min="1" value="' + (dv.num_groups || Math.max(2, Math.round((n || 8) / 4))) + '"></div>'
-        + (k === 'gk' ? '<div class="lg-fld"><div class="lg-lab">Advance per group</div><input class="lg-in" id="tg-adv" type="number" min="1" value="' + (dv.groups_advance || 2) + '"></div>' : '<div></div>') + '</div>';
+      incl += '<div class="' + (k === 'gk' ? 'lg-3' : 'lg-2') + '">' + capField(dv)
+        + '<div class="lg-fld"><div class="lg-lab">Number of groups</div><input class="lg-in" id="tg-ng" type="number" min="1" value="' + (dv.num_groups || Math.max(2, Math.round((n || 8) / 4))) + '" oninput="FFPTourn.capHint()"></div>'
+        + (k === 'gk' ? '<div class="lg-fld"><div class="lg-lab">Advance per group</div><input class="lg-in" id="tg-adv" type="number" min="1" value="' + (dv.groups_advance || 2) + '" oninput="FFPTourn.capHint()"></div>' : '') + '</div>'
+        + capHintRow(dv, k);
+    }
+    if (k === 'ko' || k === 'monrad') {
+      incl += '<div class="lg-2">' + capField(dv) + '<div></div></div>' + capHintRow(dv, k);
     }
     // Extra draws only mean something in a knockout. Monrad already keeps
     // everyone playing, and a group table has nobody to knock out.
     if (k === 'ko' || k === 'gk') {
       var side = dv.side_draws || 'none';
       var cur = SIDE_DRAWS.find(function (x) { return x[0] === side; }) || SIDE_DRAWS[0];
-      incl += '<div class="lg-fld"><div class="lg-lab">Do beaten players keep playing?</div>'
+      incl += '<div class="lg-fld"><div class="lg-lab">Do beaten ' + N.many + ' keep playing?</div>'
         + '<select class="lg-sel" id="tg-side" onchange="FFPTourn.sideHint()">'
         + SIDE_DRAWS.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === side ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('')
-        + '</select><div class="tg-hint" id="tg-sidehint">' + esc(cur[2]) + '</div></div>';
+        + '</select><div class="tg-hint" id="tg-sidehint">' + esc(say(cur[2], dv)) + '</div></div>';
       incl += '<div class="lg-fld"><div class="lg-lab">3rd-place play-off</div><div class="lg-seg" id="tg-third"><button data-v="true" class="' + (dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">Yes</button><button data-v="false" class="' + (!dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">No</button></div></div>';
     }
     if (k === 'tiered') {
       var tc = tierCfg(dv);
-      incl += '<div class="lg-2">'
+      incl += '<div class="lg-3">' + capField(dv)
         + '<div class="lg-fld"><div class="lg-lab">Number of pools</div>'
         +   '<input class="lg-in tg-num" id="tg-np" type="number" min="2" max="8" value="' + tc.g + '" oninput="FFPTourn.tierPools()"></div>'
         + '<div class="lg-fld"><div class="lg-lab">Places per band</div>'
         +   '<input class="lg-in tg-num" id="tg-bs" type="number" min="2" max="8" value="' + tc.bs + '" oninput="FFPTourn.tierPreview()"></div></div>'
+        + capHintRow(dv, k)
         + '<div class="lg-fld"><div class="lg-lab">Into the top band</div>'
         +   '<div class="tg-quota" id="tg-quota">' + tierQuotaHtml(dv) + '</div>'
         +   '<div class="tg-hint">Pools are listed strongest first. A pool set to none sends nobody to the top band however well it plays &mdash; that is what makes it tiered rather than even.</div></div>'
         + '<div class="lg-lab tg-lhead">What that gives you</div>'
         + '<div class="tg-ladder" id="tg-ladder">' + tierLadderHtml(dv) + '</div>'
-        + '<div class="tg-hint">Every team finishes with a place. Winners meet winners and losers meet losers down each band, and the pool slots fill in as results land.</div>';
+        + '<div class="tg-hint">Every ' + N.one + ' finishes with a place. Winners meet winners and losers meet losers down each band, and the pool slots fill in as results land.</div>';
     }
     if (k === 'grp' || k === 'gk') incl += tgPtsBlock(dv);
     if (k === 'monrad') incl += '<div class="tg-hint">Monrad re-ranks everyone after every round, so nobody is knocked out and every place is decided. There are no extra draws to add.</div>';
@@ -1614,9 +1644,9 @@
     return '<div class="tg-dvedit"><div class="tg-fmts">' + cards + '</div>'
       + '<div class="tg-fmtset">' + incl
       + (changed ? '<div class="tg-shape">Becomes ' + esc(shapeLine(dv)) + '</div>' : '')
-      + drawSizeRow(dv, k)
+      + '<div class="tg-hint">Saving lays the draw out to match. Building and redrawing it live on the Draw tab.</div>'
       + '<div class="tg-acts"><button class="lg-btn pri" onclick="FFPTourn.saveDivFormat()">' + ic('check') + 'Save format</button>'
-      + '<button class="lg-btn" onclick="FFPTourn.buildDivDraw()">' + ic('bolt') + drawBtnLabel(dv) + '</button></div></div></div>';
+      + '</div></div></div>';
   }
   /* Three states, three different jobs. An OPEN draw with nobody in it is
      filled, which drops entrants into the slots and leaves every time and court
@@ -1636,59 +1666,100 @@
     if (!(dv.placed_count || 0)) return 'Fill the draw';
     return 'Draw again';
   }
+  /* CAPACITY IS A PLAIN NUMBER. A field of 10 is a field of 10: the draw is
+     built to the next power of two above it and the byes go to the top seeds,
+     so 4, 8, 16 was never a real constraint and offering only those numbers
+     made organisers round their own event up. The line underneath says exactly
+     what the number they typed will produce, so nobody has to guess. */
+  function nextPow2(n) { var b = 2; while (b < n) b *= 2; return b; }
+  function andList(a) {
+    return a.length < 2 ? String(a[0] || '')
+      : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+  }
+  function poolSizes(n, g) {
+    var base = Math.floor(n / g), rem = n % g, out = [];
+    for (var i = 1; i <= g; i++) out.push(base + (i > g - rem ? 1 : 0));
+    return out;
+  }
+  function capNow(dv) {
+    var el = document.getElementById('tg-dsize');
+    return +((el && el.value) || dv.draw_size || 0) || 0;
+  }
+  function numNow(id, fallback) {
+    var el = document.getElementById(id);
+    return +((el && el.value) || fallback || 0) || 0;
+  }
+  function capShape(dv, k) {
+    var n = capNow(dv), N = nouns(dv);
+    if (!n || n < 2) return 'Type any number. It does not have to be 4, 8, 16 and so on.';
+    if (k === 'ko') {
+      var b = nextPow2(n), byes = b - n, r1 = b / 2 - byes;
+      return n + ' ' + N.many + ' builds a draw of ' + b + '. Seeds 1 to ' + n + ' are placed'
+        + (byes ? ', the top ' + byes + ' seed' + (byes === 1 ? '' : 's') + ' get a bye' : ', nobody gets a bye')
+        + ', and round 1 is ' + r1 + ' match' + (r1 === 1 ? '' : 'es') + '.';
+    }
+    if (k === 'monrad') {
+      var rd = Math.ceil(Math.log(n) / Math.log(2));
+      return n + ' ' + N.many + ' plays ' + rd + ' rounds and finishes ranked 1 to ' + n + '.';
+    }
+    var g = numNow(k === 'tiered' ? 'tg-np' : 'tg-ng', dv.num_groups || 2);
+    if (g < 1) return 'Set the number of ' + (k === 'tiered' ? 'pools' : 'groups') + '.';
+    if (n < g * 2) return n + ' ' + N.many + ' will not fill ' + g + ' '
+      + (k === 'tiered' ? 'pools' : 'groups') + '. Each one needs at least 2, so this takes '
+      + (g * 2) + ' or more, or fewer ' + (k === 'tiered' ? 'pools' : 'groups') + '.';
+    var sz = poolSizes(n, g), fx = 0;
+    sz.forEach(function (s) { fx += s * (s - 1) / 2; });
+    var word = k === 'tiered' ? 'pools' : 'groups';
+    var line = n + ' ' + N.many + ' in ' + g + ' ' + word + ' of ' + andList(sz)
+      + ', which is ' + fx + ' pool matches';
+    if (k === 'grp') return line + ', and the table decides it.';
+    if (k === 'tiered') return line + ', then every ' + N.one + ' is placed 1 to ' + n + '.';
+    var adv = numNow('tg-adv', dv.groups_advance || 2), q = 0;
+    sz.forEach(function (s) { q += Math.min(adv, s); });
+    return line + '. The top ' + adv + ' of each gives ' + q + ' qualifiers, into a bracket of '
+      + nextPow2(q) + '.';
+  }
+  function capField(dv) {
+    return '<div class="lg-fld"><div class="lg-lab">Maximum ' + nouns(dv).many + ' expected</div>'
+      + '<input class="lg-in" id="tg-dsize" type="number" min="2" max="512" step="1" placeholder="Any number"'
+      + ' value="' + (dv.draw_size || '') + '" oninput="FFPTourn.capHint()"></div>';
+  }
+  function capHintRow(dv, k) {
+    return '<div class="tg-hint" id="tg-caphint" style="margin:-6px 0 16px">' + esc(capShape(dv, k)) + '</div>';
+  }
+  function capHint() {
+    var el = document.getElementById('tg-caphint'); if (!el) return;
+    var dv = curDv() || {};
+    el.textContent = capShape(dv, fmtOfDiv(dv));
+  }
   // The order of play is set from the format, not from who has entered: an
   // empty draw of a chosen size gives every round its matches, so the whole
   // tournament can be scheduled and the names dropped in as results come.
-  var DRAW_SIZES = [4, 8, 16, 32, 64, 128];
-  function drawSizeRow(dv, k) {
-    /* Every format is laid out from its shape, and the capacity is what the
-       shape is laid out to: a knockout's bracket, a pool's fixtures, a ladder's
-       bands, a Monrad's rounds. It is asked for on all of them. */
-    var cur = dv.draw_size || 0;
-    var sel = (cur ? '' : '<option value="">Not set</option>')
-      + DRAW_SIZES.map(function (n) {
-          return '<option value="' + n + '"' + (n === cur ? ' selected' : '') + '>' + n + '</option>';
-        }).join('');
-    var has = (dv.match_count || 0) > 0;
-    if (S.openDrawAsk === dv.id) {
-      return '<div class="tg-opendraw warn"><b>Replace the draw with an empty one?</b>'
-        + '<span>Every match in this division is rebuilt with no names in it. Results already entered stop this.</span>'
-        + '<span class="sp"></span>'
-        + '<button class="lg-btn ghost" onclick="FFPTourn.openDrawCancel()">Cancel</button>'
-        + '<button class="lg-btn pri" onclick="FFPTourn.openDivDraw(1)">Yes, open it empty</button></div>';
-    }
-    return '<div class="tg-opendraw"><span class="lb">Most players in this division</span>'
-      + '<select class="lg-sel" id="tg-dsize" style="width:auto;min-width:130px">' + sel + '</select>'
-      + '<button class="lg-btn" onclick="FFPTourn.openDivDraw()">' + ic('grid_on')
-      + (has ? 'Open an empty draw' : 'Open the draw') + '</button>'
-      + '<span class="hint">' + (k === 'tiered'
-          ? 'The pools and every band are laid out now from the shape above, with each slot named by its pool place (A1, B2 and so on), so the whole ladder can be scheduled before a single entry is in. Real names replace the slots as the pools finish.'
-          : 'The most this division takes is what its draw is built to. Every round is made now, empty, so the whole tournament can be scheduled before a single entry is in. Names drop into the slots as results come.')
-      + '</span></div>';
-  }
   /* Draw used to say "build it above" when the control was on another tab, and
      Schedule sent you to Setup. Both now carry the thing that fixes them. The
      select keeps the id openDivDraw already reads, and only one tab is on
      screen at a time, so there is never two of it. */
   function openDrawEmpty(which) {
     var dv = ((S.detail && S.detail.divisions) || []).find(function (d) { return d.id === S.divId; }) || {};
-    var cur = dv.draw_size || 0;
-    var sizeCtl = '<span class="lb">Takes</span><select class="lg-sel" id="tg-dsize" style="width:auto;min-width:96px">'
-      + (cur ? '' : '<option value="">Work it out</option>')
-      + DRAW_SIZES.map(function (n) {
-          return '<option value="' + n + '"' + (n === cur ? ' selected' : '') + '>' + n + '</option>'; }).join('')
-      + '</select>';
-    var open = '<button class="lg-btn pri" onclick="FFPTourn.openDivDraw()">' + ic('grid_on') + 'Open the draw</button>';
+    var cap = dv.draw_size || 0, N = nouns(dv);
+    /* The maximum lives in one place, on Setup, beside the rest of the format.
+       With it set this just builds; without it, it says where to set it rather
+       than offering a second field that can drift from the first. */
+    var row = cap
+      ? '<span class="lb">Maximum ' + N.many + ', ' + cap + '</span>'
+        + '<button class="lg-btn pri" onclick="FFPTourn.openDivDraw()">' + ic('grid_on') + 'Open the draw</button>'
+      : '<button class="lg-btn pri" onclick="FFPTourn.tab(\'setup\')">' + ic('tune') + 'Go to Setup</button>';
+    var need = cap ? '' : ' First set the format and the maximum number of ' + N.many + ' on Setup.';
     if (which === 'schedule') {
       return '<div class="lg-empty act"><div class="t">Nothing to schedule yet</div>'
         + '<div class="s">The schedule is built from the draw. Open the draw and every round appears here, '
-        + 'ready for times and courts.</div>'
-        + '<div class="row">' + sizeCtl + open + '</div></div>';
+        + 'ready for times and courts.' + need + '</div>'
+        + '<div class="row">' + row + '</div></div>';
     }
     return '<div class="lg-empty act"><div class="t">This division has no draw yet</div>'
       + '<div class="s">Open it and every round is created empty, so the whole tournament can be scheduled '
-      + 'before a single entry is in. Names drop into the slots as entrants are seeded.</div>'
-      + '<div class="row">' + sizeCtl + open + '</div></div>';
+      + 'before a single entry is in. Names drop into the slots as ' + N.many + ' are seeded.' + need + '</div>'
+      + '<div class="row">' + row + '</div></div>';
   }
   /* Say what was actually made, because "Saved" tells an organiser nothing
      about whether their whole event now exists. */
@@ -1737,7 +1808,7 @@
     var sel = document.getElementById('tg-side'), h = document.getElementById('tg-sidehint');
     if (!sel || !h) return;
     var x = SIDE_DRAWS.find(function (o) { return o[0] === sel.value; });
-    h.textContent = x ? x[2] : '';
+    h.textContent = x ? say(x[2]) : '';
   }
   function fmtDia(k) {
     if (k === 'grp') return '<svg width="56" height="60" viewBox="0 0 56 60" class="tgd"><rect x="2" y="4" width="52" height="12" rx="2"/><rect x="2" y="18" width="52" height="12" rx="2"/><rect x="2" y="32" width="52" height="12" rx="2"/><rect x="2" y="46" width="52" height="12" rx="2"/></svg>';
@@ -2028,9 +2099,10 @@
     var divs = S.detail.divisions || [];
     if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
     if (!S.divId) S.divId = divs[0].id;
+    var N = nouns(curDv());
     var adder = S.entAdd
-      ? '<div class="lg-edit"><input class="lg-in" id="tg-entname" placeholder="Team / player name" onkeydown="if(event.key===\'Enter\')FFPTourn.saveEntrant()"><button class="lg-btn pri" onclick="FFPTourn.saveEntrant()">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPTourn.cancelEntrant()">Cancel</button></div>'
-      : '<button class="lg-btn" onclick="FFPTourn.addEntrant()">' + ic('add') + 'Add team / player</button>';
+      ? '<div class="lg-edit"><input class="lg-in" id="tg-entname" placeholder="' + N.One + ' name" onkeydown="if(event.key===\'Enter\')FFPTourn.saveEntrant()"><button class="lg-btn pri" onclick="FFPTourn.saveEntrant()">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPTourn.cancelEntrant()">Cancel</button></div>'
+      : '<button class="lg-btn" onclick="FFPTourn.addEntrant()">' + ic('add') + 'Add a ' + N.one + '</button>';
     host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'entrants\')">' + divOpts() + '</select><span class="sp"></span>' + (S.divId ? '<button class="lg-btn" onclick="FFPTourn.bulkAthletes()">' + ic('upload_file') + 'Bulk add</button>' : '') + '</div>' + adder + '<div id="tg-roster"><div class="lg-empty">Loading…</div></div>';
     var f = document.getElementById('tg-entname'); if (f) f.focus();
     var r; try { r = await sb().rpc('tourn_roster', { p_division: S.divId }); } catch (e) { r = { error: e }; }
@@ -2067,7 +2139,7 @@
       var edBtn = '<span class="ms act" title="Edit details" onclick="FFPTourn.editEntrant(\'' + en.id + '\')">edit</span>';
       var row = '<div class="lg-row">' + tCrest + paidCell(en) + '<div class="g"><b>' + esc(en.name) + '</b> <span>' + esc(en.status) + (en.group_label ? ', Group ' + esc(en.group_label) : '') + (en.kind === 'individual' ? flag : '') + '</span></div>' + sqBtn + edBtn + '</div>';
       return row + (isTeam && S.sqOpen === en.id ? '<div class="lg-sq" id="lg-sq-' + en.id + '"><div class="lg-sqsrch">' + ic('search') + '<input id="lg-sqq-' + en.id + '" placeholder="Search FFP or type a name" value="' + esc((S._sqQ || {})[en.id] || '') + '" oninput="FFPTourn.sqSearch(\'' + en.id + '\',this.value)"></div><div id="lg-sqres-' + en.id + '">' + sqResHtml(en.id) + '</div></div>' : '');
-    }).join('') : '<div class="lg-empty">No entrants yet. Members self-register in the app, or add them here.</div>');
+    }).join('') : '<div class="lg-empty">No ' + N.many + ' yet. Members self-register in the app, or add them here.</div>');
     S._roster = rows;
   }
 
@@ -2158,7 +2230,7 @@
     if (document.getElementById('tg-ee-group')) patch.group_label = g('tg-ee-group');
     if (en.kind !== 'individual') {
       var nm = g('tg-ee-name');
-      if (!nm) { if (msg) msg.textContent = 'The team needs a name'; return; }
+      if (!nm) { if (msg) msg.textContent = 'The ' + nouns(en).one + ' needs a name'; return; }
       patch.team_name = nm;
     }
     var r; try { r = await sb().rpc('tourn_entrant_update', { p_id: id, p: patch }); } catch (e) { r = { error: e }; }
@@ -2169,7 +2241,7 @@
       if (msg) {
         msg.textContent = r.data.reason === 'has_group_matches'
           ? 'Already drawn into ' + r.data.matches + ' group matches. Redraw the groups to change this.'
-          : 'Already in ' + r.data.matches + ' matches in this division. Clear them first to move the team.';
+          : 'Already in ' + r.data.matches + ' matches in this division. Clear them first to move the ' + nouns(en).one + '.';
       }
       return;
     }
@@ -2240,8 +2312,9 @@
 
   // GROUP STAGE (inline draw count)
   async function renderGroups(host) {
-    var divs = S.detail.divisions || []; if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first, then add entrants.</div>'; return; }
+    var divs = S.detail.divisions || []; if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first, then add ' + nouns(null).many + '.</div>'; return; }
     if (!S.divId) S.divId = divs[0].id;
+    var N = nouns(curDv());
     var er; try { er = await sb().rpc('tourn_roster', { p_division: S.divId }); } catch (e) { er = null; }
     var roster = (er && er.data) || [];
     var eligible = roster.filter(function (r) { return ['registered', 'paid', 'invited'].indexOf(r.status) >= 0; });
@@ -2249,18 +2322,18 @@
     host.innerHTML = '<div class="lg-tool">' + (divs.length > 1 ? '<select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'groups\')">' + divOpts() + '</select>' : '')
       + '<span class="lg-lab" style="margin:0">Number of groups</span><input class="lg-in" id="tg-ng" type="number" min="1" value="' + suggested + '" style="width:70px">'
       + '<button class="lg-btn pri" onclick="FFPTourn.doGroups()">' + ic('shuffle') + 'Draw groups</button><span class="sp"></span>'
-      + '<span class="lg-sub" style="margin:0">' + eligible.length + ' entrant' + (eligible.length === 1 ? '' : 's') + '</span></div>'
+      + '<span class="lg-sub" style="margin:0">' + eligible.length + ' ' + (eligible.length === 1 ? N.one : N.many) + '</span></div>'
       + '<div id="tg-glist"><div class="lg-empty">Loading…</div></div>';
     var host2 = document.getElementById('tg-glist');
-    if (eligible.length < 2) { host2.innerHTML = '<div class="lg-empty">Add at least 2 entrants (Entrants tab) before drawing groups.</div>'; return; }
+    if (eligible.length < 2) { host2.innerHTML = '<div class="lg-empty">Add at least 2 ' + N.many + ' (' + nouns(null).Many + ' tab) before drawing groups.</div>'; return; }
     var mr; try { mr = await sb().from('tourn_matches').select('*').eq('division_id', S.divId).eq('stage', 'group').order('group_label').order('round').order('slot'); } catch (e) { mr = { error: e }; }
     var ms = (mr && mr.data) || []; var names = {}; roster.forEach(function (r) { names[r.id] = r.name; });
     var gt; try { gt = await sb().rpc('tourn_group_tables', { p_division: S.divId }); } catch (e) { gt = null; }
     var tables = (gt && gt.data && gt.data.groups) || [];
-    if (!tables.length) { host2.innerHTML = '<div class="lg-empty"><span class="ms" style="font-size:34px;color:#c0cad2;display:block;margin-bottom:6px">groups</span><b>No groups drawn yet</b><div style="margin-top:4px">Set the number of groups above and tap <b>Draw groups</b> — your ' + eligible.length + ' entrants are split evenly with round-robin fixtures in each group.</div></div>'; return; }
+    if (!tables.length) { host2.innerHTML = '<div class="lg-empty"><span class="ms" style="font-size:34px;color:#c0cad2;display:block;margin-bottom:6px">groups</span><b>No groups drawn yet</b><div style="margin-top:4px">Set the number of groups above and tap <b>Draw groups</b> — your ' + eligible.length + ' ' + N.many + ' are split evenly with round-robin fixtures in each group.</div></div>'; return; }
     var byMatch = {}; ms.forEach(function (m) { (byMatch[m.group_label] = byMatch[m.group_label] || []).push(m); });
     host2.innerHTML = tables.map(function (g) {
-      var tbl = '<table class="tg-tbl"><tr><th class="rk"></th><th class="nm">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>+/-</th><th>Pts</th></tr>'
+      var tbl = '<table class="tg-tbl"><tr><th class="rk"></th><th class="nm">' + N.One + '</th><th>P</th><th>W</th><th>D</th><th>L</th><th>+/-</th><th>Pts</th></tr>'
         + (g.rows || []).map(function (r) {
           return '<tr class="' + (r.advances ? 'adv' : '') + '"><td class="rk">' + r.rank + '</td><td class="nm"><span class="in">' + crest(r) + esc(r.name) + '</span></td><td>' + r.p + '</td><td>' + r.w + '</td><td>' + r.d + '</td><td>' + r.l + '</td><td>' + (r.gd > 0 ? '+' + r.gd : r.gd) + '</td><td class="pts">' + r.pts + '</td></tr>';
         }).join('') + '</table>';
@@ -2271,8 +2344,8 @@
         return '<div class="tg-rlbl">Round ' + rd + '</div>' + rounds[rd].map(function (m) {
           return '<div class="tg-gfx" data-id="' + m.id + '"><span class="t a">' + esc(names[m.home_entrant] || 'TBD') + '</span><span class="sc"><input type="number" class="tg-hs" value="' + (m.home_score != null ? m.home_score : '') + '" placeholder="–"><input type="number" class="tg-as" value="' + (m.away_score != null ? m.away_score : '') + '" placeholder="–"></span><span class="t">' + esc(names[m.away_entrant] || 'TBD') + '</span><button class="lg-btn ghostb sm" onclick="FFPTourn.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + 'Match centre</button></div>';
         }).join('');
-      }).join('') : '<div class="lg-sub" style="padding:8px 2px">Single entrant — no fixtures.</div>';
-      return '<div class="tg-group"><div class="tg-grph">Group ' + esc(g.label) + ', ' + (g.rows || []).length + ' team' + ((g.rows || []).length === 1 ? '' : 's') + '</div>' + tbl + '<div class="fxlab">Fixtures and results, in play order</div>' + fx + '</div>';
+      }).join('') : '<div class="lg-sub" style="padding:8px 2px">Single ' + N.one + ' — no fixtures.</div>';
+      return '<div class="tg-group"><div class="tg-grph">Group ' + esc(g.label) + ', ' + (g.rows || []).length + ' ' + ((g.rows || []).length === 1 ? N.one : N.many) + '</div>' + tbl + '<div class="fxlab">Fixtures and results, in play order</div>' + fx + '</div>';
     }).join('')
       + '<div class="lg-tool" style="margin-top:18px;border-top:1px solid var(--ffp-border);padding-top:14px"><span class="sp"></span><button class="lg-btn pri" onclick="FFPTourn.saveGroupResults()">' + ic('check') + 'Save results</button><button class="lg-btn green" onclick="FFPTourn.doBracket()">' + ic('account_tree') + 'Build knockout from groups</button></div>';
   }
@@ -2280,7 +2353,7 @@
     var n = parseInt((document.getElementById('tg-ng') || {}).value, 10) || 2; S._ng = n;
     var r; try { r = await sb().rpc('tourn_groups_generate', { p_division: S.divId, p_num_groups: n }); } catch (e) { r = { error: e }; }
     if (r.error) { toast(/not_owner/.test(r.error.message || '') ? 'Not your tournament' : 'Could not draw groups', 'error'); return; }
-    if ((r.data || 0) === 0) { toast('Add at least 2 entrants first', 'error'); renderTab(); return; }
+    if ((r.data || 0) === 0) { toast('Add at least 2 ' + nouns(curDv()).many + ' first', 'error'); renderTab(); return; }
     toast(n + ' group' + (n === 1 ? '' : 's') + ' drawn, ' + r.data + ' fixtures', 'success'); renderTab();
   }
   async function saveGroupResults() {
@@ -2311,8 +2384,8 @@
     var r; try { r = await sb().rpc('tourn_monrad_open', { p_division: S.divId }); } catch (e) { r = { error: e }; }
     if (r.error) { toast(String(r.error.message || '').indexOf('matches_played') > -1 ? 'Results are already in, the draw cannot be redrawn' : 'Could not make the draw', 'error'); renderTab(); return; }
     var d = r.data || {};
-    if (d.ok === false) { toast('Needs at least two entrants', 'error'); renderTab(); return; }
-    toast(d.entrants + ' entrants, ' + d.rounds + ' rounds', 'success');
+    if (d.ok === false) { toast('Needs at least two ' + nouns(curDv()).many, 'error'); renderTab(); return; }
+    toast(d.entrants + ' ' + nouns(curDv()).many + ', ' + d.rounds + ' rounds', 'success');
     S.drawKey = null; await refreshDetail();
   }
   async function monradRound() {
@@ -2322,7 +2395,7 @@
     if (d.ok === false) {
       toast(d.reason === 'complete' ? 'All ' + d.rounds + ' rounds are drawn'
           : d.reason === 'round_unfinished' ? 'Finish round ' + d.round + ' first'
-          : d.reason === 'not_enough_entrants' ? 'Needs at least two entrants'
+          : d.reason === 'not_enough_entrants' ? 'Needs at least two ' + nouns(curDv()).many
           : 'Could not draw the round', 'error');
       return;
     }
@@ -2355,9 +2428,25 @@
     // Drawing is set up in Setup. This tab runs what was drawn, so the only
     // build action here is the one that belongs to running a Monrad: the next
     // round, which can only be paired once the last one is played.
-    var buildCtl = fmt === 'monrad'
-      ? '<button class="lg-btn" onclick="FFPTourn.monradRound()">' + ic('playlist_add') + 'Draw next round</button>' : '';
-    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'bracket\')">' + divOpts() + '</select>' + fmtCtl + sideCtl + '<span class="sp"></span>' + buildCtl + '<button class="lg-btn pri" onclick="FFPTourn.saveBracketResults()">' + ic('check') + 'Save &amp; advance</button></div><div id="tg-brk"><div class="lg-empty">Loading…</div></div>';
+    /* ONE button that says what pressing it will do. Wiping a built draw back
+       to empty is a different, destructive job, so it only appears once there
+       is a draw to wipe. */
+    var buildCtl = (fmt === 'monrad'
+      ? '<button class="lg-btn" onclick="FFPTourn.monradRound()">' + ic('playlist_add') + 'Draw next round</button>' : '')
+      + '<button class="lg-btn" onclick="FFPTourn.buildDivDraw()">' + ic('bolt') + drawBtnLabel(dv) + '</button>'
+      + ((dv.match_count || 0)
+          ? '<button class="lg-btn ghost" onclick="FFPTourn.openDivDraw()">' + ic('grid_on')
+            + 'Open an empty draw</button>' : '');
+    /* Replacing a built draw with an empty one throws away every match in it,
+       so it asks first, here, where the button was pressed. */
+    var askRow = S.openDrawAsk === dv.id
+      ? '<div class="tg-opendraw warn"><b>Replace the draw with an empty one?</b>'
+        + '<span>Every match in this division is rebuilt with no names in it. Results already entered stop this.</span>'
+        + '<span class="sp"></span>'
+        + '<button class="lg-btn ghost" onclick="FFPTourn.openDrawCancel()">Cancel</button>'
+        + '<button class="lg-btn pri" onclick="FFPTourn.openDivDraw(1)">Yes, open it empty</button></div>'
+      : '';
+    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'bracket\')">' + divOpts() + '</select>' + fmtCtl + sideCtl + '<span class="sp"></span>' + buildCtl + '<button class="lg-btn pri" onclick="FFPTourn.saveBracketResults()">' + ic('check') + 'Save &amp; advance</button></div>' + askRow + '<div id="tg-brk"><div class="lg-empty">Loading…</div></div>';
     var r; try { r = await sb().rpc('tourn_bracket', { p_division: S.divId }); } catch (e) { r = { error: e }; }
     var ms = (r && r.data) || []; S._bracket = ms; var host2 = document.getElementById('tg-brk');
     if (!ms.length) { host2.innerHTML = openDrawEmpty('draw'); return; }
@@ -2453,7 +2542,7 @@
   function awardPanel(id) {
     var m = (S._bracket || []).find(function (x) { return x.id === id; });
     if (!m && S._mc && S._mc.id === id) m = S._mc;
-    if (!m || !m.home || !m.away) { toast('Both players must be in the match first', 'error'); return; }
+    if (!m || !m.home || !m.away) { toast('Both ' + nouns(curDv()).many + ' must be in the match first', 'error'); return; }
     _awardM = m;
     var old = document.getElementById('tg-aw'); if (old) old.remove();
     var bk = document.createElement('div'); bk.id = 'tg-aw'; bk.className = 'lg-cfm';
@@ -2929,7 +3018,7 @@
     pinClose: function () { S.pinFor = null; S.pin = null; renderVenues(document.getElementById('tg-body') || document.body); },
     copy: function (t) { try { navigator.clipboard.writeText(t); toast('Copied', 'success'); } catch (e) {} },
     saveDetails: saveDetails, sportHint: sportHint,
-    divKind: divKind, setEntrantMode: setEntrantMode, saveSetup: saveSetup, sideHint: sideHint, setDivFmt: setDivFmt, fmtInfo: fmtInfo, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, buildDivDraw: buildDivDraw, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
+    divKind: divKind, setEntrantMode: setEntrantMode, saveSetup: saveSetup, sideHint: sideHint, capHint: capHint, setDivFmt: setDivFmt, fmtInfo: fmtInfo, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, buildDivDraw: buildDivDraw, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, bulkAthletes: bulkAthletes, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit,
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
