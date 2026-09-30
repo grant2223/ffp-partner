@@ -138,7 +138,7 @@
       '.tg-lties{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:8px 16px;} .tg-tie{font-size:13.5px;font-weight:800;color:#33485a;font-variant-numeric:tabular-nums;} .tg-tie i{font-style:normal;font-weight:700;color:#9aa8b4;padding:0 2px;} .tg-tie.tg-none{font-weight:700;color:var(--ffp-text-muted);}',
       '.lg-fldbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .lg-fldchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--ffp-border-mid);border-radius:12px;padding:7px 11px;font-size:12.5px;font-weight:800;} .lg-fldchip .t{color:var(--ffp-text-muted);font-weight:700;} .lg-fldchip .x{color:#9aa8b4;font-size:16px;cursor:pointer;} .lg-fldchip.add{border-style:dashed;gap:4px;}',
       '.lg-srow{display:grid;grid-template-columns:1fr 132px 92px 120px 140px;gap:9px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .lg-srow .mt{font-size:13.5px;font-weight:800;color:var(--ffp-text);min-width:0;} .lg-srow .mt span{display:block;font-size:11px;color:var(--ffp-text-muted);font-weight:600;} .lg-srow .lg-in,.lg-srow .lg-sel{padding:8px 9px;font-size:12.5px;width:100%;}',
-      '.lg-brand{display:flex;gap:12px;align-items:stretch;} .lg-logo{width:76px;height:76px;flex:none;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:10px;font-weight:800;} .lg-logo .ms{font-size:22px;} .lg-banner{flex:1;height:76px;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:11px;font-weight:800;} .lg-banner .ms{font-size:22px;} .lg-row .act{margin-left:auto;color:#9aa8b4;font-size:19px;cursor:pointer;} .lg-banner16{width:100%;max-width:520px;aspect-ratio:16/9;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9aa8b4;cursor:pointer;font-size:12px;font-weight:800;} .lg-banner16 .ms{font-size:28px;} .lg-offadd{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;} .lg-offsrch{position:relative;} .lg-offres{margin-top:6px;display:flex;flex-direction:column;gap:4px;} .lg-offopt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid #e6ecf1;background:#fff;border-radius:11px;padding:8px 11px;cursor:pointer;} .lg-offopt .av{width:34px;height:34px;border-radius:8px;flex:none;background:#e7ecef center/cover no-repeat;} .lg-offopt .g{flex:1;min-width:0;} .lg-offopt .g b{font-size:14px;font-weight:800;color:#12232f;display:block;} .lg-offopt .g span{font-size:11.5px;color:#7c8b97;font-weight:600;} .lg-offopt .pk{font-size:12px;font-weight:800;color:#1980AD;} .lg-offnone{font-size:12.5px;color:#7c8b97;font-weight:600;padding:8px 4px;} .lg-offpicked{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#0a8f5f;padding:6px 4px;} .lg-offrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}',
+      '.lg-brand{display:flex;gap:12px;align-items:stretch;} .lg-logo{width:76px;height:76px;flex:none;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:10px;font-weight:800;} .lg-logo .ms{font-size:22px;} .lg-banner{flex:1;height:76px;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:11px;font-weight:800;} .lg-banner .ms{font-size:22px;} .lg-row .act{margin-left:auto;color:#9aa8b4;font-size:19px;cursor:pointer;} .lg-banner16{width:100%;max-width:520px;aspect-ratio:16/9;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9aa8b4;cursor:pointer;font-size:12px;font-weight:800;} .lg-banner16 .ms{font-size:28px;} .lg-offadd{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;} .lg-offsrch{position:relative;} .lg-offres{margin-top:6px;display:flex;flex-direction:column;gap:4px;} .lg-offopt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid #e6ecf1;background:#fff;border-radius:11px;padding:8px 11px;cursor:pointer;} .lg-offopt .av{width:34px;height:34px;border-radius:8px;flex:none;background:#e7ecef center/cover no-repeat;} .lg-offopt .g{flex:1;min-width:0;} .lg-offopt .g b{font-size:14px;font-weight:800;color:#12232f;display:block;} .lg-offopt .g span{font-size:11.5px;color:#7c8b97;font-weight:600;} .lg-offopt .pk{font-size:12px;font-weight:800;color:#1980AD;} .lg-offnone{font-size:12.5px;color:#7c8b97;font-weight:600;padding:8px 4px;} .lg-offpicked{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#0a8f5f;padding:6px 4px;} .lg-offrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;} .og-sec{padding:2px 0 16px;border-bottom:1px solid var(--ffp-border);margin-bottom:16px;} .og-hd{display:flex;align-items:flex-start;gap:11px;margin-bottom:12px;} .og-hd>.ms{font-size:21px;color:var(--ffp-purple,#0a3e44);opacity:.75;flex:none;margin-top:1px;} .og-hd .t{flex:1;min-width:0;} .og-hd .t b{display:block;font-size:15px;font-weight:900;color:var(--ffp-text);} .og-hd .t span{display:block;margin-top:3px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .og-pool{display:flex;flex-wrap:wrap;gap:8px;} .og-chip{display:inline-flex;align-items:center;gap:8px;padding:5px 11px 5px 5px;border:1px solid var(--ffp-border-mid);border-radius:999px;font-size:13px;font-weight:800;} .og-chip.noacct{border-style:dashed;} .og-chip .lg-av{width:26px;height:26px;font-size:10px;} .og-chip em{font-style:normal;font-size:17px;color:#9aa8b4;cursor:pointer;} .og-chip em:hover{color:var(--ffp-blue);} .og-foot{margin-top:11px;font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .og-crewwrap{background:var(--ffp-bg-3,#eef3f4);border-radius:14px;padding:16px 18px;} .og-lead{display:flex;align-items:flex-start;gap:11px;margin-bottom:6px;} .og-lead>.ms{font-size:21px;color:var(--ffp-purple,#0a3e44);opacity:.75;flex:none;margin-top:1px;} .og-lead b{display:block;font-size:15px;font-weight:900;} .og-lead span{display:block;margin-top:3px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .og-crew{margin-top:16px;padding-top:14px;border-top:1px solid var(--ffp-border-mid);} .og-crew:first-of-type{border-top:none;padding-top:4px;} .og-ch{display:flex;align-items:center;gap:9px;margin-bottom:6px;} .og-ch b{font-size:12px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;} .og-ch .app{font-size:12px;font-weight:700;color:var(--ffp-text-muted);} .og-ch .sp{flex:1;} .og-note{display:flex;gap:8px;align-items:flex-start;font-size:12px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;padding:2px 2px 0;} .og-note .ms{font-size:16px;flex:none;opacity:.6;} #tg-root .og-acc{max-width:190px;flex:none;} #tg-root .og-acc.on{border-color:var(--ffp-blue);background:#f2f8fb;color:#1b5f85;} .og-pick{margin:0 0 12px 46px;padding:12px 14px;border-left:2px solid var(--ffp-yellow,#FFCC00);background:#fff;border-radius:0 10px 10px 0;} .og-pickh{font-size:13px;font-weight:900;margin-bottom:8px;} .og-pl{font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--ffp-text-dim);margin:10px 0 4px;} .og-opt{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px solid #eef2f5;font-size:13px;font-weight:700;cursor:pointer;} .og-opt:last-of-type{border-bottom:none;} .og-opt input{width:17px;height:17px;flex:none;margin:0;} .og-opt span{flex:1;min-width:0;} .og-opt em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);} .og-pickb{display:flex;gap:9px;margin-top:12px;} .og-crew .lg-row .g b{display:block;} .og-crew .lg-row .g span{display:block;margin-top:1px;} .lg-pdf{display:flex;align-items:center;gap:12px;margin-top:10px;padding:12px 2px;border-top:1px solid var(--ffp-border);} .lg-pdf>.ms{font-size:22px;color:#9aa8b4;flex:none;} .lg-pdf.has>.ms{color:var(--ffp-blue);} .lg-pdf .g{flex:1;min-width:0;} .lg-pdf .g b{display:block;font-size:14px;font-weight:800;color:var(--ffp-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .lg-pdf .g span{display:block;margin-top:2px;font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-pdf .lg-btn{flex:none;text-decoration:none;} #tg-root .lg-pdf .x{flex:none;font-size:20px;color:#9aa8b4;cursor:pointer;padding:4px;} #tg-root .lg-pdf .x:hover{color:#c0392b;}',
       /* shared v7: crest / collapsible rounds / venues / schedule v2 / officials */
       '.lg-crest{width:32px;height:32px;border-radius:9px;flex:none;background:#241053 center/cover no-repeat;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.14);vertical-align:middle;}',
       '.lg-rnd{display:flex;align-items:center;gap:12px;margin:20px 0 2px;padding:12px 14px;background:linear-gradient(180deg,#f7fafc,#eef4f8);border:1px solid #e4edf3;border-radius:12px;cursor:pointer;user-select:none;} .lg-rnd:hover{background:linear-gradient(180deg,#f2f8fb,#e7f1f7);} .lg-rnd .chev{color:var(--ffp-blue);font-size:22px;transition:transform .2s;} .lg-rnd.collapsed .chev{transform:rotate(-90deg);} .lg-rnd .rt{font-size:14px;font-weight:900;color:var(--ffp-text);} .lg-rnd .rc{font-size:11px;font-weight:800;color:var(--ffp-blue);background:#e2eff6;padding:3px 10px;border-radius:20px;} .lg-rnd .rd{font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-rnd .sp{flex:1;} .lg-rbody.hidden{display:none;}',
@@ -676,31 +676,207 @@
   }
   async function loadEntrantsArr() { var r; try { r = await sb().rpc('tourn_roster', { p_division: S.divId }); } catch (e) { r = null; } S._entrants = (r && r.data) || []; return S._entrants; }
 
-  // ---------- OFFICIALS ----------
-  var CAPS = [['official', 'Match official'], ['scorer', 'Scorer only'], ['both', 'Match official + Scorer']];
-  function capOpts(sel) { return CAPS.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === sel ? ' selected' : '') + '>' + c[1] + '</option>'; }).join(''); }
-  function isScorerRole(r) { r = String(r || '').toLowerCase(); return r === 'scorer' || r === 'both'; }
+  // ---------- OFFICIALS & CREW ----------
+  /* TWO different kinds of person, and the panel must never let them read as
+     one list (Grant, locked).
+       OFFICIALS  an FFP account OR just a name and photo. Picked per match on
+                  the Schedule tab. Nothing opens on their phone.
+       CREW       Scorers and Livestream GFX. They sign in to an FFP app, so
+                  they can ONLY be picked from real FFP accounts - lt_official_add
+                  raises crew_needs_ffp_account otherwise - and each one carries
+                  an access scope: the whole event, or chosen days / matches. */
+  var CREW_KINDS = [['scorer', 'Scorers', 'opens FFP Scorer'],
+                    ['livestream', 'Livestream GFX', 'opens FFP GFX']];
+  function isCrewRole(r) { r = String(r || '').toLowerCase(); return r === 'scorer' || r === 'both' || r === 'livestream'; }
+  function crewKind(r) { return String(r || '').toLowerCase() === 'livestream' ? 'livestream' : 'scorer'; }
+  function fmtDay(s) {
+    try { return new Date(String(s) + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }); }
+    catch (e) { return String(s); }
+  }
+  function accessLabel(o) {
+    if (String(o.access || 'full') !== 'limited') return 'Full access';
+    var d = (o.days || []).length, m = (o.matches || []).length;
+    if (d && !m) return d === 1 ? fmtDay(o.days[0]) + ' only' : d + ' days only';
+    if (m && !d) return m === 1 ? '1 match only' : m + ' matches only';
+    if (d || m) return 'Limited';
+    return 'Limited (nothing picked)';
+  }
+  function accSel(o) {
+    var lim = String(o.access || 'full') === 'limited';
+    return '<select class="lg-sel og-acc' + (lim ? ' on' : '') + '" onchange="FFPTourn.setAccess(\'' + o.id + '\',this.value)">'
+      + '<option value="full"' + (lim ? '' : ' selected') + '>Full access</option>'
+      + '<option value="limited"' + (lim ? ' selected' : '') + '>' + esc(lim ? accessLabel(o) : 'Limited…') + '</option>'
+      + '</select>';
+  }
+  function ofAvatar(o) {
+    return '<span class="lg-av" style="' + (o.photo ? 'background-image:url(\'' + esc(o.photo) + '\')' : '') + '">'
+      + (o.photo ? '' : esc(String(o.name || o.email || '?').slice(0, 1).toUpperCase())) + '</span>';
+  }
+
   async function renderOfficials(host) {
-    var capSel = '<select class="lg-sel" id="tg-ofcap" style="max-width:210px">' + capOpts('official') + '</select>';
-    host.innerHTML = '<div class="lg-sub" style="margin-bottom:12px">Add each official to the pool and set what they can do. Their <b>match role</b> (referee, touch judge…) is set <b>per match</b> on the Schedule tab. <b>Only people with Scorer access</b> can enter scores from their FFP App — add their <b>FFP email</b> so their account links.</div>'
-      + '<div class="lg-offadd"><div class="lg-offsrch"><input class="lg-in" id="tg-ofname" autocomplete="off" placeholder="Name — search FFP members, or type a new name" oninput="FFPTourn.ofSearch(this.value)"><div id="tg-ofres" class="lg-offres"></div></div>'
-      + '<div class="lg-offrow"><input class="lg-in" id="tg-ofemail" placeholder="Or FFP email (for scorers)">' + capSel + '<button class="lg-btn pri" onclick="FFPTourn.addOfficial()">' + ic('add') + 'Add</button></div></div>'
-      + '<div id="tg-oflist"><div class="lg-empty">Loading…</div></div>';
+    host.innerHTML = '<div id="tg-ofwrap"><div class="lg-empty">Loading…</div></div>';
     var r; try { r = await sb().rpc('lt_officials_list', { p_scope: 'tourn', p_event: S.eventId }); } catch (e) { r = { error: e }; }
-    var rows = (r && r.data) || []; var h2 = document.getElementById('tg-oflist');
-    h2.innerHTML = rows.length ? rows.map(function (o) {
-      var role = String(o.role || 'official').toLowerCase(); var sc = isScorerRole(role);
-      var meta = sc
-        ? (o.member_id ? 'Can score in the app' : (o.email ? esc(o.email) + ', needs an FFP account to score' : 'Add their FFP email to enable scoring'))
-        : (o.member_id ? 'FFP linked' : (o.email ? esc(o.email) : 'Match official'));
-      return '<div class="lg-row"><span class="lg-av" style="' + (o.photo ? 'background-image:url(\'' + esc(o.photo) + '\')' : '') + '">' + (o.photo ? '' : esc((o.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(o.name || o.email || 'Official') + (sc ? ' <span class="lg-scpill">SCORER</span>' : '') + '</b><span>' + meta + '</span></div><select class="lg-sel lg-ocap" onchange="FFPTourn.setOfficialCap(\'' + o.id + '\',this.value)">' + capOpts(role) + '</select><span class="ms act" title="Replace photo" onclick="FFPTourn.ofPhoto(\'' + o.id + '\')">photo_camera</span><span class="ms act" onclick="FFPTourn.removeOfficial(\'' + o.id + '\')">close</span></div>';
-    }).join('') : '<div class="lg-empty">No officials yet.</div>';
+    var rows = (r && r.data) || []; S._officials = rows;
+    var wrap = document.getElementById('tg-ofwrap'); if (!wrap) return;
+    wrap.innerHTML = poolHtml(rows.filter(function (o) { return !isCrewRole(o.role); }))
+      + '<div class="og-crewwrap">'
+      + '<div class="og-lead">' + ic('smartphone') + '<div><b>Crew</b><span>Picked from FFP members only. Set how much of the event each one can reach.</span></div></div>'
+      + CREW_KINDS.map(function (k) {
+          return crewSecHtml(k, rows.filter(function (o) { return isCrewRole(o.role) && crewKind(o.role) === k[0]; }));
+        }).join('')
+      + '</div>';
+  }
+
+  function poolHtml(rows) {
+    var open = S.ofMode === 'pool';
+    return '<div class="og-sec">'
+      + '<div class="og-hd">' + ic('shield') + '<div class="t"><b>Officials</b><span>An FFP account, or just a name and photo. Picked per match on the Schedule tab.</span></div>'
+      + '<button class="lg-btn" onclick="FFPTourn.openAdd(' + (open ? 'null' : "'pool'") + ')">' + ic(open ? 'close' : 'add') + (open ? 'Cancel' : 'Add') + '</button></div>'
+      + (open ? addFormHtml('pool') : '')
+      + (rows.length
+          ? '<div class="og-pool">' + rows.map(function (o) {
+              return '<span class="og-chip' + (o.member_id ? '' : ' noacct') + '">' + ofAvatar(o)
+                + '<b>' + esc(o.name || o.email || 'Official') + '</b>'
+                + '<em class="ms" title="Photo" onclick="FFPTourn.ofPhoto(\'' + o.id + '\')">photo_camera</em>'
+                + '<em class="ms" onclick="FFPTourn.removeOfficial(\'' + o.id + '\')">close</em></span>';
+            }).join('') + '</div>'
+          : '<div class="lg-empty">No officials yet.</div>')
+      + '<div class="og-foot">They appear on the match sheet and the broadcast graphics. No app.</div>'
+      + '</div>';
+  }
+
+  function crewSecHtml(k, rows) {
+    var open = S.ofMode === k[0];
+    return '<div class="og-crew">'
+      + '<div class="og-ch"><b>' + esc(k[1]) + '</b><span class="app">' + esc(k[2]) + '</span><span class="sp"></span>'
+      + '<button class="lg-btn' + (open ? ' on' : '') + '" onclick="FFPTourn.openAdd(' + (open ? 'null' : "'" + k[0] + "'") + ')">'
+      + ic(open ? 'close' : 'add') + (open ? 'Cancel' : 'Add') + '</button></div>'
+      + (open ? addFormHtml(k[0]) : '')
+      + (rows.length ? rows.map(function (o) {
+          return '<div class="lg-row">' + ofAvatar(o)
+            + '<div class="g"><b>' + esc(o.name || 'Crew') + '</b><span>' + esc(o.email || 'FFP member') + '</span></div>'
+            + accSel(o)
+            + '<span class="ms act" onclick="FFPTourn.removeOfficial(\'' + o.id + '\')">close</span></div>'
+            + (S.accFor === o.id ? accPickerHtml(o) : '');
+        }).join('') : '<div class="lg-empty">Nobody yet.</div>')
+      + '</div>';
+  }
+
+  /* One add form, reused. For the pool a typed name is enough; for crew the
+     only way through is picking a real FFP member. */
+  function addFormHtml(mode) {
+    var crew = mode !== 'pool';
+    return '<div class="lg-offadd"><div class="lg-offsrch">'
+      + '<input class="lg-in" id="tg-ofname" autocomplete="off" placeholder="'
+      + (crew ? 'Search FFP members by name or email' : 'Search FFP members, or type a new name')
+      + '" oninput="FFPTourn.ofSearch(this.value)"><div id="tg-ofres" class="lg-offres"></div></div>'
+      + (crew ? '<div class="og-note">' + ic('info') + 'They must already have an FFP account. Someone without one registers at findfitpeople.com first.</div>'
+              : '<div class="lg-offrow"><button class="lg-btn pri" onclick="FFPTourn.addPoolOfficial()">' + ic('add') + 'Add to the pool</button></div>')
+      + '</div>';
+  }
+
+  function openAdd(mode) { S.ofMode = mode || null; S._ofSel = null; S._ofRes = []; S.accFor = null; renderTab(); }
+
+  var _ofTmr;
+  function ofSearch(q) {
+    S._ofSel = null;
+    clearTimeout(_ofTmr);
+    if (!q || q.trim().length < 2) { S._ofRes = []; var el0 = document.getElementById('tg-ofres'); if (el0) el0.innerHTML = ''; return; }
+    _ofTmr = setTimeout(async function () {
+      var r; try { r = await sb().rpc('lt_member_search', { p_q: q.trim() }); } catch (e) { r = null; }
+      S._ofRes = (r && r.data) || [];
+      var el = document.getElementById('tg-ofres'); if (!el) return;
+      var crew = S.ofMode && S.ofMode !== 'pool';
+      el.innerHTML = S._ofRes.length ? S._ofRes.map(function (m) {
+        return '<button type="button" class="lg-offopt" onclick="FFPTourn.ofPick(\'' + m.id + '\')"><span class="av" style="' + (m.photo ? 'background-image:url(\'' + esc(m.photo) + '\')' : '') + '"></span><span class="g"><b>' + esc(m.name) + '</b><span>' + esc([m.city, m.email_hint].filter(Boolean).join(', ')) + '</span></span><span class="pk">' + (crew ? 'Add' : 'Select') + '</span></button>';
+      }).join('') : '<div class="lg-offnone">' + (crew
+        ? 'No FFP account for that name. They register at findfitpeople.com first.'
+        : 'No FFP member found — you can still add this name.') + '</div>';
+    }, 300);
+  }
+
+  async function ofPick(id) {
+    var m = (S._ofRes || []).find(function (x) { return x.id === id; }); if (!m) return;
+    if (S.ofMode && S.ofMode !== 'pool') { await addCrew(m); return; }   // crew: one tap adds
+    S._ofSel = { member_id: m.id, name: m.name };
+    var nmI = document.getElementById('tg-ofname'); if (nmI) nmI.value = m.name;
+    var el = document.getElementById('tg-ofres'); if (el) el.innerHTML = '<div class="lg-offpicked">' + ic('check') + esc(m.name) + ' — FFP member linked</div>';
+  }
+
+  async function addCrew(m) {
+    var role = S.ofMode;
+    var r; try { r = await sb().rpc('lt_official_add', { p_scope: 'tourn', p_event: S.eventId, p_member: m.id, p_name: m.name, p_email: null, p_role: role }); }
+    catch (e) { r = { error: e }; }
+    if (r && r.error) {
+      toast(/crew_needs_ffp_account/.test(String(r.error.message || r.error)) ? 'That person has no FFP account' : 'Could not add', 'error');
+      return;
+    }
+    S.ofMode = null; S._ofSel = null; S._ofRes = [];
+    toast('Added', 'success'); renderTab();
+  }
+
+  async function addPoolOfficial() {
+    var sel = S._ofSel, nm = ((document.getElementById('tg-ofname') || {}).value || '').trim();
+    if (!sel && !nm) return;
+    var r; try {
+      r = await sb().rpc('lt_official_add', sel && sel.member_id
+        ? { p_scope: 'tourn', p_event: S.eventId, p_member: sel.member_id, p_name: sel.name || nm, p_email: null, p_role: 'official' }
+        : { p_scope: 'tourn', p_event: S.eventId, p_member: null, p_name: nm, p_email: null, p_role: 'official' });
+    } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not add', 'error'); return; }
+    S.ofMode = null; S._ofSel = null; S._ofRes = [];
+    toast('Added', 'success'); renderTab();
+  }
+
+  // ---- access scope ----
+  async function setAccess(id, val) {
+    if (val === 'full') {
+      var r; try { r = await sb().rpc('lt_official_set_access', { p_id: id, p_access: 'full', p_days: null, p_matches: null }); } catch (e) { r = { error: e }; }
+      if (r && r.error) { toast('Could not update', 'error'); return; }
+      S.accFor = null; toast('Full access', 'success'); renderTab(); return;
+    }
+    var o = (S._officials || []).find(function (x) { return x.id === id; }) || {};
+    S.accFor = id;
+    S.accDays = (o.days || []).slice();
+    S.accMatches = (o.matches || []).slice();
+    if (!S._days) {
+      try { var d = await sb().rpc('lt_event_days', { p_scope: 'tourn', p_event: S.eventId }); S._days = (d && d.data) || []; } catch (e) { S._days = []; }
+      try { var mm = await sb().rpc('lt_event_matches', { p_scope: 'tourn', p_event: S.eventId }); S._matches = (mm && mm.data) || []; } catch (e) { S._matches = []; }
+    }
+    renderTab();
+  }
+  function accPickerHtml(o) {
+    var days = S._days || [], ms = S._matches || [];
+    return '<div class="og-pick">'
+      + '<div class="og-pickh">What can ' + esc((o.name || 'they').split(' ')[0]) + ' reach?</div>'
+      + (days.length ? '<div class="og-pl">Days</div>' + days.map(function (d) {
+          var on = (S.accDays || []).indexOf(d.day) >= 0;
+          return '<label class="og-opt"><input type="checkbox"' + (on ? ' checked' : '') + ' onchange="FFPTourn.accDay(\'' + d.day + '\')"><span>' + esc(fmtDay(d.day)) + '</span><em>' + d.n + ' matches</em></label>';
+        }).join('') : '')
+      + (ms.length ? '<div class="og-pl">Or single matches</div>' + ms.slice(0, 60).map(function (m) {
+          var on = (S.accMatches || []).indexOf(m.id) >= 0;
+          return '<label class="og-opt"><input type="checkbox"' + (on ? ' checked' : '') + ' onchange="FFPTourn.accMatch(\'' + m.id + '\')"><span>' + esc(m.home + ' v ' + m.away) + '</span><em>' + esc(m.division || '') + '</em></label>';
+        }).join('') : '')
+      + '<div class="og-pickb"><button class="lg-btn pri" onclick="FFPTourn.accSave()">' + ic('check') + 'Save access</button>'
+      + '<button class="lg-btn" onclick="FFPTourn.accCancel()">Cancel</button></div></div>';
+  }
+  function accDay(d) { S.accDays = S.accDays || []; var i = S.accDays.indexOf(d); if (i >= 0) S.accDays.splice(i, 1); else S.accDays.push(d); }
+  function accMatch(id) { S.accMatches = S.accMatches || []; var i = S.accMatches.indexOf(id); if (i >= 0) S.accMatches.splice(i, 1); else S.accMatches.push(id); }
+  function accCancel() { S.accFor = null; renderTab(); }
+  async function accSave() {
+    var id = S.accFor; if (!id) return;
+    if (!(S.accDays || []).length && !(S.accMatches || []).length) { toast('Pick at least one day or match', 'error'); return; }
+    var r; try {
+      r = await sb().rpc('lt_official_set_access', { p_id: id, p_access: 'limited', p_days: S.accDays || [], p_matches: S.accMatches || [] });
+    } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not save access', 'error'); return; }
+    S.accFor = null; toast('Access saved', 'success'); renderTab();
   }
 
   /* An official's photo. It shows beside them on the match screen in the app
      and fills their cell on the broadcast officials card. An official linked
      to an FFP account already falls back to their profile picture, so this is
-     only needed for someone without one — or to override it. */
+     only needed for someone without one - or to override it. */
   function ofPhoto(id) {
     if (!window.FFPUpload) { toast('Uploader not ready — refresh', 'error'); return; }
     window.FFPUpload.pick({
@@ -715,40 +891,6 @@
       onError: function () { toast('Upload failed', 'error'); }
     });
   }
-  var _ofTmr;
-  function ofSearch(q) {
-    S._ofSel = null;
-    clearTimeout(_ofTmr);
-    if (!q || q.trim().length < 2) { S._ofRes = []; var el0 = document.getElementById('tg-ofres'); if (el0) el0.innerHTML = ''; return; }
-    _ofTmr = setTimeout(async function () {
-      var r; try { r = await sb().rpc('lt_member_search', { p_q: q.trim() }); } catch (e) { r = null; }
-      S._ofRes = (r && r.data) || [];
-      var el = document.getElementById('tg-ofres'); if (!el) return;
-      el.innerHTML = S._ofRes.length ? S._ofRes.map(function (m) {
-        return '<button type="button" class="lg-offopt" onclick="FFPTourn.ofPick(\'' + m.id + '\')"><span class="av" style="' + (m.photo ? 'background-image:url(\'' + esc(m.photo) + '\')' : '') + '"></span><span class="g"><b>' + esc(m.name) + '</b><span>' + esc([m.city, m.email_hint].filter(Boolean).join(', ')) + '</span></span><span class="pk">Select</span></button>';
-      }).join('') : '<div class="lg-offnone">No FFP member found — you can still add this name, or use their email.</div>';
-    }, 300);
-  }
-  function ofPick(id) {
-    var m = (S._ofRes || []).find(function (x) { return x.id === id; }); if (!m) return;
-    S._ofSel = { member_id: m.id, name: m.name };
-    var nmI = document.getElementById('tg-ofname'); if (nmI) nmI.value = m.name;
-    var el = document.getElementById('tg-ofres'); if (el) el.innerHTML = '<div class="lg-offpicked">' + ic('check') + esc(m.name) + ' — FFP member linked</div>';
-  }
-  async function addOfficial() {
-    var sel = S._ofSel;
-    var nm = (document.getElementById('tg-ofname') || {}).value, em = (document.getElementById('tg-ofemail') || {}).value, cap = (document.getElementById('tg-ofcap') || {}).value || 'official';
-    if (sel && sel.member_id) {
-      var r0; try { r0 = await sb().rpc('lt_official_add', { p_scope: 'tourn', p_event: S.eventId, p_member: sel.member_id, p_name: sel.name || nm, p_email: null, p_role: cap }); } catch (e) { r0 = { error: e }; }
-      if (r0 && r0.error) { toast('Could not add', 'error'); return; }
-      S._ofSel = null; S._ofRes = []; toast('Official added', 'success'); renderTab(); return;
-    }
-    if (!nm && !em) return;
-    if (isScorerRole(cap) && !em) { toast('Scorer access needs their FFP email to link their account', 'error'); return; }
-    var r; try { r = await sb().rpc('lt_official_add', { p_scope: 'tourn', p_event: S.eventId, p_member: null, p_name: nm, p_email: em, p_role: cap }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not add', 'error'); return; } toast('Added', 'success'); renderTab();
-  }
-  async function setOfficialCap(id, cap) { var r; try { r = await sb().rpc('lt_official_set_role', { p_id: id, p_role: cap }); } catch (e) { r = { error: e }; } if (r && r.error) { toast('Could not update', 'error'); return; } toast('Updated', 'success'); renderTab(); }
   async function removeOfficial(id) { await sb().rpc('lt_official_remove', { p_id: id }); renderTab(); }
 
   // ---------- VENUES ----------
@@ -1539,7 +1681,8 @@
       + '<div class="lg-fld"><div class="lg-lab">How to pay <span style="font-weight:500;color:#8a99a8;">\u2014 shown after they sign up</span></div>'
       +   '<textarea class="lg-in" id="tg-payhow" rows="2" placeholder="Bank transfer to\u2026 , or pay on the day at the desk">' + esc(ev.pay_instructions || '') + '</textarea></div>'
       + '<div class="lg-fld"><div class="lg-lab">About</div><textarea class="lg-in" id="tg-desc" rows="3">' + esc(ev.description || '') + '</textarea></div>'
-      + '<div class="lg-fld"><div class="lg-lab">Rules</div><textarea class="lg-in" id="tg-rules" rows="3">' + esc(ev.rules || '') + '</textarea></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Rules</div><textarea class="lg-in" id="tg-rules" rows="3">' + esc(ev.rules || '') + '</textarea>'
+      +   '<div id="tg-pdfwrap">' + rulesPdfHtml(ev) + '</div></div>'
       + '<div class="lg-fld"><div class="lg-lab">Live stream URL <span style="font-weight:500;color:#8a99a8;">— the tournament\'s main channel, YouTube, Twitch or Facebook</span></div><input class="lg-in" id="tg-stream" value="' + esc(ev.stream_url || '') + '" placeholder="https://…"></div>'
       + '<button class="lg-btn pri" onclick="FFPTourn.saveDetails()">' + ic('check') + 'Save</button>'
       + endBlock(ev);
@@ -2977,6 +3120,91 @@
     toast(n + ' saved, winners advanced', 'success'); renderTab();
   }
 
+
+  // ---------- RULES PDF ----------
+  // The typed Rules box carries the short version. Organisers also hand out a
+  // real rulebook, so ONE PDF rides with the tournament: the file goes to the
+  // event-docs bucket (PDF only, 20 MB, public read, write scoped to the
+  // uploader's own folder) and its URL lands on tourn_set_rules_pdf, which the
+  // detail RPC already returns inside `event`. Same shape as the logo/banner
+  // uploads: pick, store, save, reopen.
+  function rulesPdfHtml(ev) {
+    if (S.pdfBusy) {
+      return '<div class="lg-pdf">' + ic('description')
+        + '<div class="g"><b>Uploading\u2026</b><span>' + esc(S.pdfBusy) + '</span></div></div>';
+    }
+    if (ev && ev.rules_pdf_url) {
+      return '<div class="lg-pdf has">' + ic('description')
+        + '<div class="g"><b>' + esc(ev.rules_pdf_name || 'Rules.pdf') + '</b>'
+        + '<span>Entrants can open this from the app</span></div>'
+        + '<a class="lg-btn" href="' + esc(ev.rules_pdf_url) + '" target="_blank" rel="noopener">'
+        + ic('open_in_new') + 'View</a>'
+        + '<span class="ms x" title="Remove" onclick="FFPTourn.removeRulesPdf()">close</span></div>';
+    }
+    return '<div class="lg-pdf">' + ic('description')
+      + '<div class="g"><b>No rules PDF</b><span>PDF up to 20 MB, sits with the rules in the app</span></div>'
+      + '<button class="lg-btn" onclick="FFPTourn.pickRulesPdf()">' + ic('upload_file') + 'Attach PDF</button></div>';
+  }
+  // Repaint just the strip, so an upload in progress does not wipe whatever the
+  // organiser has typed into the other fields on this tab.
+  function paintRulesPdf() {
+    var h = document.getElementById('tg-pdfwrap');
+    if (h) h.innerHTML = rulesPdfHtml((S.detail && S.detail.event) || {});
+  }
+  function pickRulesPdf() {
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'application/pdf,.pdf'; inp.style.display = 'none';
+    inp.addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0];
+      if (inp.parentNode) inp.parentNode.removeChild(inp);
+      if (f) uploadRulesPdf(f);
+    });
+    document.body.appendChild(inp); inp.click();
+  }
+  // The shared image uploader cannot carry this: it hardcodes image/jpeg and a
+  // .jpg path, and rejects anything that is not an image. So this is a direct
+  // owner-scoped storage write, which is what a provider session can do.
+  async function uploadRulesPdf(f) {
+    if (!((f.type === 'application/pdf') || /\.pdf$/i.test(f.name || ''))) { toast('That file is not a PDF', 'error'); return; }
+    if (f.size > 20 * 1024 * 1024) { toast('That PDF is over 20 MB', 'error'); return; }
+    var uid = pdfOwnerId();
+    if (!uid) { toast('Please sign in again', 'error'); return; }
+    S.pdfBusy = f.name; paintRulesPdf();
+    var path = uid + '/tgrules-' + S.eventId + '-' + Date.now() + '.pdf';
+    try {
+      var up = await sb().storage.from('event-docs').upload(path, f, { contentType: 'application/pdf', upsert: true, cacheControl: '3600' });
+      if (up && up.error) throw up.error;
+      var pub = sb().storage.from('event-docs').getPublicUrl(path);
+      var url = pub && pub.data && pub.data.publicUrl;
+      if (!url) throw new Error('no_public_url');
+      var r = await sb().rpc('tourn_set_rules_pdf', { p_event: S.eventId, p_url: url, p_name: f.name });
+      if (r && r.error) throw r.error;
+    } catch (e) { S.pdfBusy = null; paintRulesPdf(); toast('Upload failed', 'error'); return; }
+    S.pdfBusy = null; toast('Rules PDF attached', 'success'); open(S.eventId);
+  }
+  async function removeRulesPdf() {
+    var r; try { r = await sb().rpc('tourn_set_rules_pdf', { p_event: S.eventId, p_url: null, p_name: null }); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not remove', 'error'); return; }
+    toast('Rules PDF removed', 'success'); open(S.eventId);
+  }
+  // The storage path must begin with auth.uid(), which is the JWT `sub`. A
+  // provider's record id is not always that value, and a mismatch is a 400 on
+  // upload, so read the claim itself.
+  function pdfOwnerId() {
+    try {
+      var tok = window.FFPAuth && window.FFPAuth.getToken && window.FFPAuth.getToken();
+      if (tok) {
+        var parts = String(tok).split('.');
+        if (parts.length === 3) {
+          var b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          while (b64.length % 4) b64 += '=';
+          var pl = JSON.parse(atob(b64));
+          if (pl && pl.sub) return String(pl.sub);
+        }
+      }
+    } catch (e) {}
+    try { var m = window.FFPAuth && window.FFPAuth.getMember && window.FFPAuth.getMember(); return (m && m.id) || null; } catch (e2) { return null; }
+  }
   function pickImg(kind) {
     if (!window.FFPUpload) { toast('Uploader not ready — refresh', 'error'); return; }
     var isLogo = kind === 'logo';
@@ -3385,7 +3613,7 @@
 
   // Printed on load so a deploy can be confirmed in one look, without
   // guessing from the screen: open the console and read this line.
-  var BUILD = '2026-09-29.3';
+  var BUILD = '2026-09-30.2';
   console.log('[FFP Tournaments] build ' + BUILD);
   window.FFPTourn = {
     rulesHint: rulesHint,
@@ -3396,6 +3624,8 @@
     setDiv: function (val, tab) { if (S.divId !== val) S.drawKey = null; S.divId = val; S.tab = tab; S.entEdit = null; S.entDel = null; S.sqOpen = null; renderTab(); },
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
     statusPick: statusPick, eventState: eventState, eventDelete: eventDelete, toggleArchived: toggleArchived,
+    openAdd: openAdd, addPoolOfficial: addPoolOfficial,
+    setAccess: setAccess, accDay: accDay, accMatch: accMatch, accSave: accSave, accCancel: accCancel,
     pinPanel: async function (fid, nm) {
       S.pinFor = fid; S.pin = {}; renderVenues(document.getElementById('tg-body') || document.body);
       var r; try { r = await sb().rpc('tablet_pair_start', { p_court: null, p_field: fid }); } catch (e) { r = { error: e }; }
@@ -3426,7 +3656,7 @@
     sqToggle: sqToggle, sqSearch: sqSearch, sqAddMember: sqAddMember, sqNameOnly: sqNameOnly, sqInvite: sqInvite, sqRemove: sqRemove,
     doGroups: doGroups, saveGroupResults: saveGroupResults,
     confirmBracket: confirmBracket, cancelBracket: cancelBracket, doBracket: doBracket, monradOpen: monradOpen, setDrawFormat: setDrawFormat, setSideDraws: setSideDraws, setDraw: setDraw, monradRound: monradRound, awardPanel: awardPanel, doAward: doAward, saveBracketResults: saveBracketResults,
-    pickImg: pickImg, entLogo: entLogo, addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap, ofPhoto: ofPhoto,
+    pickImg: pickImg, pickRulesPdf: pickRulesPdf, removeRulesPdf: removeRulesPdf, entLogo: entLogo, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, ofPhoto: ofPhoto,
     autoplan: autoplan, schedSet: schedSet,
     setSchedDiv: setSchedDiv, planSet: planSet, setAddDiv: setAddDiv, applyBreaks: applyBreaks,
     openDivDraw: openDivDraw, openDrawCancel: openDrawCancel,
