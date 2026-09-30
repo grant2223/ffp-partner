@@ -34,7 +34,7 @@
     return nouns({ kind: kinds[0] || 'team' });
   }
 
-  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, fxConfirm: false };
+  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, rb: null, rbDiv: null, rbInfo: null, rbByes: null };
 
   function injectCss() {
     if (document.getElementById('lgb-css')) return;
@@ -134,7 +134,7 @@
       '.lg-fx{display:grid;grid-template-columns:1fr 128px 1fr;align-items:center;gap:8px;padding:11px 2px;border-bottom:1px solid var(--ffp-border);} .lg-fx .t{font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .lg-fx .t.a{text-align:right;} .lg-fx .sc{display:flex;gap:6px;justify-content:center;} .lg-fx .sc input{width:46px;padding:8px;border:1.5px solid #d7dee5;border-radius:8px;font:inherit;font-weight:800;text-align:center;}',
       '.lg-rndlab{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:var(--ffp-text-muted);margin:16px 0 4px;}',
       '.lg-tb{display:grid;grid-template-columns:26px 1fr 30px 30px 30px 44px 40px;align-items:center;gap:6px;padding:10px 6px;border-bottom:1px solid var(--ffp-border);font-size:13px;} .lg-tb span{text-align:center;} .lg-tb .nm{text-align:left;font-weight:800;} .lg-tb.head{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--ffp-text-muted);} .lg-tb .pts{font-weight:900;color:var(--ffp-blue);}',
-      '.lg-brand{display:flex;gap:12px;align-items:stretch;} .lg-logo{width:76px;height:76px;flex:none;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:10px;font-weight:800;} .lg-logo .ms{font-size:22px;} .lg-banner{flex:1;height:76px;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:11px;font-weight:800;} .lg-banner .ms{font-size:22px;} .lg-row .act{margin-left:auto;color:#9aa8b4;font-size:19px;cursor:pointer;} .lg-banner16{width:100%;max-width:520px;aspect-ratio:16/9;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9aa8b4;cursor:pointer;font-size:12px;font-weight:800;} .lg-banner16 .ms{font-size:28px;} .lg-offadd{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;} .lg-offsrch{position:relative;} .lg-offres{margin-top:6px;display:flex;flex-direction:column;gap:4px;} .lg-offopt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid #e6ecf1;background:#fff;border-radius:11px;padding:8px 11px;cursor:pointer;} .lg-offopt .av{width:34px;height:34px;border-radius:8px;flex:none;background:#e7ecef center/cover no-repeat;} .lg-offopt .g{flex:1;min-width:0;} .lg-offopt .g b{font-size:14px;font-weight:800;color:#12232f;display:block;} .lg-offopt .g span{font-size:11.5px;color:#7c8b97;font-weight:600;} .lg-offopt .pk{font-size:12px;font-weight:800;color:#1980AD;} .lg-offnone{font-size:12.5px;color:#7c8b97;font-weight:600;padding:8px 4px;} .lg-offpicked{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#0a8f5f;padding:6px 4px;} .lg-offrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}',
+      '.lg-brand{display:flex;gap:12px;align-items:stretch;} .lg-logo{width:76px;height:76px;flex:none;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:10px;font-weight:800;} .lg-logo .ms{font-size:22px;} .lg-banner{flex:1;height:76px;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:11px;font-weight:800;} .lg-banner .ms{font-size:22px;} .lg-row .act{margin-left:auto;color:#9aa8b4;font-size:19px;cursor:pointer;} .lg-banner16{width:100%;max-width:520px;aspect-ratio:16/9;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9aa8b4;cursor:pointer;font-size:12px;font-weight:800;} .lg-banner16 .ms{font-size:28px;} .lg-offadd{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;} .lg-offsrch{position:relative;} .lg-offres{margin-top:6px;display:flex;flex-direction:column;gap:4px;} .lg-offopt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid #e6ecf1;background:#fff;border-radius:11px;padding:8px 11px;cursor:pointer;} .lg-offopt .av{width:34px;height:34px;border-radius:8px;flex:none;background:#e7ecef center/cover no-repeat;} .lg-offopt .g{flex:1;min-width:0;} .lg-offopt .g b{font-size:14px;font-weight:800;color:#12232f;display:block;} .lg-offopt .g span{font-size:11.5px;color:#7c8b97;font-weight:600;} .lg-offopt .pk{font-size:12px;font-weight:800;color:#1980AD;} .lg-offnone{font-size:12.5px;color:#7c8b97;font-weight:600;padding:8px 4px;} .lg-offpicked{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#0a8f5f;padding:6px 4px;} .lg-offrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;} .og-sec{padding:2px 0 16px;border-bottom:1px solid var(--ffp-border);margin-bottom:16px;} .og-hd{display:flex;align-items:flex-start;gap:11px;margin-bottom:12px;} .og-hd>.ms{font-size:21px;color:var(--ffp-purple,#0a3e44);opacity:.75;flex:none;margin-top:1px;} .og-hd .t{flex:1;min-width:0;} .og-hd .t b{display:block;font-size:15px;font-weight:900;color:var(--ffp-text);} .og-hd .t span{display:block;margin-top:3px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .og-pool{display:flex;flex-wrap:wrap;gap:8px;} .og-chip{display:inline-flex;align-items:center;gap:8px;padding:5px 11px 5px 5px;border:1px solid var(--ffp-border-mid);border-radius:999px;font-size:13px;font-weight:800;} .og-chip.noacct{border-style:dashed;} .og-chip .lg-av{width:26px;height:26px;font-size:10px;} .og-chip em{font-style:normal;font-size:17px;color:#9aa8b4;cursor:pointer;} .og-chip em:hover{color:var(--ffp-blue);} .og-foot{margin-top:11px;font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .og-crewwrap{background:var(--ffp-bg-3,#eef3f4);border-radius:14px;padding:16px 18px;} .og-lead{display:flex;align-items:flex-start;gap:11px;margin-bottom:6px;} .og-lead>.ms{font-size:21px;color:var(--ffp-purple,#0a3e44);opacity:.75;flex:none;margin-top:1px;} .og-lead b{display:block;font-size:15px;font-weight:900;} .og-lead span{display:block;margin-top:3px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .og-crew{margin-top:16px;padding-top:14px;border-top:1px solid var(--ffp-border-mid);} .og-crew:first-of-type{border-top:none;padding-top:4px;} .og-ch{display:flex;align-items:center;gap:9px;margin-bottom:6px;} .og-ch b{font-size:12px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;} .og-ch .app{font-size:12px;font-weight:700;color:var(--ffp-text-muted);} .og-ch .sp{flex:1;} .og-note{display:flex;gap:8px;align-items:flex-start;font-size:12px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;padding:2px 2px 0;} .og-note .ms{font-size:16px;flex:none;opacity:.6;} #lg-root .og-acc{max-width:190px;flex:none;} #lg-root .og-acc.on{border-color:var(--ffp-blue);background:#f2f8fb;color:#1b5f85;} .og-pick{margin:0 0 12px 46px;padding:12px 14px;border-left:2px solid var(--ffp-yellow,#FFCC00);background:#fff;border-radius:0 10px 10px 0;} .og-pickh{font-size:13px;font-weight:900;margin-bottom:8px;} .og-pl{font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--ffp-text-dim);margin:10px 0 4px;} .og-opt{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px solid #eef2f5;font-size:13px;font-weight:700;cursor:pointer;} .og-opt:last-of-type{border-bottom:none;} .og-opt input{width:17px;height:17px;flex:none;margin:0;} .og-opt span{flex:1;min-width:0;} .og-opt em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);} .og-pickb{display:flex;gap:9px;margin-top:12px;} .og-crew .lg-row .g b{display:block;} .og-crew .lg-row .g span{display:block;margin-top:1px;} .lg-pdf{display:flex;align-items:center;gap:12px;margin-top:10px;padding:12px 2px;border-top:1px solid var(--ffp-border);} .lg-pdf>.ms{font-size:22px;color:#9aa8b4;flex:none;} .lg-pdf.has>.ms{color:var(--ffp-blue);} .lg-pdf .g{flex:1;min-width:0;} .lg-pdf .g b{display:block;font-size:14px;font-weight:800;color:var(--ffp-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .lg-pdf .g span{display:block;margin-top:2px;font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-pdf .lg-btn{flex:none;text-decoration:none;} #lg-root .lg-pdf .x{flex:none;font-size:20px;color:#9aa8b4;cursor:pointer;padding:4px;} #lg-root .lg-pdf .x:hover{color:#c0392b;} .lg-cfm-in.rb-wide{max-width:560px;text-align:left;align-items:stretch;} .rb-t{font-size:23px;font-weight:900;color:#12232f;} .rb-lead{font-size:13.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.55;margin:10px 0 20px;} #lg-root .rb-dv{width:auto;min-width:200px;margin:0 0 18px;} .rb-ch{display:flex;align-items:flex-start;gap:15px;width:100%;text-align:left;padding:17px 4px;border:none;border-top:1px solid var(--ffp-border);background:none;font:inherit;cursor:pointer;} .rb-ch:last-of-type{border-bottom:1px solid var(--ffp-border);} .rb-ch>.ms{font-size:24px;color:var(--ffp-blue);flex:none;margin-top:1px;} .rb-ch .g{flex:1;min-width:0;} .rb-ch .g b{display:block;font-size:15.5px;font-weight:900;color:var(--ffp-text);} .rb-ch .g span{display:block;margin-top:4px;font-size:13px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .rb-ch .g em{display:block;margin-top:7px;font-style:normal;font-size:12.5px;font-weight:800;color:var(--ffp-gold,#c79a2e);} .rb-ch>.go{font-size:20px;color:#b9c6cb;flex:none;align-self:center;} .rb-ch:hover:not(.off){background:#f7fafb;} .rb-ch.off{cursor:not-allowed;} .rb-ch.off>.ms,.rb-ch.off .g b{color:#a8b6bb;} .rb-ch.off .g span{color:#b3c0c5;} .rb-ch.off .g em{color:#8b9a9f;font-weight:700;} .rb-ch.off>.go{visibility:hidden;} .rb-a{display:flex;gap:12px;margin-top:28px;width:100%;} .rb-a.one .lg-btn{flex:none;} .rb-a .lg-btn{flex:1;justify-content:center;} .rb-by{display:flex;align-items:center;gap:14px;padding:11px 4px;border-top:1px solid var(--ffp-border);} .rb-by:last-of-type{border-bottom:1px solid var(--ffp-border);} .rb-by .r{width:92px;flex:none;font-size:13px;font-weight:900;color:var(--ffp-text);} .rb-by .d{flex:none;width:118px;font-size:12px;font-weight:700;color:var(--ffp-text-dim);} #lg-root .rb-by .lg-sel{flex:1;min-width:0;height:42px;padding:0 12px;font-size:14px;} .rb-by.lock{opacity:.55;} #lg-root .rb-by.lock .lg-sel{background:#f2f5f6;color:#6d8088;} .rb-by .pl{flex:none;width:58px;text-align:right;font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:var(--ffp-gold,#c79a2e);} .rb-note{display:flex;gap:9px;align-items:flex-start;margin-top:16px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.55;} .rb-note .ms{font-size:17px;flex:none;opacity:.6;color:var(--ffp-blue);} .rb-kept{display:flex;gap:9px;align-items:flex-start;margin-top:18px;padding-top:16px;border-top:1px solid var(--ffp-border);font-size:13px;font-weight:700;color:#3d4f56;line-height:1.5;text-align:left;} .rb-kept .ms{font-size:19px;flex:none;color:var(--ffp-gold,#c79a2e);}',
       '.lg-fldbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .lg-fldchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--ffp-border-mid);border-radius:12px;padding:7px 11px;font-size:12.5px;font-weight:800;} .lg-fldchip .t{color:var(--ffp-text-muted);font-weight:700;} .lg-fldchip .x{color:#9aa8b4;font-size:16px;cursor:pointer;} .lg-fldchip.add{border-style:dashed;gap:4px;}',
       '.lg-srow{display:grid;grid-template-columns:1fr 132px 92px 120px 140px;gap:9px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .lg-srow .mt{font-size:13.5px;font-weight:800;color:var(--ffp-text);min-width:0;} .lg-srow .mt span{display:block;font-size:11px;color:var(--ffp-text-muted);font-weight:600;} .lg-srow .lg-in,.lg-srow .lg-sel{padding:8px 9px;font-size:12.5px;width:100%;}',
       /* crest + fixtures v2 */
@@ -372,7 +372,7 @@
        'information' and this was never updated, so opening a league, or
        saving anything (both saveDetails and saveSport call open()), left
        every branch unmatched and the body blank. */
-    S.eventId = id; S.view = 'editor'; S.tab = 'information'; S.divEdit = null; S.entAdd = false; S.fxConfirm = false;
+    S.eventId = id; S.view = 'editor'; S.tab = 'information'; S.divEdit = null; S.entAdd = false;
     S.plan = null; S._autoPlanned = false;   // a different event, a different playing day
     var r; try { r = await sb().rpc('league_detail', { p_league: id }); } catch (e) { r = { error: e }; }
     S.detail = (r && r.data) || null;
@@ -542,28 +542,207 @@
   }
   async function loadEntrants() { var r; try { r = await sb().rpc('league_roster', { p_division: S.divId }); } catch (e) { r = null; } S._entrants = (r && r.data) || []; return S._entrants; }
 
-  // ---------- OFFICIALS ----------
+  // ---------- OFFICIALS & CREW ----------
+  /* TWO different kinds of person, and the panel must never let them read as
+     one list (Grant, locked).
+       OFFICIALS  an FFP account OR just a name and photo. Picked per match on
+                  the Schedule tab. Nothing opens on their phone.
+       CREW       Scorers and Livestream GFX. They sign in to an FFP app, so
+                  they can ONLY be picked from real FFP accounts - lt_official_add
+                  raises crew_needs_ffp_account otherwise - and each one carries
+                  an access scope: the whole event, or chosen days / matches. */
+  var CREW_KINDS = [['scorer', 'Scorers', 'opens FFP Scorer'],
+                    ['livestream', 'Livestream GFX', 'opens FFP GFX']];
+  function isCrewRole(r) { r = String(r || '').toLowerCase(); return r === 'scorer' || r === 'both' || r === 'livestream'; }
+  function crewKind(r) { return String(r || '').toLowerCase() === 'livestream' ? 'livestream' : 'scorer'; }
+  function fmtDay(s) {
+    try { return new Date(String(s) + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }); }
+    catch (e) { return String(s); }
+  }
+  function accessLabel(o) {
+    if (String(o.access || 'full') !== 'limited') return 'Full access';
+    var d = (o.days || []).length, m = (o.matches || []).length;
+    if (d && !m) return d === 1 ? fmtDay(o.days[0]) + ' only' : d + ' days only';
+    if (m && !d) return m === 1 ? '1 match only' : m + ' matches only';
+    if (d || m) return 'Limited';
+    return 'Limited (nothing picked)';
+  }
+  function accSel(o) {
+    var lim = String(o.access || 'full') === 'limited';
+    return '<select class="lg-sel og-acc' + (lim ? ' on' : '') + '" onchange="FFPLeague.setAccess(\'' + o.id + '\',this.value)">'
+      + '<option value="full"' + (lim ? '' : ' selected') + '>Full access</option>'
+      + '<option value="limited"' + (lim ? ' selected' : '') + '>' + esc(lim ? accessLabel(o) : 'Limited…') + '</option>'
+      + '</select>';
+  }
+  function ofAvatar(o) {
+    return '<span class="lg-av" style="' + (o.photo ? 'background-image:url(\'' + esc(o.photo) + '\')' : '') + '">'
+      + (o.photo ? '' : esc(String(o.name || o.email || '?').slice(0, 1).toUpperCase())) + '</span>';
+  }
+
   async function renderOfficials(host) {
-    var capSel = '<select class="lg-sel" id="lg-ofcap" style="max-width:210px">' + capOpts('official') + '</select>';
-    host.innerHTML = '<div class="lg-sub" style="margin-bottom:12px">Add each official to the pool and set what they can do. Their <b>match role</b> (referee, touch judge…) is set <b>per match</b> on the Schedule tab. <b>Only people with Scorer access</b> can enter scores from their FFP App — add their <b>FFP email</b> so their account links.</div>'
-      + '<div class="lg-offadd"><div class="lg-offsrch"><input class="lg-in" id="lg-ofname" autocomplete="off" placeholder="Name — search FFP members, or type a new name" oninput="FFPLeague.ofSearch(this.value)"><div id="lg-ofres" class="lg-offres"></div></div>'
-      + '<div class="lg-offrow"><input class="lg-in" id="lg-ofemail" placeholder="Or FFP email (for scorers)">' + capSel + '<button class="lg-btn pri" onclick="FFPLeague.addOfficial()">' + ic('add') + 'Add</button></div></div>'
-      + '<div id="lg-oflist"><div class="lg-empty">Loading…</div></div>';
+    host.innerHTML = '<div id="lg-ofwrap"><div class="lg-empty">Loading…</div></div>';
     var r; try { r = await sb().rpc('lt_officials_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { r = { error: e }; }
-    var rows = (r && r.data) || []; var h2 = document.getElementById('lg-oflist');
-    h2.innerHTML = rows.length ? rows.map(function (o) {
-      var role = String(o.role || 'official').toLowerCase(); var sc = isScorerRole(role);
-      var meta = sc
-        ? (o.member_id ? 'Can score in the app' : (o.email ? esc(o.email) + ', needs an FFP account to score' : 'Add their FFP email to enable scoring'))
-        : (o.member_id ? 'FFP linked' : (o.email ? esc(o.email) : 'Match official'));
-      return '<div class="lg-row"><span class="lg-av" style="' + (o.photo ? 'background-image:url(\'' + esc(o.photo) + '\')' : '') + '">' + (o.photo ? '' : esc((o.name || '?').slice(0, 1))) + '</span><div class="g"><b>' + esc(o.name || o.email || 'Official') + (sc ? ' <span class="lg-scpill">SCORER</span>' : '') + '</b><span>' + meta + '</span></div><select class="lg-sel lg-ocap" onchange="FFPLeague.setOfficialCap(\'' + o.id + '\',this.value)">' + capOpts(role) + '</select><span class="ms act" title="Replace photo" onclick="FFPLeague.ofPhoto(\'' + o.id + '\')">photo_camera</span><span class="ms act" onclick="FFPLeague.removeOfficial(\'' + o.id + '\')">close</span></div>';
-    }).join('') : '<div class="lg-empty">No officials yet.</div>';
+    var rows = (r && r.data) || []; S._officials = rows;
+    var wrap = document.getElementById('lg-ofwrap'); if (!wrap) return;
+    wrap.innerHTML = poolHtml(rows.filter(function (o) { return !isCrewRole(o.role); }))
+      + '<div class="og-crewwrap">'
+      + '<div class="og-lead">' + ic('smartphone') + '<div><b>Crew</b><span>Picked from FFP members only. Set how much of the event each one can reach.</span></div></div>'
+      + CREW_KINDS.map(function (k) {
+          return crewSecHtml(k, rows.filter(function (o) { return isCrewRole(o.role) && crewKind(o.role) === k[0]; }));
+        }).join('')
+      + '</div>';
+  }
+
+  function poolHtml(rows) {
+    var open = S.ofMode === 'pool';
+    return '<div class="og-sec">'
+      + '<div class="og-hd">' + ic('shield') + '<div class="t"><b>Officials</b><span>An FFP account, or just a name and photo. Picked per match on the Schedule tab.</span></div>'
+      + '<button class="lg-btn" onclick="FFPLeague.openAdd(' + (open ? 'null' : "'pool'") + ')">' + ic(open ? 'close' : 'add') + (open ? 'Cancel' : 'Add') + '</button></div>'
+      + (open ? addFormHtml('pool') : '')
+      + (rows.length
+          ? '<div class="og-pool">' + rows.map(function (o) {
+              return '<span class="og-chip' + (o.member_id ? '' : ' noacct') + '">' + ofAvatar(o)
+                + '<b>' + esc(o.name || o.email || 'Official') + '</b>'
+                + '<em class="ms" title="Photo" onclick="FFPLeague.ofPhoto(\'' + o.id + '\')">photo_camera</em>'
+                + '<em class="ms" onclick="FFPLeague.removeOfficial(\'' + o.id + '\')">close</em></span>';
+            }).join('') + '</div>'
+          : '<div class="lg-empty">No officials yet.</div>')
+      + '<div class="og-foot">They appear on the match sheet and the broadcast graphics. No app.</div>'
+      + '</div>';
+  }
+
+  function crewSecHtml(k, rows) {
+    var open = S.ofMode === k[0];
+    return '<div class="og-crew">'
+      + '<div class="og-ch"><b>' + esc(k[1]) + '</b><span class="app">' + esc(k[2]) + '</span><span class="sp"></span>'
+      + '<button class="lg-btn' + (open ? ' on' : '') + '" onclick="FFPLeague.openAdd(' + (open ? 'null' : "'" + k[0] + "'") + ')">'
+      + ic(open ? 'close' : 'add') + (open ? 'Cancel' : 'Add') + '</button></div>'
+      + (open ? addFormHtml(k[0]) : '')
+      + (rows.length ? rows.map(function (o) {
+          return '<div class="lg-row">' + ofAvatar(o)
+            + '<div class="g"><b>' + esc(o.name || 'Crew') + '</b><span>' + esc(o.email || 'FFP member') + '</span></div>'
+            + accSel(o)
+            + '<span class="ms act" onclick="FFPLeague.removeOfficial(\'' + o.id + '\')">close</span></div>'
+            + (S.accFor === o.id ? accPickerHtml(o) : '');
+        }).join('') : '<div class="lg-empty">Nobody yet.</div>')
+      + '</div>';
+  }
+
+  /* One add form, reused. For the pool a typed name is enough; for crew the
+     only way through is picking a real FFP member. */
+  function addFormHtml(mode) {
+    var crew = mode !== 'pool';
+    return '<div class="lg-offadd"><div class="lg-offsrch">'
+      + '<input class="lg-in" id="lg-ofname" autocomplete="off" placeholder="'
+      + (crew ? 'Search FFP members by name or email' : 'Search FFP members, or type a new name')
+      + '" oninput="FFPLeague.ofSearch(this.value)"><div id="lg-ofres" class="lg-offres"></div></div>'
+      + (crew ? '<div class="og-note">' + ic('info') + 'They must already have an FFP account. Someone without one registers at findfitpeople.com first.</div>'
+              : '<div class="lg-offrow"><button class="lg-btn pri" onclick="FFPLeague.addPoolOfficial()">' + ic('add') + 'Add to the pool</button></div>')
+      + '</div>';
+  }
+
+  function openAdd(mode) { S.ofMode = mode || null; S._ofSel = null; S._ofRes = []; S.accFor = null; renderTab(); }
+
+  var _ofTmr;
+  function ofSearch(q) {
+    S._ofSel = null;
+    clearTimeout(_ofTmr);
+    if (!q || q.trim().length < 2) { S._ofRes = []; var el0 = document.getElementById('lg-ofres'); if (el0) el0.innerHTML = ''; return; }
+    _ofTmr = setTimeout(async function () {
+      var r; try { r = await sb().rpc('lt_member_search', { p_q: q.trim() }); } catch (e) { r = null; }
+      S._ofRes = (r && r.data) || [];
+      var el = document.getElementById('lg-ofres'); if (!el) return;
+      var crew = S.ofMode && S.ofMode !== 'pool';
+      el.innerHTML = S._ofRes.length ? S._ofRes.map(function (m) {
+        return '<button type="button" class="lg-offopt" onclick="FFPLeague.ofPick(\'' + m.id + '\')"><span class="av" style="' + (m.photo ? 'background-image:url(\'' + esc(m.photo) + '\')' : '') + '"></span><span class="g"><b>' + esc(m.name) + '</b><span>' + esc([m.city, m.email_hint].filter(Boolean).join(', ')) + '</span></span><span class="pk">' + (crew ? 'Add' : 'Select') + '</span></button>';
+      }).join('') : '<div class="lg-offnone">' + (crew
+        ? 'No FFP account for that name. They register at findfitpeople.com first.'
+        : 'No FFP member found — you can still add this name.') + '</div>';
+    }, 300);
+  }
+
+  async function ofPick(id) {
+    var m = (S._ofRes || []).find(function (x) { return x.id === id; }); if (!m) return;
+    if (S.ofMode && S.ofMode !== 'pool') { await addCrew(m); return; }   // crew: one tap adds
+    S._ofSel = { member_id: m.id, name: m.name };
+    var nmI = document.getElementById('lg-ofname'); if (nmI) nmI.value = m.name;
+    var el = document.getElementById('lg-ofres'); if (el) el.innerHTML = '<div class="lg-offpicked">' + ic('check') + esc(m.name) + ' — FFP member linked</div>';
+  }
+
+  async function addCrew(m) {
+    var role = S.ofMode;
+    var r; try { r = await sb().rpc('lt_official_add', { p_scope: 'league', p_event: S.eventId, p_member: m.id, p_name: m.name, p_email: null, p_role: role }); }
+    catch (e) { r = { error: e }; }
+    if (r && r.error) {
+      toast(/crew_needs_ffp_account/.test(String(r.error.message || r.error)) ? 'That person has no FFP account' : 'Could not add', 'error');
+      return;
+    }
+    S.ofMode = null; S._ofSel = null; S._ofRes = [];
+    toast('Added', 'success'); renderTab();
+  }
+
+  async function addPoolOfficial() {
+    var sel = S._ofSel, nm = ((document.getElementById('lg-ofname') || {}).value || '').trim();
+    if (!sel && !nm) return;
+    var r; try {
+      r = await sb().rpc('lt_official_add', sel && sel.member_id
+        ? { p_scope: 'league', p_event: S.eventId, p_member: sel.member_id, p_name: sel.name || nm, p_email: null, p_role: 'official' }
+        : { p_scope: 'league', p_event: S.eventId, p_member: null, p_name: nm, p_email: null, p_role: 'official' });
+    } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not add', 'error'); return; }
+    S.ofMode = null; S._ofSel = null; S._ofRes = [];
+    toast('Added', 'success'); renderTab();
+  }
+
+  // ---- access scope ----
+  async function setAccess(id, val) {
+    if (val === 'full') {
+      var r; try { r = await sb().rpc('lt_official_set_access', { p_id: id, p_access: 'full', p_days: null, p_matches: null }); } catch (e) { r = { error: e }; }
+      if (r && r.error) { toast('Could not update', 'error'); return; }
+      S.accFor = null; toast('Full access', 'success'); renderTab(); return;
+    }
+    var o = (S._officials || []).find(function (x) { return x.id === id; }) || {};
+    S.accFor = id;
+    S.accDays = (o.days || []).slice();
+    S.accMatches = (o.matches || []).slice();
+    if (!S._days) {
+      try { var d = await sb().rpc('lt_event_days', { p_scope: 'league', p_event: S.eventId }); S._days = (d && d.data) || []; } catch (e) { S._days = []; }
+      try { var mm = await sb().rpc('lt_event_matches', { p_scope: 'league', p_event: S.eventId }); S._matches = (mm && mm.data) || []; } catch (e) { S._matches = []; }
+    }
+    renderTab();
+  }
+  function accPickerHtml(o) {
+    var days = S._days || [], ms = S._matches || [];
+    return '<div class="og-pick">'
+      + '<div class="og-pickh">What can ' + esc((o.name || 'they').split(' ')[0]) + ' reach?</div>'
+      + (days.length ? '<div class="og-pl">Days</div>' + days.map(function (d) {
+          var on = (S.accDays || []).indexOf(d.day) >= 0;
+          return '<label class="og-opt"><input type="checkbox"' + (on ? ' checked' : '') + ' onchange="FFPLeague.accDay(\'' + d.day + '\')"><span>' + esc(fmtDay(d.day)) + '</span><em>' + d.n + ' matches</em></label>';
+        }).join('') : '')
+      + (ms.length ? '<div class="og-pl">Or single matches</div>' + ms.slice(0, 60).map(function (m) {
+          var on = (S.accMatches || []).indexOf(m.id) >= 0;
+          return '<label class="og-opt"><input type="checkbox"' + (on ? ' checked' : '') + ' onchange="FFPLeague.accMatch(\'' + m.id + '\')"><span>' + esc(m.home + ' v ' + m.away) + '</span><em>' + esc(m.division || '') + '</em></label>';
+        }).join('') : '')
+      + '<div class="og-pickb"><button class="lg-btn pri" onclick="FFPLeague.accSave()">' + ic('check') + 'Save access</button>'
+      + '<button class="lg-btn" onclick="FFPLeague.accCancel()">Cancel</button></div></div>';
+  }
+  function accDay(d) { S.accDays = S.accDays || []; var i = S.accDays.indexOf(d); if (i >= 0) S.accDays.splice(i, 1); else S.accDays.push(d); }
+  function accMatch(id) { S.accMatches = S.accMatches || []; var i = S.accMatches.indexOf(id); if (i >= 0) S.accMatches.splice(i, 1); else S.accMatches.push(id); }
+  function accCancel() { S.accFor = null; renderTab(); }
+  async function accSave() {
+    var id = S.accFor; if (!id) return;
+    if (!(S.accDays || []).length && !(S.accMatches || []).length) { toast('Pick at least one day or match', 'error'); return; }
+    var r; try {
+      r = await sb().rpc('lt_official_set_access', { p_id: id, p_access: 'limited', p_days: S.accDays || [], p_matches: S.accMatches || [] });
+    } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not save access', 'error'); return; }
+    S.accFor = null; toast('Access saved', 'success'); renderTab();
   }
 
   /* An official's photo. It shows beside them on the match screen in the app
      and fills their cell on the broadcast officials card. An official linked
      to an FFP account already falls back to their profile picture, so this is
-     only needed for someone without one — or to override it. */
+     only needed for someone without one - or to override it. */
   function ofPhoto(id) {
     if (!window.FFPUpload) { toast('Uploader not ready — refresh', 'error'); return; }
     window.FFPUpload.pick({
@@ -578,40 +757,6 @@
       onError: function () { toast('Upload failed', 'error'); }
     });
   }
-  var _ofTmr;
-  function ofSearch(q) {
-    S._ofSel = null;   // typing again clears any picked member
-    clearTimeout(_ofTmr);
-    if (!q || q.trim().length < 2) { S._ofRes = []; var el0 = document.getElementById('lg-ofres'); if (el0) el0.innerHTML = ''; return; }
-    _ofTmr = setTimeout(async function () {
-      var r; try { r = await sb().rpc('lt_member_search', { p_q: q.trim() }); } catch (e) { r = null; }
-      S._ofRes = (r && r.data) || [];
-      var el = document.getElementById('lg-ofres'); if (!el) return;
-      el.innerHTML = S._ofRes.length ? S._ofRes.map(function (m) {
-        return '<button type="button" class="lg-offopt" onclick="FFPLeague.ofPick(\'' + m.id + '\')"><span class="av" style="' + (m.photo ? 'background-image:url(\'' + esc(m.photo) + '\')' : '') + '"></span><span class="g"><b>' + esc(m.name) + '</b><span>' + esc([m.city, m.email_hint].filter(Boolean).join(', ')) + '</span></span><span class="pk">Select</span></button>';
-      }).join('') : '<div class="lg-offnone">No FFP member found — you can still add this name, or use their email.</div>';
-    }, 300);
-  }
-  function ofPick(id) {
-    var m = (S._ofRes || []).find(function (x) { return x.id === id; }); if (!m) return;
-    S._ofSel = { member_id: m.id, name: m.name };
-    var nmI = document.getElementById('lg-ofname'); if (nmI) nmI.value = m.name;
-    var el = document.getElementById('lg-ofres'); if (el) el.innerHTML = '<div class="lg-offpicked">' + ic('check') + esc(m.name) + ' — FFP member linked</div>';
-  }
-  async function addOfficial() {
-    var sel = S._ofSel;
-    var nm = (document.getElementById('lg-ofname') || {}).value, em = (document.getElementById('lg-ofemail') || {}).value, cap = (document.getElementById('lg-ofcap') || {}).value || 'official';
-    if (sel && sel.member_id) {
-      var r0; try { r0 = await sb().rpc('lt_official_add', { p_scope: 'league', p_event: S.eventId, p_member: sel.member_id, p_name: sel.name || nm, p_email: null, p_role: cap }); } catch (e) { r0 = { error: e }; }
-      if (r0 && r0.error) { toast('Could not add', 'error'); return; }
-      S._ofSel = null; S._ofRes = []; toast('Official added', 'success'); renderTab(); return;
-    }
-    if (!nm && !em) return;
-    if (isScorerRole(cap) && !em) { toast('Scorer access needs their FFP email to link their account', 'error'); return; }
-    var r; try { r = await sb().rpc('lt_official_add', { p_scope: 'league', p_event: S.eventId, p_member: null, p_name: nm, p_email: em, p_role: cap }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not add', 'error'); return; } toast('Added', 'success'); renderTab();
-  }
-  async function setOfficialCap(id, cap) { var r; try { r = await sb().rpc('lt_official_set_role', { p_id: id, p_role: cap }); } catch (e) { r = { error: e }; } if (r && r.error) { toast('Could not update', 'error'); return; } toast('Updated', 'success'); renderTab(); }
   async function removeOfficial(id) { await sb().rpc('lt_official_remove', { p_id: id }); renderTab(); }
 
   // ---------- VENUES ----------
@@ -950,7 +1095,7 @@
 
     }
     if (!html) html = '<div class="lg-empty">Nothing matches that filter.</div>';
-    box.innerHTML = html + (S.rbAsk ? rebuildConfirm() : '');
+    box.innerHTML = html + (S.rb ? rbSheet() : '');
   }
 
   function divKey(divs) {
@@ -975,7 +1120,7 @@
             }).join('') + '</select>' : '')
       + '<span class="sp"></span>'
       + (built
-        ? '<button class="lg-btn ghost" onclick="FFPLeague.rebuildAsk()">' + ic('warning') + 'Rebuild schedule</button>'
+        ? '<button class="lg-btn ghost" onclick="FFPLeague.rebuildAsk()">' + ic('build') + 'Rebuild</button>'
         : '<button class="lg-btn pri" onclick="FFPLeague.autoplan()">' + ic('auto_awesome') + 'Auto-plan the season</button>')
       + '</div>'
       + '<div class="sc-plan">A match takes '
@@ -993,16 +1138,177 @@
       + '<input class="lg-in" id="lg-rest" type="number" min="0" value="' + P.rest + '" oninput="FFPLeague.planSet()"> min rest between ' + N.poss + ' matches</div>';
   }
 
-  function rebuildAsk() { S.rbAsk = true; renderTab(); }
-  function rebuildCancel() { S.rbAsk = false; renderTab(); }
-  function rebuildConfirm() {
+  /* REBUILD IS A CHOICE, NOT A BUTTON.
+     It used to call autoplan and nothing else, so it only ever re-timed the
+     matches — the teams never moved, and the draw itself was deterministic
+     (circle method over seed/created_at), so it could not move even if asked.
+     Now it asks WHAT to rebuild:
+       times    — autoplan, the old behaviour, named honestly. Whole league.
+       redraw   — league_fixtures_redraw. New pairings. One division.
+       byes     — league_bye_order_set. Who sits out which round. One division.
+     Played rounds are never touched by either of the last two: the database
+     refuses it, and the UI locks them. */
+  function rbDivId() {
+    var ds = (S.detail && S.detail.divisions) || [];
+    if (S.rbDiv && ds.some(function (d) { return d.id === S.rbDiv; })) return S.rbDiv;
+    if (S.schedDiv) return S.schedDiv;
+    return ds.length ? ds[0].id : null;
+  }
+  function rbDivName() {
+    var ds = (S.detail && S.detail.divisions) || [], id = rbDivId();
+    var d = ds.filter(function (x) { return x.id === id; })[0];
+    return (d && d.name) || 'this division';
+  }
+  async function rbLoad() {
+    var id = rbDivId(); if (!id) { S.rbInfo = null; return; }
+    var r; try { r = await sb().rpc('league_rounds_info', { p_division: id }); } catch (e) { r = { error: e }; }
+    S.rbInfo = (r && !r.error && r.data) || { teams: 0, played_rounds: 0, rounds: [] };
+    S.rbByes = (S.rbInfo.rounds || []).map(function (x) {
+      return { round: x.round, at: x.at, played: !!x.played, bye: x.bye_entrant, name: x.bye_name || '' };
+    });
+  }
+  async function rebuildAsk() { S.rbDiv = rbDivId(); S.rb = 'menu'; await rbLoad(); renderTab(); }
+  function rebuildCancel() { S.rb = null; S.rbInfo = null; S.rbByes = null; renderTab(); }
+  async function rbSetDiv(id) { S.rbDiv = id; await rbLoad(); renderTab(); }
+  function rbGo(which) { S.rb = which; renderTab(); }
+
+  function rbSheet() {
+    if (S.rb === 'byes') return rbByesSheet();
+    if (S.rb === 'redraw') return rbRedrawSheet();
+    return rbMenuSheet();
+  }
+  function rbUnplayed() { return (S.rbByes || []).filter(function (x) { return !x.played; }); }
+  function rbSummary() {
+    var i = S.rbInfo || {}, rs = (i.rounds || []).length, pl = i.played_rounds || 0;
+    var n = (i.teams || 0) + ' teams, ' + rs + (rs === 1 ? ' round' : ' rounds');
+    if (!rs) return n + '. No fixtures yet.';
+    return n + '. ' + (pl ? (pl === 1 ? 'Round 1 has results entered.' : 'Rounds 1 to ' + pl + ' have results entered.')
+                          : 'No results entered yet.');
+  }
+  function rbRow(icon, title, body, note, action, off) {
+    return '<button class="rb-ch' + (off ? ' off' : '') + '"' + (off ? ' disabled' : ' onclick="FFPLeague.' + action + '"') + '>'
+      + ic(icon)
+      + '<span class="g"><b>' + esc(title) + '</b><span>' + esc(body) + '</span>'
+      + (note ? '<em>' + esc(note) + '</em>' : '') + '</span>'
+      + '<span class="ms go">chevron_right</span></button>';
+  }
+  function rbMenuSheet() {
+    var i = S.rbInfo || {}, ds = (S.detail && S.detail.divisions) || [];
+    var teams = i.teams || 0, rs = (i.rounds || []).length, free = rbUnplayed().length;
+    var odd = teams % 2 === 1;
+    // byes only exist with an odd field, and there must be two loose rounds to swap
+    var byesOff = !odd ? 'With ' + teams + ' teams every team plays every round, so there are no byes.'
+                : free < 2 ? 'Only ' + free + ' round' + (free === 1 ? '' : 's') + ' left without results, so there is nothing to swap.'
+                : '';
+    var redrawOff = !rs ? 'There are no fixtures to redraw yet.'
+                  : free < 2 ? 'Every round has results. Nothing can move.' : '';
+    var pl = i.played_rounds || 0;
+    return '<div class="lg-cfm"><div class="lg-cfm-in rb-wide">'
+      + '<div class="rb-t">Rebuild ' + esc(rbDivName()) + '</div>'
+      + '<div class="rb-lead">' + esc(rbSummary()) + '</div>'
+      + (ds.length > 1
+          ? '<select class="lg-sel rb-dv" onchange="FFPLeague.rbSetDiv(this.value)">'
+            + ds.map(function (d) { return '<option value="' + d.id + '"' + (d.id === rbDivId() ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join('')
+            + '</select>' : '')
+      + rbRow('schedule', 'Times and courts',
+              'Keeps every fixture exactly as it is. Each match is given a new date, a new time and ' + aSurf() + '.',
+              ds.length > 1 ? 'Covers every division at once.' : '', "autoplan(1)", false)
+      + rbRow('shuffle', 'Redraw the fixtures',
+              'New pairings. Everyone still plays everyone — who meets whom, and in which round, changes.',
+              redrawOff || (pl ? 'Rounds 1 to ' + pl + ' have results and will not be touched.' : ''),
+              "rbGo('redraw')", !!redrawOff)
+      + rbRow('event_busy', 'Byes', 'Choose which team sits out each round.',
+              byesOff, "rbGo('byes')", !!byesOff)
+      + '<div class="rb-a one"><button class="lg-btn ghost" onclick="FFPLeague.rebuildCancel()">Cancel</button></div>'
+      + '</div></div>';
+  }
+
+  /* BYES. Every round in an odd division rests exactly one team, so the list is
+     a PERMUTATION: picking a team for a round swaps it with whoever held that
+     round. It cannot be put into an invalid state, and the database re-checks
+     the same thing before it moves anything. */
+  function rbByesSheet() {
+    var rows = (S.rbByes || []).map(function (x) {
+      var opts = (x.played ? [x] : rbUnplayed()).map(function (o) {
+        return '<option value="' + o.bye + '"' + (o.bye === x.bye ? ' selected' : '') + '>' + esc(o.name) + '</option>';
+      }).join('');
+      return '<div class="rb-by' + (x.played ? ' lock' : '') + '">'
+        + '<span class="r">Round ' + x.round + '</span>'
+        + '<span class="d">' + esc(x.at ? lgDayShort(x.at) : 'Not scheduled') + '</span>'
+        + '<select class="lg-sel"' + (x.played ? ' disabled' : ' onchange="FFPLeague.rbByePick(' + x.round + ',this.value)"') + '>' + opts + '</select>'
+        + '<span class="pl">' + (x.played ? 'Played' : '') + '</span></div>';
+    }).join('');
+    return '<div class="lg-cfm"><div class="lg-cfm-in rb-wide">'
+      + '<div class="rb-t">Who sits out each round?</div>'
+      + '<div class="rb-lead">' + esc(rbDivName()) + ', ' + ((S.rbInfo && S.rbInfo.teams) || 0)
+      + ' teams. With an odd number of teams one team rests each round, and over the season each team rests once.</div>'
+      + rows
+      + '<div class="rb-note">' + ic('swap_horiz')
+      + '<span>Pick a team for a round and it swaps with whoever had that round, so every team still rests exactly once. Rounds with results are locked.</span></div>'
+      + '<div class="rb-a"><button class="lg-btn ghost" onclick="FFPLeague.rbGo(\'menu\')">Back</button>'
+      + '<button class="lg-btn pri" onclick="FFPLeague.rbByesSave()">' + ic('check') + 'Save byes</button></div>'
+      + '</div></div>';
+  }
+  function rbByePick(round, entrantId) {
+    var list = S.rbByes || [];
+    var target = list.filter(function (x) { return x.round === round; })[0];
+    var holder = list.filter(function (x) { return x.bye === entrantId && !x.played; })[0];
+    if (!target || !holder || target === holder) { renderTab(); return; }
+    var b = target.bye, n = target.name;
+    target.bye = holder.bye; target.name = holder.name;
+    holder.bye = b; holder.name = n;
+    renderTab();
+  }
+  async function rbByesSave() {
+    var free = rbUnplayed();
+    if (free.length < 2) { toast('Nothing to change', 'error'); return; }
+    var r; try {
+      r = await sb().rpc('league_bye_order_set', { p_division: rbDivId(),
+        p_rounds: free.map(function (x) { return x.round; }),
+        p_byes: free.map(function (x) { return x.bye; }) });
+    } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast(/played/.test(r.error.message || '') ? 'A round with results cannot move' : 'Could not save the byes', 'error'); return; }
+    S.rb = null; S.rbInfo = null; S.rbByes = null;
+    toast('Byes updated', 'success'); refreshDetail();
+  }
+
+  function rbRedrawSheet() {
+    var i = S.rbInfo || {}, pl = i.played_rounds || 0, rs = (i.rounds || []).length;
+    // Only an ODD field rests anybody, so an even division must not be told its
+    // resting teams will change. And the noun opens a sentence, so it is capitalised.
+    var odd = ((i.teams || 0) % 2) === 1;
+    var who = evNouns().many; who = who.charAt(0).toUpperCase() + who.slice(1);
+    var body = (pl
+      ? 'Rounds ' + (pl + 1) + ' to ' + rs + ' get new pairings'
+        + (odd ? ', and the teams resting in those rounds change' : '') + '. '
+      : 'Every round gets new pairings'
+        + (odd ? ', and the team resting in each round changes' : '') + '. ')
+      + who + ' and officials already told about ' + (pl ? 'those' : 'these')
+      + ' matches will need telling again.';
     return '<div class="lg-cfm"><div class="lg-cfm-in">'
       + '<span class="ms lg-cfm-ic" style="color:var(--ffp-gold)">warning</span>'
-      + '<div class="lg-cfm-t">Rebuild the whole schedule?</div>'
-      + '<div class="lg-cfm-b">This replans every match in every division and will move matches that '
-      + evNouns().many + ' and officials have already been given times for. Results already entered are kept.</div>'
-      + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPLeague.rebuildCancel()">Cancel</button>'
-      + '<button class="lg-btn pri" onclick="FFPLeague.autoplan(1)">Yes, rebuild</button></div></div></div>';
+      + '<div class="lg-cfm-t">Redraw ' + esc(rbDivName()) + '?</div>'
+      + '<div class="lg-cfm-b">' + esc(body) + '</div>'
+      + (pl ? '<div class="rb-kept">' + ic('lock') + '<span>Rounds 1 to ' + pl
+              + ' have results entered. They are not touched.</span></div>' : '')
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPLeague.rbGo(\'menu\')">Cancel</button>'
+      + '<button class="lg-btn pri" onclick="FFPLeague.rbRedraw()">Yes, redraw</button></div></div></div>';
+  }
+  async function rbRedraw() {
+    var seed = Math.floor(Math.random() * 1000000000);
+    var r; try { r = await sb().rpc('league_fixtures_redraw', { p_division: rbDivId(), p_seed: seed }); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not redraw', 'error'); return; }
+    var d = (r && r.data) || {};
+    S.rb = null; S.rbInfo = null; S.rbByes = null;
+    toast(d.mode === 'partial'
+      ? (d.moved || 0) + ' matches moved, ' + (d.kept || 0) + ' played round' + ((d.kept || 0) === 1 ? '' : 's') + ' kept'
+      : (d.created || 0) + ' fixtures redrawn', 'success');
+    refreshDetail();
+  }
+  function lgDayShort(iso) {
+    var ymd = lgDateStr(iso); var a = String(ymd).split('-'); if (a.length !== 3) return '';
+    var p = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2], 12, 0, 0));
+    return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][p.getUTCDay()] + ' ' + (+a[2]) + ' ' + MON[+a[1] - 1];
   }
 
   function schedRow(m) {
@@ -1056,7 +1362,7 @@
                  p_days: P.days, p_round_gap: P.gap, p_rest: P.rest, p_divisions: null,
       p_tz: evTz(), p_turnaround: P.turn };
     var r; try { r = await sb().rpc('league_autoplan_all', args); } catch (e) { r = { error: e }; }
-    S.rbAsk = false;
+    S.rb = null; S.rbInfo = null; S.rbByes = null;
     if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add ' + aSurf() + ' first (Venues tab)' : 'Could not plan', 'error'); renderTab(); return; }
     var d = r.data || {}, n = d.placed || 0, over = d.over || 0;
     toast(n + (n === 1 ? ' match planned' : ' matches planned') + (over ? ', ' + over + ' ran past the last day' : ''), over ? 'error' : 'success');
@@ -1096,7 +1402,8 @@
       + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">City</div><input class="lg-in" id="lg-city" list="lg-cityl" value="' + esc(ev.city || '') + '"><datalist id="lg-cityl">' + dlOpts(cityNames()) + '</datalist></div><div class="lg-fld"><div class="lg-lab">Country</div><input class="lg-in" id="lg-country" list="lg-cntl" value="' + esc(ev.country || '') + '"><datalist id="lg-cntl">' + dlOpts(countryNames()) + '</datalist></div></div>'
       + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Season starts</div><input class="lg-in" id="lg-start" type="date" value="' + esc(ev.starts_at || '') + '"></div><div class="lg-fld"><div class="lg-lab">Season ends</div><input class="lg-in" id="lg-end" type="date" value="' + esc(ev.ends_at || '') + '"></div></div>'
       + '<div class="lg-fld"><div class="lg-lab">About</div><textarea class="lg-in" id="lg-desc" rows="3">' + esc(ev.description || '') + '</textarea></div>'
-      + '<div class="lg-fld"><div class="lg-lab">Rules</div><textarea class="lg-in" id="lg-rules" rows="3">' + esc(ev.rules || '') + '</textarea></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Rules</div><textarea class="lg-in" id="lg-rules" rows="3">' + esc(ev.rules || '') + '</textarea>'
+      +   '<div id="lg-pdfwrap">' + rulesPdfHtml(ev) + '</div></div>'
       + '<button class="lg-btn pri" onclick="FFPLeague.saveDetails()">' + ic('check') + 'Save</button>'
       + endBlock(ev);
   }
@@ -1673,9 +1980,12 @@
     if (!S.divId) S.divId = divs[0].id;
     var r; try { r = await sb().rpc('league_fixtures_list', { p_division: S.divId }); } catch (e) { r = { error: e }; }
     var fx = (r && r.data) || [];
-    var genBtn = fx.length
-      ? (S.fxConfirm ? '<button class="lg-btn" onclick="FFPLeague.doGen()">' + ic('warning') + 'Replace fixtures?</button><button class="lg-btn ghost" onclick="FFPLeague.cancelGen()">Cancel</button>'
-        : '<button class="lg-btn" onclick="FFPLeague.confirmGen()">' + ic('autorenew') + 'Regenerate</button>')
+    /* NO REGENERATE ONCE FIXTURES EXIST. league_fixtures_generate deletes every
+       regular-stage row for the division with no status guard, so pressing it on
+       a running division wipes results that are already entered (proven on live
+       data: 6 final results -> 0). Auto-generate is offered ONLY when there is
+       nothing to destroy. Changing a draw that already exists is its own job. */
+    var genBtn = fx.length ? ''
       : '<button class="lg-btn" onclick="FFPLeague.doGen()">' + ic('auto_awesome') + 'Auto-generate fixtures</button>';
     await loadEntrants();
     var ffr; try { ffr = await sb().rpc('lt_fields_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { ffr = null; } S._fields = (ffr && ffr.data) || [];
@@ -2427,10 +2737,7 @@
     if (r.error) { toast('Save failed', 'error'); return; } toast('Result saved: ' + hs + '–' + as, 'success');
   }
 
-  function confirmGen() { S.fxConfirm = true; renderTab(); }
-  function cancelGen() { S.fxConfirm = false; renderTab(); }
   async function doGen() {
-    S.fxConfirm = false;
     var r; try { r = await sb().rpc('league_fixtures_generate', { p_division: S.divId }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not generate', 'error'); return; } toast((r.data || 0) + ' fixtures created', 'success'); renderTab();
   }
@@ -2454,6 +2761,91 @@
       + rows.map(function (r2, i) { return '<div class="lg-tb"><span>' + (i + 1) + '</span><span class="nm">' + esc(r2.name) + '</span><span>' + r2.p + '</span><span>' + r2.w + '</span><span>' + r2.d + '</span><span>' + (r2.gd > 0 ? '+' + r2.gd : r2.gd) + '</span><span class="pts">' + r2.pts + '</span></div>'; }).join('');
   }
 
+
+  // ---------- RULES PDF ----------
+  // The typed Rules box carries the short version. Organisers also hand out a
+  // real rulebook, so ONE PDF rides with the league: the file goes to the
+  // event-docs bucket (PDF only, 20 MB, public read, write scoped to the
+  // uploader's own folder) and its URL lands on league_set_rules_pdf, which the
+  // detail RPC already returns inside `event`. Same shape as the logo/banner
+  // uploads: pick, store, save, reopen.
+  function rulesPdfHtml(ev) {
+    if (S.pdfBusy) {
+      return '<div class="lg-pdf">' + ic('description')
+        + '<div class="g"><b>Uploading\u2026</b><span>' + esc(S.pdfBusy) + '</span></div></div>';
+    }
+    if (ev && ev.rules_pdf_url) {
+      return '<div class="lg-pdf has">' + ic('description')
+        + '<div class="g"><b>' + esc(ev.rules_pdf_name || 'Rules.pdf') + '</b>'
+        + '<span>Entrants can open this from the app</span></div>'
+        + '<a class="lg-btn" href="' + esc(ev.rules_pdf_url) + '" target="_blank" rel="noopener">'
+        + ic('open_in_new') + 'View</a>'
+        + '<span class="ms x" title="Remove" onclick="FFPLeague.removeRulesPdf()">close</span></div>';
+    }
+    return '<div class="lg-pdf">' + ic('description')
+      + '<div class="g"><b>No rules PDF</b><span>PDF up to 20 MB, sits with the rules in the app</span></div>'
+      + '<button class="lg-btn" onclick="FFPLeague.pickRulesPdf()">' + ic('upload_file') + 'Attach PDF</button></div>';
+  }
+  // Repaint just the strip, so an upload in progress does not wipe whatever the
+  // organiser has typed into the other fields on this tab.
+  function paintRulesPdf() {
+    var h = document.getElementById('lg-pdfwrap');
+    if (h) h.innerHTML = rulesPdfHtml((S.detail && S.detail.event) || {});
+  }
+  function pickRulesPdf() {
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'application/pdf,.pdf'; inp.style.display = 'none';
+    inp.addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0];
+      if (inp.parentNode) inp.parentNode.removeChild(inp);
+      if (f) uploadRulesPdf(f);
+    });
+    document.body.appendChild(inp); inp.click();
+  }
+  // The shared image uploader cannot carry this: it hardcodes image/jpeg and a
+  // .jpg path, and rejects anything that is not an image. So this is a direct
+  // owner-scoped storage write, which is what a provider session can do.
+  async function uploadRulesPdf(f) {
+    if (!((f.type === 'application/pdf') || /\.pdf$/i.test(f.name || ''))) { toast('That file is not a PDF', 'error'); return; }
+    if (f.size > 20 * 1024 * 1024) { toast('That PDF is over 20 MB', 'error'); return; }
+    var uid = pdfOwnerId();
+    if (!uid) { toast('Please sign in again', 'error'); return; }
+    S.pdfBusy = f.name; paintRulesPdf();
+    var path = uid + '/lgrules-' + S.eventId + '-' + Date.now() + '.pdf';
+    try {
+      var up = await sb().storage.from('event-docs').upload(path, f, { contentType: 'application/pdf', upsert: true, cacheControl: '3600' });
+      if (up && up.error) throw up.error;
+      var pub = sb().storage.from('event-docs').getPublicUrl(path);
+      var url = pub && pub.data && pub.data.publicUrl;
+      if (!url) throw new Error('no_public_url');
+      var r = await sb().rpc('league_set_rules_pdf', { p_event: S.eventId, p_url: url, p_name: f.name });
+      if (r && r.error) throw r.error;
+    } catch (e) { S.pdfBusy = null; paintRulesPdf(); toast('Upload failed', 'error'); return; }
+    S.pdfBusy = null; toast('Rules PDF attached', 'success'); open(S.eventId);
+  }
+  async function removeRulesPdf() {
+    var r; try { r = await sb().rpc('league_set_rules_pdf', { p_event: S.eventId, p_url: null, p_name: null }); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not remove', 'error'); return; }
+    toast('Rules PDF removed', 'success'); open(S.eventId);
+  }
+  // The storage path must begin with auth.uid(), which is the JWT `sub`. A
+  // provider's record id is not always that value, and a mismatch is a 400 on
+  // upload, so read the claim itself.
+  function pdfOwnerId() {
+    try {
+      var tok = window.FFPAuth && window.FFPAuth.getToken && window.FFPAuth.getToken();
+      if (tok) {
+        var parts = String(tok).split('.');
+        if (parts.length === 3) {
+          var b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          while (b64.length % 4) b64 += '=';
+          var pl = JSON.parse(atob(b64));
+          if (pl && pl.sub) return String(pl.sub);
+        }
+      }
+    } catch (e) {}
+    try { var m = window.FFPAuth && window.FFPAuth.getMember && window.FFPAuth.getMember(); return (m && m.id) || null; } catch (e2) { return null; }
+  }
   function pickImg(kind) {
     if (!window.FFPUpload) { toast('Uploader not ready — refresh', 'error'); return; }
     var isLogo = kind === 'logo';
@@ -2487,7 +2879,7 @@
       var h = document.getElementById('lgf-finalshint'); if (h) h.textContent = m[2];
       var t = document.getElementById('lgf-third');
       if (t) t.parentNode.style.display = (v2 === 'none' ? 'none' : '');
-    }, pickImg: pickImg, entLogo: entLogo, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
+    }, pickImg: pickImg, pickRulesPdf: pickRulesPdf, removeRulesPdf: removeRulesPdf, entLogo: entLogo, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, bulkAthletes: bulkAthletes, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit,
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
@@ -2495,8 +2887,11 @@
     sqPhoto: sqPhoto, sqPhotoClear: sqPhotoClear,
     tsPut: tsPut, tsCovers: tsCovers, tsCap: tsCap, tsTeam: tsTeam, tsSaveCoach: tsSaveCoach, hexSync: hexSync,
     gfxOpen: gfxOpen, gfxCopy: gfxCopy, gfxLink: gfxLink,
-    confirmGen: confirmGen, cancelGen: cancelGen, doGen: doGen, saveResults: saveResults,
-    addOfficial: addOfficial, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, setOfficialCap: setOfficialCap, ofPhoto: ofPhoto, autoplan: autoplan, schedSet: schedSet, schedToggle: schedToggle, setSchedDiv: setSchedDiv, setSchedRound: setSchedRound, planSet: planSet, rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
+    doGen: doGen, saveResults: saveResults,
+    ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, ofPhoto: ofPhoto,
+    openAdd: openAdd, addPoolOfficial: addPoolOfficial,
+    setAccess: setAccess, accDay: accDay, accMatch: accMatch, accSave: accSave, accCancel: accCancel, autoplan: autoplan, schedSet: schedSet, schedToggle: schedToggle, setSchedDiv: setSchedDiv, setSchedRound: setSchedRound, planSet: planSet, rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
+    rbGo: rbGo, rbSetDiv: rbSetDiv, rbByePick: rbByePick, rbByesSave: rbByesSave, rbRedraw: rbRedraw,
     togRound: togRound, addMatch: addMatch, setAddDiv: setAddDiv, cancelMatch: cancelMatch, saveMatch: saveMatch, toggleBye: toggleBye, togglePre: togglePre,
     editFx: editFx, fxStageChange: fxStageChange, cancelEditFx: cancelEditFx, saveFx: saveFx, delAsk: delAsk, delCancel: delCancel, delFx: delFx,
     addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
