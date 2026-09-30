@@ -252,6 +252,20 @@
       '/* A break shown where it falls, so the gap in the day is not a mystery. */',
       '.sc-bar{display:flex;align-items:center;gap:9px;padding:9px 11px;margin:2px 0;border-radius:8px;background:repeating-linear-gradient(135deg,#f1f5f8,#f1f5f8 9px,#e7edf2 9px,#e7edf2 18px);border:1px dashed #c8d4dd;}',
       '.sc-bar .ms{color:#5c6f7c;font-size:17px;}',
+      /* A break with matches still booked inside it. Gold, because it is the
+         organiser's to act on - not red, nothing is broken yet. */
+      '.sc-bar.clash{border-style:solid;border-color:var(--ffp-gold);background:repeating-linear-gradient(135deg,#fff9ec,#fff9ec 9px,#fdf1d6 9px,#fdf1d6 18px);}',
+      '.sc-bar.clash .ms{color:#9a6b00;} .sc-bar.clash b{color:#7a5400;} .sc-bar.clash span{color:#8a6410;}',
+      '.sc-bar .fix{margin-left:auto;flex:none;border:0;background:var(--ffp-gold);color:#12232f;border-radius:8px;padding:5px 11px;font:inherit;font-size:12px;font-weight:800;cursor:pointer;}',
+      '.sc-bar .fix:hover{background:#e0af3a;}',
+      '.sc-m .g span.clash{color:#9a6b00;font-weight:800;}',
+      '.sc-brkwarn{display:flex;align-items:center;gap:9px;padding:10px 13px;margin:10px 0 0;border-radius:9px;background:linear-gradient(92deg,#12242f,#21404f);box-shadow:inset 4px 0 0 var(--ffp-gold),0 2px 8px rgba(14,37,49,.18);}',
+      '.sc-brkwarn .ms{flex:none;color:var(--ffp-gold);font-size:18px;}',
+      '.sc-brkwarn b{font-size:13px;font-weight:900;color:#fff;}',
+      '.sc-brkwarn i{font-style:normal;font-size:12px;font-weight:700;color:rgba(255,255,255,.62);}',
+      '.sc-brkwarn .sp{flex:1;}',
+      '.sc-brkwarn button{flex:none;border:0;background:var(--ffp-gold);color:#12232f;border-radius:8px;padding:6px 12px;font:inherit;font-size:12px;font-weight:800;cursor:pointer;}',
+      '.sc-brkwarn button:hover{background:#e0af3a;}',
       '.sc-bar b{font-size:12.5px;font-weight:900;color:#3c4d59;}',
       '.sc-bar span{font-size:12px;font-weight:700;color:#475763;}',
       '/* Nothing should sit here: Auto-plan places every match, decided or not. */',
@@ -1178,7 +1192,7 @@
           + '<span class="ct">' + list.length + (list.length === 1 ? ' match' : ' matches') + '</span>'
           + '<button class="sc-add" onclick="FFPTourn.addMatch(\'' + slot + '\')">' + ic('add') + 'Add match</button></div>'
           + items.map(function (it) {
-              if (it.b) return breakBar(it.b);
+              if (it.b) return breakBar(it.b, list.filter(function (x) { return inBreak(x) === it.b; }).length);
               mi++; return schedRow(it.m, f.id, mi === 0, mi === list.length - 1);
             }).join('')
           + (S.addMatch === slot ? matchEditor() : '');
@@ -1254,16 +1268,58 @@
             + '<input class="lg-in nm bk-l" value="' + esc(b.label || '') + '" placeholder="What for" onchange="FFPTourn.breakSave(\'' + b.id + '\')">'
             + '<button class="sc-ic" title="Remove break" onclick="FFPTourn.breakRemove(\'' + b.id + '\')">' + ic('close') + '</button></span>';
         }).join('')
-      + '<button class="lg-btn ghostb sc-abk" onclick="FFPTourn.breakAdd()">' + ic('add') + 'Add break</button></div>';
+      + '<button class="lg-btn ghostb sc-abk" onclick="FFPTourn.breakAdd()">' + ic('add') + 'Add break</button>'
+      + breakWarn() + '</div>';
   }
-  function breakBar(b) {
-    return '<div class="sc-bar">' + ic('pause')
+  /* Said once, where the breaks are edited, so it is read even by an organiser
+     who never scrolls down to the court it happened on. */
+  function breakWarn() {
+    var n = breakClashes().length;
+    if (!n) return '';
+    return '<div class="sc-brkwarn">' + ic('warning')
+      + '<b>' + n + (n === 1 ? ' match is' : ' matches are') + ' booked inside a break</b>'
+      + '<i>They cannot be played, the ' + surfWord() + ' is closed</i><span class="sp"></span>'
+      + '<button onclick="FFPTourn.breaksMoveOut()">Move them out</button></div>';
+  }
+  /* A MATCH INSIDE A BREAK IS A CLASH THE ORGANISER HAS TO SEE. The surface is
+     shut in that window, so a match booked across it cannot be played. Adding a
+     break moves what it displaces, but a time typed by hand afterwards lands
+     straight back in one - so this is checked every time the row is drawn,
+     never once at save time. */
+  function hmMins(t) { var a = String(t || '').split(':'); return ((+a[0]) || 0) * 60 + ((+a[1]) || 0); }
+  function inBreak(m) {
+    if (!m || !m.scheduled_at) return null;
+    var d = evDateStr(m.scheduled_at), t = evTimeStr(m.scheduled_at);
+    if (!d || !t) return null;
+    var s0 = hmMins(t), e0 = s0 + matchMins();
+    return (S._breaks || []).filter(function (b) {
+      return (!b.field_id || b.field_id === m.field_id)
+          && (!b.on_date || b.on_date === d)
+          && hmMins(b.starts_at) < e0 && hmMins(b.ends_at) > s0;
+    })[0] || null;
+  }
+  function breakClashes() { return (S._sched || []).filter(function (m) { return !!inBreak(m); }); }
+  /* The row carries its own time and the bar above carries the break's, so the
+     row only has to name WHICH break - and "the Break break" is not a name. */
+  function breakName(b) {
+    var l = String((b || {}).label || '').trim();
+    return (!l || l.toLowerCase() === 'break') ? 'a break' : 'the ' + l + ' break';
+  }
+  function breakBar(b, n) {
+    n = n || 0;
+    return '<div class="sc-bar' + (n ? ' clash' : '') + '">' + ic(n ? 'warning' : 'pause')
       + '<b>' + esc(b.label || 'Break') + '</b>'
-      + '<span>' + hm(b.starts_at) + ' to ' + hm(b.ends_at) + ', ' + surfWord() + ' closed</span></div>';
+      + '<span>' + hm(b.starts_at) + ' to ' + hm(b.ends_at) + ', ' + surfWord() + ' closed</span>'
+      + (n ? '<span><b>' + n + (n === 1 ? ' match is' : ' matches are') + ' still booked in it</b></span>'
+           + '<button class="fix" onclick="FFPTourn.breaksMoveOut()">Move them out</button>' : '')
+      + '</div>';
   }
   async function breakAdd() {
     var r; try { r = await sb().from('tourn_breaks').insert({ tourn_id: S.eventId, starts_at: '13:00', ends_at: '14:00', label: 'Break', sort: (S._breaks || []).length }); } catch (e) { r = { error: e }; }
     if (r && r.error) { toast('Could not add the break', 'error'); return; }
+    /* A break that changes nothing is just a drawing. Anything already booked
+       inside it comes out the moment it is added - the same as saving one. */
+    S._breaks = null; await applyBreaks(true);
     renderTab();
   }
   // Saving a break is not enough on its own: anything already booked inside it
@@ -1273,13 +1329,16 @@
   async function applyBreaks(said) {
     var P = S.plan || {};
     var r; try {
-      r = await sb().rpc('tourn_breaks_apply', { p_tourn: S.eventId, p_match_len: P.len || 30, p_tz: evTz() });
+      r = await sb().rpc('tourn_breaks_apply', { p_tourn: S.eventId, p_match_len: P.len || 30, p_tz: evTz(), p_turnaround: P.turn || 0 });
     } catch (e) { r = { error: e }; }
     if (r && r.error) { toast('Breaks saved, but the matches could not be moved', 'error'); return 0; }
     var n = r.data || 0;
     if (said) toast(n ? n + (n === 1 ? ' match moved out of the break' : ' matches moved out of the breaks') : 'No match was inside a break', 'success');
     return n;
   }
+  // Moves what a break displaces and everything behind it, keeping the order
+  // of play. A match already played or in progress never moves.
+  async function breaksMoveOut() { await applyBreaks(true); renderTab(); }
   async function breakSave(id) {
     var row = document.querySelector('.sc-brk .b[data-id="' + id + '"]'); if (!row) return;
     var s = row.querySelector('.bk-s').value, e2 = row.querySelector('.bk-e').value;
@@ -1320,6 +1379,7 @@
        in the menu; a row already sits under the bar that names its court, so
        only a match with no court yet says where it is. */
     var sub = (m._dnm ? m._dnm + ', ' : '') + matchLabel(m);
+    var bk = inBreak(m);
     var fld = (S._fields || []).filter(function (f) { return f.id === m.field_id; })[0] || null;
     var place = fieldId ? ''
       : (fld ? '<div class="v"><b>' + esc(fld.venue || 'Venue not set') + '</b><span>' + esc(fld.name || '') + '</span></div>'
@@ -1328,6 +1388,7 @@
       + '<input class="lg-in t st-t" type="time" value="' + tv + '" onchange="FFPTourn.schedSet(\'' + m.id + '\')">'
       + '<div class="g"><b>' + esc(names[m.home_entrant] || 'TBD') + ' v ' + esc(names[m.away_entrant] || 'TBD') + '</b>'
       + '<span>' + esc(sub) + '</span>'
+      + (bk ? '<span class="clash">Inside ' + esc(breakName(bk)) + '</span>' : '')
       + (offTxt ? '<span class="off">' + esc(offTxt) + '</span>' : '') + '</div>'
       + place
       + '<button class="sc-ic" title="Earlier" ' + (isFirst ? 'disabled' : '') + ' onclick="FFPTourn.schedMove(\'' + m.id + '\',-1)">' + ic('arrow_upward') + '</button>'
@@ -1439,7 +1500,11 @@
     var base = dv || (S.detail.event && S.detail.event.starts_at) || evDateStr(new Date().toISOString());
     var when = (tv || dv) ? evIso(base, tv || '00:00') : null;
     await sb().rpc('lt_match_schedule', { p_scope: 'tourn', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null });
-    toast('Rescheduled', 'success'); renderTab();
+    // typed straight into a break: say so now, not when someone turns up to play
+    var bk = inBreak({ scheduled_at: when, field_id: fid });
+    if (bk) toast('Rescheduled, but that is inside ' + breakName(bk), 'error');
+    else toast('Rescheduled', 'success');
+    renderTab();
   }
   async function offAdd(matchId) {
     var row = document.querySelector('.sc-more[data-id="' + matchId + '"]'); if (!row) return;
@@ -3320,7 +3385,7 @@
 
   // Printed on load so a deploy can be confirmed in one look, without
   // guessing from the screen: open the console and read this line.
-  var BUILD = '2026-09-29.2';
+  var BUILD = '2026-09-29.3';
   console.log('[FFP Tournaments] build ' + BUILD);
   window.FFPTourn = {
     rulesHint: rulesHint,
@@ -3365,7 +3430,7 @@
     autoplan: autoplan, schedSet: schedSet,
     setSchedDiv: setSchedDiv, planSet: planSet, setAddDiv: setAddDiv, applyBreaks: applyBreaks,
     openDivDraw: openDivDraw, openDrawCancel: openDrawCancel,
-    breakAdd: breakAdd, breakSave: breakSave, breakRemove: breakRemove,
+    breakAdd: breakAdd, breakSave: breakSave, breakRemove: breakRemove, breaksMoveOut: breaksMoveOut,
     rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
     schedToggle: schedToggle, schedMove: schedMove, setMainCourt: setMainCourt,
     togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch,
