@@ -57,6 +57,17 @@
   // Two lists, neither aware of the other, so adding a category in Admin changed nothing here.
   // These are only a fallback for the instant before the taxonomy responds (or if it fails).
   var CATEGORIES = ['Fitness', 'Wellness', 'Yoga & Pilates', 'Recovery', 'Adventure', 'Sports Club', 'Retail', 'Other'];
+  // An event organiser does not have a "kind of place" — they have a kind of thing they run.
+  // Same split the signup flow makes: provider_type 'Event organizer' -> list_key 'organizer_category'.
+  var ORG_CATEGORIES = ['Leagues', 'Tournaments', 'Races & endurance', 'Social & pick-up',
+                        'Fitness events', 'Adventure & outdoor', 'Festivals & community', 'Other'];
+  function isOrganiser() {
+    var t = (window.FFP_PROVIDER && window.FFP_PROVIDER.provider_type)
+         || (typeof providerProfile !== 'undefined' && providerProfile && providerProfile.provider_type) || '';
+    return String(t) === 'Event organizer';
+  }
+  function catListKey()  { return isOrganiser() ? 'organizer_category' : 'category'; }
+  function catFallback() { return isOrganiser() ? ORG_CATEGORIES : CATEGORIES; }
 
   // Paint the category <select>. `keep` is whatever this partner already has saved: if it is not in
   // the taxonomy (they were onboarded under the old hardcoded list — "Wellness centre", "Fitness
@@ -78,7 +89,7 @@
     var sel = document.getElementById('pf-category'); if (!sel) return;
     try {
       var r = await window.supabase.from('taxonomy_items')
-        .select('label').eq('list_key', 'category').eq('active', true)
+        .select('label').eq('list_key', catListKey()).eq('active', true)
         .order('sort_order', { ascending: true });
       var items = Array.isArray(r.data) ? r.data : [];
       if (!items.length) return;                       // keep the fallback rather than empty the field
@@ -172,7 +183,7 @@
     var catSel = document.getElementById('pf-category');
     if (catSel) {
       var current = catSel.value;
-      paintCategories(CATEGORIES, current);
+      paintCategories(catFallback(), current);
       loadCategoryOptions();
     }
 
@@ -315,7 +326,7 @@
 
     var provRes = await window.supabase
       .from('providers')
-      .select('id, business_name, letter_mark, category, provider_type, country, city, area, address, contact_email, contact_phone, website, instagram, about, tagline, gallery, amenities, logo_url, hero_photo_url, tour_video_url, status, activities, activity_descriptions, latitude, longitude, maps_url, passport_discount_pct, timezone, currency, booking_mode, external_booking_url')
+      .select('id, business_name, letter_mark, category, categories, provider_type, country, city, area, address, contact_email, contact_phone, website, instagram, about, tagline, gallery, amenities, logo_url, hero_photo_url, tour_video_url, status, activities, activity_descriptions, latitude, longitude, maps_url, passport_discount_pct, timezone, currency, booking_mode, external_booking_url')
       .eq('id', id).single();
     if (provRes.error) throw provRes.error;
 
@@ -330,6 +341,7 @@
       business_name: p.business_name || '',
       letter_mark:   p.letter_mark || (p.business_name ? p.business_name[0].toUpperCase() : 'P'),
       category:      p.category || '',
+      categories:    Array.isArray(p.categories) ? p.categories.slice() : (p.category ? [p.category] : []),
       provider_type: p.provider_type || '',
       timezone:      p.timezone || 'Asia/Dubai',
       currency:      p.currency || 'AED',
@@ -437,6 +449,13 @@
           business_name:  businessName,
           letter_mark:    letterMark,
           category:       category,
+          categories:     (function () {
+            var cur = (typeof providerProfile !== 'undefined' && providerProfile && Array.isArray(providerProfile.categories))
+                      ? providerProfile.categories.slice() : [];
+            if (!category) return cur;
+            var i = cur.indexOf(category); if (i >= 0) cur.splice(i, 1);
+            cur.unshift(category); return cur;
+          })(),
           timezone:       timezone || null,
           currency:       currency || null,
           city:           city,
@@ -471,6 +490,11 @@
         providerProfile.business_name = businessName;
         providerProfile.letter_mark   = letterMark;
         providerProfile.category      = category;
+        if (category) {
+          var _cs = Array.isArray(providerProfile.categories) ? providerProfile.categories.slice() : [];
+          var _ci = _cs.indexOf(category); if (_ci >= 0) _cs.splice(_ci, 1);
+          _cs.unshift(category); providerProfile.categories = _cs;
+        }
         providerProfile.timezone      = timezone;
         providerProfile.city          = city;
         providerProfile.country       = country;
