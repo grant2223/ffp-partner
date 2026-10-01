@@ -734,6 +734,7 @@ h2.step{font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.14;mar
       business_name: $('business_name').value.trim(),
       first_name:    $('first_name').value.trim(),
       last_name:     $('last_name').value.trim(),
+      contact_name:  ($('first_name').value.trim() + ' ' + $('last_name').value.trim()).trim(),
       email:         $('email').value.trim().toLowerCase(),
       phone:         ($('phone-num').value.trim() ? $('phone-cc').value + ' ' + $('phone-num').value.trim() : ''),
       country:       $('country').value,
