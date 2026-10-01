@@ -789,9 +789,10 @@ h2.step{font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.14;mar
   }
   async function next3() {
     P.tagline = $('tagline').value.trim(); P.about = $('about').value.trim();
-    if (!P.logo || !P.banner || !P.about) {
-      $('err3').textContent = 'A logo, a banner photo and a line about you are what make a listing worth showing.'; return;
+    if (!P.logo || !P.about) {
+      $('err3').textContent = 'Add your logo and a line about you \u2014 a listing cannot show without them.'; return;
     }
+
     $('err3').textContent = '';
     await save({ logo_url: P.logo, hero_photo_url: P.banner, tagline: P.tagline, about: P.about,
                  gallery: P.gallery.map(function (u) { return { url: u }; }) });
