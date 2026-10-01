@@ -513,7 +513,7 @@ h2.step{font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.14;mar
             ['+20','EG'],['+27','ZA'],['+33','FR'],['+49','DE'],['+353','IE'],['+92','PK']];
 
   var P = { step: 0, providerId: null, email: '', name: '', city: '', country: '', area: '',
-            type: '', category: '', activities: [], logo: '', banner: '', gallery: [],
+            type: '', categories: [], activities: [], logo: '', banner: '', gallery: [],
             tagline: '', about: '', perk: 20, hours: [], mode: 'same' };
 
   function show(v) {
@@ -531,7 +531,7 @@ h2.step{font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.14;mar
   }
   function subLine() {
     var bits = [];
-    if (P.category) bits.push(P.category);
+    if (P.categories.length) bits.push(P.categories.slice(0, 2).join(', '));
     var where = [P.area, P.city].filter(Boolean).join(', ');
     if (where) bits.push(bits.length ? 'in ' + where : where);
     return bits.join(' ') || (P.city || '');
@@ -561,7 +561,7 @@ h2.step{font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.14;mar
     }
     return '<div class="comp"><h4>Listing completeness &mdash; what admin checks</h4>'
       + row(!!P.logo, 'Logo') + row(!!P.banner, 'Banner photo')
-      + row(!!(P.about && P.about.trim()), 'About / description') + row(!!P.category, 'Category') + '</div>';
+      + row(!!(P.about && P.about.trim()), 'About / description') + row(P.categories.length > 0, 'Category') + '</div>';
   }
   function paintSides() {
     ['2','3','4','5','done'].forEach(function (k) {
@@ -594,13 +594,16 @@ h2.step{font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.14;mar
     if (P.type === 'Event organizer') return (T.organizerCategories || []).slice();
     return (T.providerCategories || (window.FFP_CONST || {}).providerCategories || []).slice();
   }
+  /* MULTI-SELECT. An organiser runs leagues AND tournaments AND socials; a club is a venue
+     that also runs competitions. P.categories is the set, providers.category keeps the first
+     as the primary so every existing reader is untouched. */
   function paintCats() {
-    $('cat-lab').textContent = P.type === 'Event organizer' ? 'What do you run?'
-      : P.type === 'Brand' ? 'What do you sell?' : 'What kind of place?';
+    $('cat-lab').textContent = (P.type === 'Event organizer' ? 'What do you run?'
+      : P.type === 'Brand' ? 'What do you sell?' : 'What kind of place?') + ' Pick any that fit.';
     var list = catList();
-    if (list.indexOf(P.category) < 0) P.category = '';
+    P.categories = P.categories.filter(function (c) { return list.indexOf(c) >= 0; });
     $('cat-chips').innerHTML = list.map(function (c) {
-      return '<button type="button" class="chip' + (P.category === c ? ' on' : '') + '" data-cat="'
+      return '<button type="button" class="chip' + (P.categories.indexOf(c) >= 0 ? ' on' : '') + '" data-cat="'
         + esc(c) + '">' + esc(c) + '</button>'; }).join('');
   }
   function paintActs() {
@@ -775,11 +778,11 @@ h2.step{font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.14;mar
     show(String(n));
   }
   async function next2() {
-    if (!P.type || !P.category) { $('err2').textContent = 'Pick what you are, and one category.'; return; }
+    if (!P.type || !P.categories.length) { $('err2').textContent = 'Pick what you are, and at least one category.'; return; }
     $('err2').textContent = '';
     P.area = $('area').value.trim();
     await save({ provider_type: (P.type === 'Brand' ? 'Single location' : P.type),
-                 category: P.category, activities: P.activities,
+                 categories: P.categories, category: P.categories[0], activities: P.activities,
                  city: P.city, country: P.country, area: P.area });
     await markStep(3); go(3);
   }
@@ -828,7 +831,9 @@ h2.step{font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.14;mar
     var t = e.target.closest('[data-type]');
     if (t) { P.type = t.getAttribute('data-type'); paintTypes(); paintCats(); paintSides(); return; }
     var c = e.target.closest('[data-cat]');
-    if (c) { P.category = c.getAttribute('data-cat'); paintCats(); paintSides(); return; }
+    if (c) { var cv = c.getAttribute('data-cat'); var ci = P.categories.indexOf(cv);
+      if (ci >= 0) P.categories.splice(ci, 1); else P.categories.push(cv);
+      paintCats(); paintSides(); return; }
     var a = e.target.closest('[data-act]');
     if (a) { var v = a.getAttribute('data-act'); var i = P.activities.indexOf(v);
       if (i >= 0) P.activities.splice(i, 1); else P.activities.push(v); paintActs(); return; }
@@ -873,12 +878,15 @@ h2.step{font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.14;mar
     if (pid) {
       try {
         var r = await sb().from('providers')
-          .select('onboarding_step,business_name,city,country,area,category,provider_type,activities,logo_url,hero_photo_url,about,tagline,passport_discount_pct,contact_email')
+          .select('onboarding_step,business_name,city,country,area,category,categories,provider_type,activities,logo_url,hero_photo_url,about,tagline,passport_discount_pct,contact_email')
           .eq('id', pid).maybeSingle();
         var d = (r && r.data) || null;
         if (d && d.onboarding_step) {
           P.name = d.business_name || ''; P.city = d.city || ''; P.country = d.country || '';
-          P.area = d.area || ''; P.category = d.category || ''; P.type = d.provider_type || '';
+          P.area = d.area || '';
+          P.categories = (d.categories && d.categories.length) ? d.categories.slice()
+                       : (d.category ? [d.category] : []);
+          P.type = d.provider_type || '';
           P.activities = d.activities || []; P.logo = d.logo_url || ''; P.banner = d.hero_photo_url || '';
           P.about = d.about || ''; P.tagline = d.tagline || ''; P.email = d.contact_email || P.email;
           if (d.passport_discount_pct != null) P.perk = d.passport_discount_pct;
