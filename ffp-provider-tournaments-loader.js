@@ -74,7 +74,11 @@
     var sc = document.createElement('script'); sc.src = QR_LIB; sc.onload = go; sc.onerror = function () {}; document.head.appendChild(sc);
   }
 
-  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, grpDraw: false, brkConfirm: false };
+  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, grpDraw: false, brkConfirm: false,
+    /* SERIES: the list for the dropdowns, the one being edited, and the
+       panel that picks which series teams play a round. */
+    seriesList: null, seriesId: null, series: null, serTab: 'rounds', serTeamEdit: null,
+    serAddRound: false, serCreating: false, serEnter: null, freeEvents: null };
 
   function injectBaseCss() {
     if (document.getElementById('tgx-base')) return;
@@ -354,7 +358,59 @@
       '.bp-blk .bp-x{flex:none;font-size:19px;color:#93a3ae;cursor:pointer;}',
       '.bp-blk .bp-add{margin-top:12px;}',
       '.bp-blk .bp-none{font-size:13px;font-weight:600;color:#5c6f7c;padding:11px 0;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);}',
-      '.tg-opendraw .sp{flex:1;}'
+      '.tg-opendraw .sp{flex:1;}',
+      /* ── SERIES ───────────────────────────────────────────────────── */
+      '.ts-rd{display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid var(--ffp-border);flex-wrap:wrap;}',
+      '.ts-rd .pic{width:74px;height:50px;border-radius:9px;flex:none;background:#dbe7ef center/cover no-repeat;}',
+      '.ts-rd .ic{width:74px;flex:none;display:flex;align-items:center;justify-content:center;}',
+      '.ts-rd .ic .ms{font-size:26px;color:#93a3ae;}',
+      '.lg-row.ts-trow .g b{display:block;font-size:14.5px;font-weight:800;color:#12232f;}',
+      '.lg-row.ts-trow .g span{display:block;font-size:12px;font-weight:600;color:#5c6f7c;margin-top:2px;}',
+      '.ts-rd .g{flex:1 1 220px;min-width:0;}',
+      '.ts-rd .g b{display:block;font-size:14.5px;font-weight:800;color:#12232f;}',
+      '.ts-rd .g span{display:block;font-size:12px;font-weight:600;color:#5c6f7c;margin-top:2px;}',
+      '.ts-rd .g i.warn{font-style:normal;color:#b4610b;font-weight:800;}',
+      '.ts-rd .st{flex:none;font-size:9.5px;font-weight:900;letter-spacing:.6px;color:#5c6f7c;}',
+      '.ts-rd .st.live{color:#d6353b;}',
+      '.ts-rd .ax{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1 1 100%;}',
+      '.ts-num,.ts-chk{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:#12232f;}',
+      '.ts-num .lg-in{width:74px;min-width:0;flex:none;box-sizing:border-box;}',
+      '.ts-chk input{width:17px;height:17px;}',
+      '.ts-code{font-size:10px;font-weight:900;letter-spacing:.7px;color:#5c6f7c;margin-left:6px;}',
+      '.ts-sw{display:flex;gap:4px;flex:none;}',
+      '.ts-sw .sw{width:13px;height:20px;border-radius:3px;display:block;border:1px solid rgba(0,0,0,.12);}',
+      '.lg-row.ts-off{opacity:.55;}',
+      '.lg-row .g i.warn{font-style:normal;color:#b4610b;font-weight:800;}',
+      '.ts-imp{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-top:14px;padding:13px 15px;border-radius:12px;background:#fff6e2;border:1px solid #f0d9a6;}',
+      '.ts-imp .ms{color:#b4610b;}',
+      '.ts-imp .g{flex:1 1 230px;min-width:0;}',
+      '.ts-imp .g b{display:block;font-size:13.5px;font-weight:800;color:#6b4306;}',
+      '.ts-imp .g span{display:block;font-size:12px;font-weight:600;color:#8a6a2f;margin-top:2px;}',
+      /* the points table: one row per finishing place, nothing boxed inside
+         anything else -- it sits straight on the section */
+      '.ts-pts{display:flex;flex-direction:column;gap:0;max-width:430px;}',
+      '.ts-pt{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--ffp-border);}',
+      '.ts-pt .pl{flex:1;font-size:13.5px;font-weight:800;color:#12232f;}',
+      '.ts-pt .lg-in{width:92px;min-width:0;flex:none;box-sizing:border-box;text-align:right;}',
+      '.ts-pt .u{flex:none;width:52px;font-size:12px;font-weight:700;color:#5c6f7c;}',
+      '.ts-pt.other{border-top:2px solid var(--ffp-border);border-bottom:0;}',
+      '.ts-pt.other .pl{color:#5c6f7c;}',
+      '.ts-ptrow{display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap;}',
+      '.ts-imgs{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 16px;}',
+      '.ts-imgs .im .lg-lab{margin-bottom:6px;}',
+      '.ts-imgs .bx{width:210px;height:118px;border-radius:12px;background:#eef2f6 center/cover no-repeat;border:1px dashed #c3ced6;display:flex;align-items:center;justify-content:center;cursor:pointer;}',
+      '.ts-imgs .bx.sq{width:118px;}',
+      '.ts-imgs .bx .ms{font-size:30px;color:#93a3ae;}',
+      /* picking who plays this round */
+      '.ts-pick{margin:14px 0;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);}',
+      '.ts-pick .hd{display:flex;align-items:center;gap:9px;padding:13px 0 11px;font-size:13.5px;font-weight:800;color:#12232f;}',
+      '.ts-pick .hd .ms{color:#1980AD;}',
+      '.ts-pick .bd{display:flex;flex-wrap:wrap;gap:9px;padding:0 0 14px;}',
+      '.ts-pick .tm{display:flex;align-items:center;gap:9px;padding:8px 13px 8px 10px;border:1px solid var(--ffp-border);border-radius:100px;font-size:13px;font-weight:700;color:#12232f;cursor:pointer;background:#fff;}',
+      '.ts-pick .tm.on{border-color:#1980AD;background:#eaf3fa;}',
+      '.ts-pick .tm input{width:17px;height:17px;flex:none;}',
+      '.ts-pick .tm .lg-av{width:26px;height:26px;font-size:11px;}',
+      '.ts-pick .ft{display:flex;gap:9px;padding:0 0 15px;}'
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -535,12 +591,34 @@
     var newCard = S.creating
       ? '<div class="lg-card" style="cursor:default"><div class="lg-cover"><div class="scr"></div></div><div class="lg-cbody"><input class="lg-in" id="tg-newname" placeholder="Tournament name" onkeydown="if(event.key===\'Enter\')FFPTourn.doCreate()"><div style="display:flex;gap:8px;margin-top:8px"><button class="lg-btn pri" onclick="FFPTourn.doCreate()">Create</button><button class="lg-btn ghost" onclick="FFPTourn.cancelCreate()">Cancel</button></div></div></div>'
       : '<div class="lg-new" onclick="FFPTourn.startCreate()">' + ic('add') + 'Create a tournament</div>';
-    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">Tournaments</div><div class="lg-sub">Groups + knockout bracket.</div></div></div><div class="lg-grid">' + cards + newCard + '</div>'
+    /* SERIES first: a run of tournaments that share their teams. Its rounds
+       still appear in the grid below -- a round IS a tournament -- so this is
+       a way in, not a second copy of the list. */
+    var sers = await loadMySeries();
+    var serHtml = (sers || []).map(function (x) {
+      var nx = x.next_round || null;
+      return '<div class="ts-rd" style="cursor:pointer" onclick="FFPTourn.openSeries(\'' + x.id + '\')">'
+        + '<span class="pic" style="' + (x.cover_url ? 'background-image:url(\'' + esc(x.cover_url) + '\')' : '') + '"></span>'
+        + '<div class="g"><b>' + esc(x.name) + '</b><span>'
+        +   esc([(x.rounds || 0) + ((x.rounds === 1) ? ' round' : ' rounds'),
+                 (x.teams || 0) + ((x.teams === 1) ? ' team' : ' teams'), x.city].filter(Boolean).join(', '))
+        + '</span><span>' + (nx ? 'Next: ' + esc(nx.name) : 'No round open') + '</span></div>'
+        + '<span class="ms" style="color:#93a3ae">chevron_right</span></div>';
+    }).join('');
+    var serAdd = S.serCreating
+      ? '<div class="lg-edit"><input class="lg-in" id="ts-newname" placeholder="Series name" onkeydown="if(event.key===\'Enter\')FFPTourn.serCreate()"><button class="lg-btn pri" onclick="FFPTourn.serCreate()">' + ic('check') + 'Create</button><button class="lg-btn ghost" onclick="FFPTourn.serCreateCancel()">Cancel</button></div>'
+      : '<button class="lg-btn" onclick="FFPTourn.serCreateOpen()">' + ic('add') + 'Create a series</button>';
+    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">Tournaments</div><div class="lg-sub">Groups + knockout bracket.</div></div></div>'
+      + '<div class="tg-sec"><div class="tg-sech">Series</div>'
+      + '<div class="tg-hint" style="margin:0 0 10px">A series carries its teams from one round to the next, and adds up where each team finishes.</div>'
+      + serHtml + serAdd + '</div>'
+      + '<div class="tg-sech" style="margin-top:22px">All tournaments</div><div class="lg-grid">' + cards + newCard + '</div>'
       + (arch.length ? '<div class="lg-archrow"><button class="lg-btn ghost" onclick="FFPTourn.toggleArchived()">'
           + ic(S.showArchived ? 'visibility_off' : 'inventory_2')
           + (S.showArchived ? 'Hide archived' : arch.length + ' archived') + '</button></div>' : '')
       + '</div>';
     if (S.creating) { var i = document.getElementById('tg-newname'); if (i) i.focus(); }
+    if (S.serCreating) { var si = document.getElementById('ts-newname'); if (si) si.focus(); }
   }
   function startCreate() { S.creating = true; renderList(); }
   function cancelCreate() { S.creating = false; renderList(); }
@@ -2022,7 +2100,7 @@
     return n + ' ' + N.many + ' in ' + ng + ' groups, top ' + (d.groups_advance || 2) + ' of each into a knockout';
   }
   async function renderSetup(host) {
-    await loadSports(); await taxReady();
+    await loadSports(); await taxReady(); await loadMySeries();
     var ev = S.detail.event || {}, divs = S.detail.divisions || [];
     var mode = ev.entrant_mode || 'individual';
     if (!S.divId && divs.length) S.divId = divs[0].id;
@@ -2042,6 +2120,7 @@
       + '</select>'
       + '<div class="tg-hint" id="tg-sporthint">' + esc(sportSetHint(ev.sport_key)) + '</div></div>'
       + rulesBlock(ev)
+      + serSetupHtml(ev)
       + '<div class="lg-fld"><div class="lg-lab">Who competes?</div><div class="lg-seg" id="tg-mode">' + modeSeg + '</div>'
       + '<div class="tg-hint" id="tg-modehint">' + esc(modeHint) + '</div></div>'
       + '<button class="lg-btn pri" onclick="FFPTourn.saveSetup()">' + ic('check') + 'Save</button>'
@@ -2321,6 +2400,7 @@
     p.sport_key = k; p.entrant_mode = (S.detail.event || {}).entrant_mode || 'individual';
     var r; try { r = await sb().rpc('tourn_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast(said(r.error) || 'Could not save the sport', 'error'); return; }
+    await serSaveLink();
     toast('Saved', 'success'); refreshDetail();
   }
   function setDivFmt(k) {
@@ -2660,7 +2740,11 @@
     var adder = S.entAdd
       ? '<div class="lg-edit"><input class="lg-in" id="tg-entname" placeholder="' + N.One + ' name" onkeydown="if(event.key===\'Enter\')FFPTourn.saveEntrant()"><button class="lg-btn pri" onclick="FFPTourn.saveEntrant()">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPTourn.cancelEntrant()">Cancel</button></div>'
       : '<button class="lg-btn" onclick="FFPTourn.addEntrant()">' + ic('add') + 'Add a ' + N.one + '</button>';
-    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'entrants\')">' + divOpts() + '</select><span class="sp"></span>' + (S.divId ? '<button class="lg-btn" onclick="FFPTourn.bulkAthletes()">' + ic('upload_file') + 'Bulk add</button>' : '') + '</div>' + adder + '<div id="tg-roster"><div class="lg-empty">Loading…</div></div>';
+    /* A round of a series starts from the series list, not a blank form. */
+    var inSeries = !!(S.detail && S.detail.event && S.detail.event.series_id);
+    var serBtn = (inSeries && S.divId && !S.serEnter)
+      ? '<button class="lg-btn" onclick="FFPTourn.serEnterOpen()">' + ic('groups') + 'Add from the series</button>' : '';
+    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'entrants\')">' + divOpts() + '</select><span class="sp"></span>' + serBtn + (S.divId ? '<button class="lg-btn" onclick="FFPTourn.bulkAthletes()">' + ic('upload_file') + 'Bulk add</button>' : '') + '</div>' + serEnterHtml() + adder + '<div id="tg-roster"><div class="lg-empty">Loading…</div></div>';
     var f = document.getElementById('tg-entname'); if (f) f.focus();
     var r; try { r = await sb().rpc('tourn_roster', { p_division: S.divId }); } catch (e) { r = { error: e }; }
     try { var sq = await sb().rpc('lt_squad_list', { p_scope: 'tourn', p_event: S.eventId }); S._squad = (sq && sq.data) || []; } catch (e) { S._squad = []; }
@@ -3271,6 +3355,33 @@
       onDone: function (url) { var p = {}; p[isLogo ? 'logo_url' : 'cover_url'] = url; sb().rpc('tourn_event_save', { p_id: S.eventId, p: p }).then(function () { toast('Saved', 'success'); open(S.eventId); }); },
       onError: function () { toast('Upload failed', 'error'); } });
   }
+  function serImg(field) {
+    if (!window.FFPUpload) { toast('Uploader not ready \u2014 refresh', 'error'); return; }
+    var isLogo = field === 'logo_url';
+    window.FFPUpload.pick({
+      bucket: isLogo ? 'provider-logos' : 'listing-covers',
+      key: (isLogo ? 'tslogo-' : 'tscover-') + S.seriesId + '-' + Date.now(),
+      aspect: isLogo ? 1 : 16 / 9, outW: isLogo ? 512 : 1600, outH: isLogo ? 512 : 900,
+      title: isLogo ? 'Series crest (square)' : 'Series banner (16:9)',
+      onDone: function (url) {
+        var p = {}; p[field] = url;
+        sb().rpc('tourn_series_save', { p_id: S.seriesId, p: p }).then(function () {
+          S.seriesList = null; toast('Saved', 'success'); reloadSeries();
+        });
+      },
+      onError: function () { toast('Upload failed', 'error'); } });
+  }
+  function serTeamLogo(id) {
+    if (!window.FFPUpload) { toast('Uploader not ready \u2014 refresh', 'error'); return; }
+    window.FFPUpload.pick({ bucket: 'provider-logos', key: 'tsteam-' + id + '-' + Date.now(),
+      aspect: 1, outW: 400, outH: 400, title: 'Team crest (square)',
+      onDone: function (url) {
+        sb().rpc('tourn_series_team_save', { p_id: id, p_series: null, p: { logo_url: url } }).then(function () {
+          toast('Crest saved', 'success'); reloadSeries();
+        });
+      },
+      onError: function () { toast('Upload failed', 'error'); } });
+  }
   function entLogo(id) {
     if (!window.FFPUpload) { toast('Uploader not ready — refresh', 'error'); return; }
     window.FFPUpload.pick({ bucket: 'provider-logos', key: 'tgteam-' + id + '-' + Date.now(), aspect: 1, outW: 400, outH: 400, title: 'Team logo (square)',
@@ -3673,8 +3784,442 @@
   // guessing from the screen: open the console and read this line.
   var BUILD = '2026-09-30.2';
   console.log('[FFP Tournaments] build ' + BUILD);
+  // ══════════════════════════════════════════════════════════════════════
+  // SERIES — a run of tournaments that share their teams.
+  //
+  // The point of a series is that a team is entered ONCE. Round 2 starts from
+  // the series list -- tick who is playing and the name, short name, code,
+  // colours and crest come with them -- instead of ten teams being retyped.
+  // Everything is edited inline; this console never uses a browser prompt.
+  // ══════════════════════════════════════════════════════════════════════
+  var SER_TABS = [['rounds', 'Rounds'], ['teams', 'Teams'], ['points', 'Points table'], ['details', 'Details']];
+  /* The World Rugby Sevens Series shape, offered as a starting point and then
+     the organiser's to change. It is NEVER applied without them asking. */
+  var PTS_PRESET = { '1': 20, '2': 18, '3': 16, '4': 14, '5': 12, '6': 10, '7': 8, '8': 6, 'other': 2 };
+
+  function serTabBtn(id, label) {
+    return '<button class="' + (S.serTab === id ? 'on' : '') + '" onclick="FFPTourn.serTab(\'' + id + '\')">' + label + '</button>';
+  }
+  function ser() { return (S.series && S.series.series) || {}; }
+  function serRounds() { return (S.series && S.series.rounds) || []; }
+  function serTeams() { return (S.series && S.series.teams) || []; }
+  function roundLbl(r) {
+    return r.is_finals ? 'Finals' : (r.series_round === null || r.series_round === undefined ? r.name : 'Round ' + r.series_round);
+  }
+  function dOnly(s) {
+    if (!s) return '';
+    try { return new Date(s + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }); }
+    catch (e) { return ''; }
+  }
+
+  async function loadMySeries(force) {
+    if (S.seriesList && !force) return S.seriesList;
+    var r; try { r = await sb().rpc('tourn_my_series'); } catch (e) { r = { error: e }; }
+    if (r && r.error) toast(errText(r.error, 'Could not load your series'), 'error');
+    S.seriesList = (r && r.data) || [];
+    return S.seriesList;
+  }
+
+  async function openSeries(id) {
+    S.view = 'series'; S.seriesId = id;
+    S.serTab = S.serTab || 'rounds'; S.serTeamEdit = null; S.serAddRound = false; S.serEnter = null;
+    await reloadSeries(true);
+  }
+  async function reloadSeries(first) {
+    var r; try { r = await sb().rpc('tourn_series_admin', { p_series: S.seriesId }); } catch (e) { r = { error: e }; }
+    /* A failed read used to render as "this series is empty", which is the same
+       picture as a working empty series. Never again. */
+    if (!r || r.error || !r.data) {
+      toast(errText(r && r.error, 'Could not open that series'), 'error');
+      if (first) { S.view = 'list'; return renderList(); }
+      return;
+    }
+    S.series = r.data; renderSeries();
+  }
+
+  function renderSeries() {
+    injectCss(); var el = root(); if (!el || !S.series) return;
+    var s = ser(), rs = serRounds(), ts = serTeams();
+    var live = rs.filter(function (r) { return r.status === 'live'; }).length;
+    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div>'
+      + '<div class="lg-h1">' + esc(s.name || 'Series') + '<span class="lg-pill ' + esc(s.status || 'open') + '">SERIES</span></div>'
+      + '<div class="lg-sub">' + esc([
+          rs.length + (rs.length === 1 ? ' round' : ' rounds'),
+          ts.filter(function (t) { return t.status === 'active'; }).length + ' teams',
+          live ? live + ' live now' : '', s.city
+        ].filter(Boolean).join(', ')) + '</div></div>'
+      + '<button class="lg-btn" onclick="FFPTourn.back()">' + ic('arrow_back') + 'All tournaments</button></div>'
+      + '<div class="lg-nav">' + SER_TABS.map(function (t) { return serTabBtn(t[0], t[1]); }).join('') + '</div>'
+      + '<div id="tg-tab"></div></div>';
+    renderSerTab();
+  }
+  function renderSerTab() {
+    var host = document.getElementById('tg-tab'); if (!host) return;
+    if (S.serTab === 'teams') return renderSerTeams(host);
+    if (S.serTab === 'points') return renderSerPoints(host);
+    if (S.serTab === 'details') return renderSerDetails(host);
+    return renderSerRounds(host);
+  }
+
+  // ── ROUNDS ────────────────────────────────────────────────────────────
+  function renderSerRounds(host) {
+    var rs = serRounds();
+    var rows = rs.length ? rs.map(function (r) {
+      var cov = r.cover_url || r.logo_url;
+      var unlinked = (r.entrants || 0) - (r.linked || 0);
+      return '<div class="ts-rd">'
+        + (cov ? '<span class="pic" style="background-image:url(\'' + esc(cov) + '\')"></span>'
+               : '<span class="ic">' + ic('emoji_events') + '</span>')
+        + '<div class="g"><b>' + esc(roundLbl(r)) + '</b>'
+        +   '<span>' + esc([r.name, dOnly(r.starts_at) || 'Date to be confirmed', r.city].filter(Boolean).join(', ')) + '</span>'
+        +   '<span>' + (r.entrants || 0) + (r.entrants === 1 ? ' team' : ' teams')
+        +     (unlinked > 0 ? ', <i class="warn">' + unlinked + ' not linked to the series</i>' : '') + '</span></div>'
+        + '<span class="st ' + esc(r.status) + '">' + esc(String(r.status || 'draft').toUpperCase()) + '</span>'
+        + '<div class="ax">'
+        +   '<label class="ts-num">Round <input class="lg-in" type="number" min="0" id="ts-rn-' + r.id + '" value="' + (r.series_round === null || r.series_round === undefined ? '' : r.series_round) + '"></label>'
+        +   '<label class="ts-chk"><input type="checkbox" id="ts-rf-' + r.id + '"' + (r.is_finals ? ' checked' : '') + '> Finals</label>'
+        +   '<button class="lg-btn sm" onclick="FFPTourn.serRoundSave(\'' + r.id + '\')">' + ic('check') + 'Save</button>'
+        +   '<button class="lg-btn sm" onclick="FFPTourn.open(\'' + r.id + '\')">' + ic('open_in_new') + 'Open</button>'
+        +   (unlinked > 0 ? '<button class="lg-btn sm" onclick="FFPTourn.serAdopt(\'' + r.id + '\')">' + ic('playlist_add') + 'Import its teams</button>' : '')
+        +   '<button class="lg-btn sm ghost" onclick="FFPTourn.serRoundOut(\'' + r.id + '\')">Remove from series</button>'
+        + '</div></div>';
+    }).join('') : '<div class="lg-empty" style="text-align:left;padding:4px 0">No rounds yet. Add a tournament below and it becomes Round 1.</div>';
+
+    var adder;
+    if (S.serAddRound) {
+      var mine = (S.freeEvents || []).filter(function (e) { return !e.series_id; });
+      adder = '<div class="lg-edit" style="flex-wrap:wrap">'
+        + (mine.length
+            ? '<select class="lg-sel" id="ts-newrd" style="max-width:360px">'
+              + mine.map(function (e) { return '<option value="' + e.id + '">' + esc(e.name) + (e.starts_at ? ' (' + esc(dOnly(e.starts_at)) + ')' : '') + '</option>'; }).join('')
+              + '</select>'
+              + '<label class="ts-num">Round <input class="lg-in" type="number" min="0" id="ts-newrn" value="' + (rs.length + 1) + '"></label>'
+              + '<label class="ts-chk"><input type="checkbox" id="ts-newrf"> Finals</label>'
+              + '<button class="lg-btn pri" onclick="FFPTourn.serRoundAdd()">' + ic('check') + 'Add round</button>'
+            : '<div class="lg-empty" style="text-align:left;padding:4px 10px">Every tournament you own is already in a series. Create a tournament first, then add it here.</div>')
+        + '<button class="lg-btn ghost" onclick="FFPTourn.serAddRoundCancel()">Cancel</button></div>';
+    } else {
+      adder = '<button class="lg-btn" onclick="FFPTourn.serAddRoundOpen()">' + ic('add') + 'Add a round</button>';
+    }
+    host.innerHTML = '<div class="tg-sec"><div class="tg-sech">Rounds</div>'
+      + '<div class="tg-hint" style="margin:0 0 10px">A round is an ordinary tournament. It keeps its own draw, schedule and crew; the series only decides the order and adds up the points.</div>'
+      + rows + adder + '</div>';
+  }
+
+  // ── TEAMS ─────────────────────────────────────────────────────────────
+  function teamRow(t) {
+    if (S.serTeamEdit === t.id) return teamForm(t);
+    var init = t.logo_url ? '' : esc((t.team_name || '?').slice(0, 1));
+    var bg = t.logo_url ? 'background-image:url(\'' + esc(t.logo_url) + '\')' : '';
+    var sw = (t.color1 ? '<i class="sw" style="background:' + esc(t.color1) + '"></i>' : '')
+           + (t.color2 ? '<i class="sw" style="background:' + esc(t.color2) + '"></i>' : '');
+    var n = (t.in_rounds || []).length;
+    var gaps = !t.code || !t.color1;
+    var bits = [t.code || '', t.status === 'active' ? (n ? 'in ' + n + (n === 1 ? ' round' : ' rounds') : 'not in a round yet') : 'stood down'].filter(Boolean);
+    return '<div class="lg-row ts-trow' + (t.status === 'active' ? '' : ' ts-off') + '">'
+      + '<span class="lg-av" style="' + bg + '">' + init + '</span>'
+      + '<div class="g"><b>' + esc(t.team_name) + '</b>'
+      +   '<span>' + esc(bits.join(', '))
+      +     (gaps ? ', <i class="warn">' + (!t.code && !t.color1 ? 'no code or colours' : !t.code ? 'no code' : 'no colours') + ' for the graphics</i>' : '') + '</span></div>'
+      + '<span class="ts-sw">' + sw + '</span>'
+      + '<span class="ms act" title="Edit" onclick="FFPTourn.serTeamEdit(\'' + t.id + '\')">edit</span></div>';
+  }
+  function teamForm(t) {
+    var id = t ? t.id : 'new';
+    var v = t || {};
+    var init = v.logo_url ? '' : esc((v.team_name || '?').slice(0, 1));
+    var bg = v.logo_url ? 'background-image:url(\'' + esc(v.logo_url) + '\')' : '';
+    return '<div class="lg-edit lg-entform">'
+      + '<span class="crest"><span class="lg-av' + (t ? ' lg-avedit' : '') + '"' + (t ? ' title="Add / change crest" onclick="FFPTourn.serTeamLogo(\'' + t.id + '\')"' : '') + ' style="' + bg + '">' + init + (t ? '<span class="lg-avplus ms">add</span>' : '') + '</span></span>'
+      + '<div class="f gr"><label>Team name</label><input class="lg-in" id="ts-t-name-' + id + '" value="' + esc(v.team_name || '') + '" onkeydown="if(event.key===\'Enter\')FFPTourn.serTeamSave(\'' + id + '\')"></div>'
+      + '<div class="f"><label>Short name</label><input class="lg-in" id="ts-t-short-' + id + '" placeholder="For the scorebug" value="' + esc(v.short_name || '') + '"></div>'
+      + '<div class="f sm"><label>Code</label><input class="lg-in" id="ts-t-code-' + id + '" maxlength="4" placeholder="BAT" value="' + esc(v.code || '') + '"></div>'
+      + '<div class="f sm"><label>Home colour</label><div class="lg-hex"><input class="sw" type="color" value="' + esc(v.color1 || '#0C2E63') + '" oninput="FFPTourn.hexSync(\'ts-t-c1-' + id + '\',this.value)"><input class="lg-in" id="ts-t-c1-' + id + '" maxlength="7" placeholder="#000000" value="' + esc(v.color1 || '') + '"></div></div>'
+      + '<div class="f sm"><label>Away colour</label><div class="lg-hex"><input class="sw" type="color" value="' + esc(v.color2 || '#1B57AE') + '" oninput="FFPTourn.hexSync(\'ts-t-c2-' + id + '\',this.value)"><input class="lg-in" id="ts-t-c2-' + id + '" maxlength="7" placeholder="#000000" value="' + esc(v.color2 || '') + '"></div></div>'
+      + '<div class="acts"><button class="lg-btn pri" onclick="FFPTourn.serTeamSave(\'' + id + '\')">' + ic('check') + 'Save</button>'
+      +   (t ? '<button class="lg-btn ghost" onclick="FFPTourn.serTeamStatus(\'' + t.id + '\',\'' + (t.status === 'active' ? 'retired' : 'active') + '\')">' + (t.status === 'active' ? 'Stand down' : 'Bring back') + '</button>' : '')
+      +   '<button class="lg-btn ghost" onclick="FFPTourn.serTeamCancel()">Cancel</button></div></div>';
+  }
+  function renderSerTeams(host) {
+    var ts = serTeams();
+    var on = ts.filter(function (t) { return t.status === 'active'; });
+    var off = ts.filter(function (t) { return t.status !== 'active'; });
+    var importers = serRounds().filter(function (r) { return (r.entrants || 0) > (r.linked || 0); });
+    host.innerHTML = '<div class="tg-sec"><div class="tg-sech">Teams in the series</div>'
+      + '<div class="tg-hint" style="margin:0 0 10px">Entered once. Every round you add them to brings the name, code, colours and crest with it.</div>'
+      + (on.length ? on.map(teamRow).join('') : '<div class="lg-empty" style="text-align:left;padding:4px 0">No teams yet.</div>')
+      + (S.serTeamEdit === 'new' ? teamForm(null) : '<button class="lg-btn" onclick="FFPTourn.serTeamEdit(\'new\')">' + ic('add') + 'Add a team</button>')
+      + (importers.length
+          ? '<div class="ts-imp">' + ic('playlist_add')
+            + '<div class="g"><b>Teams already typed into a round</b><span>Lift them into the series instead of entering them again. Running it twice changes nothing.</span></div>'
+            + importers.map(function (r) { return '<button class="lg-btn sm" onclick="FFPTourn.serAdopt(\'' + r.id + '\')">' + esc(roundLbl(r)) + ' (' + ((r.entrants || 0) - (r.linked || 0)) + ')</button>'; }).join('')
+            + '</div>'
+          : '')
+      + '</div>'
+      + (off.length ? '<div class="tg-sec"><div class="tg-sech">Stood down</div>'
+          + '<div class="tg-hint" style="margin:0 0 10px">Still part of the series and still on past results. They just are not offered when you pick who is playing.</div>'
+          + off.map(teamRow).join('') + '</div>' : '');
+  }
+
+  // ── POINTS TABLE ──────────────────────────────────────────────────────
+  function renderSerPoints(host) {
+    var pt = ser().points_table || {};
+    var places = Object.keys(pt).filter(function (k) { return /^[0-9]+$/.test(k); })
+                   .map(Number).sort(function (a, b) { return a - b; });
+    if (!places.length) places = [1, 2, 3, 4];
+    var rows = places.map(function (p) {
+      return '<div class="ts-pt"><span class="pl">' + ordNum(p) + '</span>'
+        + '<input class="lg-in" type="number" min="0" step="1" id="ts-p-' + p + '" value="' + (pt[String(p)] == null ? '' : pt[String(p)]) + '">'
+        + '<span class="u">points</span></div>';
+    }).join('');
+    host.innerHTML = '<div class="tg-sec"><div class="tg-sech">Series points table</div>'
+      + '<div class="tg-hint" style="margin:0 0 12px">Points come from where a team FINISHES each round, not from match results. A round still being played scores nothing until it is decided.</div>'
+      + '<div class="ts-pts">' + rows
+      + '<div class="ts-pt other"><span class="pl">Every other place</span>'
+      +   '<input class="lg-in" type="number" min="0" step="1" id="ts-p-other" value="' + (pt.other == null ? '' : pt.other) + '">'
+      +   '<span class="u">points</span></div></div>'
+      + '<div class="ts-ptrow">'
+      +   '<button class="lg-btn sm ghost" onclick="FFPTourn.serPtsPlace(1)">' + ic('add') + 'Another place</button>'
+      +   (places.length > 1 ? '<button class="lg-btn sm ghost" onclick="FFPTourn.serPtsPlace(-1)">' + ic('remove') + 'One fewer</button>' : '')
+      +   '<button class="lg-btn sm ghost" onclick="FFPTourn.serPtsPreset()">Use the standard 7s table</button>'
+      + '</div>'
+      + '<button class="lg-btn pri" style="margin-top:14px" onclick="FFPTourn.serPtsSave()">' + ic('check') + 'Save points table</button>'
+      + '</div>';
+  }
+
+  // ── DETAILS ───────────────────────────────────────────────────────────
+  function renderSerDetails(host) {
+    var s = ser();
+    var cov = s.cover_url, lg = s.logo_url;
+    host.innerHTML = '<div class="tg-sec"><div class="tg-sech">Details</div>'
+      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Series name</div><input class="lg-in" id="ts-d-name" value="' + esc(s.name || '') + '"></div>'
+      +   '<div class="lg-fld"><div class="lg-lab">Status</div><select class="lg-sel" id="ts-d-status">'
+      +     ['open', 'live', 'final', 'archived'].map(function (k) { return '<option value="' + k + '"' + (s.status === k ? ' selected' : '') + '>' + k.charAt(0).toUpperCase() + k.slice(1) + '</option>'; }).join('')
+      +   '</select></div></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Description</div><input class="lg-in" id="ts-d-desc" value="' + esc(s.description || '') + '"></div>'
+      + '<div class="lg-3"><div class="lg-fld"><div class="lg-lab">City</div><input class="lg-in" id="ts-d-city" list="ts-cities" value="' + esc(s.city || '') + '"><datalist id="ts-cities">' + dlOpts(cityNames()) + '</datalist></div>'
+      +   '<div class="lg-fld"><div class="lg-lab">Country</div><input class="lg-in" id="ts-d-country" list="ts-countries" value="' + esc(s.country || '') + '"><datalist id="ts-countries">' + dlOpts(countryNames()) + '</datalist></div>'
+      +   '<div class="lg-fld"><div class="lg-lab">Time zone</div><input class="lg-in" id="ts-d-tz" placeholder="Asia/Dubai" value="' + esc(s.timezone || '') + '"></div></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Accent colour</div><div class="lg-hex" style="max-width:220px"><input class="sw" type="color" value="' + esc(s.accent || '#1980AD') + '" oninput="FFPTourn.hexSync(\'ts-d-accent\',this.value)"><input class="lg-in" id="ts-d-accent" maxlength="7" placeholder="#000000" value="' + esc(s.accent || '') + '"></div></div>'
+      + '<div class="ts-imgs">'
+      +   '<div class="im"><div class="lg-lab">Cover</div><div class="bx" style="' + (cov ? 'background-image:url(\'' + esc(cov) + '\')' : '') + '" onclick="FFPTourn.serImg(\'cover_url\')">' + (cov ? '' : ic('add_photo_alternate')) + '</div></div>'
+      +   '<div class="im"><div class="lg-lab">Crest</div><div class="bx sq" style="' + (lg ? 'background-image:url(\'' + esc(lg) + '\')' : '') + '" onclick="FFPTourn.serImg(\'logo_url\')">' + (lg ? '' : ic('add_photo_alternate')) + '</div></div>'
+      + '</div>'
+      + '<button class="lg-btn pri" style="margin-top:4px" onclick="FFPTourn.serDetailsSave()">' + ic('check') + 'Save</button></div>';
+  }
+
+  // ── ACTIONS ───────────────────────────────────────────────────────────
+  function gv(id) { var e = document.getElementById(id); return e ? String(e.value || '').trim() : ''; }
+  function gck(id) { var e = document.getElementById(id); return !!(e && e.checked); }
+
+  async function serCreate() {
+    var nm = gv('ts-newname'); if (!nm) { toast('Name the series first', 'error'); return; }
+    var r; try { r = await sb().rpc('tourn_series_save', { p_id: null, p: { name: nm, status: 'open' } }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error || !r.data) { toast(errText(r && r.error, 'Could not create the series'), 'error'); return; }
+    S.serCreating = false; S.seriesList = null; await loadMySeries(true);
+    openSeries(r.data);
+  }
+  async function serRoundSave(id) {
+    var n = parseInt(gv('ts-rn-' + id), 10); if (isNaN(n)) n = null;
+    var r; try { r = await sb().rpc('tourn_series_set_event', { p_series: S.seriesId, p_event: id, p_round: n, p_is_finals: gck('ts-rf-' + id) }); }
+    catch (e) { r = { error: e }; }
+    if (r && r.error) { toast(errText(r.error, 'Could not save that round'), 'error'); return; }
+    toast('Round saved'); S.seriesList = null; reloadSeries();
+  }
+  async function serRoundAdd() {
+    var id = gv('ts-newrd'); if (!id) return;
+    var n = parseInt(gv('ts-newrn'), 10); if (isNaN(n)) n = null;
+    var r; try { r = await sb().rpc('tourn_series_set_event', { p_series: S.seriesId, p_event: id, p_round: n, p_is_finals: gck('ts-newrf') }); }
+    catch (e) { r = { error: e }; }
+    if (r && r.error) { toast(errText(r.error, 'Could not add that round'), 'error'); return; }
+    S.serAddRound = false; S.seriesList = null; S.freeEvents = null;
+    toast('Round added'); reloadSeries();
+  }
+  async function serRoundOut(id) {
+    var r; try { r = await sb().rpc('tourn_series_unset_event', { p_event: id }); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast(errText(r.error, 'Could not remove that round'), 'error'); return; }
+    S.seriesList = null; S.freeEvents = null;
+    toast('Removed from the series. The tournament itself is untouched.');
+    reloadSeries();
+  }
+  async function serAddRoundOpen() {
+    S.serAddRound = true;
+    if (!S.freeEvents) {
+      var r; try { r = await sb().rpc('tourn_my_events'); } catch (e) { r = { error: e }; }
+      S.freeEvents = ((r && r.data) || []).filter(function (e) { return e.status !== 'archived'; });
+    }
+    renderSerTab();
+  }
+  async function serAdopt(roundId) {
+    var r; try { r = await sb().rpc('tourn_series_adopt_round', { p_series: S.seriesId, p_tourn: roundId }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not import those teams'), 'error'); return; }
+    var d = r.data || {};
+    toast(d.created ? d.created + ' team' + (d.created === 1 ? '' : 's') + ' added to the series' : 'Nothing new to import');
+    reloadSeries();
+  }
+  async function serTeamSave(id) {
+    var isNew = (id === 'new');
+    var p = {
+      team_name: gv('ts-t-name-' + id), short_name: gv('ts-t-short-' + id),
+      code: gv('ts-t-code-' + id).toUpperCase(), color1: gv('ts-t-c1-' + id), color2: gv('ts-t-c2-' + id)
+    };
+    if (!p.team_name) { toast('Name the team first', 'error'); return; }
+    var r; try { r = await sb().rpc('tourn_series_team_save', { p_id: isNew ? null : id, p_series: isNew ? S.seriesId : null, p: p }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not save that team'), 'error'); return; }
+    S.serTeamEdit = null; toast('Team saved'); reloadSeries();
+  }
+  async function serTeamStatus(id, st) {
+    var r; try { r = await sb().rpc('tourn_series_team_save', { p_id: id, p_series: null, p: { status: st } }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not change that team'), 'error'); return; }
+    S.serTeamEdit = null; reloadSeries();
+  }
+  async function serPtsSave() {
+    var pt = {}, bad = false;
+    document.querySelectorAll('[id^="ts-p-"]').forEach(function (el) {
+      var k = el.id.slice('ts-p-'.length), v = String(el.value || '').trim();
+      if (v === '') return;
+      var n = Number(v); if (!isFinite(n) || n < 0) { bad = true; return; }
+      pt[k] = n;
+    });
+    if (bad) { toast('Points must be zero or more', 'error'); return; }
+    var r; try { r = await sb().rpc('tourn_series_save', { p_id: S.seriesId, p: { points_table: pt } }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not save the points table'), 'error'); return; }
+    S.seriesList = null; toast('Points table saved'); reloadSeries();
+  }
+  /* Adding or removing a place must never discard what is already typed, so the
+     screen is read back into the table before it is rebuilt. */
+  function serPtsPlace(d) {
+    var pt = {};
+    document.querySelectorAll('[id^="ts-p-"]').forEach(function (el) {
+      var k = el.id.slice('ts-p-'.length), v = String(el.value || '').trim();
+      if (v !== '') pt[k] = Number(v);
+    });
+    var places = Object.keys(pt).filter(function (k) { return /^[0-9]+$/.test(k); }).map(Number).sort(function (a, b) { return a - b; });
+    var top = places.length ? places[places.length - 1] : 0;
+    if (d > 0) { if (pt[String(top + 1)] == null) pt[String(top + 1)] = 0; }
+    else if (top > 1) { delete pt[String(top)]; }
+    S.series.series.points_table = pt; renderSerTab();
+  }
+  function serPtsPreset() { S.series.series.points_table = JSON.parse(JSON.stringify(PTS_PRESET)); renderSerTab(); }
+  async function serDetailsSave() {
+    var p = {
+      name: gv('ts-d-name'), description: gv('ts-d-desc'), city: gv('ts-d-city'),
+      country: gv('ts-d-country'), timezone: gv('ts-d-tz'), accent: gv('ts-d-accent'),
+      status: gv('ts-d-status')
+    };
+    if (!p.name) { toast('A series needs a name', 'error'); return; }
+    var r; try { r = await sb().rpc('tourn_series_save', { p_id: S.seriesId, p: p }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not save'), 'error'); return; }
+    S.seriesList = null; toast('Saved'); reloadSeries();
+  }
+
+  // ── TICK WHO IS PLAYING THIS ROUND (inside a tournament) ──────────────
+  async function serEnterOpen() {
+    var sid = (S.detail && S.detail.event && S.detail.event.series_id) || null;
+    if (!sid) return;
+    var r; try { r = await sb().rpc('tourn_series_admin', { p_series: sid }); } catch (e) { r = { error: e }; }
+    if (!r || r.error || !r.data) { toast(errText(r && r.error, 'Could not read the series teams'), 'error'); return; }
+    S.serEnter = { series: r.data, picked: {} };
+    renderTab();
+  }
+  function serEnterCancel() { S.serEnter = null; renderTab(); }
+  function serEnterToggle(id) {
+    if (!S.serEnter) return;
+    if (S.serEnter.picked[id]) delete S.serEnter.picked[id]; else S.serEnter.picked[id] = true;
+    renderTab();
+  }
+  function serEnterAll(on) {
+    if (!S.serEnter) return;
+    S.serEnter.picked = {};
+    if (on) serEnterAvailable().forEach(function (t) { S.serEnter.picked[t.id] = true; });
+    renderTab();
+  }
+  /* A team already in THIS tournament is not offered again -- the database
+     refuses a double entry anyway, but offering it is the thing that makes an
+     organiser think it did not work. */
+  function serEnterAvailable() {
+    if (!S.serEnter) return [];
+    var inHere = {};
+    (S._roster || []).forEach(function (e) { if (e.series_team_id) inHere[e.series_team_id] = true; });
+    return ((S.serEnter.series || {}).teams || []).filter(function (t) {
+      return t.status === 'active' && !inHere[t.id];
+    });
+  }
+  function serEnterHtml() {
+    if (!S.serEnter) return '';
+    var av = serEnterAvailable(), n = Object.keys(S.serEnter.picked).length;
+    if (!av.length) {
+      return '<div class="ts-pick"><div class="hd">' + ic('check_circle') + 'Every team in the series is already in this round'
+        + '<button class="lg-btn sm ghost" style="margin-left:auto" onclick="FFPTourn.serEnterCancel()">Close</button></div></div>';
+    }
+    return '<div class="ts-pick"><div class="hd">' + ic('groups') + 'Who is playing this round'
+      + '<button class="lg-btn sm ghost" style="margin-left:auto" onclick="FFPTourn.serEnterAll(true)">All</button>'
+      + '<button class="lg-btn sm ghost" onclick="FFPTourn.serEnterAll(false)">None</button></div>'
+      + '<div class="bd">' + av.map(function (t) {
+          var init = t.logo_url ? '' : esc((t.team_name || '?').slice(0, 1));
+          var bg = t.logo_url ? 'background-image:url(\'' + esc(t.logo_url) + '\')' : '';
+          return '<label class="tm' + (S.serEnter.picked[t.id] ? ' on' : '') + '">'
+            + '<input type="checkbox"' + (S.serEnter.picked[t.id] ? ' checked' : '') + ' onchange="FFPTourn.serEnterToggle(\'' + t.id + '\')">'
+            + '<span class="lg-av" style="' + bg + '">' + init + '</span>'
+            + '<b>' + esc(t.team_name) + '</b>' + (t.code ? '<span class="ts-code">' + esc(t.code) + '</span>' : '') + '</label>';
+        }).join('') + '</div>'
+      + '<div class="ft"><button class="lg-btn pri" onclick="FFPTourn.serEnterDo()"' + (n ? '' : ' disabled') + '>'
+      +   ic('check') + 'Add ' + (n || 'the selected') + ' team' + (n === 1 ? '' : 's') + '</button>'
+      +   '<button class="lg-btn ghost" onclick="FFPTourn.serEnterCancel()">Cancel</button></div></div>';
+  }
+  async function serEnterDo() {
+    if (!S.serEnter || !S.divId) return;
+    var ids = Object.keys(S.serEnter.picked); if (!ids.length) return;
+    var r; try { r = await sb().rpc('tourn_series_enter', { p_division: S.divId, p_teams: ids }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not add those teams'), 'error'); return; }
+    var d = r.data || {};
+    toast((d.added || 0) + ' team' + (d.added === 1 ? '' : 's') + ' added');
+    S.serEnter = null; renderTab();
+  }
+
+  // ── LINK A TOURNAMENT TO A SERIES (the Setup tab) ─────────────────────
+  function serSetupHtml(ev) {
+    var opts = '<option value="">One-off tournament</option>'
+      + (S.seriesList || []).map(function (s) {
+          return '<option value="' + s.id + '"' + (ev.series_id === s.id ? ' selected' : '') + '>' + esc(s.name) + '</option>';
+        }).join('');
+    return '<div class="lg-fld"><div class="lg-lab">Is this part of a series?</div>'
+      + '<select class="lg-sel" id="tg-ser" style="max-width:360px" onchange="FFPTourn.serPick(this.value)">' + opts + '</select>'
+      + '<div id="tg-ser-extra" style="' + (ev.series_id ? '' : 'display:none;') + 'margin-top:10px">'
+      +   '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Round number</div><input class="lg-in" id="tg-ser-round" type="number" min="0" value="' + (ev.series_round === null || ev.series_round === undefined ? '' : ev.series_round) + '" style="max-width:140px"></div>'
+      +   '<div class="lg-fld"><div class="lg-lab">&nbsp;</div><label class="ts-chk" style="padding-top:10px"><input type="checkbox" id="tg-ser-finals"' + (ev.is_finals ? ' checked' : '') + '> This round is the finals</label></div></div></div>'
+      + '<div class="tg-hint">A series carries its teams between rounds, so the next one starts from a list instead of a blank form. Saved with the rest of this tab.</div></div>';
+  }
+  function serPick(v) { var x = document.getElementById('tg-ser-extra'); if (x) x.style.display = v ? '' : 'none'; }
+  async function serSaveLink() {
+    var ev = (S.detail && S.detail.event) || {};
+    var sel = document.getElementById('tg-ser'); if (!sel) return;
+    var v = sel.value || '';
+    var n = parseInt(gv('tg-ser-round'), 10); if (isNaN(n)) n = null;
+    var fin = gck('tg-ser-finals');
+    try {
+      if (!v) { if (ev.series_id) await sb().rpc('tourn_series_unset_event', { p_event: S.eventId }); }
+      else { await sb().rpc('tourn_series_set_event', { p_series: v, p_event: S.eventId, p_round: n, p_is_finals: fin }); }
+      S.seriesList = null;
+    } catch (e) { console.error('[tourn series link]', e); }
+  }
+
   window.FFPTourn = {
     rulesHint: rulesHint,
+    openSeries: openSeries, serTab: function (t) { S.serTab = t; S.serTeamEdit = null; S.serAddRound = false; renderSerTab(); },
+    serCreateOpen: function () { S.serCreating = true; renderList(); }, serCreateCancel: function () { S.serCreating = false; renderList(); }, serCreate: serCreate,
+    serRoundSave: serRoundSave, serRoundAdd: serRoundAdd, serRoundOut: serRoundOut,
+    serAddRoundOpen: serAddRoundOpen, serAddRoundCancel: function () { S.serAddRound = false; renderSerTab(); },
+    serAdopt: serAdopt, serTeamEdit: function (id) { S.serTeamEdit = id; renderSerTab(); }, serTeamCancel: function () { S.serTeamEdit = null; renderSerTab(); },
+    serTeamSave: serTeamSave, serTeamStatus: serTeamStatus,
+    serPtsSave: serPtsSave, serPtsPlace: serPtsPlace, serPtsPreset: serPtsPreset, serDetailsSave: serDetailsSave,
+    serPick: serPick, serImg: serImg, serTeamLogo: serTeamLogo,
+    serEnterOpen: serEnterOpen, serEnterCancel: serEnterCancel, serEnterToggle: serEnterToggle, serEnterAll: serEnterAll, serEnterDo: serEnterDo,
     tierPreview: tierPreview, tierPools: tierPools,
     build: BUILD,
     open: open, startCreate: startCreate, cancelCreate: cancelCreate, doCreate: doCreate,
