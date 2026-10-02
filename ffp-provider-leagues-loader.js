@@ -186,6 +186,26 @@
       '.lgf-row .st{flex:none;font-size:12px;font-weight:800;color:#5c6f7c;} .lgf-row .st.done{color:#12232f;}',
       '.lgf-edit{padding:16px 0 20px 14px;border-bottom:1px solid var(--ffp-border);}',
       '.lgf-acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}',
+      /* The split. Rows are hairline-separated strips on the panel, never cards,
+         and every flex field carries min-width:0 + an explicit height, or Chrome
+         holds an input at its ~224px default width and it overlaps its neighbour. */
+      '.lgs-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--ffp-border);}',
+      '.lgs-row.hd{border-top:none;padding:2px 0 7px;font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#7c8b97;}',
+      '.lgs-row .lgs-nm{flex:1 1 auto;min-width:0;width:auto;}',
+      '.lgs-row .lgs-tk{flex:0 0 96px;min-width:0;width:96px;}',
+      '.lgs-row .lgs-lg{flex:0 0 130px;min-width:0;width:130px;}',
+      '.lgs-row .lgs-x{flex:0 0 32px;min-width:0;width:32px;text-align:center;}',
+      '.lgs-row input.lg-in,.lgs-row select.lg-sel{max-width:100%;box-sizing:border-box;height:40px;padding:0 12px;line-height:40px;}',
+      '.lgs-row input[type=number]{-moz-appearance:textfield;} .lgs-row input[type=number]::-webkit-outer-spin-button,.lgs-row input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}',
+      '.lgs-row button.lgs-x{border:0;background:none;padding:0;cursor:pointer;color:#9aa9b4;font-size:19px;line-height:1;} .lgs-row button.lgs-x:hover{color:#c0392b;}',
+      '.lgs-add{border:0;background:none;padding:11px 0 0;font:inherit;font-size:13px;font-weight:800;color:var(--ffp-blue);cursor:pointer;display:inline-flex;align-items:center;gap:6px;} .lgs-add .ms{font-size:18px;}',
+      '.lgs-note{display:flex;align-items:center;gap:7px;margin-top:11px;font-size:12.5px;font-weight:700;color:#5c6f7c;} .lgs-note .ms{font-size:17px;flex:none;} .lgs-note.ok{color:#12a05f;} .lgs-note.warn{color:#c0392b;}',
+      '.lgs-draw{display:flex;align-items:center;gap:14px;margin-top:18px;padding:16px 0 2px;border-top:1px solid var(--ffp-border);}',
+      '.lgs-draw>.ms{font-size:27px;color:#9aa9b4;flex:none;} .lgs-draw.ready>.ms{color:var(--ffp-blue);} .lgs-draw.done>.ms{color:#12a05f;}',
+      '.lgs-draw .g{flex:1;min-width:0;} .lgs-draw .g b{display:block;font-size:14px;font-weight:900;color:#12232f;}',
+      '.lgs-draw .g span{display:block;font-size:12.5px;font-weight:650;color:#5c6f7c;margin-top:3px;line-height:1.45;}',
+      '.lgs-draw .lg-btn{flex:none;}',
+      '@media(max-width:620px){.lgs-row{flex-wrap:wrap;} .lgs-row .lgs-nm{flex:1 1 100%;width:100%;} .lgs-row.hd{display:none;} .lgs-draw{flex-wrap:wrap;}}',
       '.lg-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}',
       '.bp-blk .bp-r{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--ffp-border);}',
       '.bp-blk .bp-r:first-of-type{border-top:1px solid var(--ffp-border);}',
@@ -1576,6 +1596,196 @@
       + 'logged in the match, named player or not. A margin bonus reads the final score.</div></div>';
   }
 
+  /* -- THE SPLIT ----------------------------------------------------------
+     Phase one is whatever Schedule says; then the table divides into groups and
+     each group plays its own round-robin with the points carried across. Group
+     count, names, sizes, legs and what happens to the points are ALL the
+     organiser's -- nothing here is fixed.
+
+     The block repaints ITSELF (#lgs-wrap), never the whole tab: re-rendering
+     the tab would throw away points or bonus rules the organiser had typed and
+     not yet saved. The DB validates the array again on save, so a stale page
+     cannot store a shape league_split_draw is unable to read. */
+  var CARRY = [['full', 'Carried in full', 'Every point from phase one comes across.'],
+               ['half', 'Halved', 'Halved and rounded to the nearest point, as several leagues do.'],
+               ['none', 'Reset to zero', 'Each group starts level.']];
+  var SPLIT_ERR = {
+    split_groups_not_array: 'The groups are not in a readable shape. Reload the page and set them again.',
+    split_groups_too_many: 'Eight groups is the most a division can split into.',
+    split_group_not_object: 'The groups are not in a readable shape. Reload the page and set them again.',
+    split_group_needs_a_name: 'Every group needs a name.',
+    split_group_name_too_long: 'A group name can be 40 characters at most.'
+  };
+  function splitSaid(m) {
+    m = String(m || '');
+    var k = m.split(':')[0];
+    if (SPLIT_ERR[k]) return SPLIT_ERR[k];
+    if (k === 'split_group_needs_at_least_two') return '"' + (m.split(':')[1] || 'That group') + '" needs at least two teams.';
+    if (k === 'split_group_too_big') return '"' + (m.split(':')[1] || 'That group') + '" is too big.';
+    return null;
+  }
+
+  function splitOf(d) {
+    var ev = (S.detail && S.detail.event) || {};
+    var g = d.split_groups != null ? d.split_groups : ev.split_groups;
+    return { groups: Array.isArray(g) && g.length ? g : null,
+             carry: d.split_carry || ev.split_carry || 'full' };
+  }
+  /* The default the moment an organiser switches it on: a top-4 Championship
+     and everybody else in one group below it. */
+  function splitDefault(d) {
+    var n = Number(d.entrant_count || 0);
+    var top = Math.min(4, Math.max(2, n - 2));
+    var rest = Math.max(0, n - top);
+    var out = [{ name: 'Championship', take: top, legs: 1 }];
+    if (rest >= 2) out.push({ name: 'Plate', take: rest, legs: 1 });
+    return out;
+  }
+  function splitRow(g, i, n) {
+    return '<div class="lgs-row">'
+      + '<input class="lg-in lgs-nm" id="lgs-n-' + i + '" maxlength="40" value="' + esc(g.name || '') + '" placeholder="Group name">'
+      + '<input class="lg-in lgs-tk" id="lgs-t-' + i + '" type="number" min="2" max="64" value="' + (g.take || 0) + '">'
+      + '<select class="lg-sel lgs-lg" id="lgs-l-' + i + '">'
+      +   '<option value="1"' + (Number(g.legs) === 2 ? '' : ' selected') + '>Once</option>'
+      +   '<option value="2"' + (Number(g.legs) === 2 ? ' selected' : '') + '>Twice</option></select>'
+      + (n > 1 ? '<button class="lgs-x ms" title="Remove this group" onclick="FFPLeague.splitDrop(' + i + ')">close</button>'
+               : '<span class="lgs-x"></span>')
+      + '</div>';
+  }
+  function splitBlock(d) { return '<div id="lgs-wrap">' + splitInner(d) + '</div>'; }
+  function splitInner(d) {
+    var sp = splitOf(d), on = !!sp.groups;
+    var head = '<div class="lg-fld"><div class="lg-lab">After the season, split the table?</div>'
+      + '<div class="lg-seg" id="lgs-on">'
+      +   '<button data-v="yes" class="' + (on ? 'on' : '') + '" onclick="FFPLeague.splitOn(true)">Yes</button>'
+      +   '<button data-v="no" class="' + (on ? '' : 'on') + '" onclick="FFPLeague.splitOn(false)">No</button></div>'
+      + '<div class="lgf-hint">When phase one is finished the table divides, and each group plays its own'
+      +   ' round-robin with the points carried across.</div></div>';
+    if (!on) return head;
+
+    var n = Number(d.entrant_count || 0);
+    var used = sp.groups.reduce(function (t, g) { return t + Number(g.take || 0); }, 0);
+    var left = n - used;
+    var carry = CARRY.find(function (c) { return c[0] === sp.carry; }) || CARRY[0];
+
+    return head
+      + '<div class="lg-fld"><div class="lg-lab">The groups</div>'
+      +   '<div class="lgs-row hd"><span class="lgs-nm">Group name</span><span class="lgs-tk">Teams</span>'
+      +     '<span class="lgs-lg">They play</span><span class="lgs-x"></span></div>'
+      +   sp.groups.map(function (g, i) { return splitRow(g, i, sp.groups.length); }).join('')
+      +   (sp.groups.length < 8 ? '<button class="lgs-add" onclick="FFPLeague.splitAdd()">' + ic('add') + 'Add a group</button>' : '')
+      +   (n === 0
+          ? '<div class="lgs-note">' + ic('info') + 'Add the teams and the sizes will check themselves.</div>'
+          : left === 0
+            ? '<div class="lgs-note ok">' + ic('check_circle') + 'All ' + n + ' teams are in a group.</div>'
+            : left > 0
+              ? '<div class="lgs-note">' + ic('info') + left + ' team' + (left === 1 ? '' : 's')
+                + ' left over. They finish the season at the split.</div>'
+              : '<div class="lgs-note warn">' + ic('warning') + 'The groups add up to ' + used + ', but there are only '
+                + n + ' teams. The last group will take what is left.</div>')
+      + '</div>'
+      + '<div class="lg-fld"><div class="lg-lab">Points from phase one</div>'
+      +   '<select class="lg-sel" id="lgs-carry" style="max-width:320px" onchange="FFPLeague.carryHint()">'
+      +     CARRY.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === sp.carry ? ' selected' : '') + '>' + esc(c[1]) + '</option>'; }).join('')
+      +   '</select><div class="lgf-hint" id="lgs-carryhint">' + esc(carry[2]) + '</div></div>'
+      + splitDraw(d);
+  }
+  /* The press. Greyed until phase one is finished, and it says what is holding
+     it up rather than just refusing. */
+  function splitDraw(d) {
+    var left = Number(d.phase_one_left == null ? -1 : d.phase_one_left);
+    var drawn = Number(d.split_fixtures || 0) > 0;
+    if (drawn) {
+      return '<div class="lgs-draw done">' + ic('check_circle')
+        + '<div class="g"><b>The split is drawn</b><span>' + d.split_fixtures
+        + ' fixtures across the groups. Re-drawing is blocked once a split game has been played.</span></div>'
+        + '<button class="lg-btn ghost" onclick="FFPLeague.splitRedraw(\'' + d.id + '\')">Draw it again</button></div>';
+    }
+    if (left > 0) {
+      return '<div class="lgs-draw">' + ic('lock')
+        + '<div class="g"><b>Draw the split</b><span>' + left + ' phase-one fixture'
+        + (left === 1 ? ' is' : 's are') + ' still to be played. Who is in which group is not known until they are.</span></div>'
+        + '<button class="lg-btn" disabled>Draw the split</button></div>';
+    }
+    return '<div class="lgs-draw ready">' + ic('call_split')
+      + '<div class="g"><b>Draw the split</b><span>Phase one is finished. This reads the table, cuts the groups'
+      + ' and generates each one’s fixtures. Save the format first if you have just changed it.</span></div>'
+      + '<button class="lg-btn pri" onclick="FFPLeague.splitRedraw(\'' + d.id + '\')">' + ic('call_split') + 'Draw the split</button></div>';
+  }
+
+  /* Reading the rows back before a repaint, so editing one field never discards
+     what was typed in another. */
+  function splitRead() {
+    var out = [], i = 0;
+    while (document.getElementById('lgs-n-' + i)) {
+      var nm = String((document.getElementById('lgs-n-' + i) || {}).value || '').trim();
+      var tk = parseInt((document.getElementById('lgs-t-' + i) || {}).value, 10);
+      var lg = parseInt((document.getElementById('lgs-l-' + i) || {}).value, 10);
+      out.push({ name: nm, take: isNaN(tk) ? 0 : tk, legs: lg === 2 ? 2 : 1 });
+      i += 1;
+    }
+    return out;
+  }
+  function splitDiv() { return (S.detail.divisions || []).find(function (x) { return x.id === S.divId; }); }
+  function splitSync() {
+    var d = splitDiv(); if (!d) return null;
+    if (document.getElementById('lgs-n-0')) d.split_groups = splitRead();
+    var c = document.getElementById('lgs-carry'); if (c) d.split_carry = c.value;
+    return d;
+  }
+  function splitRepaint() {
+    var d = splitDiv(); if (!d) return;
+    var w = document.getElementById('lgs-wrap');
+    if (w) { w.innerHTML = splitInner(d); } else { renderTab(); }
+  }
+  function splitOn(yes) {
+    var d = splitSync(); if (!d) return;
+    if (!yes) {
+      if (Array.isArray(d.split_groups) && d.split_groups.length) d._splitWas = d.split_groups;
+      d.split_groups = null;
+    } else {
+      d.split_groups = (Array.isArray(d.split_groups) && d.split_groups.length) ? d.split_groups
+        : (Array.isArray(d._splitWas) && d._splitWas.length ? d._splitWas : splitDefault(d));
+    }
+    splitRepaint();
+  }
+  function splitAdd() {
+    var d = splitSync(); if (!d) return;
+    var cur = Array.isArray(d.split_groups) ? d.split_groups : [];
+    if (cur.length >= 8) { toast('Eight groups is the most a division can split into', 'error'); return; }
+    var used = cur.reduce(function (t, g) { return t + Number(g.take || 0); }, 0);
+    cur.push({ name: 'Group ' + (cur.length + 1), take: Math.max(2, Number(d.entrant_count || 0) - used), legs: 1 });
+    d.split_groups = cur; splitRepaint();
+  }
+  function splitDrop(i) {
+    var d = splitSync(); if (!d) return;
+    var cur = Array.isArray(d.split_groups) ? d.split_groups : [];
+    cur.splice(i, 1);
+    d.split_groups = cur.length ? cur : null; splitRepaint();
+  }
+  function carryHint() {
+    var val = (document.getElementById('lgs-carry') || {}).value;
+    var c = CARRY.find(function (x) { return x[0] === val; }) || CARRY[0];
+    var h = document.getElementById('lgs-carryhint'); if (h) h.textContent = c[2];
+  }
+  async function splitRedraw(id) {
+    var r; try { r = await sb().rpc('league_split_draw', { p_division: id }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) {
+      var m = String((r && r.error && r.error.message) || '');
+      if (m.indexOf('phase_one_unfinished') === 0) {
+        toast(m.split(':')[1] + ' phase-one fixture(s) still to be played', 'error');
+      } else if (m.indexOf('split_already_played') === 0) {
+        toast('A split game has already been played, so it cannot be redrawn', 'error');
+      } else {
+        toast(splitSaid(m) || said(r && r.error) || 'Could not draw the split', 'error');
+      }
+      return;
+    }
+    var out = r.data || {}, gs = out.groups || [];
+    toast((out.fixtures || 0) + ' fixtures drawn across ' + gs.length + ' group' + (gs.length === 1 ? '' : 's'), 'success');
+    refreshDetail();
+  }
+
   function lgFmtLine(d) {
     var f = lgFmt(d);
     var fin = (FINALS_MODES.find(function (x) { return x[0] === f.finals; }) || FINALS_MODES[0]);
@@ -1583,6 +1793,7 @@
       + f.win + '/' + f.draw + '/' + f.loss + ' points, '
       + (f.bonus.length ? f.bonus.length + (f.bonus.length === 1 ? ' bonus point, ' : ' bonus points, ') : '')
       + (f.finals === 'none' ? 'no finals' : fin[1].toLowerCase())
+      + (splitOf(d).groups ? ', splits into ' + splitOf(d).groups.length + ' groups' : '')
       + (d.entrant_count != null ? ', ' + d.entrant_count + ' ' + (d.entrant_count === 1 ? nouns(d).one : nouns(d).many) : '');
   }
   function lgDivFormat(d) {
@@ -1605,6 +1816,7 @@
           '<div class="lg-fld"><div class="lg-lab">3rd-place play-off</div><div class="lg-seg" id="lgf-third">'
           + '<button data-v="true" class="' + (f.third ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lgf-third\')">Yes</button>'
           + '<button data-v="false" class="' + (!f.third ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lgf-third\')">No</button></div></div>')
+      + splitBlock(d)
       + '<div class="lgf-acts"><button class="lg-btn pri" onclick="FFPLeague.saveDivFormat(\'' + d.id + '\')">' + ic('check') + 'Save format</button>'
       +   (lgFmt(d).own ? '<button class="lg-btn ghost" onclick="FFPLeague.clearDivFormat(\'' + d.id + '\')">Use the league default</button>' : '')
       +   '</div></div>';
@@ -1651,13 +1863,24 @@
               schedule_mode: segVal('lgf-mode'), finals_mode: v('lgf-finals'),
               bonus_rules: bpRead() };
     if (document.getElementById('lgf-third')) p.third_place = segVal('lgf-third') === 'true';
+    if (document.getElementById('lgs-on')) {
+      var splitting = segVal('lgs-on') === 'yes';
+      var groups = splitting ? splitRead() : null;
+      if (splitting) {
+        var bad = (groups || []).find(function (g) { return !g.name || Number(g.take) < 2; });
+        if (!groups || !groups.length) { toast('Add at least one group, or turn the split off', 'error'); return; }
+        if (bad) { toast(!bad.name ? 'Every group needs a name' : '"' + bad.name + '" needs at least two teams', 'error'); return; }
+      }
+      p.split_groups = groups;
+      p.split_carry = splitting ? (v('lgs-carry') || 'full') : null;
+    }
     var r; try { r = await sb().rpc('league_division_save', { p_league: S.eventId, p_id: id, p: p }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast(said(r.error) || 'Could not save the format', 'error'); return; }
+    if (r.error) { toast(splitSaid(r.error && r.error.message) || said(r.error) || 'Could not save the format', 'error'); return; }
     toast('Format saved', 'success'); refreshDetail();
   }
   async function clearDivFormat(id) {
     var p = { win_pts: null, draw_pts: null, loss_pts: null, schedule_mode: null, finals_mode: null,
-              third_place: null, bonus_rules: null };
+              third_place: null, bonus_rules: null, split_groups: null, split_carry: null };
     var r; try { r = await sb().rpc('league_division_save', { p_league: S.eventId, p_id: id, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not reset it', 'error'); return; }
     toast('Back to the league default', 'success'); refreshDetail();
@@ -2914,6 +3137,7 @@
     statusPick: statusPick, mlenEdit: mlenEdit, eventState: eventState, eventDelete: eventDelete, toggleArchived: toggleArchived,
     saveDetails: saveDetails, sportHint: sportHint,
     saveSport: saveSport, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, clearDivFormat: clearDivFormat,
+    splitOn: splitOn, splitAdd: splitAdd, splitDrop: splitDrop, carryHint: carryHint, splitRedraw: splitRedraw,
     setSetupDiv: function (id) { S.divId = id; renderTab(); },
     finalsHint: function () {
       var v2 = (document.getElementById('lgf-finals') || {}).value;
