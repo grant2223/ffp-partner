@@ -143,6 +143,7 @@
       '.lg-fldbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .lg-fldchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--ffp-border-mid);border-radius:12px;padding:7px 11px;font-size:12.5px;font-weight:800;} .lg-fldchip .t{color:var(--ffp-text-muted);font-weight:700;} .lg-fldchip .x{color:#9aa8b4;font-size:16px;cursor:pointer;} .lg-fldchip.add{border-style:dashed;gap:4px;}',
       '.lg-srow{display:grid;grid-template-columns:1fr 132px 92px 120px 140px;gap:9px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .lg-srow .mt{font-size:13.5px;font-weight:800;color:var(--ffp-text);min-width:0;} .lg-srow .mt span{display:block;font-size:11px;color:var(--ffp-text-muted);font-weight:600;} .lg-srow .lg-in,.lg-srow .lg-sel{padding:8px 9px;font-size:12.5px;width:100%;}',
       '.lg-brand{display:flex;gap:12px;align-items:stretch;} .lg-logo{width:76px;height:76px;flex:none;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:10px;font-weight:800;} .lg-logo .ms{font-size:22px;} .lg-banner{flex:1;height:76px;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:11px;font-weight:800;} .lg-banner .ms{font-size:22px;} .lg-row .act{margin-left:auto;color:#9aa8b4;font-size:19px;cursor:pointer;} .lg-banner16{width:100%;max-width:520px;aspect-ratio:16/9;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9aa8b4;cursor:pointer;font-size:12px;font-weight:800;} .lg-banner16 .ms{font-size:28px;} .lg-offadd{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;} .lg-offsrch{position:relative;} .lg-offres{margin-top:6px;display:flex;flex-direction:column;gap:4px;} .lg-offopt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid #e6ecf1;background:#fff;border-radius:11px;padding:8px 11px;cursor:pointer;} .lg-offopt .av{width:34px;height:34px;border-radius:8px;flex:none;background:#e7ecef center/cover no-repeat;} .lg-offopt .g{flex:1;min-width:0;} .lg-offopt .g b{font-size:14px;font-weight:800;color:#12232f;display:block;} .lg-offopt .g span{font-size:11.5px;color:#7c8b97;font-weight:600;} .lg-offopt .pk{font-size:12px;font-weight:800;color:#1980AD;} .lg-offnone{font-size:12.5px;color:#7c8b97;font-weight:600;padding:8px 4px;} .lg-offpicked{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#0a8f5f;padding:6px 4px;} .lg-offrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;} .og-sec{padding:2px 0 16px;border-bottom:1px solid var(--ffp-border);margin-bottom:16px;} .og-hd{display:flex;align-items:flex-start;gap:11px;margin-bottom:12px;} .og-hd>.ms{font-size:21px;color:var(--ffp-purple,#0a3e44);opacity:.75;flex:none;margin-top:1px;} .og-hd .t{flex:1;min-width:0;} .og-hd .t b{display:block;font-size:15px;font-weight:900;color:var(--ffp-text);} .og-hd .t span{display:block;margin-top:3px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .og-pool{display:flex;flex-wrap:wrap;gap:8px;} .og-chip{display:inline-flex;align-items:center;gap:8px;padding:5px 11px 5px 5px;border:1px solid var(--ffp-border-mid);border-radius:999px;font-size:13px;font-weight:800;} .og-chip.noacct{border-style:dashed;} .og-chip .lg-av{width:26px;height:26px;font-size:10px;} .og-chip em{font-style:normal;font-size:17px;color:#9aa8b4;cursor:pointer;} .og-chip em:hover{color:var(--ffp-blue);} .og-foot{margin-top:11px;font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .og-crewwrap{background:var(--ffp-bg-3,#eef3f4);border-radius:14px;padding:16px 18px;} .og-lead{display:flex;align-items:flex-start;gap:11px;margin-bottom:6px;} .og-lead>.ms{font-size:21px;color:var(--ffp-purple,#0a3e44);opacity:.75;flex:none;margin-top:1px;} .og-lead b{display:block;font-size:15px;font-weight:900;} .og-lead span{display:block;margin-top:3px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .og-crew{margin-top:16px;padding-top:14px;border-top:1px solid var(--ffp-border-mid);} .og-crew:first-of-type{border-top:none;padding-top:4px;} .og-ch{display:flex;align-items:center;gap:9px;margin-bottom:6px;} .og-ch b{font-size:12px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;} .og-ch .og-app{font-size:12px;font-weight:700;color:var(--ffp-text-muted);}/* NOT .app: the dashboard shell owns .app{display:flex;height:100vh} as its ROOT layout, so a label wearing that class was 100vh tall and blew the crew header apart. */ .og-ch .sp{flex:1;} .og-note{display:flex;gap:8px;align-items:flex-start;font-size:12px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;padding:2px 2px 0;} .og-note .ms{font-size:16px;flex:none;opacity:.6;} #tg-root .og-acc{max-width:190px;flex:none;} #tg-root .og-acc.on{border-color:var(--ffp-blue);background:#f2f8fb;color:#1b5f85;} .og-pick{margin:0 0 12px 46px;padding:12px 14px;border-left:2px solid var(--ffp-yellow,#FFCC00);background:#fff;border-radius:0 10px 10px 0;} .og-pickh{font-size:13px;font-weight:900;margin-bottom:8px;} .og-pl{font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--ffp-text-dim);margin:10px 0 4px;} .og-opt{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px solid #eef2f5;font-size:13px;font-weight:700;cursor:pointer;} .og-opt:last-of-type{border-bottom:none;} .og-opt input{width:17px;height:17px;flex:none;margin:0;} .og-opt span{flex:1;min-width:0;} .og-opt em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);} .og-pickb{display:flex;gap:9px;margin-top:12px;} .og-crew .lg-row .g b{display:block;} .og-crew .lg-row .g span{display:block;margin-top:1px;} .lg-pdf{display:flex;align-items:center;gap:12px;margin-top:10px;padding:12px 2px;border-top:1px solid var(--ffp-border);} .lg-pdf>.ms{font-size:22px;color:#9aa8b4;flex:none;} .lg-pdf.has>.ms{color:var(--ffp-blue);} .lg-pdf .g{flex:1;min-width:0;} .lg-pdf .g b{display:block;font-size:14px;font-weight:800;color:var(--ffp-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .lg-pdf .g span{display:block;margin-top:2px;font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-pdf .lg-btn{flex:none;text-decoration:none;} #tg-root .lg-pdf .x{flex:none;font-size:20px;color:#9aa8b4;cursor:pointer;padding:4px;} #tg-root .lg-pdf .x:hover{color:#c0392b;}',
+      '.og-mgr .og-team{flex:none;display:inline-flex;align-items:center;gap:6px;max-width:210px; background:#eef4f8;border:1px solid #d9e4ec;border-radius:9px;padding:6px 10px; font-size:12.5px;font-weight:800;color:#17789f;} .og-mgr .og-team .ms{font-size:16px;flex:none;} .og-mgr .og-team b{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .og-mgr .og-two{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;} .og-mgr .og-two .f{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:5px;} .og-mgr .og-two .f label{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#7c8b97;} .og-mgr .og-two .f .lg-in,.og-mgr .og-two .f .lg-sel{width:100%;min-width:0;flex:none;box-sizing:border-box;height:44px;padding:0 12px;} .og-mgr .og-two .lg-btn{flex:none;height:44px;} .og-mgr .og-note{display:flex;align-items:flex-start;gap:8px;margin-top:12px;font-size:12px; font-weight:700;color:#5c6f7c;line-height:1.5;} .og-mgr .og-note .ms{font-size:17px;color:#17789f;flex:none;margin-top:1px;} .og-mgr .lg-row .g{flex:1;min-width:0;} .og-mgr .lg-row .g b{display:block;font-size:14px;font-weight:800;color:#12232f; overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .og-mgr .lg-row .g span{display:block;font-size:12px;font-weight:600;color:#7c8b97;margin-top:2px; overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .og-mgr .og-team{max-width:none;} .og-mgr .og-team b{max-width:300px;} .og-mgr .og-two{align-items:flex-start;} .og-mgr .og-two .lg-btn{margin-top:22px;} @media(max-width:720px){.og-mgr .lg-row{flex-wrap:wrap;} .og-mgr .og-team{order:3;margin-left:46px;}}',
       /* shared v7: crest / collapsible rounds / venues / schedule v2 / officials */
       '.lg-crest{width:32px;height:32px;border-radius:9px;flex:none;background:#241053 center/cover no-repeat;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.14);vertical-align:middle;}',
       '.lg-rnd{display:flex;align-items:center;gap:12px;margin:20px 0 2px;padding:12px 14px;background:linear-gradient(180deg,#f7fafc,#eef4f8);border:1px solid #e4edf3;border-radius:12px;cursor:pointer;user-select:none;} .lg-rnd:hover{background:linear-gradient(180deg,#f2f8fb,#e7f1f7);} .lg-rnd .chev{color:var(--ffp-blue);font-size:22px;transition:transform .2s;} .lg-rnd.collapsed .chev{transform:rotate(-90deg);} .lg-rnd .rt{font-size:14px;font-weight:900;color:var(--ffp-text);} .lg-rnd .rc{font-size:11px;font-weight:800;color:var(--ffp-blue);background:#e2eff6;padding:3px 10px;border-radius:20px;} .lg-rnd .rd{font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-rnd .sp{flex:1;} .lg-rbody.hidden{display:none;}',
@@ -802,6 +803,8 @@
     host.innerHTML = '<div id="tg-ofwrap"><div class="lg-empty">Loading…</div></div>';
     var r; try { r = await sb().rpc('lt_officials_list', { p_scope: 'tourn', p_event: S.eventId }); } catch (e) { r = { error: e }; }
     var rows = (r && r.data) || []; S._officials = rows;
+    try { var mg = await sb().rpc('lt_team_managers_list', { p_scope: 'tourn', p_event: S.eventId }); S._mgrs = (mg && mg.data) || []; } catch (e) { S._mgrs = []; }
+    try { var tl = await sb().rpc('lt_team_list', { p_scope: 'tourn', p_event: S.eventId }); S._mgTeams = (((tl && tl.data) || {}).teams) || []; } catch (e) { S._mgTeams = []; }
     var wrap = document.getElementById('tg-ofwrap'); if (!wrap) return;
     wrap.innerHTML = poolHtml(rows.filter(function (o) { return !isCrewRole(o.role); }))
       + '<div class="og-crewwrap">'
@@ -809,7 +812,114 @@
       + CREW_KINDS.map(function (k) {
           return crewSecHtml(k, rows.filter(function (o) { return isCrewRole(o.role) && crewKind(o.role) === k[0]; }));
         }).join('')
+      + '</div>'
+      + mgrSecHtml();
+  }
+
+  /* -- TEAM MANAGERS -----------------------------------------------------
+     One row per ASSIGNMENT, not per person: the same member appears once for
+     every team they manage, because that is exactly what the permission is.
+     lt_member_search hands back a member id and a MASKED email, so the write
+     is lt_team_manager_assign (member id in) and NOT the email-keyed
+     lt_team_manager_add -- the dashboard never sees a real address. */
+  function mgrSecHtml() {
+    var open = !!S.mgAdd, rows = S._mgrs || [];
+    return '<div class="og-sec og-mgr">'
+      + '<div class="og-hd">' + ic('badge')
+      + '<div class="t"><b>Team managers</b><span>An FFP member who can set one team&rsquo;s sheet, and nobody else&rsquo;s.</span></div>'
+      + '<button class="lg-btn' + (open ? ' on' : '') + '" onclick="FFPTourn.mgOpen(' + (open ? 'false' : 'true') + ')">'
+      + ic(open ? 'close' : 'add') + (open ? 'Cancel' : 'Add') + '</button></div>'
+      + (open ? mgrAddHtml() : '')
+      + (rows.length ? rows.map(mgrRowHtml).join('') : '<div class="lg-empty">No team managers yet.</div>')
+      + '<div class="og-foot">They set their own team sheet in the FFP app. They cannot score, and they cannot touch another team.</div>'
       + '</div>';
+  }
+
+  function mgrRowHtml(m) {
+    var bg = m.photo_url ? 'background-image:url(\'' + esc(m.photo_url) + '\')' : '';
+    return '<div class="lg-row"><span class="lg-av" style="' + bg + '">'
+      /* two initials, as the approved row shows -- not the one letter the
+         officials avatar uses, where a pool entry may be a single name */
+      + (m.photo_url ? '' : esc(String(m.name || '?').trim().split(/\s+/).slice(0, 2)
+          .map(function (w) { return w[0] || ''; }).join('').toUpperCase())) + '</span>'
+      + '<div class="g"><b>' + esc(m.name || 'Member') + '</b><span>' + esc(m.email || 'FFP member') + '</span></div>'
+      + '<span class="og-team">' + ic('groups') + '<b>' + esc(m.team || 'Team') + '</b></span>'
+      + '<span class="ms act" title="Remove" onclick="FFPTourn.mgRemove(\'' + m.id + '\')">close</span></div>';
+  }
+
+  function mgrAddHtml() {
+    var ts = S._mgTeams || [];
+    return '<div class="lg-offadd"><div class="og-two">'
+      + '<div class="f"><label>FFP member</label><div class="lg-offsrch">'
+      + '<input class="lg-in" id="tg-root-mgq" autocomplete="off" placeholder="Search FFP members by name or email" oninput="FFPTourn.mgSearch(this.value)">'
+      + '<div id="tg-root-mgres" class="lg-offres"></div></div></div>'
+      + '<div class="f"><label>Team they manage</label><select class="lg-sel" onchange="FFPTourn.mgTeam(this.value)">'
+      + '<option value="">Choose a team&hellip;</option>'
+      + ts.map(function (t) {
+          return '<option value="' + t.entrant_id + '"' + (S.mgEnt === t.entrant_id ? ' selected' : '') + '>'
+            + esc(t.name) + (t.division ? ' (' + esc(t.division) + ')' : '') + '</option>';
+        }).join('')
+      + '</select></div>'
+      + '<button class="lg-btn pri" onclick="FFPTourn.mgAssign()">' + ic('check') + 'Assign</button>'
+      + '</div><div class="og-note">' + ic('info')
+      + 'They must already have an FFP account. A manager names real people on a sheet, so we know who they are before they can.</div></div>';
+  }
+
+  function mgOpen(on) { S.mgAdd = !!on; S.mgSel = null; S.mgEnt = null; S._mgRes = []; renderTab(); }
+  function mgTeam(v) { S.mgEnt = v || null; }
+
+  var _mgTmr;
+  function mgSearch(q) {
+    S.mgSel = null;
+    clearTimeout(_mgTmr);
+    if (!q || q.trim().length < 2) {
+      S._mgRes = [];
+      var b0 = document.getElementById('tg-root-mgres'); if (b0) b0.innerHTML = '';
+      return;
+    }
+    _mgTmr = setTimeout(async function () {
+      var r; try { r = await sb().rpc('lt_member_search', { p_q: q.trim() }); } catch (e) { r = null; }
+      S._mgRes = (r && r.data) || [];
+      var b = document.getElementById('tg-root-mgres'); if (!b) return;
+      b.innerHTML = S._mgRes.length ? S._mgRes.map(function (m) {
+        return '<button type="button" class="lg-offopt" onclick="FFPTourn.mgPick(\'' + m.id + '\')">'
+          + '<span class="av" style="' + (m.photo ? 'background-image:url(\'' + esc(m.photo) + '\')' : '') + '"></span>'
+          + '<span class="g"><b>' + esc(m.name) + '</b><span>' + esc([m.city, m.email_hint].filter(Boolean).join(', ')) + '</span></span>'
+          + '<span class="pk">Select</span></button>';
+      }).join('') : '<div class="lg-offnone">No FFP account for that name. They register at findfitpeople.com first.</div>';
+    }, 300);
+  }
+
+  function mgPick(id) {
+    var m = (S._mgRes || []).find(function (x) { return x.id === id; }); if (!m) return;
+    S.mgSel = { id: m.id, name: m.name };
+    var i = document.getElementById('tg-root-mgq'); if (i) i.value = m.name;
+    var b = document.getElementById('tg-root-mgres');
+    if (b) b.innerHTML = '<div class="lg-offpicked">' + ic('check') + esc(m.name) + ' selected</div>';
+  }
+
+  async function mgAssign() {
+    if (!S.mgSel) { toast('Pick an FFP member first', 'error'); return; }
+    if (!S.mgEnt) { toast('Pick the team they manage', 'error'); return; }
+    var r; try {
+      r = await sb().rpc('lt_team_manager_assign', { p_scope: 'tourn', p_event: S.eventId, p_entrant: S.mgEnt, p_member: S.mgSel.id });
+    } catch (e) { r = { error: e }; }
+    if (r && r.error) {
+      var t = String(r.error.message || r.error);
+      toast(/no_ffp_account/.test(t) ? 'That person has no FFP account'
+          : /not_owner/.test(t) ? 'Only the organiser can assign managers'
+          : /entrant_not_in_this_event/.test(t) ? 'That team is not in this event'
+          : 'Could not assign', 'error');
+      return;
+    }
+    S.mgAdd = false; S.mgSel = null; S.mgEnt = null; S._mgRes = [];
+    toast('Manager assigned', 'success'); renderTab();
+  }
+
+  async function mgRemove(id) {
+    var r; try { r = await sb().rpc('lt_team_manager_remove', { p_id: id }); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not remove', 'error'); return; }
+    toast('Removed', 'success'); renderTab();
   }
 
   function poolHtml(rows) {
@@ -4210,6 +4320,7 @@
   }
 
   window.FFPTourn = {
+    mgOpen: mgOpen, mgSearch: mgSearch, mgPick: mgPick, mgTeam: mgTeam, mgAssign: mgAssign, mgRemove: mgRemove,
     rulesHint: rulesHint,
     openSeries: openSeries, serTab: function (t) { S.serTab = t; S.serTeamEdit = null; S.serAddRound = false; renderSerTab(); },
     serCreateOpen: function () { S.serCreating = true; renderList(); }, serCreateCancel: function () { S.serCreating = false; renderList(); }, serCreate: serCreate,
