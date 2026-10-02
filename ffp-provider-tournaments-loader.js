@@ -1,61 +1,278 @@
-/* FFP Partner — Leagues organiser console (desktop).
-   Model: League -> Divisions (team or individual) -> Entrants -> Fixtures (round-robin) -> Table.
-   Stats via lt_sport_schemas (sport-specific). Owner-gated RPCs (created_by=auth.uid()).
-   All editing is inline on the page — no browser prompts. Icons use the app .ms font.
-   Exposes window.ffpRenderLeagues (panel hook) + window.FFPLeague (actions). */
+/* FFP Partner — Tournaments organiser console (desktop).
+   Model: Tournament -> Categories -> Entrants -> optional Group stage -> Knockout bracket (auto-advance).
+   Stats via lt_sport_schemas. Owner-gated RPCs. All editing inline — no browser prompts. Icons use .ms.
+   Reuses the .lg- base styles from the leagues loader; adds .tg- bracket styles.
+   Exposes window.ffpRenderTournaments (panel hook) + window.FFPTourn (actions). */
 (function () {
   var sb = function () { return window.supabase; };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); };
-  function toast(m, k) { if (typeof window.showToast === 'function') { try { window.showToast(m, k || 'info'); return; } catch (e) {} } console.log('[FFP League]', m); }
-  function root() { return document.getElementById('lg-root'); }
+  function toast(m, k) { if (typeof window.showToast === 'function') { try { window.showToast(m, k || 'info'); return; } catch (e) {} } console.log('[FFP Tourn]', m); }
+  function root() { return document.getElementById('tg-root'); }
   function ic(n) { return '<span class="ms">' + n + '</span>'; }
-  /* A division says whether it is for teams or for individuals, so the console
-     has to speak that back: a teams division must never say "players" where it
-     means teams. nouns() answers for one division, evNouns() for the whole
-     league, which stays on the neutral word when its divisions are of both
-     kinds rather than picking one and being wrong half the time. */
+  /* WHO COMPETES decides the language of the whole console. Setup asks
+     Individuals, Teams or Both, and every screen has to speak it back: a teams
+     event must never say "players" where it means teams. A division's own kind
+     wins where there is one, because a Both event holds divisions of each kind;
+     otherwise the event's answer does, and a Both event with no division in
+     hand stays on the neutral word. Constants carry {one}/{many}/{One}/{Many}
+     tokens and say() fills them in at render time. */
   function nouns(d) {
-    var team = (d && d.kind) ? d.kind !== 'individual' : true;
+    var mode = (S.detail && S.detail.event && S.detail.event.entrant_mode) || 'individual';
+    var team;
+    if (d && d.kind) team = d.kind !== 'individual';
+    else if (mode === 'mixed') return { one: 'entrant', many: 'entrants', One: 'Entrant', Many: 'Entrants', poss: 'an entrant\u2019s' };
+    else team = (mode === 'team');
     return team
       ? { one: 'team', many: 'teams', One: 'Team', Many: 'Teams', poss: 'a team\u2019s' }
       : { one: 'player', many: 'players', One: 'Player', Many: 'Players', poss: 'a player\u2019s' };
   }
   function curDv() {
-    var ds = (S.detail && S.detail.divisions) || [];
-    return ds.filter(function (d) { return d.id === S.divId; })[0] || ds[0] || null;
+    return ((S.detail && S.detail.divisions) || []).find(function (d) { return d.id === S.divId; }) || null;
   }
-  function evNouns() {
-    var ds = (S.detail && S.detail.divisions) || [], kinds = [];
-    ds.forEach(function (d) {
-      var k = d.kind === 'individual' ? 'individual' : 'team';
-      if (kinds.indexOf(k) < 0) kinds.push(k);
-    });
-    if (kinds.length > 1) return { one: 'entrant', many: 'entrants', One: 'Entrant', Many: 'Entrants', poss: 'an entrant\u2019s' };
-    return nouns({ kind: kinds[0] || 'team' });
+  function say(s, d) {
+    var n = nouns(d === undefined ? curDv() : d);
+    return String(s).replace(/\{(one|many|One|Many|poss)\}/g, function (_, k) { return n[k]; });
+  }
+  var STAGE = { r64: 'Round of 64', r32: 'Round of 32', r16: 'Round of 16', quarter: 'Quarter-finals', semi: 'Semi-finals', final: 'Final', third: '3rd place' };
+  /* A PLAY-OFF IS NAMED BY THE PLACE IT DECIDES. Every band of a tiered draw
+     has one, and calling them all "3rd place" is wrong everywhere but the Cup:
+     the play-off under Places 5-8 is for 7th. plays_for carries the answer. */
+  function ordNum(n) {
+    n = Number(n); if (!n) return '';
+    var t = n % 100, s = (t >= 11 && t <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th');
+    return n + s;
+  }
+  function stageLbl(m) {
+    if (m.stage === 'round') return 'Round ' + (m.round || 1);
+    if (m.stage === 'third') return (m.plays_for ? ordNum(m.plays_for) : '3rd') + ' place';
+    return STAGE[m.stage] || m.stage;
+  }
+  // Extra draws a knockout can carry. Every loser of the named round plays on
+  // in the next draw down, so nobody travels to an event for one match.
+  var SIDE_DRAWS = [
+    ['none', 'No, one loss and they are out', 'The shortest event. Lose your first match and you are finished.'],
+    ['plate', 'Plate, for first-round losers', 'Everyone beaten in round 1 moves into a second draw, so nobody travels for one match.'],
+    ['plate_bowl', 'Plate and Bowl', 'Two draws below the main one. Most {many} get at least three matches.'],
+    ['plate_bowl_shield', 'Plate, Bowl and Shield', 'Three draws below the main one. Nearly everyone plays in every round.'],
+    ['qf_plate', 'Plate, for quarter-final losers', 'Only the {many} who reach the quarter-finals and lose get a second draw.'],
+    ['consolation', 'Feed-in consolation', 'A loser joins the second draw at the round they went out, not back at its start.'],
+    ['places', 'Every place played off', 'Nobody stops until their exact finishing position is decided, 1st to last.']
+  ];
+
+  // ── CONNECT A SCORING TABLET ──────────────────────────────────────────
+  // One 6-digit PIN works the same at every venue and every event. The QR is
+  // the shortcut; the PIN is what works when the camera will not play.
+  var TABLET_URL = 'https://app.findfitpeople.com/tablet';
+  var QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+  function drawPinQr(url) {
+    var h = document.getElementById('tg-qr'); if (!h) return;
+    var go = function () {
+      var h2 = document.getElementById('tg-qr');
+      if (h2 && window.QRCode) { h2.innerHTML = ''; try { new window.QRCode(h2, { text: url, width: 132, height: 132, correctLevel: window.QRCode.CorrectLevel.M }); } catch (e) {} }
+    };
+    if (window.QRCode) { go(); return; }
+    var sc = document.createElement('script'); sc.src = QR_LIB; sc.onload = go; sc.onerror = function () {}; document.head.appendChild(sc);
   }
 
-  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, rb: null, rbDiv: null, rbInfo: null, rbByes: null };
+  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, grpDraw: false, brkConfirm: false,
+    /* SERIES: the list for the dropdowns, the one being edited, and the
+       panel that picks which series teams play a round. */
+    seriesList: null, seriesId: null, series: null, serTab: 'rounds', serTeamEdit: null,
+    serAddRound: false, serCreating: false, serEnter: null, freeEvents: null };
 
-  function injectCss() {
-    if (document.getElementById('lgb-css')) return;
-    var css = document.createElement('style'); css.id = 'lgb-css';
+  function injectBaseCss() {
+    if (document.getElementById('tgx-base')) return;
+    var css = document.createElement('style'); css.id = 'tgx-base';
     css.textContent = [
       '.lg-wrap{max-width:1000px;}',
-      /* ── SCHEDULE, the tournament layout ────────────────────────────────
-         A day, then a court, then the order of play down it. One row per
-         match: its time, who is in it, which court, and a menu for the rest.
-         Same shapes as the tournaments console so an organiser running both
-         is never learning two screens. */
-      '.sc-day{font-size:16px;font-weight:900;color:var(--ffp-text);margin:26px 0 2px;}.sc-day:first-child{margin-top:8px;}',
-      '.sc-day .tz{margin-left:9px;font-size:11px;font-weight:700;color:#9aa8b4;}',
-      '.sc-ch{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:9px;margin:12px 0 0;background:linear-gradient(92deg,#12242f,#21404f);box-shadow:0 2px 8px rgba(14,37,49,.18);}',
-      '.sc-ch b{font-size:13.5px;font-weight:900;color:#fff;letter-spacing:.01em;}',
-      '.sc-ch .mn{font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#f0b736;}',
-      '.sc-ch .ct{margin-left:auto;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.58);}',
-      '.sc-add{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.12);border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;font-weight:800;color:#fff;cursor:pointer;}.sc-add:hover{background:rgba(255,255,255,.2);}.sc-add .ms{font-size:16px;}',
-      /* Nothing on the schedule yet is the SAME bar, marked by a gold edge and
-         a gold action. The old mustard block was neither blue nor gold and
-         read as a different product. */
+      '.lg-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap;}',
+      '.lg-h1{font-size:21px;font-weight:900;color:var(--ffp-text);} .lg-sub{font-size:13px;color:var(--ffp-text-muted);font-weight:600;margin-top:2px;}',
+      '.lg-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ffp-border-mid);background:#fff;border-radius:10px;padding:9px 14px;font:inherit;font-size:13px;font-weight:800;color:var(--ffp-text);cursor:pointer;} .lg-btn .ms{font-size:18px;}',
+      '.lg-btn.pri{background:var(--ffp-blue);border-color:var(--ffp-blue);color:#fff;} .lg-btn.gold{background:linear-gradient(180deg,#ffd15a,#f2a900);border:none;color:#3a2600;} .lg-btn.green{background:#12a05f;border-color:#12a05f;color:#fff;} .lg-btn.ghost{background:none;border-color:transparent;color:var(--ffp-text-muted);} .lg-btn:disabled{opacity:.5;cursor:default;}',
+      '.lg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}',
+      '.lg-card{border:1px solid var(--ffp-border-mid);border-radius:14px;overflow:hidden;cursor:pointer;background:#fff;box-shadow:0 4px 12px rgba(15,34,48,.06);}',
+      '#tg-root .lg-cover{height:104px;position:relative;background:linear-gradient(150deg,#5a2fb0,#241053) center/cover no-repeat;} .lg-cover .scr{position:absolute;inset:0;background:linear-gradient(transparent,rgba(8,18,26,.6));} .lg-cover .bd{position:absolute;top:8px;left:8px;font-size:10px;font-weight:900;padding:3px 8px;border-radius:20px;background:#fff;color:#d6353b;} .lg-cover .bd.live{background:#d6353b;color:#fff;} .lg-cover .bd.open{color:#0a8f5f;} .lg-cover .bd.draft,.lg-cover .bd.final{color:#5b6b75;}',
+      '.lg-cbody{padding:11px 13px;} .lg-cbody b{font-size:14.5px;font-weight:900;color:var(--ffp-text);display:block;} .lg-cbody span{font-size:12px;color:var(--ffp-text-muted);font-weight:700;text-transform:capitalize;}',
+      '.lg-new{border:2px dashed var(--ffp-border-mid);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:168px;color:var(--ffp-blue);font-weight:800;cursor:pointer;background:#fff;} .lg-new .ms{font-size:28px;}',
+      '.lg-nav{display:flex;gap:22px;border-bottom:1px solid var(--ffp-border);margin-bottom:20px;flex-wrap:wrap;} .lg-nav button{background:none;border:none;font:inherit;font-size:13.5px;font-weight:800;color:var(--ffp-text-muted);padding:11px 0;border-bottom:2.5px solid transparent;cursor:pointer;} .lg-nav button.on{color:var(--ffp-blue);border-bottom-color:var(--ffp-blue);}',
+      '.lg-pill{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;margin-left:8px;vertical-align:middle;} .lg-pill.live{background:#fdeaea;color:#d6353b;} .lg-pill.open{background:#e3f6ec;color:#0a8f5f;} .lg-pill.draft,.lg-pill.final{background:#eef2f5;color:#5b6b75;}',
+      '.lg-lab{font-size:12px;font-weight:800;color:#43525c;margin:0 0 6px;} .lg-in,.lg-sel{width:100%;padding:10px 12px;border:1px solid #d7dee5;border-radius:10px;font:inherit;box-sizing:border-box;background:#fff;color:#12232f;} .lg-fld{margin-bottom:16px;} .lg-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;} .lg-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}',
+      '.lg-seg{display:inline-flex;border:1.5px solid var(--ffp-border-mid);border-radius:10px;overflow:hidden;} .lg-seg button{background:#fff;border:none;padding:9px 15px;font:inherit;font-size:12.5px;font-weight:800;color:var(--ffp-text-muted);cursor:pointer;} .lg-seg button.on{background:var(--ffp-blue);color:#fff;} .lg-status4 button{padding:9px 18px;} .lg-status4 button.on.st-draft{background:#6a7c8a;color:#fff;} .lg-status4 button.on.st-open{background:#1980AD;color:#fff;} .lg-status4 button.on.st-live{background:#1c9d54;color:#fff;} .lg-status4 button.on.st-final{background:#e0a400;color:#2a2200;} .lg-cfm{position:fixed;inset:0;z-index:9999;background:#fff;display:flex;} .lg-cfm-in{margin:auto;max-width:460px;width:100%;padding:34px 30px;text-align:center;display:flex;flex-direction:column;align-items:center;} .lg-cfm-ic{font-size:60px;margin-bottom:14px;} .lg-cfm-ic.tone-live{color:#1c9d54;} .lg-cfm-ic.tone-final{color:#e0a400;} .lg-cfm-ic.tone-draft{color:#6a7c8a;} .lg-cfm-t{font-size:24px;font-weight:900;color:#12232f;} .lg-cfm-b{font-size:14.5px;font-weight:600;color:#5a6b78;line-height:1.55;margin-top:12px;} .lg-cfm-a{display:flex;gap:12px;margin-top:28px;width:100%;} .lg-cfm-a .lg-btn{flex:1;justify-content:center;} .lg-cfm-a .lg-btn.st-live{background:#1c9d54;color:#fff;} .lg-cfm-a .lg-btn.st-final{background:#e0a400;color:#2a2200;} .lg-cfm-a .lg-btn.st-draft{background:#6a7c8a;color:#fff;}',
+      '.lg-row{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--ffp-border);} .lg-row .drag{color:#c0cad2;font-size:20px;cursor:grab;} .lg-row .g{flex:1;min-width:0;} .lg-row .g b{font-size:14.5px;font-weight:800;color:var(--ffp-text);} .lg-row .g span{font-size:12.5px;color:var(--ffp-text-muted);font-weight:700;} #tg-root .lg-row .act{color:#9aa8b4;font-size:20px;cursor:pointer;padding:4px;} .lg-row .act:hover{color:var(--ffp-blue);}',
+      '.lg-av{position:relative;width:34px;height:34px;border-radius:8px;flex:none;background:#e7ecef center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#6a7681;}',
+      '.lg-avedit{cursor:pointer;}',
+      '.lg-avplus{position:absolute;right:-5px;bottom:-5px;width:17px;height:17px;border-radius:50%;background:var(--ffp-blue,#2ba8e0);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1.5px solid #fff;}',
+      '.lg-empty{padding:40px 16px;text-align:center;color:var(--ffp-text-muted);font-weight:600;font-size:13.5px;}',
+      '.lg-tool{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;} .lg-tool .lg-sel{width:auto;min-width:180px;} .lg-tool .sp{flex:1;} #tg-root .lg-tool .lg-in{width:64px;}',
+      '.lg-edit{display:flex;align-items:center;gap:10px;padding:12px 2px;border-bottom:1px solid var(--ffp-border);flex-wrap:wrap;} .lg-edit .lg-in{width:auto;flex:1;min-width:160px;}',
+      '.lg-entform{align-items:flex-end;gap:12px;padding:16px 2px;} .lg-entform .crest{align-self:flex-end;padding-bottom:5px;} .lg-entform .f{display:flex;flex-direction:column;gap:5px;min-width:0;} #tg-root .lg-entform .f label{height:14px;line-height:14px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#7c8b97;} .lg-entform .f.gr{flex:1 1 200px;} #tg-root .lg-entform .f.sm{flex:0 0 92px;} .lg-entform .f .lg-in,.lg-entform .f .lg-sel{width:100%;min-width:0;max-width:100%;flex:none;box-sizing:border-box;height:44px;padding:0 12px;line-height:44px;} .lg-entform .f .lg-in{-webkit-appearance:none;appearance:none;} .lg-entform .f input[type=number]{-moz-appearance:textfield;} .lg-entform .f input[type=number]::-webkit-outer-spin-button,.lg-entform .f input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;} .lg-entform .f .ro{height:44px;display:flex;align-items:center;font-size:14.5px;font-weight:800;color:var(--ffp-text);} .lg-entform .acts{display:flex;align-items:center;gap:9px;flex:1 1 100%;margin-top:4px;} .lg-entform .acts .sp{flex:1;} .lg-entform .lg-btn.danger{color:#c0392b;} .lg-entform .lg-btn.danger:hover{background:#fdf1ef;} .lg-entform .lg-btn.danger.solid{background:#c0392b;border-color:#c0392b;color:#fff;} .lg-entform .delq{font-size:13px;font-weight:800;color:var(--ffp-text);} .lg-entform .note{flex:1 1 100%;font-size:12.5px;font-weight:600;color:#7c8b97;margin-top:2px;} .lg-entform .msg{flex:1 1 100%;font-size:12.5px;font-weight:700;color:#c0392b;} @media(max-width:820px){.lg-entform .f.gr,.lg-entform .f{flex:1 1 100%;}}',
+      '.lg-fx{display:grid;grid-template-columns:1fr 128px 1fr;align-items:center;gap:8px;padding:11px 2px;border-bottom:1px solid var(--ffp-border);} .lg-fx .t{font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .lg-fx .t.a{text-align:right;} .lg-fx .sc{display:flex;gap:6px;justify-content:center;} .lg-fx .sc input{width:46px;padding:8px;border:1.5px solid #d7dee5;border-radius:8px;font:inherit;font-weight:800;text-align:center;}',
+      '.lg-rndlab{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:var(--ffp-text-muted);margin:16px 0 4px;}'
+    ].join('\n');
+    document.head.appendChild(css);
+  }
+  function injectExtraCss() {
+    if (document.getElementById('tgx-css')) return;
+    var css = document.createElement('style'); css.id = 'tgx-css';
+    css.textContent = [
+      '.tg-brk{overflow-x:auto;padding:6px 2px 16px;} .tg-brkin{display:flex;gap:16px;min-width:max-content;} .tg-thirdwrap{margin-top:16px;border-top:1px solid var(--ffp-border);padding-top:16px;} .tg-m.tg-void{visibility:hidden;}',
+      '.tg-rnd{display:flex;flex-direction:column;justify-content:space-around;gap:14px;min-width:200px;} .tg-rnd .rh{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:#9aa8b4;text-align:center;margin-bottom:2px;}',
+      '.tg-m{background:#fff;border:1px solid #d7dee5;border-radius:11px;overflow:hidden;} .tg-m .s{display:flex;align-items:center;gap:7px;padding:7px 9px;} .tg-m .s+.s{border-top:1px solid #eef1f6;} .tg-m .s b{flex:1;font-size:12.5px;font-weight:700;color:#12232f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .tg-m .s input{width:40px;padding:5px;border:1.5px solid #d7dee5;border-radius:7px;font:inherit;font-weight:800;text-align:center;} .tg-m .s.win b{color:#0a8f5f;} .tg-m .s.tbd b{color:#9aa8b4;font-weight:600;}',
+      '.tg-grph{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:#12232f;margin:16px 0 4px;}',
+      '.tg-group{border-bottom:1px solid var(--ffp-border);padding-bottom:14px;margin-bottom:8px;} .tg-gteams{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 12px;} .tg-gteam{display:inline-flex;align-items:center;gap:7px;background:#f4f7f9;border:1px solid var(--ffp-border);border-radius:20px;padding:5px 12px 5px 6px;font-size:13px;font-weight:700;} .tg-gteam .lg-crest{width:22px;height:22px;border-radius:6px;font-size:9px;}',
+      '.tg-phase{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#9aa8b4;padding:0 6px;} .tg-navsep{display:inline-block;width:1px;height:20px;background:var(--ffp-border);margin:0 4px;vertical-align:middle;}',
+      '.tg-tbl{width:100%;border-collapse:collapse;margin-bottom:12px;} .tg-tbl th{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#9aa8b4;text-align:center;padding:6px 4px;border-bottom:1px solid var(--ffp-border);} .tg-tbl th.nm{text-align:left} .tg-tbl td{font-size:13px;padding:9px 4px;text-align:center;border-bottom:1px solid #f0f3f6;} .tg-tbl td.nm{text-align:left;font-weight:700} .tg-tbl td.nm .in{display:flex;align-items:center;gap:9px} .tg-tbl td.pts{font-weight:900;color:var(--ffp-blue)} .tg-tbl tr.adv td{background:#eafaf3} .tg-tbl .rk{color:#9aa8b4;font-weight:800;width:24px} .tg-tbl .lg-crest{width:22px;height:22px;border-radius:6px;font-size:9px;}',
+      '.tg-rlbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#b7c2cc;margin:9px 0 1px;} .tg-gfx{display:grid;grid-template-columns:1fr 116px 1fr auto;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid #f0f3f6;} .tg-gfx .t{font-size:13.5px;font-weight:700} .tg-gfx .t.a{text-align:right} .tg-gfx .sc{display:flex;gap:6px;justify-content:center} .tg-gfx .sc input{width:42px;height:34px;text-align:center;border:1.5px solid #d7dee5;border-radius:8px;font:inherit;font-weight:800;} .fxlab{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#9aa8b4;margin:10px 0 2px;}',
+      '.tg-fmts{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px;} .tg-fmt{border:1.5px solid var(--ffp-border);border-radius:14px;padding:16px 12px;cursor:pointer;text-align:center;} .tg-fmt.on{border-color:var(--ffp-blue);box-shadow:0 0 0 3px rgba(25,128,173,.12);} .tg-fmt .dia{height:74px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;} .tg-fmt b{display:block;font-size:13.5px;font-weight:900;} .tg-fmt span{display:block;font-size:11.5px;color:var(--ffp-text-muted);font-weight:600;margin-top:3px;line-height:1.4;} .tgd rect{fill:none;stroke:#c3ced6;stroke-width:2.4;} .tgd line{stroke:#c3ced6;stroke-width:2.4;} .tg-fmt.on .tgd rect,.tg-fmt.on .tgd line{stroke:var(--ffp-blue);}',
+      '.tg-fmtset{margin-top:18px;border-top:1px solid var(--ffp-border);padding-top:16px;}',
+      /* TIERED POOLS. Flat rows on the canvas, hairline separated - the tier
+         chip and the band's lit edge carry the weight, so nothing is a card
+         inside a card. A one-digit count does not need the full field width,
+         hence tg-num, scoped so .lg-in is untouched everywhere else. */
+      '.tg-num{max-width:118px;min-width:0;box-sizing:border-box;text-align:center;}',
+      '.tg-quota{margin-top:4px;} .tg-qrow{display:flex;align-items:center;gap:13px;padding:11px 2px;border-bottom:1px solid var(--ffp-border);} .tg-qrow:last-child{border-bottom:0;}',
+      '.tg-qp{width:26px;height:26px;flex:none;display:grid;place-items:center;border-radius:8px;font-size:13px;font-weight:900;color:#7a5600;background:linear-gradient(160deg,#ffd868,#f2a900);}',
+      '.tg-qrow:nth-child(2) .tg-qp{background:linear-gradient(160deg,#ffe6a8,#f6c95e);} .tg-qrow:nth-child(n+3) .tg-qp{background:#e7edf1;color:#7b8f9c;}',
+      '.tg-qn{flex:1;min-width:0;font-size:14px;font-weight:800;color:#12232f;} .tg-qn small{display:block;font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);}',
+      '.tg-qin{width:74px;flex:none;min-width:0;box-sizing:border-box;text-align:center;}',
+      '.tg-lhead{margin-top:18px;} .tg-ladder{margin:2px 0 4px;}',
+      '.tg-lrow{display:flex;align-items:center;gap:14px;padding:12px 2px 12px 12px;border-bottom:1px solid var(--ffp-border);position:relative;} .tg-lrow:last-child{border-bottom:0;}',
+      '.tg-lrow::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:2px;background:#d7dee5;} .tg-lrow.tg-top::before{background:linear-gradient(180deg,#ffd868,#f2a900);}',
+      '.tg-lpl{width:74px;flex:none;font-size:15px;font-weight:900;color:#12232f;font-variant-numeric:tabular-nums;} .tg-lpl small{display:block;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#a86a00;}',
+      '.tg-lties{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:8px 16px;} .tg-tie{font-size:13.5px;font-weight:800;color:#33485a;font-variant-numeric:tabular-nums;} .tg-tie i{font-style:normal;font-weight:700;color:#9aa8b4;padding:0 2px;} .tg-tie.tg-none{font-weight:700;color:var(--ffp-text-muted);}',
+      '.lg-fldbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .lg-fldchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--ffp-border-mid);border-radius:12px;padding:7px 11px;font-size:12.5px;font-weight:800;} .lg-fldchip .t{color:var(--ffp-text-muted);font-weight:700;} .lg-fldchip .x{color:#9aa8b4;font-size:16px;cursor:pointer;} .lg-fldchip.add{border-style:dashed;gap:4px;}',
+      '.lg-srow{display:grid;grid-template-columns:1fr 132px 92px 120px 140px;gap:9px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .lg-srow .mt{font-size:13.5px;font-weight:800;color:var(--ffp-text);min-width:0;} .lg-srow .mt span{display:block;font-size:11px;color:var(--ffp-text-muted);font-weight:600;} .lg-srow .lg-in,.lg-srow .lg-sel{padding:8px 9px;font-size:12.5px;width:100%;}',
+      '.lg-brand{display:flex;gap:12px;align-items:stretch;} .lg-logo{width:76px;height:76px;flex:none;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:10px;font-weight:800;} .lg-logo .ms{font-size:22px;} .lg-banner{flex:1;height:76px;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:11px;font-weight:800;} .lg-banner .ms{font-size:22px;} .lg-row .act{margin-left:auto;color:#9aa8b4;font-size:19px;cursor:pointer;} .lg-banner16{width:100%;max-width:520px;aspect-ratio:16/9;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9aa8b4;cursor:pointer;font-size:12px;font-weight:800;} .lg-banner16 .ms{font-size:28px;} .lg-offadd{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;} .lg-offsrch{position:relative;} .lg-offres{margin-top:6px;display:flex;flex-direction:column;gap:4px;} .lg-offopt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid #e6ecf1;background:#fff;border-radius:11px;padding:8px 11px;cursor:pointer;} .lg-offopt .av{width:34px;height:34px;border-radius:8px;flex:none;background:#e7ecef center/cover no-repeat;} .lg-offopt .g{flex:1;min-width:0;} .lg-offopt .g b{font-size:14px;font-weight:800;color:#12232f;display:block;} .lg-offopt .g span{font-size:11.5px;color:#7c8b97;font-weight:600;} .lg-offopt .pk{font-size:12px;font-weight:800;color:#1980AD;} .lg-offnone{font-size:12.5px;color:#7c8b97;font-weight:600;padding:8px 4px;} .lg-offpicked{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#0a8f5f;padding:6px 4px;} .lg-offrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;} .og-sec{padding:2px 0 16px;border-bottom:1px solid var(--ffp-border);margin-bottom:16px;} .og-hd{display:flex;align-items:flex-start;gap:11px;margin-bottom:12px;} .og-hd>.ms{font-size:21px;color:var(--ffp-purple,#0a3e44);opacity:.75;flex:none;margin-top:1px;} .og-hd .t{flex:1;min-width:0;} .og-hd .t b{display:block;font-size:15px;font-weight:900;color:var(--ffp-text);} .og-hd .t span{display:block;margin-top:3px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .og-pool{display:flex;flex-wrap:wrap;gap:8px;} .og-chip{display:inline-flex;align-items:center;gap:8px;padding:5px 11px 5px 5px;border:1px solid var(--ffp-border-mid);border-radius:999px;font-size:13px;font-weight:800;} .og-chip.noacct{border-style:dashed;} .og-chip .lg-av{width:26px;height:26px;font-size:10px;} .og-chip em{font-style:normal;font-size:17px;color:#9aa8b4;cursor:pointer;} .og-chip em:hover{color:var(--ffp-blue);} .og-foot{margin-top:11px;font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .og-crewwrap{background:var(--ffp-bg-3,#eef3f4);border-radius:14px;padding:16px 18px;} .og-lead{display:flex;align-items:flex-start;gap:11px;margin-bottom:6px;} .og-lead>.ms{font-size:21px;color:var(--ffp-purple,#0a3e44);opacity:.75;flex:none;margin-top:1px;} .og-lead b{display:block;font-size:15px;font-weight:900;} .og-lead span{display:block;margin-top:3px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .og-crew{margin-top:16px;padding-top:14px;border-top:1px solid var(--ffp-border-mid);} .og-crew:first-of-type{border-top:none;padding-top:4px;} .og-ch{display:flex;align-items:center;gap:9px;margin-bottom:6px;} .og-ch b{font-size:12px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;} .og-ch .og-app{font-size:12px;font-weight:700;color:var(--ffp-text-muted);}/* NOT .app: the dashboard shell owns .app{display:flex;height:100vh} as its ROOT layout, so a label wearing that class was 100vh tall and blew the crew header apart. */ .og-ch .sp{flex:1;} .og-note{display:flex;gap:8px;align-items:flex-start;font-size:12px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;padding:2px 2px 0;} .og-note .ms{font-size:16px;flex:none;opacity:.6;} #tg-root .og-acc{max-width:190px;flex:none;} #tg-root .og-acc.on{border-color:var(--ffp-blue);background:#f2f8fb;color:#1b5f85;} .og-pick{margin:0 0 12px 46px;padding:12px 14px;border-left:2px solid var(--ffp-yellow,#FFCC00);background:#fff;border-radius:0 10px 10px 0;} .og-pickh{font-size:13px;font-weight:900;margin-bottom:8px;} .og-pl{font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--ffp-text-dim);margin:10px 0 4px;} .og-opt{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px solid #eef2f5;font-size:13px;font-weight:700;cursor:pointer;} .og-opt:last-of-type{border-bottom:none;} .og-opt input{width:17px;height:17px;flex:none;margin:0;} .og-opt span{flex:1;min-width:0;} .og-opt em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);} .og-pickb{display:flex;gap:9px;margin-top:12px;} .og-crew .lg-row .g b{display:block;} .og-crew .lg-row .g span{display:block;margin-top:1px;} .lg-pdf{display:flex;align-items:center;gap:12px;margin-top:10px;padding:12px 2px;border-top:1px solid var(--ffp-border);} .lg-pdf>.ms{font-size:22px;color:#9aa8b4;flex:none;} .lg-pdf.has>.ms{color:var(--ffp-blue);} .lg-pdf .g{flex:1;min-width:0;} .lg-pdf .g b{display:block;font-size:14px;font-weight:800;color:var(--ffp-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .lg-pdf .g span{display:block;margin-top:2px;font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-pdf .lg-btn{flex:none;text-decoration:none;} #tg-root .lg-pdf .x{flex:none;font-size:20px;color:#9aa8b4;cursor:pointer;padding:4px;} #tg-root .lg-pdf .x:hover{color:#c0392b;}',
+      /* shared v7: crest / collapsible rounds / venues / schedule v2 / officials */
+      '.lg-crest{width:32px;height:32px;border-radius:9px;flex:none;background:#241053 center/cover no-repeat;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.14);vertical-align:middle;}',
+      '.lg-rnd{display:flex;align-items:center;gap:12px;margin:20px 0 2px;padding:12px 14px;background:linear-gradient(180deg,#f7fafc,#eef4f8);border:1px solid #e4edf3;border-radius:12px;cursor:pointer;user-select:none;} .lg-rnd:hover{background:linear-gradient(180deg,#f2f8fb,#e7f1f7);} .lg-rnd .chev{color:var(--ffp-blue);font-size:22px;transition:transform .2s;} .lg-rnd.collapsed .chev{transform:rotate(-90deg);} .lg-rnd .rt{font-size:14px;font-weight:900;color:var(--ffp-text);} .lg-rnd .rc{font-size:11px;font-weight:800;color:var(--ffp-blue);background:#e2eff6;padding:3px 10px;border-radius:20px;} .lg-rnd .rd{font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-rnd .sp{flex:1;} .lg-rbody.hidden{display:none;}',
+      '.lg-venue{padding:18px 4px;border-bottom:1px solid var(--ffp-border);} .lg-vh{display:flex;align-items:center;gap:12px;} .lg-vpin{width:38px;height:38px;border-radius:11px;background:linear-gradient(180deg,#eaf4f9,#dcecf3);color:var(--ffp-blue);display:flex;align-items:center;justify-content:center;flex:none;} .lg-vpin .ms{font-size:21px;} .lg-vh .g{flex:1;min-width:0;} .lg-vh .g b{font-size:16px;font-weight:900;color:var(--ffp-text);} .lg-vh .g span{display:block;font-size:12.5px;color:var(--ffp-text-muted);font-weight:700;} .lg-vh .act{color:#9aa8b4;font-size:19px;cursor:pointer;padding:5px;border-radius:8px;} .lg-vh .act:hover{color:var(--ffp-blue);background:#f4f7f9;}',
+      '.tg-kind{position:absolute;left:8px;top:8px;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#a86a08;background:#fff4e0;padding:3px 7px;border-radius:6px;} .tg-awgrid{width:100%;text-align:left;margin-top:18px;} .tg-awrow{display:flex;gap:8px;margin-top:7px;} .tg-awrow.wrap{flex-wrap:wrap;} .tg-awrow .lg-btn{flex:1;justify-content:center;min-width:110px;} .tg-awrow .lg-btn.on{background:var(--ffp-blue);border-color:var(--ffp-blue);color:#fff;}',
+      '.lg-scrbtn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid #cfe0ea;background:#f5fafc;color:var(--ffp-blue);border-radius:9px;padding:5px 10px;font:inherit;font-size:12px;font-weight:900;letter-spacing:.06em;cursor:pointer;margin-right:10px;} .lg-scrbtn .ms{font-size:16px;} .lg-scrbtn.perm{border-color:#f2c14e;background:#fffaf0;color:#9a6b00;} .lg-vclink{width:230px!important;min-width:0;flex:none;margin-left:auto;height:36px!important;padding:0 30px 0 10px!important;font-size:16px!important;margin-right:10px;box-sizing:border-box;} .lg-scr{max-width:520px;} .lg-scrlab{font-size:12.5px;font-weight:800;color:#7c8b97;margin-top:16px;} .lg-scrurl{font-size:26px;font-weight:900;color:#12232f;letter-spacing:-.4px;margin-top:6px;word-break:break-all;} .lg-scrurl.gfx{font-size:19px;letter-spacing:-.2px;} .lg-hex{display:flex;gap:6px;align-items:center;} .lg-hex .sw{width:38px;height:38px;flex:none;padding:2px;border:1.5px solid #d7dee5;border-radius:8px;background:#fff;cursor:pointer;} .lg-scrnote{font-size:12px;font-weight:600;color:#9aa8b4;margin-top:10px;} .lg-scrsteps{text-align:left;margin-top:20px;display:flex;flex-direction:column;gap:11px;width:100%;} .lg-scrsteps div{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;font-weight:600;color:#43525c;line-height:1.5;} .lg-scrsteps b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ffp-blue);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;}',
+      '.lg-surfs{margin:12px 0 0 51px;position:relative;} .lg-surfs:before{content:"";position:absolute;left:-13px;top:2px;bottom:18px;width:1.5px;background:#e4edf3;} .lg-surf{display:flex;align-items:center;gap:10px;padding:10px 0;font-size:14px;font-weight:600;border-bottom:1px solid #f4f7f9;} .lg-surf .ms{color:var(--ffp-blue);font-size:18px;opacity:.85;} .lg-surf .x{color:#c0cad2;cursor:pointer;font-size:18px;} .lg-surf .x:hover{color:#d64545;} .lg-addsurf{margin:12px 0 0 51px;} .lg-btn.ghostb{color:var(--ffp-blue);border-color:#d4e6ef;background:#f5fafc;} .lg-maplink{display:inline-flex;align-items:center;gap:3px;color:var(--ffp-blue);font-weight:800;text-decoration:none;} .lg-maplink .ms{font-size:15px;vertical-align:-3px;}',
+      '.lg-srow2{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-srow2 .s-match b{font-size:15px;font-weight:800;} .lg-srow2 .s-match small{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;margin-top:3px;} .lg-srow2 .s-when{display:flex;gap:8px;margin-top:11px;} .lg-srow2 .s-when .lg-in{padding:8px 9px;font-size:13px;} .lg-srow2 .s-right{display:flex;flex-direction:column;gap:9px;} .lg-srow2 .fl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;} .lg-srow2 .st-f{padding:9px 10px;font-size:13px;}',
+      '.lg-offlist{display:flex;flex-direction:column;gap:6px;} .lg-offtag{display:flex;align-items:center;gap:9px;font-size:13px;padding:7px 10px;border:1px solid var(--ffp-border-mid);border-radius:9px;background:#fbfcfd;} .lg-offtag .role{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ffp-blue);} .lg-offtag .nm{font-weight:700;} .lg-offtag .sp{flex:1;} .lg-offtag .x{color:#c0cad2;cursor:pointer;font-size:16px;} .lg-assign{display:flex;gap:7px;align-items:center;} .lg-assign .lg-sel{padding:7px 9px;font-size:12.5px;flex:1;} .lg-btn.sm{padding:7px 11px;font-size:12px;} .lg-maed{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px;margin-bottom:14px;} .lg-scpill{display:inline-block;font-size:9px;font-weight:900;letter-spacing:.05em;color:#0a8f5f;background:#e3f6ec;padding:2px 7px;border-radius:20px;vertical-align:middle;margin-left:6px;} .lg-scpill.inv{color:#8a6d00;background:#fff4d6;} .lg-scpill.txt{color:#5b6b75;background:#eef2f5;} .lg-ocap{max-width:180px;padding:7px 9px;font-size:12.5px;}',
+      '.lg-sq{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px 14px;margin:0 0 12px 46px;} .lg-sqsrch{display:flex;align-items:center;gap:8px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:9px 12px;} .lg-sqsrch .ms{color:#9aa8b4;font-size:19px;} .lg-sqsrch input{border:none;outline:none;font:inherit;font-weight:600;font-size:13.5px;flex:1;background:none;} .lg-sqres{background:#fff;border:1px solid #eef2f5;border-radius:10px;margin-top:8px;padding:2px 12px;} .lg-sqres .row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid #f2f5f7;} .lg-sqres .row:last-child{border-bottom:none;} .lg-sqres .av{width:32px;height:32px;border-radius:50%;background:#dfe7ec center/cover no-repeat;flex:none;} .lg-sqres .g{flex:1;min-width:0;} .lg-sqres .g b{font-size:13.5px;font-weight:800;display:block;} .lg-sqres .g span{font-size:11px;color:#8a99a6;font-weight:600;} .lg-sqadd2{display:flex;gap:8px;margin-top:8px;} .lg-sqlist{margin-top:8px;} .lg-sqrow{display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid #f0f3f6;font-size:13.5px;font-weight:700;} .lg-sqrow:last-child{border-bottom:none;} .lg-sqrow .sp{flex:1;} .lg-sqrow .x{color:#c0cad2;cursor:pointer;font-size:17px;}',
+      '.lg-per{display:flex;align-items:center;gap:10px;margin-bottom:14px;} .lg-per .sp{flex:1;} .lg-perchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;padding:7px 12px;border-radius:20px;background:#eef2f5;color:#5b6b75;} .lg-perchip.live{background:#fdeaea;color:#d6353b;} .lg-perchip.live .d{width:7px;height:7px;border-radius:50%;background:#d6353b;} .lg-perchip.ht{background:#fff4d6;color:#8a6d00;} .lg-perchip.ft{background:#e3f6ec;color:#0a8f5f;} .lg-perset{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);}',
+      '.lg-trk{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:14px 16px;margin-bottom:18px;} .lg-trk-clock{display:flex;align-items:center;gap:12px;margin-bottom:14px;} .lg-trk-clock .t{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ffp-text);} .lg-trk-clock .sp{flex:1;} .lg-trk-grp{margin-bottom:12px;} .lg-trk-lab{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8a99a6;margin-bottom:6px;} .lg-trk-btns{display:flex;gap:10px;} .lg-trk-b{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:11px 10px;font:inherit;font-size:13.5px;font-weight:800;color:var(--ffp-text);cursor:pointer;} .lg-trk-b span{font-size:12px;font-weight:900;color:#8a99a6;} .lg-trk-b.on{border-color:var(--ffp-blue);background:#eaf4fb;color:var(--ffp-blue);} .lg-trk-b.on span{color:var(--ffp-blue);} .lg-trk-apply{display:flex;align-items:center;gap:12px;margin-top:4px;flex-wrap:wrap;} .lg-trk-apply .sum{flex:1;font-size:12.5px;font-weight:700;color:var(--ffp-text-muted);min-width:180px;} .lg-livebtn{color:#d6353b;border-color:#f3c6c6;background:#fdeff0;}',
+      /* match centre */
+      '.lg-mcbtn{border:none;background:none;color:#9aa8b4;cursor:pointer;padding:4px;border-radius:8px;} .lg-mcbtn:hover{color:var(--ffp-blue);background:#f4f7f9;} .lg-mcbtn .ms{font-size:20px;} .tg-m .tg-macts{position:absolute;top:4px;right:4px;display:flex;gap:2px;}.tg-m .s .sd{flex:none;min-width:17px;height:17px;padding:0 4px;border-radius:4px;background:#eef2f5;color:#5b6b75;font-size:10px;font-weight:900;line-height:17px;text-align:center;}.tg-m .s.win .sd{background:rgba(31,157,87,.14);color:var(--ffp-green);}.tg-mf{display:flex;align-items:center;gap:8px;padding:5px 9px;border-top:1px solid #eef2f5;background:#fafbfc;}.tg-mf .wh{flex:1;min-width:0;font-size:10.5px;font-weight:700;color:#6a7c8a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.tg-mf .wh.dim{color:#a7b3bd;}.tg-mcb{flex:none;border:0;background:none;padding:0;cursor:pointer;color:var(--ffp-blue);line-height:0;}.tg-mcb .ms{font-size:18px;} .tg-mcbtn{position:static;} .tg-m{position:relative;}',
+      '.lg-mchd{display:flex;align-items:center;justify-content:center;gap:16px;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-mchd .tm{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800;} .lg-mchd .tm.a{flex-direction:row-reverse;} .lg-mchd .scr{font-size:26px;font-weight:900;color:var(--ffp-text);min-width:80px;text-align:center;}',
+      '.lg-mctabs{display:flex;gap:20px;border-bottom:1px solid var(--ffp-border);margin:8px 0 4px;} .lg-mctabs button{background:none;border:none;font:inherit;font-size:13.5px;font-weight:800;color:var(--ffp-text-muted);padding:11px 0;border-bottom:2.5px solid transparent;cursor:pointer;} .lg-mctabs button.on{color:var(--ffp-blue);border-bottom-color:var(--ffp-blue);}',
+      '.lg-mcadd{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px 2px;border-bottom:1px solid var(--ffp-border);} .lg-mcadd .lg-sel{width:auto;flex:1;min-width:120px;padding:8px 10px;font-size:13px;} .lg-mcadd .lg-in{padding:8px 10px;font-size:13px;}',
+      '.lg-mcrow{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid #f0f3f6;font-size:13px;} .lg-mcrow .mn{width:34px;font-weight:800;color:#9aa8b4;} .lg-mcrow .kd{font-size:10px;font-weight:900;letter-spacing:.04em;padding:3px 8px;border-radius:6px;background:#eef2f5;color:#5b6b75;} .lg-mcrow .kd.try{background:#e3f0ff;color:#0b4a8f;} .lg-mcrow .kd.penalty,.lg-mcrow .kd.drop_goal{background:#fff1e3;color:#b45309;} .lg-mcrow .kd.yellow_card{background:#fff7d6;color:#8a6d00;} .lg-mcrow .kd.red_card{background:#ffe0e0;color:#a11111;} .lg-mcrow .pl{font-weight:700;} .lg-mcrow .tn{color:#8a99a6;font-weight:600;} .lg-mcrow .rs{margin-left:auto;font-weight:900;} .lg-mcrow .x{color:#c0cad2;cursor:pointer;font-size:17px;}',
+      '.lg-mcfields{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:6px;} .lg-mcf{display:flex;flex-direction:column;gap:5px;} .lg-mcf label{font-size:12px;font-weight:800;color:#43525c;} .lg-mcf .lg-in{padding:9px 11px;}',
+      '.lg-livebtn{color:#d6353b;border-color:#f3c6c6;background:#fdeff0;} .lg-mcstat.final{font-size:12px;font-weight:800;color:#5b6b75;background:#eef2f5;padding:8px 12px;border-radius:10px;}',
+      '.lg-teamstat .hd{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;padding:8px 2px 12px;border-bottom:1px solid var(--ffp-border);} .lg-teamstat .hd span{font-size:13px;font-weight:800;text-align:center;} .lg-teamstat .hd span:first-child{text-align:left;} .lg-teamstat .hd span:last-child{text-align:right;}',
+      '.lg-tsrow{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #f0f3f6;} .lg-tsrow .lab{text-align:center;font-size:12.5px;font-weight:700;color:#43525c;} .lg-tsrow .lg-in{padding:8px 10px;text-align:center;}',
+      '#tg-root .lg-nav{gap:15px;align-items:center;}#tg-root .lg-nav .tg-phase{padding:0 2px 0 0;}#tg-root .lg-nav .tg-navsep{margin:0 2px;}',
+      '.tg-unit{font-size:12px;color:var(--ffp-text-muted);}.sc-day{font-size:16px;font-weight:900;color:var(--ffp-text);margin:26px 0 2px;}.sc-day:first-child{margin-top:8px;}.sc-ch{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:9px;margin:12px 0 0;background:linear-gradient(92deg,#12242f,#21404f);box-shadow:0 2px 8px rgba(14,37,49,.18);}.sc-ch b{font-size:13.5px;font-weight:900;color:#fff;letter-spacing:.01em;}.sc-ch .mn{font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#f0b736;}.sc-mkm{border:0;background:none;padding:0;font:inherit;font-size:11.5px;font-weight:700;color:#7ec9e8;cursor:pointer;}.sc-mkm:hover{color:#fff;}.sc-ch .ct{margin-left:auto;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.58);}.sc-add{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.12);border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;font-weight:800;color:#fff;cursor:pointer;}.sc-add:hover{background:rgba(255,255,255,.2);}.sc-add .ms{font-size:16px;}.sc-day .tz{margin-left:9px;font-size:11px;font-weight:700;color:#9aa8b4;}.sc-m{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--ffp-border);}.sc-m.open{border-bottom:0;}.sc-m .t{width:136px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-plan{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);padding:2px 2px 6px;}.sc-plan .lg-in{width:64px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-plan .lg-in.w{width:136px;}.sc-m .g{flex:1;min-width:0;}.sc-m .g b{display:block;font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.sc-m .g span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.sc-m .c{width:170px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-ic{flex:none;border:0;background:none;padding:4px;cursor:pointer;color:#8a99a8;line-height:0;border-radius:6px;}.sc-ic:hover{background:#eef2f5;color:var(--ffp-text);}.sc-ic:disabled{opacity:.28;cursor:default;background:none;}.sc-ic .ms{font-size:19px;}.sc-more{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:4px 2px 14px 146px;border-bottom:1px solid var(--ffp-border);}.sc-more .lg-in,.sc-more .lg-sel{padding:7px 9px;font-size:13px;width:auto;min-width:0;flex:none;height:36px;box-sizing:border-box;}.sc-more .st-d{width:158px;}.sc-more .st-f{width:196px;}.sc-more .a-role{width:168px;}.sc-more .a-off{width:186px;}#lg-root .sc-more .st-off{width:178px;flex:none;}.sc-more .sp{flex:1;}',
+      /* the venue the court belongs to, on the court bar rather than repeated
+         down every row underneath it */
+      '.sc-ch .vn{font-size:11.5px;font-weight:700;color:rgba(255,255,255,.62);}',
+      '.sc-m .g span.off{color:var(--ffp-text-dim);}',
+      /* a match with no court yet has no bar above it to say where it is, so it
+         carries the venue over the surface itself */
+      '.sc-m .v{width:178px;flex:none;min-width:0;text-align:right;}',
+      '.sc-m .v b{display:block;font-size:12.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.sc-m .v span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+      '.sc-m .v.none b{color:var(--ffp-text-dim);font-weight:700;}',
+      /* the main field, chosen on the Venues tab */
+      '.lg-mainb{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--ffp-border-mid);background:#fff;color:var(--ffp-text-muted);border-radius:9px;padding:5px 10px;font:inherit;font-size:11.5px;font-weight:800;cursor:pointer;margin-right:10px;}',
+      '.lg-mainb .ms{font-size:15px;}',
+      '.lg-mainb.on{border-color:var(--ffp-gold);background:#fdf6e6;color:#8a6200;}',
+      '.tg-sec{padding:2px 0 22px;}.tg-sec+.tg-sec{border-top:1px solid var(--ffp-border);padding-top:20px;}.tg-sech{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:linear-gradient(92deg,#12242f,#21404f);padding:7px 13px;border-radius:7px;margin:0 0 16px;}.tg-hint{font-size:12px;font-weight:700;color:#6a7c8a;margin-top:7px;}.tg-dvrow{display:flex;align-items:center;gap:12px;padding:13px 2px;border-top:1px solid var(--ffp-border);cursor:pointer;}.tg-dvrow:last-of-type{border-bottom:1px solid var(--ffp-border);}.tg-dvrow .g{flex:1;min-width:0;}.tg-dvrow .g b{display:block;font-size:14px;font-weight:800;color:var(--ffp-text);}.tg-dvrow .g span{display:block;font-size:12px;font-weight:600;color:var(--ffp-text-muted);margin-top:2px;}.tg-dvrow .st{font-size:11px;font-weight:800;color:#8a99a8;white-space:nowrap;}.tg-dvrow .st.done{color:var(--ffp-green);}.tg-dvrow.on{box-shadow:inset 3px 0 0 var(--ffp-blue);padding-left:12px;}.tg-dvrow.on .g b{color:var(--ffp-blue);}.tg-fmts{margin-top:18px;}.tg-dvrow .cv{font-size:20px;color:#9aa8b4;}.tg-dvrow.on .cv{color:var(--ffp-blue);}.tg-dvedit{padding:4px 0 22px 32px;border-bottom:1px solid var(--ffp-border);}.tg-dvedit .tg-fmts{margin-top:4px;}.tg-fmtnow{display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:800;color:var(--ffp-text);}.tg-fmtnow a{font-size:12px;font-weight:700;color:var(--ffp-blue);cursor:pointer;}.tg-shape{font-size:12.5px;font-weight:700;color:#6a7c8a;margin:14px 0 0;}.tg-acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}',
+      /* ── CONNECT A SCORING TABLET ─────────────────────────────────── */
+      '.tg-conn{border-top:2px solid #1980AD;margin:10px 0 4px;padding:16px 4px 6px;display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;}',
+      '.tg-conn .qr{width:132px;height:132px;flex:0 0 auto;border-radius:12px;background:#fff;box-shadow:0 3px 12px rgba(15,34,48,.12);display:grid;place-items:center;padding:8px;box-sizing:border-box;line-height:0;}',
+      '.tg-conn .qr img,.tg-conn .qr canvas{width:100%!important;height:100%!important;}',
+      '.tg-conn .g{flex:1 1 300px;min-width:0;}',
+      '.tg-conn .lb{font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:#13657f;}',
+      '.tg-conn .code{font-size:42px;font-weight:900;letter-spacing:.16em;color:#12232f;margin:8px 0 2px;font-variant-numeric:tabular-nums;}',
+      '.tg-conn .exp{font-size:12.5px;font-weight:700;color:#5b6b75;}',
+      '.tg-conn .how{font-size:13px;font-weight:700;color:#43525c;margin-top:12px;line-height:1.5;max-width:460px;} .tg-conn .how b{font-weight:900;color:#12232f;}',
+      '.tg-conn .acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}',
+      '.lg-btn.sm{padding:7px 11px;font-size:12.5px;} .lg-btn.sm .ms{font-size:16px;}',
+      /* ── CONTRAST REPAIRS ── */
+      '.tg-m .s.tbd b{color:#5c6f7c;}',
+      '.tg-m .s.win b{color:#0a7d52;}',
+      '.tg-rnd .rh{color:#5c6f7c;}',
+      '.tg-kind{color:#8a5508;}',
+      '.tg-band{display:flex;align-items:center;gap:8px;margin:16px 0 8px;}',
+      '.tg-band b{font-size:10.5px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:#43525c;white-space:nowrap;}',
+      '.tg-band i{flex:1;height:2px;border-radius:2px;background:#e3e9ee;}',
+      '.tg-band.top b{color:#8a6200;} .tg-band.top i{background:linear-gradient(90deg,#f2a900,rgba(242,169,0,.12));}',
+      '.tg-band.fin b{color:#12232f;font-size:12px;letter-spacing:.12em;}',
+      '.tg-band.fin i{background:linear-gradient(90deg,#f2a900,rgba(242,169,0,.12));height:3px;}',
+      '.tg-pend{border:1.5px solid #e6d3a6;border-radius:12px;background:#fffdf6;padding:12px 14px;margin-bottom:16px;}',
+      '.tg-pend .hd{font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:#8a5a00;margin-bottom:8px;}',
+      '.tg-pend .row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #f0e6cc;flex-wrap:wrap;}',
+      '.tg-pend .row:first-of-type{border-top:none;}',
+      '.tg-pend .row b{font-size:14px;font-weight:800;color:#12232f;}',
+      '.tg-pend .row .sub{font-size:12px;font-weight:700;color:#6a7c8a;}',
+      '.tg-pend .row .sp{flex:1;}',
+      '.tg-paid{display:inline-flex;align-items:center;gap:5px;flex:none;border:1.5px solid #d7dee5;background:#fff;color:#5c6f7c;border-radius:9px;padding:4px 9px;font:inherit;font-size:11.5px;font-weight:800;cursor:pointer;}',
+      '.tg-paid .ms{font-size:16px;}',
+      '.tg-paid.on{border-color:#a8d5bd;background:#eef9f3;color:#0a7d52;}',
+      '/* ── ALL DIVISIONS ON ONE SCHEDULE ──────────────────────────────── */',
+      '/* A court takes whatever fits, so one row\'s division is not the next',
+      '   one\'s. Each row carries its division colour on its leading edge and',
+      '   a key says which is which. */',
+      '.sc-key{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:14px 0 2px;}',
+      '.sc-key .k{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#43525c;}',
+      '.sc-key .k i{width:13px;height:13px;border-radius:4px;background:var(--dc);flex:none;}',
+      '.sc-m{border-left:5px solid var(--dc);padding-left:11px;background:linear-gradient(90deg,var(--db),rgba(255,255,255,0) 42%);}',
+      '.sc-m .g span{color:var(--dcd);font-weight:700;}',
+      '.tg-d0{--dc:#c98f00;--db:rgba(242,169,0,.12);--dcd:#8a6200;}',
+      '.tg-d1{--dc:#1980AD;--db:rgba(25,128,173,.10);--dcd:#14607f;}',
+      '.tg-d2{--dc:#7a4fc2;--db:rgba(122,79,194,.10);--dcd:#5b3a93;}',
+      '.tg-d3{--dc:#1f9d57;--db:rgba(31,157,87,.10);--dcd:#17743f;}',
+      '.tg-d4{--dc:#0f8b8d;--db:rgba(15,139,141,.10);--dcd:#0a6a6c;}',
+      '.tg-d5{--dc:#c0392b;--db:rgba(192,57,43,.10);--dcd:#a32b1f;}',
+      '.tg-d6{--dc:#3f51b5;--db:rgba(63,81,181,.10);--dcd:#333f96;}',
+      '.tg-d7{--dc:#8d6e35;--db:rgba(141,110,53,.10);--dcd:#6b5327;}',
+      '.tg-d8{--dc:#b5399b;--db:rgba(181,57,155,.10);--dcd:#8e2a79;}',
+      '.tg-d9{--dc:#4a6572;--db:rgba(74,101,114,.10);--dcd:#3a515b;}',
+      '.sc-day .tz{font-size:12.5px;font-weight:700;color:#5c6f7c;}',
+      '.lg-btn.ghost.sc-rb .ms{color:var(--ffp-gold);}',
+      '.sc-plan+.sc-plan{padding-top:0;}',
+      '.sc-plan .mlen{font-weight:900;color:var(--ffp-text);}',
+      '.sc-mlenb{border:0;background:none;padding:0 0 0 7px;font:inherit;font-size:12px;font-weight:800;color:var(--ffp-blue);cursor:pointer;}',
+      '.sc-mlenb:hover{text-decoration:underline;}',
+      '.sc-why{font-size:11.5px;font-weight:600;color:var(--ffp-text-dim);padding:0 2px 8px;}',
+      '/* Breaks: a court shut for part of a day. Saved, not typed, so a later',
+      '   Rebuild steps over the same ones. */',
+      '.sc-brk{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;padding:4px 2px 14px;border-bottom:1px solid var(--ffp-border);margin-bottom:4px;}',
+      '.sc-brk .lb{flex:1 0 100%;font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#5c6f7c;margin-bottom:1px;}',
+      '.sc-brk .b{display:inline-flex;align-items:center;gap:6px;background:#f4f7f9;border:1px solid var(--ffp-border);border-radius:10px;padding:5px 6px 5px 8px;}',
+      '.sc-brk .b em{font-style:normal;font-size:12.5px;font-weight:700;color:#5c6f7c;}',
+      '.sc-brk .b .lg-sel{width:auto;min-width:118px;padding:6px 26px 6px 9px;font-size:12.5px;}',
+      '.sc-brk .b .lg-sel.dy{min-width:124px;}',
+      '.sc-brk .b .lg-in{padding:6px 8px;font-size:12.5px;}',
+      '.sc-brk .b .lg-in.w{width:112px;}',
+      '.sc-brk .b .lg-in.nm{width:140px;}',
+      '.sc-brk .b .sc-ic{color:#8a99a8;}',
+      '.sc-brk .sc-abk{padding:7px 12px;font-size:12.5px;}',
+      '/* A break shown where it falls, so the gap in the day is not a mystery. */',
+      '.sc-bar{display:flex;align-items:center;gap:9px;padding:9px 11px;margin:2px 0;border-radius:8px;background:repeating-linear-gradient(135deg,#f1f5f8,#f1f5f8 9px,#e7edf2 9px,#e7edf2 18px);border:1px dashed #c8d4dd;}',
+      '.sc-bar .ms{color:#5c6f7c;font-size:17px;}',
+      /* A break with matches still booked inside it. Gold, because it is the
+         organiser's to act on - not red, nothing is broken yet. */
+      '.sc-bar.clash{border-style:solid;border-color:var(--ffp-gold);background:repeating-linear-gradient(135deg,#fff9ec,#fff9ec 9px,#fdf1d6 9px,#fdf1d6 18px);}',
+      '.sc-bar.clash .ms{color:#9a6b00;} .sc-bar.clash b{color:#7a5400;} .sc-bar.clash span{color:#8a6410;}',
+      '.sc-bar .fix{margin-left:auto;flex:none;border:0;background:var(--ffp-gold);color:#12232f;border-radius:8px;padding:5px 11px;font:inherit;font-size:12px;font-weight:800;cursor:pointer;}',
+      '.sc-bar .fix:hover{background:#e0af3a;}',
+      '.sc-m .g span.clash{color:#9a6b00;font-weight:800;}',
+      '.sc-brkwarn{display:flex;align-items:center;gap:9px;padding:10px 13px;margin:10px 0 0;border-radius:9px;background:linear-gradient(92deg,#12242f,#21404f);box-shadow:inset 4px 0 0 var(--ffp-gold),0 2px 8px rgba(14,37,49,.18);}',
+      '.sc-brkwarn .ms{flex:none;color:var(--ffp-gold);font-size:18px;}',
+      '.sc-brkwarn b{font-size:13px;font-weight:900;color:#fff;}',
+      '.sc-brkwarn i{font-style:normal;font-size:12px;font-weight:700;color:rgba(255,255,255,.62);}',
+      '.sc-brkwarn .sp{flex:1;}',
+      '.sc-brkwarn button{flex:none;border:0;background:var(--ffp-gold);color:#12232f;border-radius:8px;padding:6px 12px;font:inherit;font-size:12px;font-weight:800;cursor:pointer;}',
+      '.sc-brkwarn button:hover{background:#e0af3a;}',
+      '.sc-bar b{font-size:12.5px;font-weight:900;color:#3c4d59;}',
+      '.sc-bar span{font-size:12px;font-weight:700;color:#475763;}',
+      '/* Nothing should sit here: Auto-plan places every match, decided or not. */',
       '.sc-ch.warn{box-shadow:inset 4px 0 0 var(--ffp-gold),0 2px 8px rgba(14,37,49,.18);}',
       /* Where an event ends. Plain rows on the canvas, not a boxed "danger
          zone": the weight comes from the wording and from red being reserved
@@ -75,138 +292,58 @@
       '.lg-archrow{margin-top:20px;}',
       '.sc-ch.warn .sc-add{background:var(--ffp-gold);border-color:var(--ffp-gold);color:#12232f;}',
       '.sc-ch.warn .sc-add:hover{background:#e0af3a;}',
-      '.sc-m{display:flex;align-items:center;gap:10px;padding:9px 2px 9px 9px;border-bottom:1px solid var(--ffp-border);border-left:3px solid var(--dc,transparent);}',
-      '.sc-m.open{border-bottom:0;}',
-      '.sc-m .t{width:136px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}',
-      '.sc-m .g{flex:1;min-width:0;}',
-      '.sc-m .g b{display:block;font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-      '.sc-m .g span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-      '.sc-m .g span.off{color:var(--ffp-text-dim);}',
-      /* Where it is played, stated rather than offered: the venue over the
-         surface. Changing it is a decision, so it lives in the row menu. */
-      '.sc-m .v{width:178px;flex:none;min-width:0;text-align:right;}',
-      '.sc-m .v b{display:block;font-size:12.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-      '.sc-m .v span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-      '.sc-m .v.none b{color:var(--ffp-text-dim);font-weight:700;}',
-      '.sc-ic{flex:none;border:0;background:none;padding:4px;cursor:pointer;color:#8a99a8;line-height:0;border-radius:6px;}.sc-ic:hover{background:#eef2f5;color:var(--ffp-text);}.sc-ic:disabled{opacity:.28;cursor:default;background:none;}.sc-ic .ms{font-size:19px;}',
-      '.sc-more{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:4px 2px 14px 155px;border-bottom:1px solid var(--ffp-border);}',
-      /* These sit in a flex row, and .lg-in/.lg-sel are width:100% by default,
-         so each one grabbed a line of its own and left a hole beside it. Fixed
-         widths, min-width:0 and one shared height keep them on one line. */
-      '.sc-more .lg-in,.sc-more .lg-sel{padding:7px 9px;font-size:13px;width:auto;min-width:0;flex:none;height:36px;box-sizing:border-box;}',
-      '.sc-more .st-d{width:158px;}.sc-more .st-f{width:186px;}',
-      '.sc-more .a-role{width:168px;}.sc-more .a-off{width:186px;}#lg-root .sc-more .st-off{width:178px;flex:none;}',
-      '.sc-more .sp{flex:1;}',
-      '.sc-plan{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);padding:2px 2px 6px;}',
-      '.sc-plan .lg-in{width:64px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-plan .lg-in.w{width:136px;}',
-      '.sc-plan+.sc-plan{padding-top:0;}',
-      '.sc-plan .mlen{font-weight:900;color:var(--ffp-text);}',
-      '.sc-mlenb{border:0;background:none;padding:0 0 0 7px;font:inherit;font-size:12px;font-weight:800;color:var(--ffp-blue);cursor:pointer;}',
-      '.sc-mlenb:hover{text-decoration:underline;}',
-      '.sc-why{font-size:11.5px;font-weight:600;color:var(--ffp-text-dim);padding:0 2px 8px;}',
-      '.sc-rd{font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#5c6f7c;padding:14px 2px 5px;}',
-      '.sc-key{display:flex;flex-wrap:wrap;gap:8px 16px;padding:4px 2px 10px;}',
-      '.sc-key .k{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;color:var(--ffp-text-muted);}',
-      '.sc-key .k i{width:10px;height:10px;border-radius:3px;background:var(--dc);display:block;}',
-      '.lg-d0{--dc:#1980AD;}.lg-d1{--dc:#127a52;}.lg-d2{--dc:#c79a2e;}.lg-d3{--dc:#8e44ad;}.lg-d4{--dc:#c0392b;}',
-      '.lg-d5{--dc:#2c7a7b;}.lg-d6{--dc:#b7791f;}.lg-d7{--dc:#4a5568;}.lg-d8{--dc:#2b6cb0;}.lg-d9{--dc:#9b2c2c;}',
-      '.lg-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap;}',
-      '.lg-h1{font-size:21px;font-weight:900;color:var(--ffp-text);} .lg-sub{font-size:13px;color:var(--ffp-text-muted);font-weight:600;margin-top:2px;}',
-      '.lg-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ffp-border-mid);background:#fff;border-radius:10px;padding:9px 14px;font:inherit;font-size:13px;font-weight:800;color:var(--ffp-text);cursor:pointer;} .lg-btn .ms{font-size:18px;}',
-      '.lg-btn.pri{background:var(--ffp-blue);border-color:var(--ffp-blue);color:#fff;} .lg-btn.gold{background:linear-gradient(180deg,#ffd15a,#f2a900);border:none;color:#3a2600;} .lg-btn.green{background:#12a05f;border-color:#12a05f;color:#fff;} .lg-btn.ghost{background:none;border-color:transparent;color:var(--ffp-text-muted);} .lg-btn:disabled{opacity:.5;cursor:default;}',
-      '.lg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}',
-      '.lg-card{border:1px solid var(--ffp-border-mid);border-radius:14px;overflow:hidden;cursor:pointer;background:#fff;box-shadow:0 4px 12px rgba(15,34,48,.06);}',
-      '#lg-root .lg-cover{height:104px;position:relative;background:linear-gradient(150deg,#2f7fa8,#0d3550) center/cover no-repeat;} .lg-cover .scr{position:absolute;inset:0;background:linear-gradient(transparent,rgba(8,18,26,.6));} .lg-cover .bd{position:absolute;top:8px;left:8px;font-size:10px;font-weight:900;padding:3px 8px;border-radius:20px;background:#fff;color:#d6353b;} .lg-cover .bd.live{background:#d6353b;color:#fff;} .lg-cover .bd.open{color:#0a8f5f;} .lg-cover .bd.draft,.lg-cover .bd.final{color:#5b6b75;}',
-      '.lg-cbody{padding:11px 13px;} .lg-cbody b{font-size:14.5px;font-weight:900;color:var(--ffp-text);display:block;} .lg-cbody span{font-size:12px;color:var(--ffp-text-muted);font-weight:700;text-transform:capitalize;}',
-      '.lg-new{border:2px dashed var(--ffp-border-mid);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:168px;color:var(--ffp-blue);font-weight:800;cursor:pointer;background:#fff;} .lg-new .ms{font-size:28px;}',
-      '.lg-nav{display:flex;gap:22px;border-bottom:1px solid var(--ffp-border);margin-bottom:20px;flex-wrap:wrap;} .lg-nav button{background:none;border:none;font:inherit;font-size:13.5px;font-weight:800;color:var(--ffp-text-muted);padding:11px 0;border-bottom:2.5px solid transparent;cursor:pointer;} .lg-nav button.on{color:var(--ffp-blue);border-bottom-color:var(--ffp-blue);}',
-      '.lg-pill{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;margin-left:8px;vertical-align:middle;} .lg-pill.live{background:#fdeaea;color:#d6353b;} .lg-pill.open{background:#e3f6ec;color:#0a8f5f;} .lg-pill.draft,.lg-pill.final{background:#eef2f5;color:#5b6b75;}',
-      '.lg-lab{font-size:12px;font-weight:800;color:#43525c;margin:0 0 6px;} .lg-in,.lg-sel{width:100%;padding:10px 12px;border:1px solid #d7dee5;border-radius:10px;font:inherit;box-sizing:border-box;background:#fff;color:#12232f;} .lg-fld{margin-bottom:16px;} .lg-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;} .lg-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}',
-      '.lg-seg{display:inline-flex;border:1.5px solid var(--ffp-border-mid);border-radius:10px;overflow:hidden;} .lg-seg button{background:#fff;border:none;padding:9px 15px;font:inherit;font-size:12.5px;font-weight:800;color:var(--ffp-text-muted);cursor:pointer;} .lg-seg button.on{background:var(--ffp-blue);color:#fff;} .lg-status4 button{padding:9px 18px;} .lg-status4 button.on.st-draft{background:#6a7c8a;color:#fff;} .lg-status4 button.on.st-open{background:#1980AD;color:#fff;} .lg-status4 button.on.st-live{background:#1c9d54;color:#fff;} .lg-status4 button.on.st-final{background:#e0a400;color:#2a2200;} .lg-cfm{position:fixed;inset:0;z-index:9999;background:#fff;display:flex;} .lg-cfm-in{margin:auto;max-width:460px;width:100%;padding:34px 30px;text-align:center;display:flex;flex-direction:column;align-items:center;} .lg-cfm-ic{font-size:60px;margin-bottom:14px;} .lg-cfm-ic.tone-live{color:#1c9d54;} .lg-cfm-ic.tone-final{color:#e0a400;} .lg-cfm-ic.tone-draft{color:#6a7c8a;} .lg-cfm-t{font-size:24px;font-weight:900;color:#12232f;} .lg-cfm-b{font-size:14.5px;font-weight:600;color:#5a6b78;line-height:1.55;margin-top:12px;} .lg-cfm-a{display:flex;gap:12px;margin-top:28px;width:100%;} .lg-cfm-a .lg-btn{flex:1;justify-content:center;} .lg-cfm-a .lg-btn.st-live{background:#1c9d54;color:#fff;} .lg-cfm-a .lg-btn.st-final{background:#e0a400;color:#2a2200;} .lg-cfm-a .lg-btn.st-draft{background:#6a7c8a;color:#fff;}',
-      '.lg-row{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--ffp-border);} .lg-row .drag{color:#c0cad2;font-size:20px;cursor:grab;} .lg-row .g{flex:1;min-width:0;} .lg-row .g b{font-size:14.5px;font-weight:800;color:var(--ffp-text);} .lg-row .g span{font-size:12.5px;color:var(--ffp-text-muted);font-weight:700;} #lg-root .lg-row .act{color:#9aa8b4;font-size:20px;cursor:pointer;padding:4px;} .lg-row .act:hover{color:var(--ffp-blue);}',
-      '.lg-av{position:relative;width:34px;height:34px;border-radius:8px;flex:none;background:#e7ecef center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#6a7681;}',
-      '.lg-avedit{cursor:pointer;}',
-      '.lg-avplus{position:absolute;right:-5px;bottom:-5px;width:17px;height:17px;border-radius:50%;background:var(--ffp-blue,#2ba8e0);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1.5px solid #fff;}',
-      '.lg-empty{padding:40px 16px;text-align:center;color:var(--ffp-text-muted);font-weight:600;font-size:13.5px;}',
-      '.lg-tool{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;} .lg-tool .lg-sel{width:auto;min-width:180px;} .lg-tool .sp{flex:1;}',
-      '.lg-edit{display:flex;align-items:center;gap:10px;padding:12px 2px;border-bottom:1px solid var(--ffp-border);flex-wrap:wrap;} .lg-edit .lg-in{width:auto;flex:1;min-width:160px;}',
-      '.lg-entform{align-items:flex-end;gap:12px;padding:16px 2px;} .lg-entform .crest{align-self:flex-end;padding-bottom:5px;} .lg-entform .f{display:flex;flex-direction:column;gap:5px;min-width:0;} #lg-root .lg-entform .f label{height:14px;line-height:14px;} .lg-entform .f label{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#7c8b97;} .lg-entform .f.gr{flex:1 1 200px;} #lg-root .lg-entform .f.sm{flex:0 0 84px;} .lg-entform .f .lg-in,.lg-entform .f .lg-sel{width:100%;min-width:0;max-width:100%;flex:none;box-sizing:border-box;height:44px;padding:0 12px;line-height:44px;} .lg-entform .f .lg-in{-webkit-appearance:none;appearance:none;} .lg-entform .f input[type=number]{-moz-appearance:textfield;} .lg-entform .f input[type=number]::-webkit-outer-spin-button,.lg-entform .f input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;} .lg-entform .f .ro{height:44px;display:flex;align-items:center;font-size:14.5px;font-weight:800;color:var(--ffp-text);} .lg-entform .acts{display:flex;align-items:center;gap:9px;flex:1 1 100%;margin-top:4px;} .lg-entform .acts .sp{flex:1;} .lg-entform .lg-btn.danger{color:#c0392b;} .lg-entform .lg-btn.danger:hover{background:#fdf1ef;} .lg-entform .lg-btn.danger.solid{background:#c0392b;border-color:#c0392b;color:#fff;} .lg-entform .delq{font-size:13px;font-weight:800;color:var(--ffp-text);} .lg-entform .note{flex:1 1 100%;font-size:12.5px;font-weight:600;color:#7c8b97;margin-top:2px;} .lg-entform .msg{flex:1 1 100%;font-size:12.5px;font-weight:700;color:#c0392b;} @media(max-width:760px){.lg-entform .f.gr,.lg-entform .f{flex:1 1 100%;}}',
-      '.lg-fx{display:grid;grid-template-columns:1fr 128px 1fr;align-items:center;gap:8px;padding:11px 2px;border-bottom:1px solid var(--ffp-border);} .lg-fx .t{font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .lg-fx .t.a{text-align:right;} .lg-fx .sc{display:flex;gap:6px;justify-content:center;} .lg-fx .sc input{width:46px;padding:8px;border:1.5px solid #d7dee5;border-radius:8px;font:inherit;font-weight:800;text-align:center;}',
-      '.lg-rndlab{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:var(--ffp-text-muted);margin:16px 0 4px;}',
-      '.lg-tb{display:grid;grid-template-columns:26px 1fr 30px 30px 30px 44px 40px;align-items:center;gap:6px;padding:10px 6px;border-bottom:1px solid var(--ffp-border);font-size:13px;} .lg-tb span{text-align:center;} .lg-tb .nm{text-align:left;font-weight:800;} .lg-tb.head{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--ffp-text-muted);} .lg-tb .pts{font-weight:900;color:var(--ffp-blue);}',
-      '.lg-brand{display:flex;gap:12px;align-items:stretch;} .lg-logo{width:76px;height:76px;flex:none;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:10px;font-weight:800;} .lg-logo .ms{font-size:22px;} .lg-banner{flex:1;height:76px;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#9aa8b4;cursor:pointer;font-size:11px;font-weight:800;} .lg-banner .ms{font-size:22px;} .lg-row .act{margin-left:auto;color:#9aa8b4;font-size:19px;cursor:pointer;} .lg-banner16{width:100%;max-width:520px;aspect-ratio:16/9;border-radius:12px;border:1.5px dashed #d7dee5;background:#f7f9fb center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9aa8b4;cursor:pointer;font-size:12px;font-weight:800;} .lg-banner16 .ms{font-size:28px;} .lg-offadd{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;} .lg-offsrch{position:relative;} .lg-offres{margin-top:6px;display:flex;flex-direction:column;gap:4px;} .lg-offopt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid #e6ecf1;background:#fff;border-radius:11px;padding:8px 11px;cursor:pointer;} .lg-offopt .av{width:34px;height:34px;border-radius:8px;flex:none;background:#e7ecef center/cover no-repeat;} .lg-offopt .g{flex:1;min-width:0;} .lg-offopt .g b{font-size:14px;font-weight:800;color:#12232f;display:block;} .lg-offopt .g span{font-size:11.5px;color:#7c8b97;font-weight:600;} .lg-offopt .pk{font-size:12px;font-weight:800;color:#1980AD;} .lg-offnone{font-size:12.5px;color:#7c8b97;font-weight:600;padding:8px 4px;} .lg-offpicked{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#0a8f5f;padding:6px 4px;} .lg-offrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;} .og-sec{padding:2px 0 16px;border-bottom:1px solid var(--ffp-border);margin-bottom:16px;} .og-hd{display:flex;align-items:flex-start;gap:11px;margin-bottom:12px;} .og-hd>.ms{font-size:21px;color:var(--ffp-purple,#0a3e44);opacity:.75;flex:none;margin-top:1px;} .og-hd .t{flex:1;min-width:0;} .og-hd .t b{display:block;font-size:15px;font-weight:900;color:var(--ffp-text);} .og-hd .t span{display:block;margin-top:3px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .og-pool{display:flex;flex-wrap:wrap;gap:8px;} .og-chip{display:inline-flex;align-items:center;gap:8px;padding:5px 11px 5px 5px;border:1px solid var(--ffp-border-mid);border-radius:999px;font-size:13px;font-weight:800;} .og-chip.noacct{border-style:dashed;} .og-chip .lg-av{width:26px;height:26px;font-size:10px;} .og-chip em{font-style:normal;font-size:17px;color:#9aa8b4;cursor:pointer;} .og-chip em:hover{color:var(--ffp-blue);} .og-foot{margin-top:11px;font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .og-crewwrap{background:var(--ffp-bg-3,#eef3f4);border-radius:14px;padding:16px 18px;} .og-lead{display:flex;align-items:flex-start;gap:11px;margin-bottom:6px;} .og-lead>.ms{font-size:21px;color:var(--ffp-purple,#0a3e44);opacity:.75;flex:none;margin-top:1px;} .og-lead b{display:block;font-size:15px;font-weight:900;} .og-lead span{display:block;margin-top:3px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .og-crew{margin-top:16px;padding-top:14px;border-top:1px solid var(--ffp-border-mid);} .og-crew:first-of-type{border-top:none;padding-top:4px;} .og-ch{display:flex;align-items:center;gap:9px;margin-bottom:6px;} .og-ch b{font-size:12px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;} .og-ch .og-app{font-size:12px;font-weight:700;color:var(--ffp-text-muted);}/* NOT .app: the dashboard shell owns .app{display:flex;height:100vh} as its ROOT layout, so a label wearing that class was 100vh tall and blew the crew header apart. */ .og-ch .sp{flex:1;} .og-note{display:flex;gap:8px;align-items:flex-start;font-size:12px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;padding:2px 2px 0;} .og-note .ms{font-size:16px;flex:none;opacity:.6;} #lg-root .og-acc{max-width:190px;flex:none;} #lg-root .og-acc.on{border-color:var(--ffp-blue);background:#f2f8fb;color:#1b5f85;} .og-pick{margin:0 0 12px 46px;padding:12px 14px;border-left:2px solid var(--ffp-yellow,#FFCC00);background:#fff;border-radius:0 10px 10px 0;} .og-pickh{font-size:13px;font-weight:900;margin-bottom:8px;} .og-pl{font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--ffp-text-dim);margin:10px 0 4px;} .og-opt{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px solid #eef2f5;font-size:13px;font-weight:700;cursor:pointer;} .og-opt:last-of-type{border-bottom:none;} .og-opt input{width:17px;height:17px;flex:none;margin:0;} .og-opt span{flex:1;min-width:0;} .og-opt em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);} .og-pickb{display:flex;gap:9px;margin-top:12px;} .og-crew .lg-row .g b{display:block;} .og-crew .lg-row .g span{display:block;margin-top:1px;} .lg-pdf{display:flex;align-items:center;gap:12px;margin-top:10px;padding:12px 2px;border-top:1px solid var(--ffp-border);} .lg-pdf>.ms{font-size:22px;color:#9aa8b4;flex:none;} .lg-pdf.has>.ms{color:var(--ffp-blue);} .lg-pdf .g{flex:1;min-width:0;} .lg-pdf .g b{display:block;font-size:14px;font-weight:800;color:var(--ffp-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .lg-pdf .g span{display:block;margin-top:2px;font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-pdf .lg-btn{flex:none;text-decoration:none;} #lg-root .lg-pdf .x{flex:none;font-size:20px;color:#9aa8b4;cursor:pointer;padding:4px;} #lg-root .lg-pdf .x:hover{color:#c0392b;} .lg-cfm-in.rb-wide{max-width:560px;text-align:left;align-items:stretch;} .rb-t{font-size:23px;font-weight:900;color:#12232f;} .rb-lead{font-size:13.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.55;margin:10px 0 20px;} #lg-root .rb-dv{width:auto;min-width:200px;margin:0 0 18px;} .rb-ch{display:flex;align-items:flex-start;gap:15px;width:100%;text-align:left;padding:17px 4px;border:none;border-top:1px solid var(--ffp-border);background:none;font:inherit;cursor:pointer;} .rb-ch:last-of-type{border-bottom:1px solid var(--ffp-border);} .rb-ch>.ms{font-size:24px;color:var(--ffp-blue);flex:none;margin-top:1px;} .rb-ch .g{flex:1;min-width:0;} .rb-ch .g b{display:block;font-size:15.5px;font-weight:900;color:var(--ffp-text);} .rb-ch .g span{display:block;margin-top:4px;font-size:13px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .rb-ch .g em{display:block;margin-top:7px;font-style:normal;font-size:12.5px;font-weight:800;color:var(--ffp-gold,#c79a2e);} .rb-ch>.go{font-size:20px;color:#b9c6cb;flex:none;align-self:center;} .rb-ch:hover:not(.off){background:#f7fafb;} .rb-ch.off{cursor:not-allowed;} .rb-ch.off>.ms,.rb-ch.off .g b{color:#a8b6bb;} .rb-ch.off .g span{color:#b3c0c5;} .rb-ch.off .g em{color:#8b9a9f;font-weight:700;} .rb-ch.off>.go{visibility:hidden;} .rb-a{display:flex;gap:12px;margin-top:28px;width:100%;} .rb-a.one .lg-btn{flex:none;} .rb-a .lg-btn{flex:1;justify-content:center;} .rb-by{display:flex;align-items:center;gap:14px;padding:11px 4px;border-top:1px solid var(--ffp-border);} .rb-by:last-of-type{border-bottom:1px solid var(--ffp-border);} .rb-by .r{width:92px;flex:none;font-size:13px;font-weight:900;color:var(--ffp-text);} .rb-by .d{flex:none;width:118px;font-size:12px;font-weight:700;color:var(--ffp-text-dim);} #lg-root .rb-by .lg-sel{flex:1;min-width:0;height:42px;padding:0 12px;font-size:14px;} .rb-by.lock{opacity:.55;} #lg-root .rb-by.lock .lg-sel{background:#f2f5f6;color:#6d8088;} .rb-by .pl{flex:none;width:58px;text-align:right;font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:var(--ffp-gold,#c79a2e);} .rb-note{display:flex;gap:9px;align-items:flex-start;margin-top:16px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.55;} .rb-note .ms{font-size:17px;flex:none;opacity:.6;color:var(--ffp-blue);} .rb-kept{display:flex;gap:9px;align-items:flex-start;margin-top:18px;padding-top:16px;border-top:1px solid var(--ffp-border);font-size:13px;font-weight:700;color:#3d4f56;line-height:1.5;text-align:left;} .rb-kept .ms{font-size:19px;flex:none;color:var(--ffp-gold,#c79a2e);}',
-      '.lg-fldbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .lg-fldchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--ffp-border-mid);border-radius:12px;padding:7px 11px;font-size:12.5px;font-weight:800;} .lg-fldchip .t{color:var(--ffp-text-muted);font-weight:700;} .lg-fldchip .x{color:#9aa8b4;font-size:16px;cursor:pointer;} .lg-fldchip.add{border-style:dashed;gap:4px;}',
-      '.lg-srow{display:grid;grid-template-columns:1fr 132px 92px 120px 140px;gap:9px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--ffp-border);} .lg-srow .mt{font-size:13.5px;font-weight:800;color:var(--ffp-text);min-width:0;} .lg-srow .mt span{display:block;font-size:11px;color:var(--ffp-text-muted);font-weight:600;} .lg-srow .lg-in,.lg-srow .lg-sel{padding:8px 9px;font-size:12.5px;width:100%;}',
-      /* crest + fixtures v2 */
-      '.lg-crest{width:32px;height:32px;border-radius:9px;flex:none;background:#0d3550 center/cover no-repeat;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.14);vertical-align:middle;} .lg-crest.big{width:38px;height:38px;}',
-      '.lg-fx2{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:14px 4px;border-bottom:1px solid #f0f3f6;} .lg-fx2 .tm{display:flex;align-items:center;gap:10px;min-width:0;font-size:14.5px;font-weight:800;color:var(--ffp-text);} .lg-fx2 .tm.a{flex-direction:row-reverse;text-align:right;} .lg-fx2 .tm span:not(.lg-crest){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-      '.lg-fx2 .mid{display:flex;flex-direction:column;align-items:center;gap:4px;} .lg-fx2 .fxday{font-size:11px;font-weight:700;color:#9aa8b4;white-space:nowrap;} .lg-fx2 .sc{display:flex;align-items:center;gap:7px;} .lg-fx2 .sc input{width:46px;height:42px;text-align:center;border:1.5px solid #d7dee5;border-radius:9px;font:inherit;font-weight:800;font-size:15px;} .lg-fx2 .sc .v{font-size:12px;font-weight:800;color:#b7c2cc;}',
-      /* bye */
-      '.lg-bye{display:flex;align-items:center;gap:11px;padding:13px 4px;border-bottom:1px solid #f0f3f6;} .lg-bye b{font-size:14px;font-weight:800;} .lg-bye .lg-crest{opacity:.5;} .lg-bye .tag{font-size:10px;font-weight:900;letter-spacing:.09em;color:#a86a08;background:#fff4e0;padding:4px 10px;border-radius:20px;} .lg-bye .msg{font-size:12.5px;color:#9aa8b4;font-weight:600;}',
-      /* collapsible round header */
-      '.lg-rnd{display:flex;align-items:center;gap:12px;margin:20px 0 2px;padding:12px 14px;background:linear-gradient(180deg,#f7fafc,#eef4f8);border:1px solid #e4edf3;border-radius:12px;cursor:pointer;user-select:none;} .lg-rnd:hover{background:linear-gradient(180deg,#f2f8fb,#e7f1f7);} .lg-rnd .chev{color:var(--ffp-blue);font-size:22px;transition:transform .2s;} .lg-rnd.collapsed .chev{transform:rotate(-90deg);} .lg-rnd .rt{font-size:14px;font-weight:900;color:var(--ffp-text);} .lg-rnd .rc{font-size:11px;font-weight:800;color:var(--ffp-blue);background:#e2eff6;padding:3px 10px;border-radius:20px;} .lg-rnd .rd{font-size:12px;font-weight:600;color:var(--ffp-text-muted);} .lg-rnd .sp{flex:1;} .lg-rbody.hidden{display:none;}',
-      /* venues */
-      '.lg-venue{padding:18px 4px;border-bottom:1px solid var(--ffp-border);} .lg-vh{display:flex;align-items:center;gap:12px;} .lg-vpin{width:38px;height:38px;border-radius:11px;background:linear-gradient(180deg,#eaf4f9,#dcecf3);color:var(--ffp-blue);display:flex;align-items:center;justify-content:center;flex:none;} .lg-vpin .ms{font-size:21px;} .lg-vh .g{flex:1;min-width:0;} .lg-vh .g b{font-size:16px;font-weight:900;color:var(--ffp-text);} .lg-vh .g span{display:block;font-size:12.5px;color:var(--ffp-text-muted);font-weight:700;} .lg-vh .act{color:#9aa8b4;font-size:19px;cursor:pointer;padding:5px;border-radius:8px;} .lg-vh .act:hover{color:var(--ffp-blue);background:#f4f7f9;}',
-      '.lg-scrbtn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid #cfe0ea;background:#f5fafc;color:var(--ffp-blue);border-radius:9px;padding:5px 10px;font:inherit;font-size:12px;font-weight:900;letter-spacing:.06em;cursor:pointer;margin-right:10px;} .lg-scrbtn .ms{font-size:16px;} .lg-scrbtn.perm{border-color:#f2c14e;background:#fffaf0;color:#9a6b00;} .lg-vclink{width:230px!important;min-width:0;flex:none;margin-left:auto;height:36px!important;padding:0 30px 0 10px!important;font-size:16px!important;margin-right:10px;box-sizing:border-box;} .lg-scr{max-width:520px;} .lg-scrlab{font-size:12.5px;font-weight:800;color:#7c8b97;margin-top:16px;} .lg-scrurl{font-size:26px;font-weight:900;color:#12232f;letter-spacing:-.4px;margin-top:6px;word-break:break-all;} .lg-scrurl.gfx{font-size:19px;letter-spacing:-.2px;} .lg-scrnote{font-size:12px;font-weight:600;color:#9aa8b4;margin-top:10px;} .lg-scrsteps{text-align:left;margin-top:20px;display:flex;flex-direction:column;gap:11px;width:100%;} .lg-scrsteps div{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;font-weight:600;color:#43525c;line-height:1.5;} .lg-scrsteps b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ffp-blue);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;}',
-      '.lg-surfs{margin:12px 0 0 51px;position:relative;} .lg-surfs:before{content:"";position:absolute;left:-13px;top:2px;bottom:18px;width:1.5px;background:#e4edf3;} .lg-surf{display:flex;align-items:center;gap:10px;padding:10px 0;font-size:14px;font-weight:600;border-bottom:1px solid #f4f7f9;} .lg-surf .ms{color:var(--ffp-blue);font-size:18px;opacity:.85;} .lg-surf .x{color:#c0cad2;cursor:pointer;font-size:18px;} .lg-surf .x:hover{color:#d64545;} .lg-addsurf{margin:12px 0 0 51px;} .lg-btn.ghostb{color:var(--ffp-blue);border-color:#d4e6ef;background:#f5fafc;} .lg-maplink{display:inline-flex;align-items:center;gap:3px;color:var(--ffp-blue);font-weight:800;text-decoration:none;} .lg-maplink .ms{font-size:15px;vertical-align:-3px;}',
-      /* schedule v2 */
-      '.lg-srow2{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-srow2 .s-match b{font-size:15px;font-weight:800;} .lg-srow2 .s-match small{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;margin-top:3px;} .lg-srow2 .s-when{display:flex;gap:8px;margin-top:11px;} .lg-srow2 .s-when .lg-in{padding:8px 9px;font-size:13px;} .lg-srow2 .s-right{display:flex;flex-direction:column;gap:9px;} .lg-srow2 .fl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;} .lg-srow2 .st-f{padding:9px 10px;font-size:13px;}',
-      '.lg-offlist{display:flex;flex-direction:column;gap:6px;} .lg-offtag{display:flex;align-items:center;gap:9px;font-size:13px;padding:7px 10px;border:1px solid var(--ffp-border-mid);border-radius:9px;background:#fbfcfd;} .lg-offtag .role{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ffp-blue);} .lg-offtag .nm{font-weight:700;} .lg-offtag .sp{flex:1;} .lg-offtag .x{color:#c0cad2;cursor:pointer;font-size:16px;} .lg-assign{display:flex;gap:7px;align-items:center;} .lg-assign .lg-sel{padding:7px 9px;font-size:12.5px;flex:1;} .lg-btn.sm{padding:7px 11px;font-size:12px;}',
-      '.lg-scpill{display:inline-block;font-size:9px;font-weight:900;letter-spacing:.05em;color:#0a8f5f;background:#e3f6ec;padding:2px 7px;border-radius:20px;vertical-align:middle;margin-left:6px;} .lg-scpill.inv{color:#8a6d00;background:#fff4d6;} .lg-scpill.txt{color:#5b6b75;background:#eef2f5;} .lg-ocap{max-width:180px;padding:7px 9px;font-size:12.5px;}',
-      '.lg-sq{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px 14px;margin:0 0 12px 46px;} .lg-sqsrch{display:flex;align-items:center;gap:8px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:9px 12px;} .lg-sqsrch .ms{color:#9aa8b4;font-size:19px;} .lg-sqsrch input{border:none;outline:none;font:inherit;font-weight:600;font-size:13.5px;flex:1;background:none;} .lg-sqres{background:#fff;border:1px solid #eef2f5;border-radius:10px;margin-top:8px;padding:2px 12px;} .lg-sqres .row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid #f2f5f7;} .lg-sqres .row:last-child{border-bottom:none;} .lg-sqres .av{width:32px;height:32px;border-radius:50%;background:#dfe7ec center/cover no-repeat;flex:none;} .lg-sqres .g{flex:1;min-width:0;} .lg-sqres .g b{font-size:13.5px;font-weight:800;display:block;} .lg-sqres .g span{font-size:11px;color:#8a99a6;font-weight:600;} .lg-sqadd2{display:flex;gap:8px;margin-top:8px;} .lg-sqlist{margin-top:8px;} .lg-sqrow{display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid #f0f3f6;font-size:13.5px;font-weight:700;} .lg-sqrow:last-child{border-bottom:none;} .lg-sqrow .sp{flex:1;} .lg-sqrow .x{color:#c0cad2;cursor:pointer;font-size:17px;} .lg-sqno{width:62px;padding:5px 6px;font-size:12.5px;flex:none;} .lg-sqpos{max-width:168px;padding:5px 7px;font-size:12px;} .lg-sqpos.fixed{border:none;background:none;color:#5b6b75;font-size:11.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:0 4px;} .lg-sqcap{width:26px;height:26px;border-radius:50%;border:1.5px solid #d7dee5;color:#9aa8b4;font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;} .lg-sqcap.on{background:#F2A900;border-color:#F2A900;color:#12212c;} .lg-sqph{position:relative;width:34px;height:44px;border-radius:7px 7px 3px 3px;background:#e6edf2 center/cover no-repeat;border:1.5px solid #d7dee5;flex:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;} .lg-sqph .ms{font-size:16px;color:#9aa8b4;} .lg-sqph.own{border-color:#F2A900;} .lg-sqph .x{position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#0b2136;color:#fff;font-size:12px;font-style:normal;line-height:17px;text-align:center;} .lg-gfx{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0 0;max-width:660px;padding:12px 14px;border:1px solid #e4edf3;border-radius:12px;background:#f7fafc;} .lg-gfx > .ms{color:#F2A900;font-size:22px;} .lg-gfx .g{flex:1;min-width:200px;} .lg-gfx .g b{display:block;font-size:13.5px;font-weight:800;} .lg-gfx .g span{font-size:11.5px;color:#8a99a6;font-weight:600;} .lg-tsheet .tabs{display:flex;gap:8px;align-items:center;margin:4px 0 0;} .lg-tsheet .tabs button{padding:9px 14px;border:1.5px solid #d7dee5;border-radius:9px;background:#fff;font:inherit;font-size:12.5px;font-weight:800;color:#0b2136;cursor:pointer;} .lg-tsheet .tabs button.on{background:#0b2136;border-color:#0b2136;color:#fff;} .lg-tsheet .tabs .count{margin-left:auto;font-size:11.5px;font-weight:800;color:#8a99a6;} .lg-tsheet .grid{margin-top:8px;border:1px solid #e4edf3;border-radius:12px;overflow:hidden;} .lg-tsheet .hd{padding:9px 14px;background:#f2f6fa;font-size:10.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#5b6b75;border-bottom:1px solid #e4edf3;} .lg-tsheet .row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #f0f3f6;} .lg-tsheet .row:last-child{border-bottom:none;} .lg-tsheet .row .no{width:30px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:7px;background:#eef2f5;color:#5b6b75;font-size:13px;font-weight:900;} .lg-tsheet .row.on .no{background:#0b2136;color:#fff;} .lg-tsheet .row .pos{width:150px;flex:none;font-size:11.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#5b6b75;} .lg-tsheet .row .pl{flex:1;min-width:0;padding:7px 9px;font-size:13px;} .lg-tsheet .row .cov{width:150px;flex:none;padding:7px 9px;font-size:11.5px;} .lg-tsheet .row .cap{width:26px;height:26px;flex:none;border-radius:50%;border:1.5px solid #d7dee5;color:#9aa8b4;font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;} .lg-tsheet .row .cap.on{background:#F2A900;border-color:#F2A900;color:#12212c;} .lg-hex{display:flex;gap:6px;align-items:center;} .lg-hex .sw{width:38px;height:38px;flex:none;padding:2px;border:1.5px solid #d7dee5;border-radius:8px;background:#fff;cursor:pointer;} .lg-hex .lg-in{flex:1;min-width:0;text-transform:uppercase;} .lg-info{margin:10px 0 0;} .lg-info summary{display:inline-flex;align-items:center;gap:7px;padding:6px 12px 6px 9px;border:1px solid #dbe3ea;border-radius:20px;background:#fff;font-size:12.5px;font-weight:800;color:#41637f;cursor:pointer;list-style:none;} .lg-info summary::-webkit-details-marker{display:none;} .lg-info summary .ms{font-size:17px;color:#1980AD;} .lg-info[open] summary{background:#eaf4fa;border-color:#bcdcec;} .lg-info p{margin:8px 0 0;padding:12px 14px;border-radius:12px;background:#eaf4fa;font-size:12.5px;line-height:1.55;font-weight:600;color:#2c5570;} .lg-tsheet .coach{display:flex;align-items:center;gap:10px;margin:10px 0 0;} .lg-tsheet .coach label{font-size:10.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#5b6b75;width:56px;flex:none;} .lg-tsheet .coach .lg-in{flex:1;max-width:320px;}',
-      '.lg-maed{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:14px 16px;margin-bottom:14px;} .lg-maed .ttl{font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:#8a99a6;margin-bottom:12px;} .lg-maed .fe-byetog{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#43525c;cursor:pointer;} .lg-maed .fe-byetog input{width:16px;height:16px;}',
-      '.edrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;} .edrow .lg-sel{flex:1;min-width:150px;} .edrow .vv{font-weight:800;color:#8a99a6;} .edrow2{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:11px;} .edrow2 .f{display:flex;flex-direction:column;gap:5px;} .edrow2 .f label{font-size:11px;font-weight:800;color:#43525c;} .edrow2 .f .lg-in,.edrow2 .f .lg-sel{padding:8px 10px;font-size:13px;} .edfoot{display:flex;align-items:center;gap:10px;margin-top:14px;} .edfoot .sp{flex:1;}',
-      /* match centre + per-fixture actions */
-      '.lg-fx2{grid-template-columns:1fr auto 1fr auto;} .lg-fx2 .acts{display:flex;align-items:center;gap:0;} .lg-mcbtn{border:none;background:none;color:#9aa8b4;cursor:pointer;padding:4px;border-radius:8px;} .lg-mcbtn:hover{color:var(--ffp-blue);background:#f4f7f9;} .lg-mcbtn.del:hover{color:var(--ffp-red);background:#fdeff0;} .lg-mcbtn .ms{font-size:20px;} .lg-bye .acts{margin-left:auto;display:flex;align-items:center;}',
-      '.lg-mchd{display:flex;align-items:center;justify-content:center;gap:16px;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-mchd .tm{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800;} .lg-mchd .tm.a{flex-direction:row-reverse;} .lg-mchd .scr{font-size:26px;font-weight:900;color:var(--ffp-text);min-width:80px;text-align:center;}',
-      '.lg-mcadd{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px 2px;border-bottom:1px solid var(--ffp-border);} .lg-mcadd .lg-sel{width:auto;flex:1;min-width:120px;padding:8px 10px;font-size:13px;} .lg-mcadd .lg-in{padding:8px 10px;font-size:13px;}',
-      '.lg-mcrow{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid #f0f3f6;font-size:13px;} .lg-mcrow .mn{width:34px;font-weight:800;color:#9aa8b4;} .lg-mcrow .kd{font-size:10px;font-weight:900;letter-spacing:.04em;padding:3px 8px;border-radius:6px;background:#eef2f5;color:#5b6b75;} .lg-mcrow .kd.try{background:#e3f0ff;color:#0b4a8f;} .lg-mcrow .kd.penalty,.lg-mcrow .kd.drop_goal{background:#fff1e3;color:#b45309;} .lg-mcrow .kd.yellow_card{background:#fff7d6;color:#8a6d00;} .lg-mcrow .kd.red_card{background:#ffe0e0;color:#a11111;} .lg-mcrow .pl{font-weight:700;} .lg-mcrow .tn{color:#8a99a6;font-weight:600;} .lg-mcrow .rs{margin-left:auto;font-weight:900;} .lg-mcrow .x{color:#c0cad2;cursor:pointer;font-size:17px;}',
-      '.lg-mctabs{display:flex;gap:20px;border-bottom:1px solid var(--ffp-border);margin:8px 0 4px;} .lg-mctabs button{background:none;border:none;font:inherit;font-size:13.5px;font-weight:800;color:var(--ffp-text-muted);padding:11px 0;border-bottom:2.5px solid transparent;cursor:pointer;} .lg-mctabs button.on{color:var(--ffp-blue);border-bottom-color:var(--ffp-blue);}',
-      '.lg-mcfields{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:6px;} .lg-mcf{display:flex;flex-direction:column;gap:5px;} .lg-mcf label{font-size:12px;font-weight:800;color:#43525c;} .lg-mcf .lg-in{padding:9px 11px;}',
-      '.lg-livebtn{color:#d6353b;border-color:#f3c6c6;background:#fdeff0;} .lg-mcstat.final{font-size:12px;font-weight:800;color:#5b6b75;background:#eef2f5;padding:8px 12px;border-radius:10px;}',
-      '.lg-teamstat .hd{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;padding:8px 2px 12px;border-bottom:1px solid var(--ffp-border);} .lg-teamstat .hd span{font-size:13px;font-weight:800;text-align:center;} .lg-teamstat .hd span:first-child{text-align:left;} .lg-teamstat .hd span:last-child{text-align:right;}',
-      '.lg-tsrow{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #f0f3f6;} .lg-tsrow .lab{text-align:center;font-size:12.5px;font-weight:700;color:#43525c;} .lg-tsrow .lg-in{padding:8px 10px;text-align:center;}',
-      '.lg-per{display:flex;align-items:center;gap:10px;margin-bottom:14px;} .lg-per .sp{flex:1;} .lg-perchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;padding:7px 12px;border-radius:20px;background:#eef2f5;color:#5b6b75;} .lg-perchip.live{background:#fdeaea;color:#d6353b;} .lg-perchip.live .d{width:7px;height:7px;border-radius:50%;background:#d6353b;} .lg-perchip.ht{background:#fff4d6;color:#8a6d00;} .lg-perchip.ft{background:#e3f6ec;color:#0a8f5f;} .lg-perset{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);}',
-      '.lg-trk{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:14px 16px;margin-bottom:18px;} .lg-trk-clock{display:flex;align-items:center;gap:12px;margin-bottom:14px;} .lg-trk-clock .t{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ffp-text);} .lg-trk-clock .sp{flex:1;}',
-      '.lg-trk-grp{margin-bottom:12px;} .lg-trk-lab{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8a99a6;margin-bottom:6px;} .lg-trk-btns{display:flex;gap:10px;} .lg-trk-b{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:11px 10px;font:inherit;font-size:13.5px;font-weight:800;color:var(--ffp-text);cursor:pointer;} .lg-trk-b span{font-size:12px;font-weight:900;color:#8a99a6;} .lg-trk-b.on{border-color:var(--ffp-blue);background:#eaf4fb;color:var(--ffp-blue);} .lg-trk-b.on span{color:var(--ffp-blue);}',
-      '.lg-trk-apply{display:flex;align-items:center;gap:12px;margin-top:4px;flex-wrap:wrap;} .lg-trk-apply .sum{flex:1;font-size:12.5px;font-weight:700;color:var(--ffp-text-muted);min-width:180px;}',
-      '.lgf-phase{font-size:10.5px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#8a99a8;align-self:center;margin-right:4px;}',
-      '.lgf-sec{border-top:1px solid var(--ffp-border);padding-top:18px;margin-top:22px;}',
-      '.lgf-sec:first-child{border-top:none;padding-top:0;margin-top:0;}',
-      '.lgf-sech{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:#19313e;border-radius:8px;padding:7px 13px;margin-bottom:14px;}',
-      '.lgf-hint{font-size:12px;font-weight:700;color:#5c6f7c;margin-top:6px;}',
-      '.lgf-row{display:flex;align-items:center;gap:12px;padding:13px 2px;border-top:1px solid var(--ffp-border);cursor:pointer;}',
-      '.lgf-row:last-of-type{border-bottom:1px solid var(--ffp-border);}',
-      '.lgf-row.on{box-shadow:inset 3px 0 0 #17789f;padding-left:12px;}',
-      '.lgf-row .cv{color:#5c6f7c;font-size:20px;} .lgf-row.on .cv{color:#17789f;}',
-      '.lgf-row .g{flex:1;min-width:0;}',
-      '.lgf-row .g b{display:block;font-size:14px;font-weight:800;color:#12232f;}',
-      '.lgf-row.on .g b{color:#17789f;}',
-      '.lgf-row .g span{display:block;font-size:12px;font-weight:600;color:#5c6f7c;margin-top:2px;}',
-      '.lgf-row .st{flex:none;font-size:12px;font-weight:800;color:#5c6f7c;} .lgf-row .st.done{color:#12232f;}',
-      '.lgf-edit{padding:16px 0 20px 14px;border-bottom:1px solid var(--ffp-border);}',
-      '.lgf-acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}',
-      /* The split. Rows are hairline-separated strips on the panel, never cards,
-         and every flex field carries min-width:0 + an explicit height, or Chrome
-         holds an input at its ~224px default width and it overlaps its neighbour. */
-      '.lgs-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--ffp-border);}',
-      '.lgs-row.hd{border-top:none;padding:2px 0 7px;font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#7c8b97;}',
-      '.lgs-row .lgs-nm{flex:1 1 auto;min-width:0;width:auto;}',
-      '.lgs-row .lgs-tk{flex:0 0 96px;min-width:0;width:96px;}',
-      '.lgs-row .lgs-lg{flex:0 0 130px;min-width:0;width:130px;}',
-      '.lgs-row .lgs-x{flex:0 0 32px;min-width:0;width:32px;text-align:center;}',
-      '.lgs-row input.lg-in,.lgs-row select.lg-sel{max-width:100%;box-sizing:border-box;height:40px;padding:0 12px;line-height:40px;}',
-      '.lgs-row input[type=number]{-moz-appearance:textfield;} .lgs-row input[type=number]::-webkit-outer-spin-button,.lgs-row input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}',
-      '.lgs-row button.lgs-x{border:0;background:none;padding:0;cursor:pointer;color:#9aa9b4;font-size:19px;line-height:1;} .lgs-row button.lgs-x:hover{color:#c0392b;}',
-      '.lgs-add{border:0;background:none;padding:11px 0 0;font:inherit;font-size:13px;font-weight:800;color:var(--ffp-blue);cursor:pointer;display:inline-flex;align-items:center;gap:6px;} .lgs-add .ms{font-size:18px;}',
-      '.lgs-note{display:flex;align-items:center;gap:7px;margin-top:11px;font-size:12.5px;font-weight:700;color:#5c6f7c;} .lgs-note .ms{font-size:17px;flex:none;} .lgs-note.ok{color:#12a05f;} .lgs-note.warn{color:#c0392b;}',
-      '.lgs-draw{display:flex;align-items:center;gap:14px;margin-top:18px;padding:16px 0 2px;border-top:1px solid var(--ffp-border);}',
-      '.lgs-draw>.ms{font-size:27px;color:#9aa9b4;flex:none;} .lgs-draw.ready>.ms{color:var(--ffp-blue);} .lgs-draw.done>.ms{color:#12a05f;}',
-      '.lgs-draw .g{flex:1;min-width:0;} .lgs-draw .g b{display:block;font-size:14px;font-weight:900;color:#12232f;}',
-      '.lgs-draw .g span{display:block;font-size:12.5px;font-weight:650;color:#5c6f7c;margin-top:3px;line-height:1.45;}',
-      '.lgs-draw .lg-btn{flex:none;}',
-      '@media(max-width:620px){.lgs-row{flex-wrap:wrap;} .lgs-row .lgs-nm{flex:1 1 100%;width:100%;} .lgs-row.hd{display:none;} .lgs-draw{flex-wrap:wrap;}}',
-      '.lg-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}',
+      '.lg-surf .lg-vcnote{font-size:12px;font-weight:700;color:#7c8b97;margin-left:8px;}',
+      '/* Open an empty draw: the format decides the shape, not the entry list. */',
+      '.tg-opendraw{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--ffp-border);}'
+      /* a division is a block with a header that stands out, not a plain row */
+      + '.tg-dv{margin-bottom:16px;}'
+      + '.tg-dvhd{display:flex;align-items:center;gap:13px;padding:13px 17px;border-radius:12px;cursor:pointer;background:linear-gradient(95deg,var(--ffp-blue-darker),var(--ffp-blue));color:#fff;}'
+      /* collapsed is still a division: the same blue, flatter */
+      + '.tg-dvhd.off{background:linear-gradient(95deg,#2a7ba0,#3f9ac2);}'
+      + '.tg-dvhd .g{flex:1;min-width:0;}'
+      + '.tg-dvhd .g b{display:block;font-size:15px;font-weight:900;letter-spacing:-.2px;color:#fff;}'
+      + '.tg-dvhd .g span{display:block;font-size:12px;font-weight:600;color:rgba(255,255,255,.82);margin-top:3px;}'
+      + '.tg-dvhd .st{font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;color:rgba(255,255,255,.72);}'
+      + '.tg-dvhd .st.done{color:#8ff0c0;}'
+      + '.tg-dvhd .cv{font-size:22px;color:rgba(255,255,255,.85);}'
+      + '.tg-dvhd .ed{border:none;background:none;padding:2px;cursor:pointer;color:rgba(255,255,255,.85);line-height:1;display:flex;}'
+      + '.tg-dvhd .ed .ms{font-size:19px;}'
+      + '.tg-dvbody{padding:4px 2px 0;}'
+      /* the info affordance is a bare icon, never a tile behind it */
+      + '.tg-fmt{position:relative;}'
+      + '.tg-fmt .nfo{position:absolute;top:9px;right:9px;border:none;background:none;padding:2px;cursor:pointer;color:#9aa8b4;line-height:1;display:flex;}'
+      + '.tg-fmt .nfo .ms{font-size:19px;}'
+      + '.tg-fmt.on .nfo{color:var(--ffp-blue);}'
+      /* and it opens under the WHOLE row, so no tile grows a box inside it */
+      + '.tg-nfobox{grid-column:1 / -1;background:#eff7fb;border:1px solid #cfe4ef;border-left:3px solid var(--ffp-blue);border-radius:12px;padding:15px 17px;margin-top:6px;}'
+      + '.tg-nfobox h4{font-size:14px;font-weight:900;color:var(--ffp-text);margin-bottom:8px;display:flex;align-items:center;gap:8px;}'
+      + '.tg-nfobox h4 .ms{font-size:19px;color:var(--ffp-blue);}'
+      + '.tg-nfobox p{font-size:13px;font-weight:600;color:#3f5765;line-height:1.6;max-width:760px;}'
+      + '.tg-nfobox p+p{margin-top:7px;}'
+      + '.tg-nfobox p b{color:var(--ffp-text);font-weight:800;}'
+      + '.tg-nfobox .close{float:right;border:none;background:none;cursor:pointer;color:#7b93a3;padding:2px;display:flex;}'
+      /* the same field used on its own under a field label, not across the grid */
+      + '.tg-nfobox.solo{grid-column:auto;margin:8px 0 0;}'
+      + '.tg-nfobox .opt{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid #d9e8f1;}'
+      + '.tg-nfobox .opt:first-of-type{border-top:0;padding-top:2px;}'
+      + '.tg-nfobox .opt b{flex:0 0 190px;font-size:12.5px;font-weight:800;color:var(--ffp-text);}'
+      + '.tg-nfobox .opt span{flex:1;min-width:0;font-size:12.5px;font-weight:600;color:#3f5765;line-height:1.55;}'
+      /* an info button beside a field label, a bare icon with no tile behind it */
+      + '.lg-lab .nfo-i{border:none;background:none;padding:0 5px 0 0;cursor:pointer;color:#9aa8b4;line-height:1;vertical-align:-4px;}'
+      + '.lg-lab .nfo-i .ms{font-size:17px;}'
+      + '.lg-lab .nfo-i:hover{color:var(--ffp-blue);}'
+      + '.tg-nfobox .close .ms{font-size:20px;}'
+      /* the two dead ends carry the action that fixes them */
+      + '.lg-empty.act{padding:30px 10px 26px;text-align:center;}'
+      + '.lg-empty.act .t{font-size:15px;font-weight:900;color:var(--ffp-text);margin-bottom:6px;}'
+      + '.lg-empty.act .s{font-size:13px;font-weight:600;color:var(--ffp-text-muted);max-width:430px;margin:0 auto 16px;line-height:1.55;}'
+      + '.lg-empty.act .row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;}'
+      + '.lg-empty.act .lb{font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#5c6f7c;}',
+      '.tg-opendraw .lb{font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#5c6f7c;}',
+      '.tg-opendraw .hint{flex:1 1 100%;font-size:12.5px;font-weight:600;color:#5c6f7c;}',
+      '.tg-opendraw.warn{background:#fff7e6;border:1px solid #e8cf9a;border-radius:12px;padding:12px 14px;}',
+      '.tg-opendraw.warn b{font-size:14px;font-weight:900;color:#12232f;}',
+      '.tg-opendraw.warn span:not(.sp){font-size:12.5px;font-weight:600;color:#5c4a22;}',
       '.bp-blk .bp-r{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--ffp-border);}',
       '.bp-blk .bp-r:first-of-type{border-top:1px solid var(--ffp-border);}',
       '/* an input renders 45px and a select 43px in this shell; they have never sat on one line before */',
@@ -221,18 +358,84 @@
       '.bp-blk .bp-x{flex:none;font-size:19px;color:#93a3ae;cursor:pointer;}',
       '.bp-blk .bp-add{margin-top:12px;}',
       '.bp-blk .bp-none{font-size:13px;font-weight:600;color:#5c6f7c;padding:11px 0;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);}',
-      '.lg-seg button.on{background:#17789f;border-color:#17789f;}'
+      '.tg-opendraw .sp{flex:1;}',
+      /* ── SERIES ───────────────────────────────────────────────────── */
+      '.ts-rd{display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid var(--ffp-border);flex-wrap:wrap;}',
+      '.ts-rd .pic{width:74px;height:50px;border-radius:9px;flex:none;background:#dbe7ef center/cover no-repeat;}',
+      '.ts-rd .ic{width:74px;flex:none;display:flex;align-items:center;justify-content:center;}',
+      '.ts-rd .ic .ms{font-size:26px;color:#93a3ae;}',
+      '.lg-row.ts-trow .g b{display:block;font-size:14.5px;font-weight:800;color:#12232f;}',
+      '.lg-row.ts-trow .g span{display:block;font-size:12px;font-weight:600;color:#5c6f7c;margin-top:2px;}',
+      '.ts-rd .g{flex:1 1 220px;min-width:0;}',
+      '.ts-rd .g b{display:block;font-size:14.5px;font-weight:800;color:#12232f;}',
+      '.ts-rd .g span{display:block;font-size:12px;font-weight:600;color:#5c6f7c;margin-top:2px;}',
+      '.ts-rd .g i.warn{font-style:normal;color:#b4610b;font-weight:800;}',
+      '.ts-rd .st{flex:none;font-size:9.5px;font-weight:900;letter-spacing:.6px;color:#5c6f7c;}',
+      '.ts-rd .st.live{color:#d6353b;}',
+      '.ts-rd .ax{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1 1 100%;}',
+      '.ts-num,.ts-chk{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:#12232f;}',
+      '.ts-num .lg-in{width:74px;min-width:0;flex:none;box-sizing:border-box;}',
+      '.ts-chk input{width:17px;height:17px;}',
+      '.ts-code{font-size:10px;font-weight:900;letter-spacing:.7px;color:#5c6f7c;margin-left:6px;}',
+      '.ts-sw{display:flex;gap:4px;flex:none;}',
+      '.ts-sw .sw{width:13px;height:20px;border-radius:3px;display:block;border:1px solid rgba(0,0,0,.12);}',
+      '.lg-row.ts-off{opacity:.55;}',
+      '.lg-row .g i.warn{font-style:normal;color:#b4610b;font-weight:800;}',
+      '.ts-imp{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-top:14px;padding:13px 15px;border-radius:12px;background:#fff6e2;border:1px solid #f0d9a6;}',
+      '.ts-imp .ms{color:#b4610b;}',
+      '.ts-imp .g{flex:1 1 230px;min-width:0;}',
+      '.ts-imp .g b{display:block;font-size:13.5px;font-weight:800;color:#6b4306;}',
+      '.ts-imp .g span{display:block;font-size:12px;font-weight:600;color:#8a6a2f;margin-top:2px;}',
+      /* the points table: one row per finishing place, nothing boxed inside
+         anything else -- it sits straight on the section */
+      '.ts-pts{display:flex;flex-direction:column;gap:0;max-width:430px;}',
+      '.ts-pt{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--ffp-border);}',
+      '.ts-pt .pl{flex:1;font-size:13.5px;font-weight:800;color:#12232f;}',
+      '.ts-pt .lg-in{width:92px;min-width:0;flex:none;box-sizing:border-box;text-align:right;}',
+      '.ts-pt .u{flex:none;width:52px;font-size:12px;font-weight:700;color:#5c6f7c;}',
+      '.ts-pt.other{border-top:2px solid var(--ffp-border);border-bottom:0;}',
+      '.ts-pt.other .pl{color:#5c6f7c;}',
+      '.ts-ptrow{display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap;}',
+      '.ts-imgs{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 16px;}',
+      '.ts-imgs .im .lg-lab{margin-bottom:6px;}',
+      '.ts-imgs .bx{width:210px;height:118px;border-radius:12px;background:#eef2f6 center/cover no-repeat;border:1px dashed #c3ced6;display:flex;align-items:center;justify-content:center;cursor:pointer;}',
+      '.ts-imgs .bx.sq{width:118px;}',
+      '.ts-imgs .bx .ms{font-size:30px;color:#93a3ae;}',
+      /* picking who plays this round */
+      '.ts-pick{margin:14px 0;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);}',
+      '.ts-pick .hd{display:flex;align-items:center;gap:9px;padding:13px 0 11px;font-size:13.5px;font-weight:800;color:#12232f;}',
+      '.ts-pick .hd .ms{color:#1980AD;}',
+      '.ts-pick .bd{display:flex;flex-wrap:wrap;gap:9px;padding:0 0 14px;}',
+      '.ts-pick .tm{display:flex;align-items:center;gap:9px;padding:8px 13px 8px 10px;border:1px solid var(--ffp-border);border-radius:100px;font-size:13px;font-weight:700;color:#12232f;cursor:pointer;background:#fff;}',
+      '.ts-pick .tm.on{border-color:#1980AD;background:#eaf3fa;}',
+      '.ts-pick .tm input{width:17px;height:17px;flex:none;}',
+      '.ts-pick .tm .lg-av{width:26px;height:26px;font-size:11px;}',
+      '.ts-pick .ft{display:flex;gap:9px;padding:0 0 15px;}'
     ].join('\n');
     document.head.appendChild(css);
   }
+  function injectCss() { injectBaseCss(); injectExtraCss(); }
 
   async function loadSports() { if (S.sports) return S.sports; var r = await sb().from('lt_sport_schemas').select('key,name,icon,match_activities,player_fields,team_match_fields,scoring_kinds,game_rules,period_minutes,period_count,break_minutes,slot_minutes,turnaround_minutes,surface_word,surface_word_plural').eq('active', true).order('sort'); S.sports = r.data || []; return S.sports; }
-  // ---- Taxonomy (shared window.FFP_TAX — activity / gender / city / country) ----
   async function taxReady() { try { if (window.FFP_TAX_READY) await window.FFP_TAX_READY; } catch (e) {} return window.FFP_TAX || {}; }
   function actNames() { return ((window.FFP_TAX && window.FFP_TAX.activities) || []).map(function (a) { return a && a.n ? a.n : a; }); }
   function genderNames() { return ((window.FFP_TAX && window.FFP_TAX.genders) || ['Male', 'Female']).filter(function (g) { return g !== 'Prefer not to say'; }); }
   function cityNames() { var t = window.FFP_TAX; return (t && t.allCities) ? t.allCities() : []; }
   function countryNames() { var t = window.FFP_TAX; return t && t.cities ? Object.keys(t.cities) : []; }
+  // A player's grade is their playing standard, and is NOT the division they are
+  // entered in. FFP_TAX exposes no player-grade list, so it is read straight from
+  // taxonomy_items (list_key 'player_grade') and cached for the session.
+  var _grades = null;
+  async function gradeNames() {
+    if (_grades) return _grades;
+    var r;
+    try {
+      r = await sb().from('taxonomy_items').select('value').eq('list_key', 'player_grade')
+             .eq('active', true).order('sort_order');
+    } catch (e) { r = { data: null }; }
+    _grades = ((r && r.data) || []).map(function (x) { return x.value; });
+    return _grades;
+  }
   function dlOpts(arr) { return (arr || []).map(function (x) { return '<option value="' + esc(x) + '">'; }).join(''); }
   // The sport can only ever be a value from the activity taxonomy: the database
   // refuses anything else, so the form must not be able to offer anything else.
@@ -285,26 +488,26 @@
     if (vs.length > 1) {
       var cur = vs.find(function (x) { return x.id === ev.rules_variant; }) || vs[0];
       out += '<div class="lg-fld"><div class="lg-lab">Ruleset</div>'
-        + '<select class="lg-sel" id="lgr-variant" onchange="FFPLeague.rulesHint()">'
+        + '<select class="lg-sel" id="tgr-variant" onchange="FFPTourn.rulesHint()">'
         +   vs.map(function (x) {
               return '<option value="' + esc(x.id) + '"' + (x.id === cur.id ? ' selected' : '')
                    + '>' + esc(x.label) + '</option>'; }).join('')
-        + '</select><div class="lgf-hint" id="lgr-varianthint">' + esc(cur.note) + '</div></div>';
+        + '</select><div class="tg-hint" id="tgr-varianthint">' + esc(cur.note) + '</div></div>';
     }
     var cnt = ev.period_count == null ? '' : String(ev.period_count);
     return out + '<div class="lg-2">'
       + '<div class="lg-fld"><div class="lg-lab">Minutes a period</div>'
-      +   '<input class="lg-in" id="lgr-min" type="number" min="1" max="60" placeholder="Sport default" value="'
+      +   '<input class="lg-in" id="tgr-min" type="number" min="1" max="60" placeholder="Sport default" value="'
       +   (ev.period_minutes == null ? '' : ev.period_minutes) + '"></div>'
-      + '<div class="lg-fld"><div class="lg-lab">How many</div><select class="lg-sel" id="lgr-cnt">'
+      + '<div class="lg-fld"><div class="lg-lab">How many</div><select class="lg-sel" id="tgr-cnt">'
       +   LEN_COUNTS.map(function (x) {
             return '<option value="' + x[0] + '"' + (cnt === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('')
       +   '</select></div></div>'
-      + '<div class="lgf-hint">Left empty, a match runs to whatever the sport plays. '
+      + '<div class="tg-hint">Left empty, a match runs to whatever the sport plays. '
       + 'A single match can still be changed from the scorer.</div>';
   }
   function rulesHint() {
-    var s = document.getElementById('lgr-variant'), h = document.getElementById('lgr-varianthint');
+    var s = document.getElementById('tgr-variant'), h = document.getElementById('tgr-varianthint');
     if (!s || !h) return;
     var ev = (S.detail && S.detail.event) || {};
     var x = sportVariants(ev.sport_key).find(function (y) { return y.id === s.value; });
@@ -313,8 +516,8 @@
   /* The three keys are always sent, so clearing a field back to empty actually
      clears it - the save RPCs use `p ? key` for exactly this reason. */
   function rulesPayload() {
-    var p = { period_minutes: v('lgr-min') || null, period_count: v('lgr-cnt') || null };
-    var s = document.getElementById('lgr-variant');
+    var p = { period_minutes: v('tgr-min') || null, period_count: v('tgr-cnt') || null };
+    var s = document.getElementById('tgr-variant');
     if (s) p.rules_variant = s.value || null;
     return p;
   }
@@ -338,6 +541,18 @@
     var s = (S.sports || []).find(function (x) { return x.key === k; });
     return s ? s.name : 'Generic points';
   }
+  /* A tournament no longer carries a sport until the organiser picks one: it
+     used to be born as Padel, whatever the tournament was. Nothing is shown
+     for an unchosen sport rather than a sport nobody chose. */
+  function sportLabelFor(k) {
+    if (!k) return '';
+    var s = sportList().find(function (x) { return x.key === k; });
+    return (s && s.label) || k;
+  }
+  function sportSetHint(k) {
+    return k ? 'Scoring and stats set: ' + schemaNameForSport(k)
+             : 'Pick a sport and the scoring and stats set follows.';
+  }
 
   function actOpts(cur) {
     var a = actNames().slice();
@@ -347,83 +562,112 @@
     }).join('');
   }
   function schemaForActivity(act) { var s = (S.sports || []).find(function (x) { return (x.match_activities || []).some(function (a) { return String(a).toLowerCase() === String(act || '').toLowerCase(); }); }); return s ? s.name : 'Generic points'; }
-  /* A league no longer carries a sport until the organiser picks one: it used
-     to be born as Football (soccer), which is how a netball league came to be
-     labelled Football. */
-  function sportSetHint(k) {
-    return k ? 'Scoring and stats set: ' + schemaNameForSport(k)
-             : 'Pick a sport and the scoring and stats set follows.';
-  }
-  function sportHint() { var a = (document.getElementById('lg-sport') || {}).value; var h = document.getElementById('lg-sporthint'); if (h) h.textContent = sportSetHint(a); }
+  function sportHint() { var a = (document.getElementById('tg-sport') || {}).value; var h = document.getElementById('tg-sporthint'); if (h) h.textContent = sportSetHint(a); }
 
-  // ---------- LIST ----------
+  // The one place that turns a supabase error into something a human can act on.
+  // code is what tells us whether it is the schema cache (PGRST202), a missing
+  // grant (42501) or the function itself.
+  function errText(e, fallback) {
+    if (!e) return fallback;
+    var bits = [e.message || e.error_description || e.error || '', e.code ? '[' + e.code + ']' : '',
+                e.details || '', e.hint || ''].filter(Boolean);
+    return bits.length ? bits.join(' ') : fallback;
+  }
+
   async function renderList() {
     injectCss(); var el = root(); if (!el) return;
-    var r; try { r = await sb().rpc('league_my_events'); } catch (e) { r = { error: e }; }
+    var r; try { r = await sb().rpc('tourn_my_events'); } catch (e) { r = { error: e }; }
+    // A failed list used to render as "you have no tournaments", which is the
+    // same picture as a working empty account. Never again.
+    if (r && r.error) { toast(errText(r.error, 'Could not load your tournaments'), 'error'); }
     var list = (r && r.data) || [];
-    // Archived leagues are out of the way by default, but never out of reach.
+    // Archived tournaments are out of the way by default, but never out of reach.
     var arch = list.filter(function (ev) { return ev.status === 'archived'; });
     if (!S.showArchived) list = list.filter(function (ev) { return ev.status !== 'archived'; });
     var cards = list.map(function (ev) {
       var cov = ev.cover_url || ev.logo_url;
-      return '<div class="lg-card" onclick="FFPLeague.open(\'' + ev.id + '\')"><div class="lg-cover" style="' + (cov ? 'background-image:url(\'' + esc(cov) + '\')' : '') + '"><div class="scr"></div><div class="bd ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</div></div><div class="lg-cbody"><b>' + esc(ev.name) + '</b><span>' + esc([ev.city, ev.sport].filter(Boolean).join(', ')) + '</span></div></div>';
+      return '<div class="lg-card" onclick="FFPTourn.open(\'' + ev.id + '\')"><div class="lg-cover" style="' + (cov ? 'background-image:url(\'' + esc(cov) + '\')' : '') + '"><div class="scr"></div><div class="bd ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</div></div><div class="lg-cbody"><b>' + esc(ev.name) + '</b><span>' + esc([ev.city, ev.sport].filter(Boolean).join(', ')) + '</span></div></div>';
     }).join('');
     var newCard = S.creating
-      ? '<div class="lg-card" style="cursor:default"><div class="lg-cover"><div class="scr"></div></div><div class="lg-cbody"><input class="lg-in" id="lg-newname" placeholder="League name" autofocus onkeydown="if(event.key===\'Enter\')FFPLeague.doCreate()"><div style="display:flex;gap:8px;margin-top:8px"><button class="lg-btn pri" onclick="FFPLeague.doCreate()">Create</button><button class="lg-btn ghost" onclick="FFPLeague.cancelCreate()">Cancel</button></div></div></div>'
-      : '<div class="lg-new" onclick="FFPLeague.startCreate()">' + ic('add') + 'Create a league</div>';
-    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">Leagues</div><div class="lg-sub">Season table + fixtures.</div></div></div><div class="lg-grid">' + cards + newCard + '</div>'
-      + (arch.length ? '<div class="lg-archrow"><button class="lg-btn ghost" onclick="FFPLeague.toggleArchived()">'
+      ? '<div class="lg-card" style="cursor:default"><div class="lg-cover"><div class="scr"></div></div><div class="lg-cbody"><input class="lg-in" id="tg-newname" placeholder="Tournament name" onkeydown="if(event.key===\'Enter\')FFPTourn.doCreate()"><div style="display:flex;gap:8px;margin-top:8px"><button class="lg-btn pri" onclick="FFPTourn.doCreate()">Create</button><button class="lg-btn ghost" onclick="FFPTourn.cancelCreate()">Cancel</button></div></div></div>'
+      : '<div class="lg-new" onclick="FFPTourn.startCreate()">' + ic('add') + 'Create a tournament</div>';
+    /* SERIES first: a run of tournaments that share their teams. Its rounds
+       still appear in the grid below -- a round IS a tournament -- so this is
+       a way in, not a second copy of the list. */
+    var sers = await loadMySeries();
+    var serHtml = (sers || []).map(function (x) {
+      var nx = x.next_round || null;
+      return '<div class="ts-rd" style="cursor:pointer" onclick="FFPTourn.openSeries(\'' + x.id + '\')">'
+        + '<span class="pic" style="' + (x.cover_url ? 'background-image:url(\'' + esc(x.cover_url) + '\')' : '') + '"></span>'
+        + '<div class="g"><b>' + esc(x.name) + '</b><span>'
+        +   esc([(x.rounds || 0) + ((x.rounds === 1) ? ' round' : ' rounds'),
+                 (x.teams || 0) + ((x.teams === 1) ? ' team' : ' teams'), x.city].filter(Boolean).join(', '))
+        + '</span><span>' + (nx ? 'Next: ' + esc(nx.name) : 'No round open') + '</span></div>'
+        + '<span class="ms" style="color:#93a3ae">chevron_right</span></div>';
+    }).join('');
+    var serAdd = S.serCreating
+      ? '<div class="lg-edit"><input class="lg-in" id="ts-newname" placeholder="Series name" onkeydown="if(event.key===\'Enter\')FFPTourn.serCreate()"><button class="lg-btn pri" onclick="FFPTourn.serCreate()">' + ic('check') + 'Create</button><button class="lg-btn ghost" onclick="FFPTourn.serCreateCancel()">Cancel</button></div>'
+      : '<button class="lg-btn" onclick="FFPTourn.serCreateOpen()">' + ic('add') + 'Create a series</button>';
+    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">Tournaments</div><div class="lg-sub">Groups + knockout bracket.</div></div></div>'
+      + '<div class="tg-sec"><div class="tg-sech">Series</div>'
+      + '<div class="tg-hint" style="margin:0 0 10px">A series carries its teams from one round to the next, and adds up where each team finishes.</div>'
+      + serHtml + serAdd + '</div>'
+      + '<div class="tg-sech" style="margin-top:22px">All tournaments</div><div class="lg-grid">' + cards + newCard + '</div>'
+      + (arch.length ? '<div class="lg-archrow"><button class="lg-btn ghost" onclick="FFPTourn.toggleArchived()">'
           + ic(S.showArchived ? 'visibility_off' : 'inventory_2')
           + (S.showArchived ? 'Hide archived' : arch.length + ' archived') + '</button></div>' : '')
       + '</div>';
-    if (S.creating) { var i = document.getElementById('lg-newname'); if (i) i.focus(); }
+    if (S.creating) { var i = document.getElementById('tg-newname'); if (i) i.focus(); }
+    if (S.serCreating) { var si = document.getElementById('ts-newname'); if (si) si.focus(); }
   }
   function startCreate() { S.creating = true; renderList(); }
   function cancelCreate() { S.creating = false; renderList(); }
   async function doCreate() {
-    var nm = (document.getElementById('lg-newname') || {}).value; if (!nm || !nm.trim()) return;
-    var r; try { r = await sb().rpc('league_event_save', { p_id: null, p: { name: nm.trim() } }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not create', 'error'); return; }
+    var nm = (document.getElementById('tg-newname') || {}).value; if (!nm || !nm.trim()) return;
+    var r; try { r = await sb().rpc('tourn_event_save', { p_id: null, p: { name: nm.trim() } }); } catch (e) { r = { error: e }; }
+    // Say what actually went wrong. "Could not create" hid a real error for long
+    // enough that the database had to be cleared of suspicion by hand.
+    if (r.error) { toast(errText(r.error, 'Could not create'), 'error'); return; }
     S.creating = false; open(r.data);
   }
-
   async function open(id) {
-    /* renderTab has no 'details' branch - the tab was renamed to
-       'information' and this was never updated, so opening a league, or
-       saving anything (both saveDetails and saveSport call open()), left
-       every branch unmatched and the body blank. */
-    S.eventId = id; S.view = 'editor'; S.tab = 'information'; S.divEdit = null; S.entAdd = false;
+    S.eventId = id; S.view = 'editor'; S.tab = 'information'; S.divEdit = null; S.entAdd = false; S.grpDraw = false; S.brkConfirm = false;
     S.plan = null; S._autoPlanned = false;   // a different event, a different playing day
-    var r; try { r = await sb().rpc('league_detail', { p_league: id }); } catch (e) { r = { error: e }; }
-    S.detail = (r && r.data) || null;
+    var r; try { r = await sb().rpc('tourn_detail', { p_tourn: id }); } catch (e) { r = { error: e }; }
+    S.detail = (r && r.data) || null; snapFormats();
     S.divId = (S.detail && S.detail.divisions && S.detail.divisions[0] && S.detail.divisions[0].id) || null;
     renderEditor();
   }
-
   function renderEditor() {
     injectCss(); var el = root(); if (!el || !S.detail) return;
     var ev = S.detail.event || {};
-    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(', ')) + '</div></div>'
-      + '<button class="lg-btn" onclick="FFPLeague.back()">' + ic('arrow_back') + 'All leagues</button></div>'
-      + '<div class="lg-nav"><span class="lgf-phase">Set up</span>' + tabBtn('information', 'Information') + tabBtn('setup', 'Setup') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', evNouns().Many) + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('sponsors', 'Sponsors') + tabBtn('schedule', 'Schedule') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
+    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.activity || sportLabelFor(ev.sport_key)].filter(Boolean).join(', ')) + '</div></div>'
+      + '<button class="lg-btn" onclick="FFPTourn.back()">' + ic('arrow_back') + 'All tournaments</button></div>'
+      + '<div class="lg-nav"><span class="tg-phase">Set up</span>' + tabBtn('information', 'Information') + tabBtn('setup', 'Setup') + tabBtn('entrants', nouns(null).Many) + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials')
+      + '<span class="tg-navsep"></span><span class="tg-phase">Run</span>' + (anyGroups() ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Draw') + tabBtn('schedule', 'Schedule') + tabBtn('sponsors', 'Sponsors') + '</div><div id="tg-tab"></div></div>';
     renderTab();
   }
-  function tabBtn(id, label) { return '<button class="' + (S.tab === id ? 'on' : '') + '" onclick="FFPLeague.tab(\'' + id + '\')">' + label + '</button>'; }
+  function snapFormats() { S._fmtSaved = {}; ((S.detail && S.detail.divisions) || []).forEach(function (d) { S._fmtSaved[d.id] = fmtOfDiv(d); }); }
+  function anyGroups() { return (S.detail && S.detail.divisions || []).some(function (d) { return !!d.group_stage; }) || !!(S.detail && S.detail.event && S.detail.event.group_stage); }
+  function tabBtn(id, label) { return '<button class="' + (S.tab === id ? 'on' : '') + '" onclick="FFPTourn.tab(\'' + id + '\')">' + label + '</button>'; }
   function renderTab() {
-    var host = document.getElementById('lg-tab'); if (!host) return;
-    if (S.tab === 'information') return renderInformation(host);
+    var host = document.getElementById('tg-tab'); if (!host) return;
+    if (S.tab === 'information' || S.tab === 'details') return renderInformation(host);
     if (S.tab === 'setup') return renderSetup(host);
-    if (S.tab === 'divisions') return renderDivisions(host);
+    /* Divisions had its own tab, but a division's format and its draw already
+       live on Setup, so it is set up there in one place. An old link or a
+       stale tab still lands somewhere sensible. */
+    if (S.tab === 'divisions') { S.tab = 'setup'; }
     if (S.tab === 'entrants') return renderEntrants(host);
-    if (S.tab === 'fixtures') return S.matchOpen ? renderMatchCentre() : renderFixtures(host);
+    if (S.tab === 'groups') return renderGroups(host);
+    if (S.tab === 'bracket') return renderBracket(host);
     if (S.tab === 'venues') return renderVenues(host);
     if (S.tab === 'officials') return renderOfficials(host);
     if (S.tab === 'schedule') return renderSchedule(host);
     if (S.tab === 'sponsors') return renderSponsors(host);
-    if (S.tab === 'table') return renderTable(host);
   }
   function renderSponsors(host) {
-    if (window.FFPSponsors) window.FFPSponsors.render(host, { scope: 'league', eventId: S.eventId,
+    if (window.FFPSponsors) window.FFPSponsors.render(host, { scope: 'tourn', eventId: S.eventId,
       // the editor needs the clubs so it can offer a board per team.
       // A board belongs to ONE owner: the event's own, or a club's.
       entrants: (S._entrants || []) });
@@ -433,84 +677,31 @@
   // ---------- shared helpers (rounds / logos / venues) ----------
   var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  var ROLES = ['Referee','Assistant referee','Umpire','Touch judge','Line judge','Timekeeper','Scorer','TMO'];
-  var CAPS = [['official', 'Match official'], ['scorer', 'Scorer only'], ['both', 'Match official + Scorer']];
-  function capOpts(sel) { return CAPS.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === sel ? ' selected' : '') + '>' + c[1] + '</option>'; }).join(''); }
-  function isScorerRole(r) { r = String(r || '').toLowerCase(); return r === 'scorer' || r === 'both'; }
+  var ROLES = ['Referee','Assistant referee','Umpire','Line judge','Chair umpire','Timekeeper','Scorer','TMO'];
   function fmtDay(d) { return DOW[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()]; }
   function fmtTime(d) { return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
-  // ── the competition's clock ─────────────────────────────────────────────
-  // A kick-off belongs to the place the match is played, not to the desk it is
-  // typed at. new Date('2026-10-04T19:30:00') is read in the BROWSER's zone, so
-  // a Dubai fixture entered from Australia landed four hours out. Everything
-  // below reads and writes wall-clock time in the competition's own zone.
-  function evTz() {
-    return (S.detail && S.detail.event && S.detail.event.timezone) || 'UTC';
-  }
-  // what the clock on the wall in `tz` reads at instant `at`, as UTC-shaped parts
-  function tzParts(at, tz) {
-    var f = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour12: false,
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit', weekday: 'short' });
-    var o = {};
-    f.formatToParts(new Date(at)).forEach(function (x) { o[x.type] = x.value; });
-    o.hour = (o.hour === '24') ? '00' : o.hour;
-    return o;
-  }
-  function tzOffsetMs(at, tz) {
-    var p = tzParts(at, tz);
-    var asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
-    return asUtc - new Date(at).getTime();
-  }
-  // 'YYYY-MM-DD' + 'HH:MM' read in tz  ->  an ISO instant
-  function zoneToISO(dateStr, timeStr, tz) {
-    if (!dateStr) return null;
-    var d = String(dateStr).split('-'), t = String(timeStr || '00:00').split(':');
-    var wall = Date.UTC(+d[0], +d[1] - 1, +d[2], +t[0] || 0, +t[1] || 0, 0);
-    var ms = wall - tzOffsetMs(wall, tz);
-    ms = wall - tzOffsetMs(ms, tz);   // second pass settles a DST boundary
-    return new Date(ms).toISOString();
-  }
-  function zoneDate(iso, tz) { var p = tzParts(iso, tz); return p.year + '-' + p.month + '-' + p.day; }
-  function zoneTime(iso, tz) { var p = tzParts(iso, tz); return p.hour + ':' + p.minute; }
-  function zoneDay(iso, tz) {
-    var p = tzParts(iso, tz);
-    return DOW[new Date(Date.UTC(+p.year, +p.month - 1, +p.day)).getUTCDay()] + ' ' + (+p.day) + ' ' + MON[+p.month - 1];
-  }
-  function crest(o, big) {
-    o = o || {}; var nm = o.name || 'TBD'; var cls = 'lg-crest' + (big ? ' big' : '');
-    if (o.logo) return '<span class="' + cls + '" style="background-image:url(\'' + esc(o.logo) + '\')"></span>';
-    return '<span class="' + cls + '">' + esc(nm.replace(/[^A-Za-z ]/g, '').split(' ').map(function (w) { return w[0] || ''; }).join('').slice(0, 2).toUpperCase() || '?') + '</span>';
+  function crest(o) {
+    o = o || {}; var nm = o.name || 'TBD';
+    if (o.logo) return '<span class="lg-crest" style="background-image:url(\'' + esc(o.logo) + '\')"></span>';
+    return '<span class="lg-crest">' + esc(nm.replace(/[^A-Za-z ]/g, '').split(' ').map(function (w) { return w[0] || ''; }).join('').slice(0, 2).toUpperCase() || '?') + '</span>';
   }
   function roundRange(list) {
-    // a round spans days on the competition's calendar, not the viewer's
-    var tz = evTz();
-    var ds = list.map(function (f) { return f.scheduled_at ? new Date(f.scheduled_at).getTime() : null; }).filter(Boolean);
+    var ds = list.map(function (f) { return f.scheduled_at ? new Date(f.scheduled_at) : null; }).filter(Boolean);
     if (!ds.length) return 'Not scheduled';
-    var mn = Math.min.apply(null, ds), mx = Math.max.apply(null, ds);
-    var pn = tzParts(mn, tz), px = tzParts(mx, tz);
-    if (pn.year === px.year && pn.month === px.month && pn.day === px.day) return zoneDay(mn, tz) + ', 1 day';
-    var dayMs = function (p) { return Date.UTC(+p.year, +p.month - 1, +p.day); };
-    var days = Math.round((dayMs(px) - dayMs(pn)) / 86400000) + 1;
-    var span = (pn.month === px.month && pn.year === px.year)
-      ? ((+pn.day) + '–' + (+px.day) + ' ' + MON[+px.month - 1])
-      : ((+pn.day) + ' ' + MON[+pn.month - 1] + ' – ' + (+px.day) + ' ' + MON[+px.month - 1]);
+    var mn = new Date(Math.min.apply(null, ds)), mx = new Date(Math.max.apply(null, ds));
+    if (mn.toDateString() === mx.toDateString()) return fmtDay(mn) + ', 1 day';
+    var days = Math.round((new Date(mx.getFullYear(), mx.getMonth(), mx.getDate()) - new Date(mn.getFullYear(), mn.getMonth(), mn.getDate())) / 86400000) + 1;
+    var span = (mn.getMonth() === mx.getMonth()) ? (mn.getDate() + '–' + mx.getDate() + ' ' + MON[mx.getMonth()]) : (mn.getDate() + ' ' + MON[mn.getMonth()] + ' – ' + mx.getDate() + ' ' + MON[mx.getMonth()]);
     return span + ', ' + days + ' days';
   }
   function surfaceOpts(fields, selId) {
     var groups = {}; var order = [];
     (fields || []).forEach(function (x) { var g = x.venue || 'Other'; if (!groups[g]) { groups[g] = []; order.push(g); } groups[g].push(x); });
-    var body = order.map(function (g) {
-      return '<optgroup label="' + esc(g) + '">' + groups[g].map(function (x) {
-        return '<option value="' + x.id + '"' + (selId && x.id === selId ? ' selected' : '') + '>' + esc(x.name) + '</option>';
-      }).join('') + '</optgroup>';
+    return '<option value="">Surface…</option>' + order.map(function (g) {
+      return '<optgroup label="' + esc(g) + '">' + groups[g].map(function (x) { return '<option value="' + x.id + '"' + (selId && x.id === selId ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</optgroup>';
     }).join('');
-    return '<option value="">Surface…</option>' + body;
   }
-  function togRound(btn) {
-    btn.classList.toggle('collapsed');
-    var b = btn.nextElementSibling; if (b && b.classList.contains('lg-rbody')) b.classList.toggle('hidden');
-  }
+  function togRound(btn) { btn.classList.toggle('collapsed'); var b = btn.nextElementSibling; if (b && b.classList.contains('lg-rbody')) b.classList.toggle('hidden'); }
   // ── COURT SCOREBOARD ───────────────────────────────────────────────────
   // A scoreboard is set up by typing an address into a TV's browser with a
   // remote, so the court's five-character code is the thing that matters. The
@@ -519,16 +710,16 @@
   var GFX_BASE    = 'gfx.findfitpeople.com';     // the broadcast graphics source, same code, all day
   function screenPanel(code, court, permanent) {
     var url = SCREEN_BASE + '/' + code;
-    var old = document.getElementById('lg-scr'); if (old) old.remove();
-    var bk = document.createElement('div'); bk.id = 'lg-scr'; bk.className = 'lg-cfm';
+    var old = document.getElementById('tg-scr'); if (old) old.remove();
+    var bk = document.createElement('div'); bk.id = 'tg-scr'; bk.className = 'lg-cfm';
     bk.innerHTML = '<div class="lg-cfm-in lg-scr">'
       + '<span class="ms lg-cfm-ic" style="color:var(--ffp-blue)">cast</span>'
       + '<div class="lg-cfm-t">Scoreboard, ' + esc(court) + '</div>'
       + '<div class="lg-scrlab">On the TV, open a browser and go to</div>'
-      + '<div class="lg-scrurl" id="lg-scrurl">' + esc(url) + '</div>'
+      + '<div class="lg-scrurl" id="tg-scrurl">' + esc(url) + '</div>'
       + '<div class="lg-scrnote">' + (permanent ? 'This is the ' + surfWord() + '\'s own screen. The code never changes, and it shows every match played on this ' + surfWord() + '.' : 'This screen is for this event only.') + '</div>'
       + '<div class="lg-scrlab">Streaming this ' + surfWord() + '? The graphics source is</div>'
-      + '<div class="lg-scrurl gfx" id="lg-gfxurl">' + esc(GFX_BASE + '/f/' + code) + '</div>'
+      + '<div class="lg-scrurl gfx" id="tg-gfxurl">' + esc(GFX_BASE + '/f/' + code) + '</div>'
       + '<div class="lg-scrnote">Paste that into OBS, vMix or a YoloBox once, at 1920x1080. It follows the '
       +   surfWord() + ' all day on its own, so it picks up each match as it starts.</div>'
       + '<div class="lg-scrsteps">'
@@ -536,14 +727,17 @@
       +   '<div><b>2</b><span>Type that address and leave it. The board keeps its own screen awake.</span></div>'
       +   '<div><b>3</b><span>Casting from a tablet instead? Tap the board, turn on 16:9, then full screen.</span></div>'
       + '</div>'
-      + '<div class="lg-cfm-a"><button class="lg-btn ghost" id="lg-scr-x">Close</button>'
-      +   '<button class="lg-btn" id="lg-scr-c">' + ic('content_copy') + 'Copy TV address</button>'
-      +   '<button class="lg-btn pri" id="lg-gfx-c">' + ic('content_copy') + 'Copy graphics</button></div>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" id="tg-scr-x">Close</button>'
+      +   '<button class="lg-btn" id="tg-scr-c">' + ic('content_copy') + 'Copy TV address</button>'
+      +   '<button class="lg-btn" id="tg-gfx-c">' + ic('content_copy') + 'Copy graphics</button>'
+      +   '<button class="lg-btn pri" id="tg-scr-o">' + ic('open_in_new') + 'Open the board</button></div>'
       + '</div>';
     document.body.appendChild(bk);
-    bk.querySelector('#lg-scr-x').onclick = function () { bk.remove(); };
-    bk.querySelector('#lg-scr-c').onclick = function () { copyScreen('lg-scrurl'); };
-    bk.querySelector('#lg-gfx-c').onclick = function () { copyScreen('lg-gfxurl'); };
+    bk.querySelector('#tg-scr-x').onclick = function () { bk.remove(); };
+    bk.querySelector('#tg-scr-c').onclick = function () { copyScreen('tg-scrurl'); };
+    bk.querySelector('#tg-gfx-c').onclick = function () { copyScreen('tg-gfxurl'); };
+    // look at the board yourself, without setting up a TV first
+    bk.querySelector('#tg-scr-o').onclick = function () { window.open(url, '_blank', 'noopener'); };
   }
   function copyScreen(id) {
     var el = document.getElementById(id); if (!el) return;
@@ -560,14 +754,12 @@
   }
 
   function roundHead(label, count, range) {
-    return '<div class="lg-rnd" onclick="FFPLeague.togRound(this)"><span class="ms chev">expand_more</span><span class="rt">' + esc(label) + '</span><span class="rc">' + count + (count === 1 ? ' match' : ' matches') + '</span><span class="sp"></span><span class="rd"><span class="ms" style="font-size:14px;vertical-align:-2px">event</span> ' + esc(range) + '</span></div>';
+    return '<div class="lg-rnd" onclick="FFPTourn.togRound(this)"><span class="ms chev">expand_more</span><span class="rt">' + esc(label) + '</span><span class="rc">' + count + (count === 1 ? ' match' : ' matches') + '</span><span class="sp"></span><span class="rd"><span class="ms" style="font-size:14px;vertical-align:-2px">event</span> ' + esc(range) + '</span></div>';
   }
   function entOpts(sel, skip) {
-    return '<option value="">Select…</option>' + (S._entrants || []).filter(function (e) { return e.id !== skip; }).map(function (e) {
-      return '<option value="' + e.id + '"' + (sel === e.id ? ' selected' : '') + '>' + esc(e.name) + '</option>';
-    }).join('');
+    return '<option value="">Select…</option>' + (S._entrants || []).filter(function (e) { return e.id !== skip; }).map(function (e) { return '<option value="' + e.id + '"' + (sel === e.id ? ' selected' : '') + '>' + esc(e.name) + '</option>'; }).join('');
   }
-  async function loadEntrants() { var r; try { r = await sb().rpc('league_roster', { p_division: S.divId }); } catch (e) { r = null; } S._entrants = (r && r.data) || []; return S._entrants; }
+  async function loadEntrantsArr() { var r; try { r = await sb().rpc('tourn_roster', { p_division: S.divId }); } catch (e) { r = null; } S._entrants = (r && r.data) || []; return S._entrants; }
 
   // ---------- OFFICIALS & CREW ----------
   /* TWO different kinds of person, and the panel must never let them read as
@@ -596,7 +788,7 @@
   }
   function accSel(o) {
     var lim = String(o.access || 'full') === 'limited';
-    return '<select class="lg-sel og-acc' + (lim ? ' on' : '') + '" onchange="FFPLeague.setAccess(\'' + o.id + '\',this.value)">'
+    return '<select class="lg-sel og-acc' + (lim ? ' on' : '') + '" onchange="FFPTourn.setAccess(\'' + o.id + '\',this.value)">'
       + '<option value="full"' + (lim ? '' : ' selected') + '>Full access</option>'
       + '<option value="limited"' + (lim ? ' selected' : '') + '>' + esc(lim ? accessLabel(o) : 'Limited…') + '</option>'
       + '</select>';
@@ -607,10 +799,10 @@
   }
 
   async function renderOfficials(host) {
-    host.innerHTML = '<div id="lg-ofwrap"><div class="lg-empty">Loading…</div></div>';
-    var r; try { r = await sb().rpc('lt_officials_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { r = { error: e }; }
+    host.innerHTML = '<div id="tg-ofwrap"><div class="lg-empty">Loading…</div></div>';
+    var r; try { r = await sb().rpc('lt_officials_list', { p_scope: 'tourn', p_event: S.eventId }); } catch (e) { r = { error: e }; }
     var rows = (r && r.data) || []; S._officials = rows;
-    var wrap = document.getElementById('lg-ofwrap'); if (!wrap) return;
+    var wrap = document.getElementById('tg-ofwrap'); if (!wrap) return;
     wrap.innerHTML = poolHtml(rows.filter(function (o) { return !isCrewRole(o.role); }))
       + '<div class="og-crewwrap">'
       + '<div class="og-lead">' + ic('smartphone') + '<div><b>Crew</b><span>Picked from FFP members only. Set how much of the event each one can reach.</span></div></div>'
@@ -624,14 +816,14 @@
     var open = S.ofMode === 'pool';
     return '<div class="og-sec">'
       + '<div class="og-hd">' + ic('shield') + '<div class="t"><b>Officials</b><span>An FFP account, or just a name and photo. Picked per match on the Schedule tab.</span></div>'
-      + '<button class="lg-btn" onclick="FFPLeague.openAdd(' + (open ? 'null' : "'pool'") + ')">' + ic(open ? 'close' : 'add') + (open ? 'Cancel' : 'Add') + '</button></div>'
+      + '<button class="lg-btn" onclick="FFPTourn.openAdd(' + (open ? 'null' : "'pool'") + ')">' + ic(open ? 'close' : 'add') + (open ? 'Cancel' : 'Add') + '</button></div>'
       + (open ? addFormHtml('pool') : '')
       + (rows.length
           ? '<div class="og-pool">' + rows.map(function (o) {
               return '<span class="og-chip' + (o.member_id ? '' : ' noacct') + '">' + ofAvatar(o)
                 + '<b>' + esc(o.name || o.email || 'Official') + '</b>'
-                + '<em class="ms" title="Photo" onclick="FFPLeague.ofPhoto(\'' + o.id + '\')">photo_camera</em>'
-                + '<em class="ms" onclick="FFPLeague.removeOfficial(\'' + o.id + '\')">close</em></span>';
+                + '<em class="ms" title="Photo" onclick="FFPTourn.ofPhoto(\'' + o.id + '\')">photo_camera</em>'
+                + '<em class="ms" onclick="FFPTourn.removeOfficial(\'' + o.id + '\')">close</em></span>';
             }).join('') + '</div>'
           : '<div class="lg-empty">No officials yet.</div>')
       + '<div class="og-foot">They appear on the match sheet and the broadcast graphics. No app.</div>'
@@ -642,14 +834,14 @@
     var open = S.ofMode === k[0];
     return '<div class="og-crew">'
       + '<div class="og-ch"><b>' + esc(k[1]) + '</b><span class="og-app">' + esc(k[2]) + '</span><span class="sp"></span>'
-      + '<button class="lg-btn' + (open ? ' on' : '') + '" onclick="FFPLeague.openAdd(' + (open ? 'null' : "'" + k[0] + "'") + ')">'
+      + '<button class="lg-btn' + (open ? ' on' : '') + '" onclick="FFPTourn.openAdd(' + (open ? 'null' : "'" + k[0] + "'") + ')">'
       + ic(open ? 'close' : 'add') + (open ? 'Cancel' : 'Add') + '</button></div>'
       + (open ? addFormHtml(k[0]) : '')
       + (rows.length ? rows.map(function (o) {
           return '<div class="lg-row">' + ofAvatar(o)
             + '<div class="g"><b>' + esc(o.name || 'Crew') + '</b><span>' + esc(o.email || 'FFP member') + '</span></div>'
             + accSel(o)
-            + '<span class="ms act" onclick="FFPLeague.removeOfficial(\'' + o.id + '\')">close</span></div>'
+            + '<span class="ms act" onclick="FFPTourn.removeOfficial(\'' + o.id + '\')">close</span></div>'
             + (S.accFor === o.id ? accPickerHtml(o) : '');
         }).join('') : '<div class="lg-empty">Nobody yet.</div>')
       + '</div>';
@@ -660,11 +852,11 @@
   function addFormHtml(mode) {
     var crew = mode !== 'pool';
     return '<div class="lg-offadd"><div class="lg-offsrch">'
-      + '<input class="lg-in" id="lg-ofname" autocomplete="off" placeholder="'
+      + '<input class="lg-in" id="tg-ofname" autocomplete="off" placeholder="'
       + (crew ? 'Search FFP members by name or email' : 'Search FFP members, or type a new name')
-      + '" oninput="FFPLeague.ofSearch(this.value)"><div id="lg-ofres" class="lg-offres"></div></div>'
+      + '" oninput="FFPTourn.ofSearch(this.value)"><div id="tg-ofres" class="lg-offres"></div></div>'
       + (crew ? '<div class="og-note">' + ic('info') + 'They must already have an FFP account. Someone without one registers at findfitpeople.com first.</div>'
-              : '<div class="lg-offrow"><button class="lg-btn pri" onclick="FFPLeague.addPoolOfficial()">' + ic('add') + 'Add to the pool</button></div>')
+              : '<div class="lg-offrow"><button class="lg-btn pri" onclick="FFPTourn.addPoolOfficial()">' + ic('add') + 'Add to the pool</button></div>')
       + '</div>';
   }
 
@@ -674,14 +866,14 @@
   function ofSearch(q) {
     S._ofSel = null;
     clearTimeout(_ofTmr);
-    if (!q || q.trim().length < 2) { S._ofRes = []; var el0 = document.getElementById('lg-ofres'); if (el0) el0.innerHTML = ''; return; }
+    if (!q || q.trim().length < 2) { S._ofRes = []; var el0 = document.getElementById('tg-ofres'); if (el0) el0.innerHTML = ''; return; }
     _ofTmr = setTimeout(async function () {
       var r; try { r = await sb().rpc('lt_member_search', { p_q: q.trim() }); } catch (e) { r = null; }
       S._ofRes = (r && r.data) || [];
-      var el = document.getElementById('lg-ofres'); if (!el) return;
+      var el = document.getElementById('tg-ofres'); if (!el) return;
       var crew = S.ofMode && S.ofMode !== 'pool';
       el.innerHTML = S._ofRes.length ? S._ofRes.map(function (m) {
-        return '<button type="button" class="lg-offopt" onclick="FFPLeague.ofPick(\'' + m.id + '\')"><span class="av" style="' + (m.photo ? 'background-image:url(\'' + esc(m.photo) + '\')' : '') + '"></span><span class="g"><b>' + esc(m.name) + '</b><span>' + esc([m.city, m.email_hint].filter(Boolean).join(', ')) + '</span></span><span class="pk">' + (crew ? 'Add' : 'Select') + '</span></button>';
+        return '<button type="button" class="lg-offopt" onclick="FFPTourn.ofPick(\'' + m.id + '\')"><span class="av" style="' + (m.photo ? 'background-image:url(\'' + esc(m.photo) + '\')' : '') + '"></span><span class="g"><b>' + esc(m.name) + '</b><span>' + esc([m.city, m.email_hint].filter(Boolean).join(', ')) + '</span></span><span class="pk">' + (crew ? 'Add' : 'Select') + '</span></button>';
       }).join('') : '<div class="lg-offnone">' + (crew
         ? 'No FFP account for that name. They register at findfitpeople.com first.'
         : 'No FFP member found — you can still add this name.') + '</div>';
@@ -692,13 +884,13 @@
     var m = (S._ofRes || []).find(function (x) { return x.id === id; }); if (!m) return;
     if (S.ofMode && S.ofMode !== 'pool') { await addCrew(m); return; }   // crew: one tap adds
     S._ofSel = { member_id: m.id, name: m.name };
-    var nmI = document.getElementById('lg-ofname'); if (nmI) nmI.value = m.name;
-    var el = document.getElementById('lg-ofres'); if (el) el.innerHTML = '<div class="lg-offpicked">' + ic('check') + esc(m.name) + ' — FFP member linked</div>';
+    var nmI = document.getElementById('tg-ofname'); if (nmI) nmI.value = m.name;
+    var el = document.getElementById('tg-ofres'); if (el) el.innerHTML = '<div class="lg-offpicked">' + ic('check') + esc(m.name) + ' — FFP member linked</div>';
   }
 
   async function addCrew(m) {
     var role = S.ofMode;
-    var r; try { r = await sb().rpc('lt_official_add', { p_scope: 'league', p_event: S.eventId, p_member: m.id, p_name: m.name, p_email: null, p_role: role }); }
+    var r; try { r = await sb().rpc('lt_official_add', { p_scope: 'tourn', p_event: S.eventId, p_member: m.id, p_name: m.name, p_email: null, p_role: role }); }
     catch (e) { r = { error: e }; }
     if (r && r.error) {
       toast(/crew_needs_ffp_account/.test(String(r.error.message || r.error)) ? 'That person has no FFP account' : 'Could not add', 'error');
@@ -709,12 +901,12 @@
   }
 
   async function addPoolOfficial() {
-    var sel = S._ofSel, nm = ((document.getElementById('lg-ofname') || {}).value || '').trim();
+    var sel = S._ofSel, nm = ((document.getElementById('tg-ofname') || {}).value || '').trim();
     if (!sel && !nm) return;
     var r; try {
       r = await sb().rpc('lt_official_add', sel && sel.member_id
-        ? { p_scope: 'league', p_event: S.eventId, p_member: sel.member_id, p_name: sel.name || nm, p_email: null, p_role: 'official' }
-        : { p_scope: 'league', p_event: S.eventId, p_member: null, p_name: nm, p_email: null, p_role: 'official' });
+        ? { p_scope: 'tourn', p_event: S.eventId, p_member: sel.member_id, p_name: sel.name || nm, p_email: null, p_role: 'official' }
+        : { p_scope: 'tourn', p_event: S.eventId, p_member: null, p_name: nm, p_email: null, p_role: 'official' });
     } catch (e) { r = { error: e }; }
     if (r && r.error) { toast('Could not add', 'error'); return; }
     S.ofMode = null; S._ofSel = null; S._ofRes = [];
@@ -733,8 +925,8 @@
     S.accDays = (o.days || []).slice();
     S.accMatches = (o.matches || []).slice();
     if (!S._days) {
-      try { var d = await sb().rpc('lt_event_days', { p_scope: 'league', p_event: S.eventId }); S._days = (d && d.data) || []; } catch (e) { S._days = []; }
-      try { var mm = await sb().rpc('lt_event_matches', { p_scope: 'league', p_event: S.eventId }); S._matches = (mm && mm.data) || []; } catch (e) { S._matches = []; }
+      try { var d = await sb().rpc('lt_event_days', { p_scope: 'tourn', p_event: S.eventId }); S._days = (d && d.data) || []; } catch (e) { S._days = []; }
+      try { var mm = await sb().rpc('lt_event_matches', { p_scope: 'tourn', p_event: S.eventId }); S._matches = (mm && mm.data) || []; } catch (e) { S._matches = []; }
     }
     renderTab();
   }
@@ -744,14 +936,14 @@
       + '<div class="og-pickh">What can ' + esc((o.name || 'they').split(' ')[0]) + ' reach?</div>'
       + (days.length ? '<div class="og-pl">Days</div>' + days.map(function (d) {
           var on = (S.accDays || []).indexOf(d.day) >= 0;
-          return '<label class="og-opt"><input type="checkbox"' + (on ? ' checked' : '') + ' onchange="FFPLeague.accDay(\'' + d.day + '\')"><span>' + esc(fmtDay(d.day)) + '</span><em>' + d.n + ' matches</em></label>';
+          return '<label class="og-opt"><input type="checkbox"' + (on ? ' checked' : '') + ' onchange="FFPTourn.accDay(\'' + d.day + '\')"><span>' + esc(fmtDay(d.day)) + '</span><em>' + d.n + ' matches</em></label>';
         }).join('') : '')
       + (ms.length ? '<div class="og-pl">Or single matches</div>' + ms.slice(0, 60).map(function (m) {
           var on = (S.accMatches || []).indexOf(m.id) >= 0;
-          return '<label class="og-opt"><input type="checkbox"' + (on ? ' checked' : '') + ' onchange="FFPLeague.accMatch(\'' + m.id + '\')"><span>' + esc(m.home + ' v ' + m.away) + '</span><em>' + esc(m.division || '') + '</em></label>';
+          return '<label class="og-opt"><input type="checkbox"' + (on ? ' checked' : '') + ' onchange="FFPTourn.accMatch(\'' + m.id + '\')"><span>' + esc(m.home + ' v ' + m.away) + '</span><em>' + esc(m.division || '') + '</em></label>';
         }).join('') : '')
-      + '<div class="og-pickb"><button class="lg-btn pri" onclick="FFPLeague.accSave()">' + ic('check') + 'Save access</button>'
-      + '<button class="lg-btn" onclick="FFPLeague.accCancel()">Cancel</button></div></div>';
+      + '<div class="og-pickb"><button class="lg-btn pri" onclick="FFPTourn.accSave()">' + ic('check') + 'Save access</button>'
+      + '<button class="lg-btn" onclick="FFPTourn.accCancel()">Cancel</button></div></div>';
   }
   function accDay(d) { S.accDays = S.accDays || []; var i = S.accDays.indexOf(d); if (i >= 0) S.accDays.splice(i, 1); else S.accDays.push(d); }
   function accMatch(id) { S.accMatches = S.accMatches || []; var i = S.accMatches.indexOf(id); if (i >= 0) S.accMatches.splice(i, 1); else S.accMatches.push(id); }
@@ -773,7 +965,7 @@
   function ofPhoto(id) {
     if (!window.FFPUpload) { toast('Uploader not ready — refresh', 'error'); return; }
     window.FFPUpload.pick({
-      bucket: 'provider-logos', key: 'lgofficial-' + id + '-' + Date.now(),
+      bucket: 'provider-logos', key: 'tgofficial-' + id + '-' + Date.now(),
       aspect: 1, outW: 400, outH: 400, title: 'Official photo (square)',
       onDone: function (url) {
         sb().rpc('lt_official_set_photo', { p_id: id, p_url: url }).then(function (r) {
@@ -788,69 +980,118 @@
 
   // ---------- VENUES ----------
   async function renderVenues(host) {
-    host.innerHTML = '<div class="lg-tool"><div><div class="lg-h1" style="font-size:18px">Venues and ' + surfWord(true) + '</div><div class="lg-sub">A venue can hold many ' + surfWord(true) + '</div></div><span class="sp"></span><button class="lg-btn pri" onclick="FFPLeague.addVenue()">' + ic('add') + 'Add venue</button></div>'
-      + (S.venAdd ? venueEditor(null) : '') + '<div id="lg-venlist"><div class="lg-empty">Loading…</div></div>';
-    var r; try { r = await sb().rpc('lt_venues_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { r = { error: e }; }
-    var vs = (r && r.data) || []; var h2 = document.getElementById('lg-venlist');
+    host.innerHTML = '<div class="lg-tool"><div><div class="lg-h1" style="font-size:18px">Venues &amp; surfaces</div><div class="lg-sub">A venue can hold many ' + surfWord(true) + '</div></div><span class="sp"></span><button class="lg-btn pri" onclick="FFPTourn.addVenue()">' + ic('add') + 'Add venue</button></div>'
+      + (S.venAdd ? venueEditor(null) : '') + '<div id="tg-venlist"><div class="lg-empty">Loading…</div></div>';
+    var r; try { r = await sb().rpc('lt_venues_list', { p_scope: 'tourn', p_event: S.eventId }); } catch (e) { r = { error: e }; }
+    var vs = (r && r.data) || []; var h2 = document.getElementById('tg-venlist');
     // The organiser's own venue courts (Partner > Courts & screens). A court
     // stood on one of them uses that court's permanent screen, so the TV on
     // the wall shows this event without being set up again.
     var mc; try { mc = await sb().rpc('vc_mine'); } catch (e) { mc = {}; }
     var mine = (mc && mc.data) || []; S._vcMine = mine;
+    // Every surface on the event, including any that belongs to no venue.
+    var af; try { af = await sb().rpc('lt_fields_list', { p_scope: 'tourn', p_event: S.eventId }); } catch (e) { af = {}; }
+    var allFields = (af && af.data) || [];
     var provs = []; mine.forEach(function (c) { if (!provs.some(function (p) { return p.id === c.provider_id; })) provs.push({ id: c.provider_id, name: c.venue }); });
     var useBar = provs.length ? '<div class="lg-tool" style="margin-top:0">' + provs.map(function (p) {
-        return '<button class="lg-btn" onclick="FFPLeague.useMyCourts(\'' + p.id + '\')">' + ic('connected_tv') + 'Add ' + surfWord(true) + ' from ' + esc(p.name) + '</button>';
+        return '<button class="lg-btn" onclick="FFPTourn.useMyCourts(\'' + p.id + '\')">' + ic('connected_tv') + 'Add ' + surfWord(true) + ' from ' + esc(p.name) + '</button>';
       }).join('') + '</div>' : '';
-    if (useBar) h2.insertAdjacentHTML('beforebegin', '<div id="lg-vcbar">' + useBar + '</div>');
-    if (!vs.length && !S.venAdd) { h2.innerHTML = '<div class="lg-empty">No venues yet. Add a venue, then its pitches/courts.</div>'; return; }
-    h2.innerHTML = vs.map(function (v) {
-      if (S.venEdit === v.id) return venueEditor(v);
-      var surfaces = (v.surfaces || []).map(function (s) {
+    if (useBar) h2.insertAdjacentHTML('beforebegin', '<div id="tg-vcbar">' + useBar + '</div>');
+    var claimed = {};
+    vs.forEach(function (v2) { (v2.surfaces || []).forEach(function (x) { claimed[x.id] = true; }); });
+    var orphans = allFields.filter(function (f2) { return !claimed[f2.id]; });
+    if (!vs.length && !orphans.length && !S.venAdd) { h2.innerHTML = '<div class="lg-empty">No venues yet. Add a venue, then its courts.</div>'; return; }
+    // A surface that belongs to no venue is still a surface: it has a screen,
+    // it can take a tablet, and Auto-plan will put matches on it. Shown here
+    // so it can be seen and removed, rather than only turning up on the grid.
+    function orphanCard() {
+      if (!orphans.length) return '';
+      return '<div class="lg-venue"><div class="lg-vh"><span class="lg-vpin"><span class="ms">connected_tv</span></span>'
+        + '<div class="g"><b>Courts added from your own venue</b><span>Not under a venue above. Remove any you did not mean to add, then Auto-plan again.</span></div></div>'
+        + '<div class="lg-surfs">' + orphans.map(function (s) {
+            var vc = (S._vcMine || []).find(function (c) { return c.id === s.venue_court_id; });
+            return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name)
+              + (vc && vc.name !== s.name ? '<span class="lg-vcnote">' + esc(vc.name) + ' at ' + esc(vc.venue) + '</span>' : '')
+              + '<span class="sp"></span>'
+              + (s.screen_code ? '<button class="lg-scrbtn perm" title="Scoreboard for this court" onclick="FFPTourn.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\',true)"><span class="ms">connected_tv</span>' + esc(s.screen_code) + '</button>' : '')
+              + '<button class="lg-btn sm" title="Connect a scoring tablet to this court" onclick="FFPTourn.pinPanel(\'' + s.id + '\',\'' + esc(s.name) + '\')"><span class="ms">tablet_android</span>Connect a tablet</button>'
+              + '<span class="ms x" onclick="FFPTourn.removeSurface(\'' + s.id + '\')">delete</span></div>'
+              + (S.pinFor === s.id ? pinHtml(s) : '');
+          }).join('') + '</div></div>';
+    }
+    h2.innerHTML = vs.map(function (v2) {
+      if (S.venEdit === v2.id) return venueEditor(v2);
+      var surfaces = (v2.surfaces || []).map(function (s) {
         var link = (S._vcMine || []).length
-          ? '<select class="lg-sel lg-vclink" title="Which screen shows this court" onchange="FFPLeague.linkCourt(\'' + s.id + '\',this.value)">'
+          ? '<select class="lg-sel lg-vclink" title="Which screen shows this court" onchange="FFPTourn.linkCourt(\'' + s.id + '\',this.value)">'
             + '<option value="">Event-only screen</option>'
             + S._vcMine.map(function (c) { var one = S._vcMine.every(function (x) { return x.provider_id === c.provider_id; }); return '<option value="' + c.id + '"' + (c.id === s.venue_court_id ? ' selected' : '') + '>' + esc(one ? c.name + ' screen' : c.name + ', ' + c.venue) + '</option>'; }).join('')
             + '</select>' : '';
         return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name)
-          + '<span class="sp"></span>' + link
+          + '<span class="sp"></span>'
+          + '<button class="lg-mainb' + (s.is_main ? ' on' : '') + '"'
+          +   ' title="' + (s.is_main ? 'The final is played here' : 'Make this the main field, where the final is played') + '"'
+          +   ' onclick="FFPTourn.setMainCourt(\'' + s.id + '\',' + (s.is_main ? 'false' : 'true') + ')">'
+          +   ic('stadium') + (s.is_main ? 'Main field' : 'Set as main') + '</button>' + link
           // The code a TV is set up with — see screenPanel().
-          + (s.screen_code ? '<button class="lg-scrbtn' + (s.permanent ? ' perm' : '') + '" title="Scoreboard for this court" onclick="FFPLeague.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\',' + (s.permanent ? 'true' : 'false') + ')"><span class="ms">' + (s.permanent ? 'connected_tv' : 'cast') + '</span>' + esc(s.screen_code) + '</button>' : '')
-          + '<span class="ms x" onclick="FFPLeague.removeSurface(\'' + s.id + '\')">delete</span></div>';
+          + (s.screen_code ? '<button class="lg-scrbtn' + (s.permanent ? ' perm' : '') + '" title="Scoreboard for this court" onclick="FFPTourn.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\',' + (s.permanent ? 'true' : 'false') + ')"><span class="ms">' + (s.permanent ? 'connected_tv' : 'cast') + '</span>' + esc(s.screen_code) + '</button>' : '')
+          + '<button class="lg-btn sm" title="Connect a scoring tablet to this pitch" onclick="FFPTourn.pinPanel(\'' + s.id + '\',\'' + esc(s.name) + '\')"><span class="ms">tablet_android</span>Connect a tablet</button>'
+          + '<span class="ms x" onclick="FFPTourn.removeSurface(\'' + s.id + '\')">delete</span></div>'
+          + (S.pinFor === s.id ? pinHtml(s) : '');
       }).join('');
-      var vmeta = [v.city, (v.maps_url ? '<a class="lg-maplink" href="' + esc(v.maps_url) + '" target="_blank" rel="noopener">' + ic('map') + 'Map</a>' : '')].filter(Boolean).join(', ');
-      var addS = (S.surfAdd === v.id)
-        ? '<div class="lg-edit" style="margin-left:44px;border:none;padding-top:8px"><input class="lg-in" id="lg-sfname" placeholder="' + Surf() + ' name" style="max-width:260px" onkeydown="if(event.key===\'Enter\')FFPLeague.saveSurface(\'' + v.id + '\')"><button class="lg-btn pri" onclick="FFPLeague.saveSurface(\'' + v.id + '\')">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPLeague.cancelSurface()">Cancel</button></div>'
-        : '<div class="lg-addsurf"><button class="lg-btn ghostb" onclick="FFPLeague.addSurface(\'' + v.id + '\')">' + ic('add') + Surf() + '</button></div>';
-      return '<div class="lg-venue"><div class="lg-vh"><span class="lg-vpin"><span class="ms">location_on</span></span><div class="g"><b>' + esc(v.name) + '</b><span>' + vmeta + '</span></div><span class="ms act" onclick="FFPLeague.editVenue(\'' + v.id + '\')">edit</span><span class="ms act" onclick="FFPLeague.removeVenue(\'' + v.id + '\')">delete</span></div>'
+      var vmeta = [v2.city, (v2.maps_url ? '<a class="lg-maplink" href="' + esc(v2.maps_url) + '" target="_blank" rel="noopener">' + ic('map') + 'Map</a>' : '')].filter(Boolean).join(', ');
+      var addS = (S.surfAdd === v2.id)
+        ? '<div class="lg-edit" style="margin-left:44px;border:none;padding-top:8px"><input class="lg-in" id="tg-sfname" placeholder="' + Surf() + ' name" style="max-width:260px" onkeydown="if(event.key===\'Enter\')FFPTourn.saveSurface(\'' + v2.id + '\')"><button class="lg-btn pri" onclick="FFPTourn.saveSurface(\'' + v2.id + '\')">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPTourn.cancelSurface()">Cancel</button></div>'
+        : '<div class="lg-addsurf"><button class="lg-btn ghostb" onclick="FFPTourn.addSurface(\'' + v2.id + '\')">' + ic('add') + 'Add surface</button></div>';
+      return '<div class="lg-venue"><div class="lg-vh"><span class="lg-vpin"><span class="ms">location_on</span></span><div class="g"><b>' + esc(v2.name) + '</b><span>' + vmeta + '</span></div><span class="ms act" onclick="FFPTourn.editVenue(\'' + v2.id + '\')">edit</span><span class="ms act" onclick="FFPTourn.removeVenue(\'' + v2.id + '\')">delete</span></div>'
         + (surfaces ? '<div class="lg-surfs">' + surfaces + '</div>' : '') + addS + '</div>';
-    }).join('');
-    var f = document.getElementById('lg-vname'); if (f) f.focus();
-    var sf = document.getElementById('lg-sfname'); if (sf) sf.focus();
+    }).join('') + orphanCard();
+    var f = document.getElementById('tg-vname'); if (f) f.focus();
+    var sf = document.getElementById('tg-sfname'); if (sf) sf.focus();
   }
-  function venueEditor(v) {
-    v = v || {};
-    return '<div class="lg-edit"><input class="lg-in" id="lg-vname" placeholder="Venue name" value="' + esc(v.name || '') + '" style="flex:2;min-width:170px">'
-      + '<input class="lg-in" id="lg-vcity" list="lg-cityl" placeholder="City" value="' + esc(v.city || '') + '" style="flex:1;min-width:110px"><datalist id="lg-cityl">' + dlOpts(cityNames()) + '</datalist>'
-      + '<input class="lg-in" id="lg-vmaps" placeholder="Google Maps link (optional)" value="' + esc(v.maps_url || '') + '" style="flex:2;min-width:180px">'
-      + '<button class="lg-btn pri" onclick="FFPLeague.saveVenue(\'' + (v.id || '') + '\')">' + ic('check') + 'Save</button>'
-      + '<button class="lg-btn ghost" onclick="FFPLeague.cancelVenue()">Cancel</button></div>';
+  function venueEditor(v2) {
+    v2 = v2 || {};
+    return '<div class="lg-edit"><input class="lg-in" id="tg-vname" placeholder="Venue name" value="' + esc(v2.name || '') + '" style="flex:2;min-width:170px">'
+      + '<input class="lg-in" id="tg-vcity" list="tg-cityl" placeholder="City" value="' + esc(v2.city || '') + '" style="flex:1;min-width:110px"><datalist id="tg-cityl">' + dlOpts(cityNames()) + '</datalist>'
+      + '<input class="lg-in" id="tg-vmaps" placeholder="Google Maps link (optional)" value="' + esc(v2.maps_url || '') + '" style="flex:2;min-width:180px">'
+      + '<button class="lg-btn pri" onclick="FFPTourn.saveVenue(\'' + (v2.id || '') + '\')">' + ic('check') + 'Save</button>'
+      + '<button class="lg-btn ghost" onclick="FFPTourn.cancelVenue()">Cancel</button></div>';
   }
   function addVenue() { S.venAdd = true; S.venEdit = null; renderTab(); }
   function editVenue(id) { S.venEdit = id; S.venAdd = false; renderTab(); }
   function cancelVenue() { S.venAdd = false; S.venEdit = null; renderTab(); }
   async function saveVenue(id) {
-    var nm = v('lg-vname'); if (!nm || !nm.trim()) { toast('Name required', 'error'); return; }
-    var r; try { r = await sb().rpc('lt_venue_save', { p_scope: 'league', p_event: S.eventId, p_id: id || null, p_name: nm.trim(), p_city: v('lg-vcity') || null, p_maps: v('lg-vmaps') || null }); } catch (e) { r = { error: e }; }
+    var nm = v('tg-vname'); if (!nm || !nm.trim()) { toast('Name required', 'error'); return; }
+    var r; try { r = await sb().rpc('lt_venue_save', { p_scope: 'tourn', p_event: S.eventId, p_id: id || null, p_name: nm.trim(), p_city: v('tg-vcity') || null, p_maps: v('tg-vmaps') || null }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Save failed', 'error'); return; } S.venAdd = false; S.venEdit = null; toast('Saved', 'success'); renderTab();
   }
   async function removeVenue(id) { await sb().rpc('lt_venue_remove', { p_id: id }); toast('Removed', 'success'); renderTab(); }
   function addSurface(vid) { S.surfAdd = vid; renderTab(); }
   async function useMyCourts(pid) {
-    var r; try { r = await sb().rpc('lt_fields_from_venue', { p_scope: 'league', p_event: S.eventId, p_provider: pid }); } catch (e) { r = { error: e }; }
+    var r; try { r = await sb().rpc('lt_fields_from_venue', { p_scope: 'tourn', p_event: S.eventId, p_provider: pid }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not add the ' + surfWord(true), 'error'); return; }
     toast(r.data ? (r.data + ' ' + (r.data === 1 ? surfWord() : surfWord(true)) + ' added, on their own screens') : 'All your ' + surfWord(true) + ' are already here', 'success');
     renderTab();
   }
+  function pinHtml(s2) {
+    var p = S.pin || {};
+    if (p.err) return '<div class="tg-conn"><span class="g"><span class="lb">' + esc(s2.name) + '</span>'
+      + '<div class="exp" style="color:#b23b2e;font-weight:800">' + esc(p.err) + '</div>'
+      + '<div class="acts"><button class="lg-btn" onclick="FFPTourn.pinPanel(\'' + s2.id + '\',\'' + esc(s2.name) + '\')">Try again</button>'
+      + '<button class="lg-btn ghost" onclick="FFPTourn.pinClose()">Close</button></div></span></div>';
+    if (!p.pin) return '<div class="tg-conn"><span class="g"><span class="lb">' + esc(s2.name) + '</span><div class="exp">Making a PIN\u2026</div></span></div>';
+    var url = TABLET_URL + '?pin=' + encodeURIComponent(p.pin);
+    return '<div class="tg-conn">'
+      + '<span class="qr" id="tg-qr"></span>'
+      + '<span class="g"><span class="lb">' + esc(s2.name) + ', connect a tablet</span>'
+      + '<div class="code">' + esc(p.pin.slice(0, 3) + ' ' + p.pin.slice(3)) + '</div>'
+      + '<div class="exp">Good for 15 minutes. Anyone with the PIN can connect a tablet to this pitch.</div>'
+      + '<div class="how">On the tablet open <b>' + esc(TABLET_URL.replace(/^https?:\/\//, '')) + '</b> and type the PIN, or point its camera at this square. It stays here until you disconnect it.</div>'
+      + '<div class="acts"><button class="lg-btn" onclick="FFPTourn.pinPanel(\'' + s2.id + '\',\'' + esc(s2.name) + '\')"><span class="ms">refresh</span>New PIN</button>'
+      + '<button class="lg-btn" onclick="FFPTourn.copy(\'' + esc(url) + '\')"><span class="ms">content_copy</span>Copy the link</button>'
+      + '<button class="lg-btn ghost" onclick="FFPTourn.pinClose()"><span class="ms">close</span>Done</button></div></span></div>';
+  }
+
   async function linkCourt(fid, cid) {
     var r; try { r = await sb().rpc('lt_field_link', { p_field: fid, p_court: cid || null }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not change the screen', 'error'); return; }
@@ -859,35 +1100,93 @@
   }
   function cancelSurface() { S.surfAdd = null; renderTab(); }
   async function saveSurface(vid) {
-    var nm = v('lg-sfname'); if (!nm || !nm.trim()) return;
-    var r; try { r = await sb().rpc('lt_field_save', { p_scope: 'league', p_event: S.eventId, p_id: null, p_name: nm.trim(), p_start: null, p_venue: vid }); } catch (e) { r = { error: e }; }
+    var nm = v('tg-sfname'); if (!nm || !nm.trim()) return;
+    var r; try { r = await sb().rpc('lt_field_save', { p_scope: 'tourn', p_event: S.eventId, p_id: null, p_name: nm.trim(), p_start: null, p_venue: vid }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Add failed', 'error'); return; } S.surfAdd = null; toast('Added', 'success'); renderTab();
   }
   async function removeSurface(id) { await sb().rpc('lt_field_remove', { p_id: id }); renderTab(); }
 
-  // ---------- SCHEDULE ----------
-  /* The schedule belongs to the LEAGUE, not to one division. A court takes
-     whatever fits, so every division is laid out together in one pass and each
-     row carries its division's colour. Auto-plan is pressed once; after that
-     the grid is edited by hand and Rebuild has to be asked for. */
+  // ---------- EVENT TIME ----------
+  // Every stored time is a UTC instant. The organiser thinks in the
+  // tournament's own clock, and lt_autoplan already plans in it, so the panel
+  // reads and writes that clock rather than whatever the laptop is set to.
+  function evTz() {
+    var t = (S.detail && S.detail.event && S.detail.event.timezone) || '';
+    if (t) { try { new Intl.DateTimeFormat('en-GB', { timeZone: t }); return t; } catch (e) {} }
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; }
+  }
+  var _tzFmt = {};
+  function _fmt(tz) {
+    if (!_tzFmt[tz]) _tzFmt[tz] = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return _tzFmt[tz];
+  }
+  // The wall clock in the event's zone for a given instant.
+  function tzWall(ms, tz) {
+    var g = {}; _fmt(tz).formatToParts(new Date(ms)).forEach(function (p) { g[p.type] = p.value; });
+    return { y: +g.year, mo: +g.month, d: +g.day, hh: +g.hour % 24, mi: +g.minute, ss: +g.second };
+  }
+  function tzShift(ms, tz) { var w = tzWall(ms, tz); return Date.UTC(w.y, w.mo - 1, w.d, w.hh, w.mi, w.ss) - ms; }
+  // The instant for a wall-clock time in the event's zone. Two passes so the
+  // hour either side of a daylight-saving change lands on the right instant.
+  function wallToMs(y, mo, d, hh, mi, tz) {
+    var guess = Date.UTC(y, mo - 1, d, hh, mi, 0);
+    var ms = guess - tzShift(guess, tz);
+    return guess - tzShift(ms, tz);
+  }
+  function evWall(iso) { var ms = new Date(iso).getTime(); return isNaN(ms) ? null : tzWall(ms, evTz()); }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function evTimeStr(iso) { var w = evWall(iso); return w ? pad2(w.hh) + ':' + pad2(w.mi) : ''; }
+  function evDateStr(iso) { var w = evWall(iso); return w ? w.y + '-' + pad2(w.mo) + '-' + pad2(w.d) : ''; }
+  function evDayShort(iso) {
+    var w = evWall(iso); if (!w) return '';
+    var probe = new Date(Date.UTC(w.y, w.mo - 1, w.d, 12, 0, 0));
+    return DOW[probe.getUTCDay()] + ' ' + w.d + ' ' + MON[w.mo - 1];
+  }
+  function evDayLong(ymd) {
+    var a = String(ymd).split('-'); if (a.length !== 3) return String(ymd);
+    var probe = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2], 12, 0, 0));
+    return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][probe.getUTCDay()]
+      + ' ' + (+a[2]) + ' ' + MON[+a[1] - 1];
+  }
+  function evIso(dateStr, timeStr) {
+    var a = String(dateStr || '').split('-'); if (a.length !== 3) return null;
+    var b = String(timeStr || '00:00').split(':');
+    var ms = wallToMs(+a[0], +a[1], +a[2], +b[0] || 0, +b[1] || 0, evTz());
+    return isNaN(ms) ? null : new Date(ms).toISOString();
+  }
+  // "Australia/Brisbane" reads as "Brisbane" to a human.
+  function tzLabel() { return evTz().split('/').pop().replace(/_/g, ' '); }
+  // ---------- SCHEDULE — order of play ----------
+  // The organiser's question is "what is on, on which court, in what order".
+  // So the page is built day by day, court by court, in playing order, and
+  // every move is one control on the row that is being moved.
+  var KO_RANK = { r64: 1, r32: 2, r16: 3, quarter: 4, semi: 5, third: 6, final: 7 };
+  function playRank(m) {
+    if (m.stage === 'group') return -1;
+    return ((m.play_round || m.round || 0) * 100) + (KO_RANK[m.stage] || 8) + (m._dsort || 0) * 0.01;
+  }
+  function dayKey(m) { return m.scheduled_at ? evDateStr(m.scheduled_at) : ''; }
+  function matchLabel(m) {
+    if (m.stage === 'group') return 'Group ' + (m.group_label || '');
+    return (m._draw ? m._draw + ', ' : '') + stageLbl(m);
+  }
+  // The schedule belongs to the tournament, not to one division. A court takes
+  // whatever fits, so every division is laid out together in one pass and each
+  // row carries its division's colour. Auto-plan is pressed once; after that the
+  // grid is edited by hand, and Rebuild has to be asked for.
   function hm(t) { return String(t || '').slice(0, 5); }
-  function lgDateStr(iso) { return iso ? zoneDate(iso, evTz()) : ''; }
-  function lgTimeStr(iso) { return iso ? zoneTime(iso, evTz()) : ''; }
-  function lgIso(day, time) { return zoneToISO(day, time || '00:00', evTz()); }
-  function lgDayLong(ymd) {
+  function dayShortYmd(ymd) {
     var a = String(ymd).split('-'); if (a.length !== 3) return String(ymd);
     var p = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2], 12, 0, 0));
-    return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][p.getUTCDay()]
-      + ' ' + (+a[2]) + ' ' + MON[+a[1] - 1] + ' ' + a[0];
+    return DOW[p.getUTCDay()] + ' ' + (+a[2]) + ' ' + MON[+a[1] - 1];
   }
-  function tzLabel() { return String(evTz()).split('/').pop().replace(/_/g, ' '); }
-  function dayKey(f) { return f.scheduled_at ? lgDateStr(f.scheduled_at) : ''; }
   function sportRow() {
     var k = (S.detail && S.detail.event && S.detail.event.sport_key) || null;
     return (S.sports || []).filter(function (s) { return s.key === k; })[0] || null;
   }
-  /* NOT EVERYTHING IS A COURT. A football club plays on a pitch, an AFL club on
-     an oval, a table tennis club on a table. The sport supplies the word and a
+  /* NOT EVERYTHING IS A COURT. A rugby club plays on a pitch, an AFL club on an
+     oval, a table tennis club on a table. The sport supplies the word and a
      venue may override it, so no label assumes. */
   function surfWord(plural) {
     var v = (S._fields || []).filter(function (x) { return x.surface_word; })[0];
@@ -905,8 +1204,9 @@
 
   /* THE SPORT KNOWS HOW LONG ITS MATCH TAKES, so nobody is asked to type it.
      A sport played to a clock states its periods and its break; one played to a
-     score states how long a surface is held for. The organiser is left with the
-     one thing the sport cannot know: the gap on that surface afterwards. */
+     score states how long a court is held for. Either way the organiser is left
+     with the one thing the sport cannot know: the gap on the surface afterwards.
+     An explicit override still wins, and is only stored once it is made. */
   function matchMins() {
     var ev = (S.detail && S.detail.event) || {}, s = sportRow() || {};
     if (ev.plan_match_len) return +ev.plan_match_len;
@@ -923,19 +1223,22 @@
     if (s.slot_minutes) return 'What ' + (s.name || 'this sport') + ' is usually given';
     return 'No sport set yet, so 30 min is assumed';
   }
+  /* TIME BETWEEN MATCHES. A tournament runs matches back to back on the same
+     surface, so the default gap is 5 minutes (Grant) whatever the sport says it
+     wants between fixtures. The organiser can set any number on the Schedule. */
   function turnMins() {
-    var ev = (S.detail && S.detail.event) || {}, s = sportRow() || {};
-    return ev.plan_turnaround != null ? +ev.plan_turnaround : (+s.turnaround_minutes || 0);
+    var ev = (S.detail && S.detail.event) || {};
+    return ev.plan_turnaround != null ? +ev.plan_turnaround : 5;
   }
   function mlenEdit() { S.mlenEdit = !S.mlenEdit; renderTab(); }
   function planNow() {
-    var g = function (id, d) { var el = document.getElementById(id); var v2 = el ? String(el.value || '').trim() : ''; return v2 || d; };
-    var ml = document.getElementById('lg-mlen');
+    var g = function (id, d) { var el = document.getElementById(id); var v = el ? String(el.value || '').trim() : ''; return v || d; };
+    var ml = document.getElementById('tg-mlen');
     return { len: ml ? Math.max(5, +ml.value || matchMins()) : matchMins(),
-             start: g('lg-dstart', '09:00'), end: g('lg-dend', '21:00'),
-             days: Math.max(1, +g('lg-days', String(seasonDays())) || 1),
-             gap: Math.max(0, +g('lg-rgap', '0') || 0), rest: Math.max(0, +g('lg-rest', '0') || 0),
-             turn: Math.max(0, +g('lg-turn', String(turnMins())) || 0) };
+             start: g('tg-dstart', '09:00'), end: g('tg-dend', '21:00'),
+             days: Math.max(1, +g('tg-days', '1') || 1), gap: Math.max(0, +g('tg-rgap', '0') || 0),
+             rest: Math.max(0, +g('tg-rest', '0') || 0),
+             turn: Math.max(0, +g('tg-turn', String(turnMins())) || 0) };
   }
   function hm5(t) { return t ? String(t).slice(0, 5) : null; }
   /* THE PLAYING DAY IS A SETTING, NOT A FORM. It used to be typed into this tab
@@ -969,21 +1272,11 @@
         plan_round_gap: String(P.gap), plan_rest: String(P.rest), plan_turnaround: String(P.turn) };
       // only an explicit override is stored, so the sport keeps driving the rest
       if (S.mlenEdit) patch.plan_match_len = String(P.len);
-      sb().rpc('league_event_save', { p_id: S.eventId, p: patch });
+      sb().rpc('tourn_event_save', { p_id: S.eventId, p: patch });
     } catch (e) {}
   }
   function planSet() { S.plan = planNow(); clearTimeout(_planT); _planT = setTimeout(planSave, 700); }
-  // A league runs over a season, not an afternoon, so the day count starts at
-  // the length of the season rather than at 1.
-  function seasonDays() {
-    var ev = (S.detail && S.detail.event) || {};
-    if (!ev.starts_at || !ev.ends_at) return 1;
-    var a = new Date(ev.starts_at + 'T12:00:00Z'), b = new Date(ev.ends_at + 'T12:00:00Z');
-    var n = Math.round((b - a) / 86400000) + 1;
-    return (n > 0 && n < 400) ? n : 1;
-  }
-  function setSchedDiv(v2) { S.schedDiv = v2 || ''; renderTab(); }
-  function setSchedRound(v2) { S.schedRound = v2 || ''; renderTab(); }
+  function setSchedDiv(v) { S.schedDiv = v || ''; renderTab(); }
 
   async function renderSchedule(host) {
     /* The sport supplies the match length and the word for a playing surface,
@@ -992,47 +1285,60 @@
     await loadSports();
     var divs = S.detail.divisions || [];
     if (!S.divId && divs.length) S.divId = divs[0].id;
-    var P = S.plan || (S.plan = planFromEvent(S.detail.event, seasonDays()));
-    var fr; try { fr = await sb().rpc('lt_fields_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { fr = { error: e }; }
+    var P = S.plan || (S.plan = planFromEvent(S.detail.event, 1));
+    var fr; try { fr = await sb().rpc('lt_fields_list', { p_scope: 'tourn', p_event: S.eventId }); } catch (e) { fr = { error: e }; }
     var fields = (fr && fr.data) || []; S._fields = fields;
-    host.innerHTML = '<div id="lg-schedtop"></div><div id="lg-schedlist"><div class="lg-empty">Loading…</div></div>';
-    var top = document.getElementById('lg-schedtop'), box = document.getElementById('lg-schedlist');
+    host.innerHTML = '<div id="tg-schedtop"></div><div id="tg-schedlist"><div class="lg-empty">Loading…</div></div>';
+    var top = document.getElementById('tg-schedtop'), box = document.getElementById('tg-schedlist');
     if (!divs.length) { box.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
 
     var divIx = {}, divNm = {};
     divs.forEach(function (d, i) { divIx[d.id] = i % 10; divNm[d.id] = d.name; });
+    S._divIx = divIx; S._divNm = divNm;
 
-    // Names are per division, so they are gathered per division and merged.
-    var names = {};
+    // Names and draw labels are per division, so they are gathered per division
+    // and merged. Draw keys repeat between divisions, hence the composite key.
+    var names = {}, dnm = {}, dsort = {};
     for (var i = 0; i < divs.length; i++) {
-      var rr; try { rr = await sb().rpc('league_roster', { p_division: divs[i].id }); } catch (e) { rr = null; }
-      ((rr && rr.data) || []).forEach(function (en) { names[en.id] = en.name; });
+      var did = divs[i].id;
+      var nm = await entrantNames(did);
+      Object.keys(nm).forEach(function (k) { names[k] = nm[k]; });
+      try {
+        var dl = await sb().rpc('tourn_draws_list', { p_division: did });
+        ((dl && dl.data) || []).forEach(function (d) { dnm[did + '|' + d.key] = d.name; dsort[did + '|' + d.key] = d.sort; });
+      } catch (e) {}
     }
+    await loadEntrantsArr();
 
     var mr; try {
-      mr = await sb().from('league_fixtures')
-        .select('id,division_id,stage,round,sort,status,home_entrant,away_entrant,scheduled_at,court,field_id')
-        .eq('league_id', S.eventId);
+      mr = await sb().from('tourn_matches')
+        .select('id,division_id,stage,group_label,round,play_round,draw,slot,status,home_entrant,away_entrant,scheduled_at,court,field_id')
+        .eq('tourn_id', S.eventId);
     } catch (e) { mr = { error: e }; }
-    // A bye is not a match: nobody turns up for it and it takes no court.
-    var ms = ((mr && mr.data) || []).filter(function (m) {
-      return m.status !== 'void' && m.status !== 'bye' && String(m.stage || '') !== 'bye';
-    });
-    if (!ms.length) { box.innerHTML = '<div class="lg-empty">No fixtures yet. Generate them on the <b>Fixtures &amp; results</b> tab.</div>'; return; }
+    // A bye is not a match: nobody turns up for it and it takes no court,
+    // so it has no place on a schedule. A void one is cancelled.
+    var ms = ((mr && mr.data) || []).filter(function (m) { return m.status !== 'void' && m.status !== 'bye'; });
+    if (!ms.length) { box.innerHTML = openDrawEmpty('schedule'); return; }
+    /* Courts only matter once there is something to put on them, so this is
+       asked after the draw, not before it. */
     if (!fields.length) { box.innerHTML = '<div class="lg-empty">Add a venue and its ' + surfWord(true) + ' on the <b>Venues</b> tab and the schedule builds itself.</div>'; return; }
     if (!(S.detail.event && S.detail.event.starts_at)) {
-      box.innerHTML = '<div class="lg-empty act"><div class="t">When does the season start?</div>'
-        + '<div class="s">Set the season start on Information and every fixture is given a date, a time and ' + aSurf() + ' straight away.</div>'
-        + '<div class="row"><button class="lg-btn pri" onclick="FFPLeague.tab(\'information\')">' + ic('event') + 'Go to Information</button></div></div>';
+      box.innerHTML = '<div class="lg-empty act"><div class="t">When does it start?</div>'
+        + '<div class="s">Set the start date on Information and every match is given a time and a court straight away, '
+        + 'before a single entry is in.</div>'
+        + '<div class="row"><button class="lg-btn pri" onclick="FFPTourn.tab(\'information\')">' + ic('event') + 'Go to Information</button></div></div>';
       return;
     }
-    /* The schedule builds itself once the fixtures, the surfaces and the season
-       start all exist. Only when nothing is placed, so an edited schedule is
-       never moved. */
+    /* THE SCHEDULE BUILDS ITSELF. Once the draw exists, the courts exist and the
+       event has a start date, there is nothing left to decide: every match can
+       be given a time and a court before anybody has entered, and the names drop
+       into the slots as entrants are seeded and as groups finish. It runs ONLY
+       when nothing at all is placed, so it can never move a schedule that has
+       been edited or handed out. */
     if (!S._autoPlanned && !ms.some(function (m) { return m.scheduled_at; })) {
       S._autoPlanned = true;
       var ap; try {
-        ap = await sb().rpc('league_autoplan_all', { p_league: S.eventId, p_match_len: P.len,
+        ap = await sb().rpc('tourn_autoplan_all', { p_tourn: S.eventId, p_match_len: P.len,
           p_day_start: P.start, p_day_end: P.end, p_days: P.days, p_round_gap: P.gap,
           p_rest: P.rest, p_divisions: null, p_tz: evTz(), p_turnaround: P.turn });
       } catch (e) { ap = null; }
@@ -1042,338 +1348,292 @@
       }
     }
 
-    var offr; try { offr = await sb().rpc('lt_officials_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { offr = null; }
-    S._offs = (offr && offr.data) || [];
+    var offr = await sb().rpc('lt_officials_list', { p_scope: 'tourn', p_event: S.eventId }); S._offs = (offr && offr.data) || [];
     var moMap = {};
     try {
-      var mo = await sb().from('lt_match_officials').select('id,match_id,role,official_id')
-        .eq('scope', 'league').in('match_id', ms.map(function (m) { return m.id; }));
+      var mo = await sb().from('lt_match_officials').select('id,match_id,role,official_id').eq('scope', 'tourn').in('match_id', ms.map(function (m) { return m.id; }));
       var offName = {}; S._offs.forEach(function (o) { offName[o.id] = o.name || o.email; });
-      ((mo && mo.data) || []).forEach(function (x) {
-        (moMap[x.match_id] = moMap[x.match_id] || []).push({ id: x.id, official_id: x.official_id, role: x.role, name: offName[x.official_id] || 'Official' });
-      });
+      ((mo && mo.data) || []).forEach(function (x) { (moMap[x.match_id] = moMap[x.match_id] || []).push({ id: x.id, official_id: x.official_id, role: x.role, name: offName[x.official_id] || 'Official' }); });
     } catch (e) {}
     ms.forEach(function (m) {
       m._names = names; m._offs = moMap[m.id] || [];
+      var dk = m.division_id + '|' + m.draw;
+      m._draw = (m.draw && m.draw !== 'main') ? (dnm[dk] || '') : ''; m._dsort = dsort[dk] || 0;
       m._dix = divIx[m.division_id] || 0; m._dnm = divNm[m.division_id] || '';
     });
     S._sched = ms;
 
+    var br; try { br = await sb().from('tourn_breaks').select('id,field_id,on_date,starts_at,ends_at,label,sort').eq('tourn_id', S.eventId); } catch (e) { br = { error: e }; }
+    var breaks = ((br && br.data) || []).sort(function (a, b) { return (a.sort - b.sort) || String(a.starts_at).localeCompare(String(b.starts_at)); });
+    S._breaks = breaks;
+
     var fById = {}; fields.forEach(function (f) { fById[f.id] = f; });
+    // A match with no court and no time is not scheduled, so the schedule is
+    // not built yet. Auto-plan gives every match a slot whether or not anyone
+    // knows who is playing it, so the answer is always the one press.
     var placed = function (m) { return !!(m.scheduled_at && m.field_id && fById[m.field_id]); };
     var built = ms.length > 0 && ms.every(placed);
-    var shown = ms.filter(function (m) {
-      return (!S.schedDiv || m.division_id === S.schedDiv)
-          && (!S.schedRound || String(m.round == null ? '' : m.round) === String(S.schedRound));
-    });
-    S._rounds = []; ms.forEach(function (m) {
-      if (m.round != null && S._rounds.indexOf(m.round) < 0) S._rounds.push(m.round); });
-    S._rounds.sort(function (a, b) { return a - b; });
+    var shown = S.schedDiv ? ms.filter(function (m) { return m.division_id === S.schedDiv; }) : ms;
 
-    /* A LEAGUE IS NOT A TOURNAMENT DAY. A tournament fills several courts at
-       once for a weekend, so a court is the thing worth grouping by. A league
-       plays one or two matches on a date and runs for weeks, so grouping by
-       court gave a whole dark band to a single row. The date is the frame here;
-       the round and the surface are facts on the row, where they read fastest.
-       There is no main field in a league either, so that control is gone. */
     var days = {}, loose = [];
     shown.forEach(function (m) {
       if (!placed(m)) { loose.push(m); return; }
-      var d = dayKey(m); (days[d] = days[d] || []).push(m);
+      var d = dayKey(m); (days[d] = days[d] || {}); (days[d][m.field_id] = days[d][m.field_id] || []).push(m);
     });
+
+    // The days a break can be pinned to: the ones in play, or failing that the
+    // ones the event is planned to run for.
     var dayList = Object.keys(days).sort();
+    if (!dayList.length) {
+      var base = (S.detail.event && S.detail.event.starts_at) || evDateStr(new Date().toISOString());
+      var a = String(base).split('-');
+      for (var k = 0; k < P.days; k++) {
+        var p = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2] + k, 12, 0, 0));
+        dayList.push(p.getUTCFullYear() + '-' + pad2(p.getUTCMonth() + 1) + '-' + pad2(p.getUTCDate()));
+      }
+    }
 
-    top.innerHTML = schedTop(built, divs, P) + (built ? divKey(divs) : '');
-
-    var roundWord = function (list) {
-      var rs = []; list.forEach(function (m) { if (m.round != null && rs.indexOf(m.round) < 0) rs.push(m.round); });
-      rs.sort(function (a, b) { return a - b; });
-      if (!rs.length) return '';
-      return rs.length === 1 ? 'Round ' + rs[0] : 'Rounds ' + rs[0] + ' to ' + rs[rs.length - 1];
-    };
+    top.innerHTML = schedTop(built, divs, fields, breaks, dayList, P) + (built ? divKey(divs) : '');
 
     var html = '';
     dayList.forEach(function (d) {
-      var list = days[d];
-      list.sort(function (a, b) { return new Date(a.scheduled_at) - new Date(b.scheduled_at) || fxRank(a) - fxRank(b); });
-      var rw = roundWord(list);
-      // A fixture is created on the Fixtures tab, where the round and the
-      // entrants are chosen properly. This screen places what already exists.
-      html += '<div class="sc-ch"><b>' + esc(lgDayLong(d)) + '</b>'
-        + (rw ? '<span class="mn">' + esc(rw) + '</span>' : '')
-        + '<span class="ct">' + list.length + (list.length === 1 ? ' match, ' : ' matches, ') + esc(tzLabel()) + ' time</span></div>'
-        + list.map(function (m) { return schedRow(m); }).join('');
-    });
-
-    if (loose.length) {
-      // Nothing here has a date yet, so the round IS the order: these were
-      // generated a round at a time and that is how an organiser reads them.
-      loose.sort(function (a, b) { return fxRank(a) - fxRank(b) || (a.round || 0) - (b.round || 0) || (a.sort || 0) - (b.sort || 0); });
-      html += '<div class="sc-ch warn"><b>Not on the schedule yet</b>'
-        + '<span class="ct">' + loose.length + (loose.length === 1 ? ' match has' : ' matches have')
-        + ' no date, no time and no ' + surfWord() + '</span>'
-        + '<button class="sc-add" onclick="FFPLeague.autoplan()">' + ic('auto_awesome') + 'Auto-plan now</button></div>';
-      var lastR = '\u0000';
-      loose.forEach(function (m) {
-        var rl = fxLabel(m);
-        if (rl !== lastR) { html += '<div class="sc-rd">' + esc(rl) + '</div>'; lastR = rl; }
-        html += schedRow(m);
+      if (!days[d]) return;
+      html += '<div class="sc-day">' + esc(evDayLong(d)) + '<span class="tz">' + esc(tzLabel()) + ' time</span></div>';
+      fields.forEach(function (f) {
+        var list = days[d][f.id]; if (!list || !list.length) return;
+        list.sort(function (a, b) { return new Date(a.scheduled_at) - new Date(b.scheduled_at) || playRank(a) - playRank(b); });
+        var slot = d + '|' + f.id;
+        // Breaks that apply to this court on this day, shown where they fall so
+        // the gap in the day is not a mystery.
+        var bks = breaks.filter(function (b) { return (!b.field_id || b.field_id === f.id) && (!b.on_date || b.on_date === d); });
+        var items = list.map(function (m) { return { t: evTimeStr(m.scheduled_at), m: m }; })
+          .concat(bks.map(function (b) { return { t: hm(b.starts_at), b: b }; }))
+          .sort(function (x, y) { return String(x.t).localeCompare(String(y.t)); });
+        var mi = -1;
+        /* The bar already says which court this is, so the venue goes here
+           rather than being repeated on all twelve rows beneath it. The main
+           field is chosen once on the Venues tab, so this only reports it. */
+        html += '<div class="sc-ch"><b>' + esc(f.name) + '</b>'
+          + (f.venue ? '<span class="vn">' + esc(f.venue) + '</span>' : '')
+          + (f.is_main ? '<span class="mn">Main field</span>' : '')
+          + '<span class="ct">' + list.length + (list.length === 1 ? ' match' : ' matches') + '</span>'
+          + '<button class="sc-add" onclick="FFPTourn.addMatch(\'' + slot + '\')">' + ic('add') + 'Add match</button></div>'
+          + items.map(function (it) {
+              if (it.b) return breakBar(it.b, list.filter(function (x) { return inBreak(x) === it.b; }).length);
+              mi++; return schedRow(it.m, f.id, mi === 0, mi === list.length - 1);
+            }).join('')
+          + (S.addMatch === slot ? matchEditor() : '');
       });
-
+    });
+    if (loose.length) {
+      loose.sort(function (a, b) { return playRank(a) - playRank(b) || (a.slot || 0) - (b.slot || 0); });
+      html += '<div class="sc-day">Not on the schedule yet</div>'
+        + '<div class="sc-ch warn"><b>' + loose.length + (loose.length === 1 ? ' match has' : ' matches have') + ' no ' + surfWord() + ' and no time</b>'
+        + '<span class="ct">Auto-plan gives them one</span>'
+        + '<button class="sc-add" onclick="FFPTourn.autoplan()">' + ic('auto_awesome') + 'Auto-plan now</button></div>'
+        + loose.map(function (m) { return schedRow(m, null, true, true); }).join('')
+        + (S.addMatch === 'loose' ? matchEditor() : '');
     }
-    if (!html) html = '<div class="lg-empty">Nothing matches that filter.</div>';
-    box.innerHTML = html + (S.rb ? rbSheet() : '');
+    if (!html) html = '<div class="lg-empty">No schedule yet. Auto-plan builds every division in one go, so no two are given the same court at the same moment.</div>';
+    box.innerHTML = html + (S.rbAsk ? rebuildConfirm() : '');
   }
 
   function divKey(divs) {
     if (divs.length < 2) return '';
     return '<div class="sc-key">' + divs.map(function (d, i) {
-      return '<span class="k lg-d' + (i % 10) + '"><i></i>' + esc(d.name) + '</span>';
+      return '<span class="k tg-d' + (i % 10) + '"><i></i>' + esc(d.name) + '</span>';
     }).join('') + '</div>';
   }
 
-  function schedTop(built, divs, P) {
+  function schedTop(built, divs, fields, breaks, dayList, P) {
     var dopt = '<option value="">All divisions</option>' + divs.map(function (d) {
       return '<option value="' + d.id + '"' + (S.schedDiv === d.id ? ' selected' : '') + '>' + esc(d.name) + '</option>';
     }).join('');
-    var N = evNouns();
     return '<div class="lg-tool">'
-      + (divs.length > 1 ? '<select class="lg-sel" style="width:auto;min-width:170px" title="Filters what you are looking at. Auto-plan always builds every division." onchange="FFPLeague.setSchedDiv(this.value)">' + dopt + '</select>' : '')
-      + ((S._rounds || []).length > 1
-        ? '<select class="lg-sel" style="width:auto;min-width:130px" title="Filters what you are looking at." onchange="FFPLeague.setSchedRound(this.value)">'
-          + '<option value="">All rounds</option>'
-          + S._rounds.map(function (r) {
-              return '<option value="' + r + '"' + (String(S.schedRound) === String(r) ? ' selected' : '') + '>Round ' + r + '</option>';
-            }).join('') + '</select>' : '')
+      + (divs.length > 1 ? '<select class="lg-sel" style="width:auto;min-width:190px" title="Filters what you are looking at. Auto-plan always builds every division." onchange="FFPTourn.setSchedDiv(this.value)">' + dopt + '</select>' : '')
       + '<span class="sp"></span>'
       + (built
-        ? '<button class="lg-btn ghost" onclick="FFPLeague.rebuildAsk()">' + ic('build') + 'Rebuild</button>'
-        : '<button class="lg-btn pri" onclick="FFPLeague.autoplan()">' + ic('auto_awesome') + 'Auto-plan the season</button>')
+        ? '<button class="lg-btn ghost sc-rb" onclick="FFPTourn.rebuildAsk()">' + ic('warning') + 'Rebuild schedule</button>'
+        : '<button class="lg-btn pri" onclick="FFPTourn.autoplan()">' + ic('auto_awesome') + 'Auto-plan the tournament</button>')
       + '</div>'
       + '<div class="sc-plan">A match takes '
       + (S.mlenEdit
-          ? '<input class="lg-in" id="lg-mlen" type="number" min="5" value="' + P.len + '" oninput="FFPLeague.planSet()"> min'
+          ? '<input class="lg-in" id="tg-mlen" type="number" min="5" value="' + P.len + '" oninput="FFPTourn.planSet()"> min'
           : '<b class="mlen">' + matchMins() + ' min</b>')
-      + '<button class="sc-mlenb" onclick="FFPLeague.mlenEdit()">' + (S.mlenEdit ? 'use the sport' : 'change') + '</button>, '
-      + '<input class="lg-in" id="lg-turn" type="number" min="0" value="' + P.turn + '" oninput="FFPLeague.planSet()"> min between matches on ' + esc(aSurf()) + '</div>'
+      + '<button class="sc-mlenb" onclick="FFPTourn.mlenEdit()">' + (S.mlenEdit ? 'use the sport' : 'change') + '</button>, '
+      + '<input class="lg-in" id="tg-turn" type="number" min="0" value="' + P.turn + '" oninput="FFPTourn.planSet()"> min between matches on ' + esc(aSurf()) + '</div>'
       + '<div class="sc-why">' + esc(matchMinsWhy()) + '</div>'
       + '<div class="sc-plan">Playing '
-      + '<input class="lg-in w" id="lg-dstart" type="time" value="' + esc(P.start) + '" oninput="FFPLeague.planSet()"> to '
-      + '<input class="lg-in w" id="lg-dend" type="time" value="' + esc(P.end) + '" oninput="FFPLeague.planSet()">, '
-      + 'over <input class="lg-in" id="lg-days" type="number" min="1" value="' + P.days + '" oninput="FFPLeague.planSet()"> day(s)</div>'
-      + '<div class="sc-plan"><input class="lg-in" id="lg-rgap" type="number" min="0" value="' + P.gap + '" oninput="FFPLeague.planSet()"> min between rounds, '
-      + '<input class="lg-in" id="lg-rest" type="number" min="0" value="' + P.rest + '" oninput="FFPLeague.planSet()"> min rest between ' + N.poss + ' matches</div>';
+      + '<input class="lg-in w" id="tg-dstart" type="time" value="' + esc(P.start) + '" oninput="FFPTourn.planSet()"> to '
+      + '<input class="lg-in w" id="tg-dend" type="time" value="' + esc(P.end) + '" oninput="FFPTourn.planSet()">, '
+      + 'over <input class="lg-in" id="tg-days" type="number" min="1" value="' + P.days + '" oninput="FFPTourn.planSet()"> day(s)</div>'
+      + '<div class="sc-plan"><input class="lg-in" id="tg-rgap" type="number" min="0" value="' + P.gap + '" oninput="FFPTourn.planSet()"> min between rounds, '
+      + '<input class="lg-in" id="tg-rest" type="number" min="0" value="' + P.rest + '" oninput="FFPTourn.planSet()"> min rest between ' + nouns(curDv()).poss + ' matches</div>'
+      + breakBlock(fields, breaks, dayList);
   }
 
-  /* REBUILD IS A CHOICE, NOT A BUTTON.
-     It used to call autoplan and nothing else, so it only ever re-timed the
-     matches — the teams never moved, and the draw itself was deterministic
-     (circle method over seed/created_at), so it could not move even if asked.
-     Now it asks WHAT to rebuild:
-       times    — autoplan, the old behaviour, named honestly. Whole league.
-       redraw   — league_fixtures_redraw. New pairings. One division.
-       byes     — league_bye_order_set. Who sits out which round. One division.
-     Played rounds are never touched by either of the last two: the database
-     refuses it, and the UI locks them. */
-  function rbDivId() {
-    var ds = (S.detail && S.detail.divisions) || [];
-    if (S.rbDiv && ds.some(function (d) { return d.id === S.rbDiv; })) return S.rbDiv;
-    if (S.schedDiv) return S.schedDiv;
-    return ds.length ? ds[0].id : null;
-  }
-  function rbDivName() {
-    var ds = (S.detail && S.detail.divisions) || [], id = rbDivId();
-    var d = ds.filter(function (x) { return x.id === id; })[0];
-    return (d && d.name) || 'this division';
-  }
-  async function rbLoad() {
-    var id = rbDivId(); if (!id) { S.rbInfo = null; return; }
-    var r; try { r = await sb().rpc('league_rounds_info', { p_division: id }); } catch (e) { r = { error: e }; }
-    S.rbInfo = (r && !r.error && r.data) || { teams: 0, played_rounds: 0, rounds: [] };
-    S.rbByes = (S.rbInfo.rounds || []).map(function (x) {
-      return { round: x.round, at: x.at, played: !!x.played, bye: x.bye_entrant, name: x.bye_name || '' };
-    });
-  }
-  async function rebuildAsk() { S.rbDiv = rbDivId(); S.rb = 'menu'; await rbLoad(); renderTab(); }
-  function rebuildCancel() { S.rb = null; S.rbInfo = null; S.rbByes = null; renderTab(); }
-  async function rbSetDiv(id) { S.rbDiv = id; await rbLoad(); renderTab(); }
-  function rbGo(which) { S.rb = which; renderTab(); }
-
-  function rbSheet() {
-    if (S.rb === 'byes') return rbByesSheet();
-    if (S.rb === 'redraw') return rbRedrawSheet();
-    return rbMenuSheet();
-  }
-  function rbUnplayed() { return (S.rbByes || []).filter(function (x) { return !x.played; }); }
-  function rbSummary() {
-    var i = S.rbInfo || {}, rs = (i.rounds || []).length, pl = i.played_rounds || 0;
-    var n = (i.teams || 0) + ' teams, ' + rs + (rs === 1 ? ' round' : ' rounds');
-    if (!rs) return n + '. No fixtures yet.';
-    return n + '. ' + (pl ? (pl === 1 ? 'Round 1 has results entered.' : 'Rounds 1 to ' + pl + ' have results entered.')
-                          : 'No results entered yet.');
-  }
-  function rbRow(icon, title, body, note, action, off) {
-    return '<button class="rb-ch' + (off ? ' off' : '') + '"' + (off ? ' disabled' : ' onclick="FFPLeague.' + action + '"') + '>'
-      + ic(icon)
-      + '<span class="g"><b>' + esc(title) + '</b><span>' + esc(body) + '</span>'
-      + (note ? '<em>' + esc(note) + '</em>' : '') + '</span>'
-      + '<span class="ms go">chevron_right</span></button>';
-  }
-  function rbMenuSheet() {
-    var i = S.rbInfo || {}, ds = (S.detail && S.detail.divisions) || [];
-    var teams = i.teams || 0, rs = (i.rounds || []).length, free = rbUnplayed().length;
-    var odd = teams % 2 === 1;
-    // byes only exist with an odd field, and there must be two loose rounds to swap
-    var byesOff = !odd ? 'With ' + teams + ' teams every team plays every round, so there are no byes.'
-                : free < 2 ? 'Only ' + free + ' round' + (free === 1 ? '' : 's') + ' left without results, so there is nothing to swap.'
-                : '';
-    var redrawOff = !rs ? 'There are no fixtures to redraw yet.'
-                  : free < 2 ? 'Every round has results. Nothing can move.' : '';
-    var pl = i.played_rounds || 0;
-    return '<div class="lg-cfm"><div class="lg-cfm-in rb-wide">'
-      + '<div class="rb-t">Rebuild ' + esc(rbDivName()) + '</div>'
-      + '<div class="rb-lead">' + esc(rbSummary()) + '</div>'
-      + (ds.length > 1
-          ? '<select class="lg-sel rb-dv" onchange="FFPLeague.rbSetDiv(this.value)">'
-            + ds.map(function (d) { return '<option value="' + d.id + '"' + (d.id === rbDivId() ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join('')
-            + '</select>' : '')
-      + rbRow('schedule', 'Times and courts',
-              'Keeps every fixture exactly as it is. Each match is given a new date, a new time and ' + aSurf() + '.',
-              ds.length > 1 ? 'Covers every division at once.' : '', "autoplan(1)", false)
-      + rbRow('shuffle', 'Redraw the fixtures',
-              'New pairings. Everyone still plays everyone — who meets whom, and in which round, changes.',
-              redrawOff || (pl ? 'Rounds 1 to ' + pl + ' have results and will not be touched.' : ''),
-              "rbGo('redraw')", !!redrawOff)
-      + rbRow('event_busy', 'Byes', 'Choose which team sits out each round.',
-              byesOff, "rbGo('byes')", !!byesOff)
-      + '<div class="rb-a one"><button class="lg-btn ghost" onclick="FFPLeague.rebuildCancel()">Cancel</button></div>'
-      + '</div></div>';
-  }
-
-  /* BYES. Every round in an odd division rests exactly one team, so the list is
-     a PERMUTATION: picking a team for a round swaps it with whoever held that
-     round. It cannot be put into an invalid state, and the database re-checks
-     the same thing before it moves anything. */
-  function rbByesSheet() {
-    var rows = (S.rbByes || []).map(function (x) {
-      var opts = (x.played ? [x] : rbUnplayed()).map(function (o) {
-        return '<option value="' + o.bye + '"' + (o.bye === x.bye ? ' selected' : '') + '>' + esc(o.name) + '</option>';
+  // A court can be shut for part of a day. Breaks are saved, not typed into the
+  // planner, so a later Rebuild steps over the same ones.
+  function breakBlock(fields, breaks, dayList) {
+    var courtOpts = function (sel) {
+      return '<option value="">All ' + surfWord(true) + '</option>' + fields.map(function (f) {
+        return '<option value="' + f.id + '"' + (sel === f.id ? ' selected' : '') + '>' + esc(f.name) + '</option>';
       }).join('');
-      return '<div class="rb-by' + (x.played ? ' lock' : '') + '">'
-        + '<span class="r">Round ' + x.round + '</span>'
-        + '<span class="d">' + esc(x.at ? lgDayShort(x.at) : 'Not scheduled') + '</span>'
-        + '<select class="lg-sel"' + (x.played ? ' disabled' : ' onchange="FFPLeague.rbByePick(' + x.round + ',this.value)"') + '>' + opts + '</select>'
-        + '<span class="pl">' + (x.played ? 'Played' : '') + '</span></div>';
-    }).join('');
-    return '<div class="lg-cfm"><div class="lg-cfm-in rb-wide">'
-      + '<div class="rb-t">Who sits out each round?</div>'
-      + '<div class="rb-lead">' + esc(rbDivName()) + ', ' + ((S.rbInfo && S.rbInfo.teams) || 0)
-      + ' teams. With an odd number of teams one team rests each round, and over the season each team rests once.</div>'
-      + rows
-      + '<div class="rb-note">' + ic('swap_horiz')
-      + '<span>Pick a team for a round and it swaps with whoever had that round, so every team still rests exactly once. Rounds with results are locked.</span></div>'
-      + '<div class="rb-a"><button class="lg-btn ghost" onclick="FFPLeague.rbGo(\'menu\')">Back</button>'
-      + '<button class="lg-btn pri" onclick="FFPLeague.rbByesSave()">' + ic('check') + 'Save byes</button></div>'
-      + '</div></div>';
+    };
+    var dayOpts = function (sel) {
+      return '<option value="">Every day</option>' + dayList.map(function (d) {
+        return '<option value="' + d + '"' + (sel === d ? ' selected' : '') + '>' + esc(dayShortYmd(d)) + '</option>';
+      }).join('');
+    };
+    return '<div class="sc-brk"><span class="lb">Breaks, when a ' + surfWord() + ' is not in play</span>'
+      + breaks.map(function (b) {
+          return '<span class="b" data-id="' + b.id + '">'
+            + '<select class="lg-sel bk-f" onchange="FFPTourn.breakSave(\'' + b.id + '\')">' + courtOpts(b.field_id) + '</select>'
+            + '<select class="lg-sel dy bk-d" onchange="FFPTourn.breakSave(\'' + b.id + '\')">' + dayOpts(b.on_date) + '</select>'
+            + '<input class="lg-in w bk-s" type="time" value="' + hm(b.starts_at) + '" onchange="FFPTourn.breakSave(\'' + b.id + '\')"><em>to</em>'
+            + '<input class="lg-in w bk-e" type="time" value="' + hm(b.ends_at) + '" onchange="FFPTourn.breakSave(\'' + b.id + '\')">'
+            + '<input class="lg-in nm bk-l" value="' + esc(b.label || '') + '" placeholder="What for" onchange="FFPTourn.breakSave(\'' + b.id + '\')">'
+            + '<button class="sc-ic" title="Remove break" onclick="FFPTourn.breakRemove(\'' + b.id + '\')">' + ic('close') + '</button></span>';
+        }).join('')
+      + '<button class="lg-btn ghostb sc-abk" onclick="FFPTourn.breakAdd()">' + ic('add') + 'Add break</button>'
+      + breakWarn() + '</div>';
   }
-  function rbByePick(round, entrantId) {
-    var list = S.rbByes || [];
-    var target = list.filter(function (x) { return x.round === round; })[0];
-    var holder = list.filter(function (x) { return x.bye === entrantId && !x.played; })[0];
-    if (!target || !holder || target === holder) { renderTab(); return; }
-    var b = target.bye, n = target.name;
-    target.bye = holder.bye; target.name = holder.name;
-    holder.bye = b; holder.name = n;
+  /* Said once, where the breaks are edited, so it is read even by an organiser
+     who never scrolls down to the court it happened on. */
+  function breakWarn() {
+    var n = breakClashes().length;
+    if (!n) return '';
+    return '<div class="sc-brkwarn">' + ic('warning')
+      + '<b>' + n + (n === 1 ? ' match is' : ' matches are') + ' booked inside a break</b>'
+      + '<i>They cannot be played, the ' + surfWord() + ' is closed</i><span class="sp"></span>'
+      + '<button onclick="FFPTourn.breaksMoveOut()">Move them out</button></div>';
+  }
+  /* A MATCH INSIDE A BREAK IS A CLASH THE ORGANISER HAS TO SEE. The surface is
+     shut in that window, so a match booked across it cannot be played. Adding a
+     break moves what it displaces, but a time typed by hand afterwards lands
+     straight back in one - so this is checked every time the row is drawn,
+     never once at save time. */
+  function hmMins(t) { var a = String(t || '').split(':'); return ((+a[0]) || 0) * 60 + ((+a[1]) || 0); }
+  function inBreak(m) {
+    if (!m || !m.scheduled_at) return null;
+    var d = evDateStr(m.scheduled_at), t = evTimeStr(m.scheduled_at);
+    if (!d || !t) return null;
+    var s0 = hmMins(t), e0 = s0 + matchMins();
+    return (S._breaks || []).filter(function (b) {
+      return (!b.field_id || b.field_id === m.field_id)
+          && (!b.on_date || b.on_date === d)
+          && hmMins(b.starts_at) < e0 && hmMins(b.ends_at) > s0;
+    })[0] || null;
+  }
+  function breakClashes() { return (S._sched || []).filter(function (m) { return !!inBreak(m); }); }
+  /* The row carries its own time and the bar above carries the break's, so the
+     row only has to name WHICH break - and "the Break break" is not a name. */
+  function breakName(b) {
+    var l = String((b || {}).label || '').trim();
+    return (!l || l.toLowerCase() === 'break') ? 'a break' : 'the ' + l + ' break';
+  }
+  function breakBar(b, n) {
+    n = n || 0;
+    return '<div class="sc-bar' + (n ? ' clash' : '') + '">' + ic(n ? 'warning' : 'pause')
+      + '<b>' + esc(b.label || 'Break') + '</b>'
+      + '<span>' + hm(b.starts_at) + ' to ' + hm(b.ends_at) + ', ' + surfWord() + ' closed</span>'
+      + (n ? '<span><b>' + n + (n === 1 ? ' match is' : ' matches are') + ' still booked in it</b></span>'
+           + '<button class="fix" onclick="FFPTourn.breaksMoveOut()">Move them out</button>' : '')
+      + '</div>';
+  }
+  async function breakAdd() {
+    var r; try { r = await sb().from('tourn_breaks').insert({ tourn_id: S.eventId, starts_at: '13:00', ends_at: '14:00', label: 'Break', sort: (S._breaks || []).length }); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not add the break', 'error'); return; }
+    /* A break that changes nothing is just a drawing. Anything already booked
+       inside it comes out the moment it is added - the same as saving one. */
+    S._breaks = null; await applyBreaks(true);
     renderTab();
   }
-  async function rbByesSave() {
-    var free = rbUnplayed();
-    if (free.length < 2) { toast('Nothing to change', 'error'); return; }
+  // Saving a break is not enough on its own: anything already booked inside it
+  // has to come out. Only the matches a break displaces move, and the ones
+  // behind them follow, so the order of play is kept. Courts without a break
+  // are never touched.
+  async function applyBreaks(said) {
+    var P = S.plan || {};
     var r; try {
-      r = await sb().rpc('league_bye_order_set', { p_division: rbDivId(),
-        p_rounds: free.map(function (x) { return x.round; }),
-        p_byes: free.map(function (x) { return x.bye; }) });
+      r = await sb().rpc('tourn_breaks_apply', { p_tourn: S.eventId, p_match_len: P.len || 30, p_tz: evTz(), p_turnaround: P.turn || 0 });
     } catch (e) { r = { error: e }; }
-    if (r && r.error) { toast(/played/.test(r.error.message || '') ? 'A round with results cannot move' : 'Could not save the byes', 'error'); return; }
-    S.rb = null; S.rbInfo = null; S.rbByes = null;
-    toast('Byes updated', 'success'); refreshDetail();
+    if (r && r.error) { toast('Breaks saved, but the matches could not be moved', 'error'); return 0; }
+    var n = r.data || 0;
+    if (said) toast(n ? n + (n === 1 ? ' match moved out of the break' : ' matches moved out of the breaks') : 'No match was inside a break', 'success');
+    return n;
+  }
+  // Moves what a break displaces and everything behind it, keeping the order
+  // of play. A match already played or in progress never moves.
+  async function breaksMoveOut() { await applyBreaks(true); renderTab(); }
+  async function breakSave(id) {
+    var row = document.querySelector('.sc-brk .b[data-id="' + id + '"]'); if (!row) return;
+    var s = row.querySelector('.bk-s').value, e2 = row.querySelector('.bk-e').value;
+    if (!s || !e2 || e2 <= s) { toast('A break has to end after it starts', 'error'); renderTab(); return; }
+    var patch = { field_id: row.querySelector('.bk-f').value || null, on_date: row.querySelector('.bk-d').value || null,
+                  starts_at: s, ends_at: e2, label: row.querySelector('.bk-l').value || null };
+    var r; try { r = await sb().from('tourn_breaks').update(patch).eq('id', id); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not save the break', 'error'); return; }
+    await applyBreaks(true); renderTab();
+  }
+  async function breakRemove(id) {
+    var r; try { r = await sb().from('tourn_breaks').delete().eq('id', id); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not remove it', 'error'); return; }
+    // Matches are not pulled back into the freed time: a schedule people have
+    // already been given only ever moves when the organiser asks for it.
+    renderTab();
   }
 
-  function rbRedrawSheet() {
-    var i = S.rbInfo || {}, pl = i.played_rounds || 0, rs = (i.rounds || []).length;
-    // Only an ODD field rests anybody, so an even division must not be told its
-    // resting teams will change. And the noun opens a sentence, so it is capitalised.
-    var odd = ((i.teams || 0) % 2) === 1;
-    var who = evNouns().many; who = who.charAt(0).toUpperCase() + who.slice(1);
-    var body = (pl
-      ? 'Rounds ' + (pl + 1) + ' to ' + rs + ' get new pairings'
-        + (odd ? ', and the teams resting in those rounds change' : '') + '. '
-      : 'Every round gets new pairings'
-        + (odd ? ', and the team resting in each round changes' : '') + '. ')
-      + who + ' and officials already told about ' + (pl ? 'those' : 'these')
-      + ' matches will need telling again.';
+  function rebuildAsk() { S.rbAsk = true; renderTab(); }
+  function rebuildCancel() { S.rbAsk = false; renderTab(); }
+  function rebuildConfirm() {
     return '<div class="lg-cfm"><div class="lg-cfm-in">'
       + '<span class="ms lg-cfm-ic" style="color:var(--ffp-gold)">warning</span>'
-      + '<div class="lg-cfm-t">Redraw ' + esc(rbDivName()) + '?</div>'
-      + '<div class="lg-cfm-b">' + esc(body) + '</div>'
-      + (pl ? '<div class="rb-kept">' + ic('lock') + '<span>Rounds 1 to ' + pl
-              + ' have results entered. They are not touched.</span></div>' : '')
-      + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPLeague.rbGo(\'menu\')">Cancel</button>'
-      + '<button class="lg-btn pri" onclick="FFPLeague.rbRedraw()">Yes, redraw</button></div></div></div>';
+      + '<div class="lg-cfm-t">Rebuild the whole schedule?</div>'
+      + '<div class="lg-cfm-b">This replans every match in every division and will move matches that ' + nouns(curDv()).many + ' and officials have already been given times for. Results already entered are kept.</div>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPTourn.rebuildCancel()">Cancel</button>'
+      + '<button class="lg-btn pri" onclick="FFPTourn.autoplan(1)">Yes, rebuild</button></div></div></div>';
   }
-  async function rbRedraw() {
-    var seed = Math.floor(Math.random() * 1000000000);
-    var r; try { r = await sb().rpc('league_fixtures_redraw', { p_division: rbDivId(), p_seed: seed }); } catch (e) { r = { error: e }; }
-    if (r && r.error) { toast('Could not redraw', 'error'); return; }
-    var d = (r && r.data) || {};
-    S.rb = null; S.rbInfo = null; S.rbByes = null;
-    toast(d.mode === 'partial'
-      ? (d.moved || 0) + ' matches moved, ' + (d.kept || 0) + ' played round' + ((d.kept || 0) === 1 ? '' : 's') + ' kept'
-      : (d.created || 0) + ' fixtures redrawn', 'success');
-    refreshDetail();
-  }
-  function lgDayShort(iso) {
-    var ymd = lgDateStr(iso); var a = String(ymd).split('-'); if (a.length !== 3) return '';
-    var p = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2], 12, 0, 0));
-    return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][p.getUTCDay()] + ' ' + (+a[2]) + ' ' + MON[+a[1] - 1];
-  }
-
-  function schedRow(m) {
+  function schedRow(m, fieldId, isFirst, isLast) {
     var names = m._names || {};
-    var tv = lgTimeStr(m.scheduled_at);
-    var dv = lgDateStr(m.scheduled_at) || ((S.detail.event && S.detail.event.starts_at) || '');
+    var tv = m.scheduled_at ? evTimeStr(m.scheduled_at) : '';
+    var dv = (m.scheduled_at ? evDateStr(m.scheduled_at) : '') || ((S.detail.event && S.detail.event.starts_at) || '');
     var open = S.schedOpen === m.id;
     var offTxt = (m._offs || []).map(function (o) {
       return ((SLOT_LABEL[o.role] || o.role || '') + ' ' + o.name).trim(); }).join(', ');
-    /* WHO PLAYS WHO, IN WHAT ROUND. That is the line an organiser is looking
-       for, so it leads. The division and round qualify it on the next line, and
-       the officials get a line of their own rather than trailing off the end of
-       that one. Where it is played is stated, venue over surface; changing it
-       is a decision and belongs in the menu with the rest of them. */
-    var sub = (m._dnm ? m._dnm + ', ' : '') + fxLabel(m);
+    /* One court hosts several divisions in a day, so the row says which this
+       is, and the officials get a line of their own rather than trailing off
+       the end of it. Moving the match to another court is a decision and lives
+       in the menu; a row already sits under the bar that names its court, so
+       only a match with no court yet says where it is. */
+    var sub = (m._dnm ? m._dnm + ', ' : '') + matchLabel(m);
+    var bk = inBreak(m);
     var fld = (S._fields || []).filter(function (f) { return f.id === m.field_id; })[0] || null;
-    var place = fld
-      ? '<div class="v"><b>' + esc(fld.venue || 'Venue not set') + '</b><span>' + esc(fld.name || '') + '</span></div>'
-      : '<div class="v none"><b>No ' + surfWord() + ' yet</b><span>Set it in the menu</span></div>';
-    var row = '<div class="sc-m lg-d' + (m._dix || 0) + (open ? ' open' : '') + '" data-id="' + m.id + '">'
-      + '<input class="lg-in t st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + m.id + '\')">'
+    var place = fieldId ? ''
+      : (fld ? '<div class="v"><b>' + esc(fld.venue || 'Venue not set') + '</b><span>' + esc(fld.name || '') + '</span></div>'
+             : '<div class="v none"><b>No ' + surfWord() + ' yet</b><span>Set it in the menu</span></div>');
+    var row = '<div class="sc-m tg-d' + (m._dix || 0) + (open ? ' open' : '') + '" data-id="' + m.id + '">'
+      + '<input class="lg-in t st-t" type="time" value="' + tv + '" onchange="FFPTourn.schedSet(\'' + m.id + '\')">'
       + '<div class="g"><b>' + esc(names[m.home_entrant] || 'TBD') + ' v ' + esc(names[m.away_entrant] || 'TBD') + '</b>'
       + '<span>' + esc(sub) + '</span>'
+      + (bk ? '<span class="clash">Inside ' + esc(breakName(bk)) + '</span>' : '')
       + (offTxt ? '<span class="off">' + esc(offTxt) + '</span>' : '') + '</div>'
       + place
-      + '<button class="sc-ic" title="More" onclick="FFPLeague.schedToggle(\'' + m.id + '\')">' + ic(open ? 'expand_less' : 'more_horiz') + '</button>'
+      + '<button class="sc-ic" title="Earlier" ' + (isFirst ? 'disabled' : '') + ' onclick="FFPTourn.schedMove(\'' + m.id + '\',-1)">' + ic('arrow_upward') + '</button>'
+      + '<button class="sc-ic" title="Later" ' + (isLast ? 'disabled' : '') + ' onclick="FFPTourn.schedMove(\'' + m.id + '\',1)">' + ic('arrow_downward') + '</button>'
+      + '<button class="sc-ic" title="More" onclick="FFPTourn.schedToggle(\'' + m.id + '\')">' + ic(open ? 'expand_less' : 'more_horiz') + '</button>'
       + '</div>';
     if (!open) return row;
     var roleOpts = '<option value="">Role…</option>' + ROLES.map(function (r) { return '<option>' + r + '</option>'; }).join('');
     var offOpts = '<option value="">Official…</option>' + (S._offs || []).map(function (x) { return '<option value="' + x.id + '">' + esc(x.name || x.email) + '</option>'; }).join('');
     var tags = (m._offs || []).filter(function (o) { return SLOTS.indexOf(o.role) < 0; }).map(function (o) {
-      return '<div class="lg-offtag"><span class="role">' + esc(o.role || 'Official') + '</span><span class="nm">' + esc(o.name) + '</span><span class="sp"></span><span class="ms x" onclick="FFPLeague.offRemove(\'' + o.id + '\')">close</span></div>';
+      return '<div class="lg-offtag"><span class="role">' + esc(o.role || 'Official') + '</span><span class="nm">' + esc(o.name) + '</span><span class="sp"></span><span class="ms x" onclick="FFPTourn.offRemove(\'' + o.id + '\')">close</span></div>';
     }).join('');
     return row + '<div class="sc-more" data-id="' + m.id + '">'
-      + '<span class="lg-lab" style="margin:0">Day</span><input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPLeague.schedSet(\'' + m.id + '\')">'
+      + '<span class="lg-lab" style="margin:0">Day</span><input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPTourn.schedSet(\'' + m.id + '\')">'
       + '<span class="lg-lab" style="margin:0">' + Surf() + '</span>'
-      + '<select class="lg-sel st-f" onchange="FFPLeague.schedSet(\'' + m.id + '\')">' + surfaceOpts(S._fields, m.field_id) + '</select>'
-      + '<button class="lg-btn sm" onclick="FFPLeague.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + 'Match centre</button>'
+      + '<select class="lg-sel st-f" onchange="FFPTourn.schedSet(\'' + m.id + '\')">' + surfaceOpts(S._fields, m.field_id) + '</select>'
+      + '<button class="lg-btn sm" onclick="FFPTourn.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + 'Match centre</button>'
       + '<span class="sp"></span>' + (tags ? '<div class="lg-offlist">' + tags + '</div>' : '')
       + offSlot(m, 'referee', 'Referee') + offSlot(m, 'ar1', 'Assistant 1') + offSlot(m, 'ar2', 'Assistant 2')
       + '</div>';
@@ -1390,7 +1650,7 @@
     var cur = (m._offs || []).filter(function (o) { return o.role === role; })[0];
     var sel = cur ? cur.official_id : '';
     return '<span class="lg-lab" style="margin:0">' + label + '</span>'
-      + '<select class="lg-sel st-off" data-role="' + role + '" onchange="FFPLeague.offSet(\'' + m.id + '\')">'
+      + '<select class="lg-sel st-off" data-role="' + role + '" onchange="FFPTourn.offSet(\'' + m.id + '\')">'
       + '<option value="">Not set</option>'
       + (S._offs || []).map(function (x) {
           return '<option value="' + x.id + '"' + (x.id === sel ? ' selected' : '') + '>'
@@ -1405,7 +1665,7 @@
     };
     var r;
     try {
-      r = await sb().rpc('lt_match_officials_set', { p_scope: 'league', p_match: matchId,
+      r = await sb().rpc('lt_match_officials_set', { p_scope: 'tourn', p_match: matchId,
             p_referee: pick('referee'), p_ar1: pick('ar1'), p_ar2: pick('ar2') });
     } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not save the officials', 'error'); return; }
@@ -1413,18 +1673,79 @@
   }
 
   function schedToggle(id) { S.schedOpen = (S.schedOpen === id) ? null : id; renderTab(); }
-
-
-  /* One press plans every division at once, so two divisions cannot be handed
-     the same surface at the same moment. Pressed once; after that the grid is
-     edited by hand and replanning has to be asked for. */
+  // Reordering swaps this match's time with its neighbour on the same court,
+  // so the order of play changes without anyone typing a time.
+  async function schedMove(id, dir) {
+    var all = S._sched || [];
+    var me = all.find(function (x) { return x.id === id; }); if (!me || !me.scheduled_at) return;
+    var mine = all.filter(function (x) { return x.field_id === me.field_id && x.scheduled_at && dayKey(x) === dayKey(me); })
+      .sort(function (a, b) { return new Date(a.scheduled_at) - new Date(b.scheduled_at); });
+    var i = mine.findIndex(function (x) { return x.id === id; });
+    var j = i + dir;
+    if (i < 0 || j < 0 || j >= mine.length) return;
+    var other = mine[j], a = me.scheduled_at, b = other.scheduled_at;
+    try {
+      await sb().rpc('lt_match_schedule', { p_scope: 'tourn', p_match: me.id, p_when: b, p_field: me.field_id, p_court: null, p_official: null });
+      await sb().rpc('lt_match_schedule', { p_scope: 'tourn', p_match: other.id, p_when: a, p_field: other.field_id, p_court: null, p_official: null });
+    } catch (e) { toast('Could not move it', 'error'); return; }
+    me.scheduled_at = b; other.scheduled_at = a;
+    renderTab();
+  }
+  /* The main field is a property of the venue, not of a day's grid, and the
+     plan needs to know it BEFORE the draw is made so the final is sent there.
+     So it is set on the Venues tab and only reported on the schedule. */
+  async function setMainCourt(fieldId, on) {
+    try { await sb().rpc('lt_field_set_main', { p_id: fieldId, p_on: on !== false }); }
+    catch (e) { toast('Could not set the main field', 'error'); return; }
+    toast(on === false ? 'No main field set' : 'Main field set, the final will be played there', 'success');
+    renderTab();
+  }
+  function matchEditor() {
+    // The schedule shows every division at once, so an added match has to say
+    // which division it belongs to rather than inherit whichever was last open.
+    var divs = (S.detail && S.detail.divisions) || [];
+    var dsel = divs.length < 2 ? '' :
+      '<select class="lg-sel" style="flex:0 0 170px;min-width:0" onchange="FFPTourn.setAddDiv(this.value)">'
+      + divs.map(function (d) { return '<option value="' + d.id + '"' + (d.id === S.divId ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join('')
+      + '</select>';
+    return '<div class="lg-edit lg-maed">' + dsel + '<select class="lg-sel" id="tg-mm-h" style="flex:1;min-width:150px">' + entOpts(null) + '</select>'
+      + '<span style="font-weight:800;color:#8a99a6">v</span><select class="lg-sel" id="tg-mm-a" style="flex:1;min-width:150px">' + entOpts(null) + '</select>'
+      + '<input class="lg-in" id="tg-mm-r" type="number" placeholder="Round" value="1" style="width:90px">'
+      + '<button class="lg-btn pri" onclick="FFPTourn.saveMatch()">' + ic('check') + 'Add</button>'
+      + '<button class="lg-btn ghost" onclick="FFPTourn.cancelMatch()">Cancel</button></div>';
+  }
+  function addMatch(slot) { S.addMatch = slot || 'loose'; renderTab(); }
+  // Changing the division changes who can be picked, so the roster is reloaded.
+  async function setAddDiv(id) { S.divId = id; await loadEntrantsArr(); renderTab(); }
+  function cancelMatch() { S.addMatch = null; renderTab(); }
+  async function saveMatch() {
+    var h = (document.getElementById('tg-mm-h') || {}).value || null, a = (document.getElementById('tg-mm-a') || {}).value || null, rd = +((document.getElementById('tg-mm-r') || {}).value) || 1;
+    if (!h || !a || h === a) { toast('Pick two different ' + nouns(curDv()).many, 'error'); return; }
+    var r; try { r = await sb().rpc('lt_match_add', { p_scope: 'tourn', p_division: S.divId, p_round: rd, p_home: h, p_away: a, p_when: null, p_field: null, p_stage: 'bracket' }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not add', 'error'); return; }
+    // Added from a court means it belongs on that court, after what is already on it.
+    var slot = String(S.addMatch || ''), newId = (r.data && r.data.id) || r.data;
+    if (slot.indexOf('|') > -1 && newId) {
+      var day = slot.split('|')[0], fid = slot.split('|')[1];
+      var same = (S._sched || []).filter(function (x) { return x.field_id === fid && x.scheduled_at && evDateStr(x.scheduled_at) === day; });
+      var lastMs = same.reduce(function (acc, x) { return Math.max(acc, new Date(x.scheduled_at).getTime()); }, 0);
+      var len = Math.max(5, +((document.getElementById('tg-mlen') || {}).value) || 30);
+      var when = lastMs ? new Date(lastMs + len * 60000).toISOString() : evIso(day, '09:00');
+      try { await sb().rpc('lt_match_schedule', { p_scope: 'tourn', p_match: newId, p_when: when, p_field: fid, p_court: null, p_official: null }); } catch (e) {}
+    }
+    S.addMatch = null; toast('Match added', 'success'); renderTab();
+  }
+  // One press builds every division at once, so two divisions cannot be handed
+  // the same court at the same moment, and nothing is left waiting for a court
+  // that another division is quietly sitting on. Pressed once; after that the
+  // grid is edited by hand and replanning has to be asked for.
   async function autoplan(isRebuild) {
     var P = planNow(); S.plan = P;
-    var args = { p_league: S.eventId, p_match_len: P.len, p_day_start: P.start, p_day_end: P.end,
+    var args = { p_tourn: S.eventId, p_match_len: P.len, p_day_start: P.start, p_day_end: P.end,
                  p_days: P.days, p_round_gap: P.gap, p_rest: P.rest, p_divisions: null,
-      p_tz: evTz(), p_turnaround: P.turn };
-    var r; try { r = await sb().rpc('league_autoplan_all', args); } catch (e) { r = { error: e }; }
-    S.rb = null; S.rbInfo = null; S.rbByes = null;
+                 p_tz: evTz(), p_turnaround: P.turn };
+    var r; try { r = await sb().rpc('tourn_autoplan_all', args); } catch (e) { r = { error: e }; }
+    S.rbAsk = false;
     if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add ' + aSurf() + ' first (Venues tab)' : 'Could not plan', 'error'); renderTab(); return; }
     var d = r.data || {}, n = d.placed || 0, over = d.over || 0;
     toast(n + (n === 1 ? ' match planned' : ' matches planned') + (over ? ', ' + over + ' ran past the last day' : ''), over ? 'error' : 'success');
@@ -1433,64 +1754,120 @@
   async function schedSet(id) {
     var row = document.querySelector('.sc-m[data-id="' + id + '"]'); if (!row) return;
     var more = document.querySelector('.sc-more[data-id="' + id + '"]');
-    var dv = ((more && more.querySelector('.st-d')) || {}).value;
-    var tv = row.querySelector('.st-t').value;
-    // the surface lives in the menu now, so a closed menu means "leave it alone"
+    var dv = ((more && more.querySelector('.st-d')) || {}).value, tv = row.querySelector('.st-t').value;
+    // the court lives in the menu now, so a closed menu means "leave it alone"
     var fsel = more && more.querySelector('.st-f');
-    var cur = (S._sched || []).filter(function (x) { return x.id === id; })[0] || {};
-    var fid = fsel ? (fsel.value || null) : (cur.field_id || null);
-    var base = dv || (S.detail.event && S.detail.event.starts_at) || lgDateStr(new Date().toISOString());
-    var when = (tv || dv) ? lgIso(base, tv || '00:00') : null;
-    await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null });
-    toast('Rescheduled', 'success'); renderTab();
+    var cur0 = (S._sched || []).filter(function (x) { return x.id === id; })[0] || {};
+    var fid = fsel ? (fsel.value || null) : (cur0.field_id || null);
+    var base = dv || (S.detail.event && S.detail.event.starts_at) || evDateStr(new Date().toISOString());
+    var when = (tv || dv) ? evIso(base, tv || '00:00') : null;
+    await sb().rpc('lt_match_schedule', { p_scope: 'tourn', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null });
+    // typed straight into a break: say so now, not when someone turns up to play
+    var bk = inBreak({ scheduled_at: when, field_id: fid });
+    if (bk) toast('Rescheduled, but that is inside ' + breakName(bk), 'error');
+    else toast('Rescheduled', 'success');
+    renderTab();
   }
   async function offAdd(matchId) {
     var row = document.querySelector('.sc-more[data-id="' + matchId + '"]'); if (!row) return;
     var role = (row.querySelector('.a-role') || {}).value || null, off = (row.querySelector('.a-off') || {}).value || null;
     if (!off) { toast('Pick an official', 'error'); return; }
-    var r; try { r = await sb().rpc('lt_match_official_add', { p_scope: 'league', p_match: matchId, p_official: off, p_role: role }); } catch (e) { r = { error: e }; }
+    var r; try { r = await sb().rpc('lt_match_official_add', { p_scope: 'tourn', p_match: matchId, p_official: off, p_role: role }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not assign', 'error'); return; } toast('Assigned', 'success'); renderTab();
   }
   async function offRemove(id) { await sb().rpc('lt_match_official_remove', { p_id: id }); renderTab(); }
 
-  // ---------- DETAILS ----------
+  // ---------- INFORMATION (what members see in the app) ----------
   async function renderInformation(host) {
-    var ev = S.detail.event || {}; await loadSports(); await taxReady();
+    var ev = S.detail.event || {}; await taxReady();
     host.innerHTML =
-      '<div class="lg-fld"><div class="lg-lab">Status</div><div class="lg-seg lg-status4" id="lg-status">' + statusSegBtns(ev.status, 'FFPLeague') + '</div></div>'
-      + '<div class="lg-fld"><div class="lg-lab">League name</div><input class="lg-in" id="lg-name" value="' + esc(ev.name) + '"></div>'
-      + '<div class="lg-fld"><div class="lg-lab">Logo</div><div class="lg-logo" onclick="FFPLeague.pickImg(\'logo\')" style="' + (ev.logo_url ? 'background-image:url(\'' + esc(ev.logo_url) + '\')' : '') + '">' + (ev.logo_url ? '' : '<span class="ms">add_photo_alternate</span><span>Logo</span>') + '</div></div>'
-      + '<div class="lg-fld"><div class="lg-lab">Banner (16:9, as shown in the app)</div><div class="lg-banner16" onclick="FFPLeague.pickImg(\'cover\')" style="' + (ev.cover_url ? 'background-image:url(\'' + esc(ev.cover_url) + '\')' : '') + '">' + (ev.cover_url ? '' : '<span class="ms">image</span><span>Add banner</span>') + '</div></div>'
-      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">City</div><input class="lg-in" id="lg-city" list="lg-cityl" value="' + esc(ev.city || '') + '"><datalist id="lg-cityl">' + dlOpts(cityNames()) + '</datalist></div><div class="lg-fld"><div class="lg-lab">Country</div><input class="lg-in" id="lg-country" list="lg-cntl" value="' + esc(ev.country || '') + '"><datalist id="lg-cntl">' + dlOpts(countryNames()) + '</datalist></div></div>'
-      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Season starts</div><input class="lg-in" id="lg-start" type="date" value="' + esc(ev.starts_at || '') + '"></div><div class="lg-fld"><div class="lg-lab">Season ends</div><input class="lg-in" id="lg-end" type="date" value="' + esc(ev.ends_at || '') + '"></div></div>'
-      + '<div class="lg-fld"><div class="lg-lab">About</div><textarea class="lg-in" id="lg-desc" rows="3">' + esc(ev.description || '') + '</textarea></div>'
-      + '<div class="lg-fld"><div class="lg-lab">Rules</div><textarea class="lg-in" id="lg-rules" rows="3">' + esc(ev.rules || '') + '</textarea>'
-      +   '<div id="lg-pdfwrap">' + rulesPdfHtml(ev) + '</div></div>'
-      + '<button class="lg-btn pri" onclick="FFPLeague.saveDetails()">' + ic('check') + 'Save</button>'
+      '<div class="lg-fld"><div class="lg-lab">Status</div><div class="lg-seg lg-status4" id="tg-status">' + statusSegBtns(ev.status, 'FFPTourn') + '</div></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Tournament name</div><input class="lg-in" id="tg-name" value="' + esc(ev.name) + '"></div>'
+      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Logo</div><div class="lg-logo" onclick="FFPTourn.pickImg(\'logo\')" style="' + (ev.logo_url ? 'background-image:url(\'' + esc(ev.logo_url) + '\')' : '') + '">' + (ev.logo_url ? '' : '<span class="ms">add_photo_alternate</span><span>Logo</span>') + '</div></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Banner, 16:9, as shown in the app</div><div class="lg-banner16" onclick="FFPTourn.pickImg(\'cover\')" style="' + (ev.cover_url ? 'background-image:url(\'' + esc(ev.cover_url) + '\')' : '') + '">' + (ev.cover_url ? '' : '<span class="ms">image</span><span>Add banner</span>') + '</div></div></div>'
+      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">City</div><input class="lg-in" id="tg-city" list="tg-cityl" value="' + esc(ev.city || '') + '"><datalist id="tg-cityl">' + dlOpts(cityNames()) + '</datalist></div><div class="lg-fld"><div class="lg-lab">Country</div><input class="lg-in" id="tg-country" list="tg-cntl" value="' + esc(ev.country || '') + '"><datalist id="tg-cntl">' + dlOpts(countryNames()) + '</datalist></div></div>'
+      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Starts</div><input class="lg-in" id="tg-start" type="date" value="' + esc(ev.starts_at || '') + '"></div><div class="lg-fld"><div class="lg-lab">Ends</div><input class="lg-in" id="tg-end" type="date" value="' + esc(ev.ends_at || '') + '"></div></div>'
+      // Sign up: when entries open and close, what it costs, and how they pay.
+      // reg_opens_at / reg_closes_at are timestamps, so date and time are two
+      // fields and joinDT() puts them back together on save.
+      + '<div class="lg-fld"><div class="lg-lab">Sign up opens</div><div class="lg-2">'
+      +   '<input class="lg-in" id="tg-ro-d" type="date" value="' + esc(dPart(ev.reg_opens_at)) + '">'
+      +   '<input class="lg-in" id="tg-ro-t" type="time" value="' + esc(tPart(ev.reg_opens_at)) + '"></div></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Sign up closes</div><div class="lg-2">'
+      +   '<input class="lg-in" id="tg-rc-d" type="date" value="' + esc(dPart(ev.reg_closes_at)) + '">'
+      +   '<input class="lg-in" id="tg-rc-t" type="time" value="' + esc(tPart(ev.reg_closes_at)) + '"></div></div>'
+      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Entry fee, per entry</div><input class="lg-in" id="tg-fee" type="number" min="0" step="0.01" value="' + (ev.entry_fee != null ? esc(ev.entry_fee) : '') + '"></div>'
+      +   '<div class="lg-fld"><div class="lg-lab">Currency</div><input class="lg-in" id="tg-cur" maxlength="3" placeholder="AED" value="' + esc(ev.currency || '') + '"></div></div>'
+      + '<div class="lg-fld"><div class="lg-lab">How to pay <span style="font-weight:500;color:#8a99a8;">\u2014 shown after they sign up</span></div>'
+      +   '<textarea class="lg-in" id="tg-payhow" rows="2" placeholder="Bank transfer to\u2026 , or pay on the day at the desk">' + esc(ev.pay_instructions || '') + '</textarea></div>'
+      + '<div class="lg-fld"><div class="lg-lab">About</div><textarea class="lg-in" id="tg-desc" rows="3">' + esc(ev.description || '') + '</textarea></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Rules</div><textarea class="lg-in" id="tg-rules" rows="3">' + esc(ev.rules || '') + '</textarea>'
+      +   '<div id="tg-pdfwrap">' + rulesPdfHtml(ev) + '</div></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Live stream URL <span style="font-weight:500;color:#8a99a8;">— the tournament\'s main channel, YouTube, Twitch or Facebook</span></div><input class="lg-in" id="tg-stream" value="' + esc(ev.stream_url || '') + '" placeholder="https://…"></div>'
+      + '<button class="lg-btn pri" onclick="FFPTourn.saveDetails()">' + ic('check') + 'Save</button>'
       + endBlock(ev);
   }
-  // ── SETUP ───────────────────────────────────────────────────────────────
-  // How the league is RUN, and it is a division's business, not the whole
-  // league's: Juniors can play a single round for 2/1/0 while the Open plays
-  // home and away for 5/3/0. A division that has never been touched inherits
-  // the league's numbers, which is what every existing league does.
-  var FINALS_MODES = [['none', 'None', 'The table decides it. Nothing follows the season.'],
-                      ['top2', 'Top 2, grand final', 'First and second meet in one final.'],
-                      ['top4', 'Top 4, semi-finals', 'Top four play semi-finals, then a final.'],
-                      ['top8', 'Top 8, quarter-finals', 'Top eight play quarters, semis, then a final.']];
-  function lgFmt(d) {
-    var ev = (S.detail && S.detail.event) || {};
-    var pick = function (a, b, c) { return a != null && a !== '' ? a : (b != null && b !== '' ? b : c); };
-    return { win: pick(d.win_pts, ev.win_pts, 3), draw: pick(d.draw_pts, ev.draw_pts, 1),
-             loss: pick(d.loss_pts, ev.loss_pts, 0),
-             sched: pick(d.schedule_mode, ev.schedule_mode, 'single'),
-             finals: pick(d.finals_mode, ev.finals_mode, 'none'),
-             third: !!pick(d.third_place, ev.third_place, false),
-             bonus: bpInherited(d),
-             own: (d.win_pts != null || d.draw_pts != null || d.loss_pts != null
-                   || d.schedule_mode != null || d.finals_mode != null || d.third_place != null
-                   || d.bonus_rules != null) };
+
+  // ---------- SETUP (how the tournament is run) ----------
+  // Sport and who competes are set once for the whole tournament; the format
+  // is per division, because a club event runs its A grade and its juniors
+  // differently on the same weekend.
+  var ENTRANT_MODES = [
+    ['individual', 'Individuals', 'One player per entry'],
+    ['team', 'Teams', 'A squad per entry'],
+    ['mixed', 'Both', 'Singles and doubles, like tennis']
+  ];
+  /* An organiser reading "Monrad" learns nothing. Each format carries an info
+     icon that says what it IS, a worked example at a real size, and when to
+     PICK it. Kept in one place so the wording is edited once. */
+  var FMT_INFO = {
+    grp: ['Everyone in a pool plays everyone else in that pool. The final table decides it and there is no knockout after it.',
+          'With 8 {many} in 2 pools that is 6 matches a pool, 12 in all, and every {one} plays 3 times.',
+          'Pick it when guaranteed games matter more than a final, like a social league day.'],
+    gk: ['Pools first, then the top few of each pool cross into a knockout bracket. You choose how many advance per pool.',
+         'With 16 in 4 pools taking the top 2, that is 24 pool matches and then an 8-{one} bracket to the final.',
+         'The usual shape for a weekend tournament: everyone is guaranteed pool games, and it still ends in a final.'],
+    ko: ['A straight bracket. Lose once and you are out. The draw is built to the next power of two and anyone short of a first-round opponent gets a bye.',
+         'With 4 {many} that is 2 semi-finals and a final, 3 matches. With 12 it builds a 16 draw and 4 {many} get byes.',
+         'Pick it when time is short, or when the seeding already tells you who should meet late.'],
+    monrad: ['Nobody goes home. After each round winners are paired with winners and losers with losers, so every place from 1st to last is played off.',
+             'With 8 {many} every one plays 3 rounds and finishes with a ranking of 1 to 8, not just a champion.',
+             'Pick it for a one-day club event where everyone wants a full day of matches.'],
+    tiered: ['{Many} are banded by ability first, then pooled inside their band, so matches stay even.',
+             'With 12 {many} in 3 bands of 4, a strong {one} never draws a beginner in round one.',
+             'Pick it for a mixed-ability field where a lopsided first round would spoil the day.']
+  };
+  function fmtInfoBox(k) {
+    var f = FORMATS.find(function (x) { return x[0] === k; }), i = FMT_INFO[k];
+    if (!f || !i) return '';
+    return '<div class="tg-nfobox">'
+      + '<button class="close" onclick="FFPTourn.fmtInfo(null)" title="Close">' + ic('close') + '</button>'
+      + '<h4>' + ic('info') + esc(f[1]) + '</h4>'
+      + '<p>' + esc(say(i[0])) + '</p>'
+      + '<p><b>For example.</b> ' + esc(say(i[1])) + '</p>'
+      + '<p><b>When to pick it.</b> ' + esc(say(i[2])) + '</p></div>';
   }
+  function fmtInfo(k) { S.fmtInfo = (S.fmtInfo === k) ? null : k; renderTab(); }
+  /* Every extra draw in one place, so an organiser can compare them instead of
+     clicking through the dropdown one at a time to read each hint. */
+  function sideInfoBox(dv) {
+    return '<div class="tg-nfobox solo">'
+      + '<button class="close" onclick="FFPTourn.sideInfo()" title="Close">' + ic('close') + '</button>'
+      + '<h4>' + ic('info') + 'What happens to a beaten ' + nouns(dv).one + '</h4>'
+      + SIDE_DRAWS.map(function (x) {
+          return '<div class="opt"><b>' + esc(x[1]) + '</b><span>' + esc(say(x[2], dv)) + '</span></div>';
+        }).join('')
+      + '</div>';
+  }
+  function sideInfo() { S.sideInfo = !S.sideInfo; renderTab(); }
+
+  var FORMATS = [
+    ['grp', 'Groups only', 'Round-robin, final table'],
+    ['gk', 'Groups, then knockout', 'Top {many} advance to a bracket'],
+    ['ko', 'Knockout', 'Single elimination, losers are out'],
+    ['monrad', 'Monrad', 'Everyone keeps playing, every place decided'],
+    ['tiered', 'Tiered pools', 'Pools by ability, every {one} placed']
+  ];
 
   /* ── BONUS POINTS ───────────────────────────────────────────────────────
      A rule is one sentence the organiser completes: a type, a number, a
@@ -1547,7 +1924,7 @@
         ? n + '<span class="bp-w">or more</span>' + ksel + '<span class="bp-w">than the opponent</span>'
         : n + '<span class="bp-w">or more</span>' + ksel;
     return '<div class="bp-r">'
-      + '<select class="lg-sel bp-t" id="bp' + i + '-t" onchange="FFPLeague.bpType()">'
+      + '<select class="lg-sel bp-t" id="bp' + i + '-t" onchange="FFPTourn.bpType()">'
       +   BP_TYPES.map(function (t) {
             return '<option value="' + t[0] + '"' + (t[0] === r.type ? ' selected' : '')
                  + '>' + t[1] + '</option>'; }).join('')
@@ -1555,12 +1932,12 @@
       + '<div class="bp-mid">' + mid + '</div>'
       + '<div class="bp-pts"><input class="lg-in bp-n" id="bp' + i + '-p" type="number" min="1" value="'
       +   (r.pts || 1) + '"><span class="bp-w">pt</span></div>'
-      + '<span class="ms bp-x" title="Remove" onclick="FFPLeague.bpDel(' + i + ')">close</span>'
+      + '<span class="ms bp-x" title="Remove" onclick="FFPTourn.bpDel(' + i + ')">close</span>'
       + '</div>';
   }
   function bpHtml() {
     return (S._bp || []).map(bpRow).join('')
-      || '<div class="bp-none">No bonus points. Teams score on the win, draw and loss values above.</div>';
+      || '<div class="bp-none">No bonus points. ' + nouns(curDv()).Many + ' score on the win, draw and loss values above.</div>';
   }
   function bpRender() { var h = document.getElementById('bp-list'); if (h) h.innerHTML = bpHtml(); }
   function bpType() { bpSync(); bpRender(); }
@@ -1591,320 +1968,603 @@
     bpStart(d);
     return '<div class="lg-fld bp-blk"><div class="lg-lab">Bonus points</div>'
       + '<div id="bp-list">' + bpHtml() + '</div>'
-      + '<button class="lg-btn bp-add" onclick="FFPLeague.bpAdd()">' + ic('add') + 'Add a bonus point</button>'
-      + '<div class="lgf-hint">Counted from what the scorer records. A scoring bonus reads the events '
+      + '<button class="lg-btn bp-add" onclick="FFPTourn.bpAdd()">' + ic('add') + 'Add a bonus point</button>'
+      + '<div class="tg-hint">Counted from what the scorer records. A scoring bonus reads the events '
       + 'logged in the match, named player or not. A margin bonus reads the final score.</div></div>';
   }
 
-  /* -- THE SPLIT ----------------------------------------------------------
-     Phase one is whatever Schedule says; then the table divides into groups and
-     each group plays its own round-robin with the points carried across. Group
-     count, names, sizes, legs and what happens to the points are ALL the
-     organiser's -- nothing here is fixed.
-
-     The block repaints ITSELF (#lgs-wrap), never the whole tab: re-rendering
-     the tab would throw away points or bonus rules the organiser had typed and
-     not yet saved. The DB validates the array again on save, so a stale page
-     cannot store a shape league_split_draw is unable to read. */
-  var CARRY = [['full', 'Carried in full', 'Every point from phase one comes across.'],
-               ['half', 'Halved', 'Halved and rounded to the nearest point, as several leagues do.'],
-               ['none', 'Reset to zero', 'Each group starts level.']];
-  var SPLIT_ERR = {
-    split_groups_not_array: 'The groups are not in a readable shape. Reload the page and set them again.',
-    split_groups_too_many: 'Eight groups is the most a division can split into.',
-    split_group_not_object: 'The groups are not in a readable shape. Reload the page and set them again.',
-    split_group_needs_a_name: 'Every group needs a name.',
-    split_group_name_too_long: 'A group name can be 40 characters at most.'
-  };
-  function splitSaid(m) {
-    m = String(m || '');
-    var k = m.split(':')[0];
-    if (SPLIT_ERR[k]) return SPLIT_ERR[k];
-    if (k === 'split_group_needs_at_least_two') return '"' + (m.split(':')[1] || 'That group') + '" needs at least two teams.';
-    if (k === 'split_group_too_big') return '"' + (m.split(':')[1] || 'That group') + '" is too big.';
-    return null;
+  /* A tournament could never set its own points: the table used whatever the
+     sport said. These resolve the same way leagues do - division, then event,
+     then the sport - and they are only offered where there is a table to
+     rank. A straight knockout has nothing for points to do. */
+  function tgPts(dv) {
+    var ev = (S.detail && S.detail.event) || {}, sc = (S.detail && S.detail.schema) || {};
+    var pick = function (a, b, c, d) {
+      return a != null && a !== '' ? a : (b != null && b !== '' ? b : (c != null && c !== '' ? c : d)); };
+    return { win: pick(dv.win_pts, ev.win_pts, sc.win_pts, 3),
+             draw: pick(dv.draw_pts, ev.draw_pts, sc.draw_pts, 1),
+             loss: pick(dv.loss_pts, ev.loss_pts, sc.loss_pts, 0) };
+  }
+  function tgPtsBlock(dv) {
+    var p = tgPts(dv);
+    return '<div class="lg-3">'
+      + '<div class="lg-fld"><div class="lg-lab">Win pts</div><input class="lg-in" id="tg-win" type="number" value="' + p.win + '"></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Draw pts</div><input class="lg-in" id="tg-draw" type="number" value="' + p.draw + '"></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Loss pts</div><input class="lg-in" id="tg-loss" type="number" value="' + p.loss + '"></div></div>'
+      + bpBlock(dv);
   }
 
-  function splitOf(d) {
-    var ev = (S.detail && S.detail.event) || {};
-    var g = d.split_groups != null ? d.split_groups : ev.split_groups;
-    return { groups: Array.isArray(g) && g.length ? g : null,
-             carry: d.split_carry || ev.split_carry || 'full' };
+  function fmtOfDiv(d) {
+    if (d.draw_format === 'tiered') return 'tiered';
+    return d.draw_format === 'monrad' ? 'monrad' : (d.group_stage ? (d.groups_advance ? 'gk' : 'grp') : 'ko');
   }
-  /* The default the moment an organiser switches it on: a top-4 Championship
-     and everybody else in one group below it. */
-  function splitDefault(d) {
-    var n = Number(d.entrant_count || 0);
-    var top = Math.min(4, Math.max(2, n - 2));
-    var rest = Math.max(0, n - top);
-    var out = [{ name: 'Championship', take: top, legs: 1 }];
-    if (rest >= 2) out.push({ name: 'Plate', take: rest, legs: 1 });
+
+  /* ── THE TIERED LADDER ──────────────────────────────────────────────────
+     The same rule the database runs, so the preview cannot promise a draw the
+     engine would not build. Pools are TIERS, A strongest. Each sends the
+     number its tier earns into the top band; everyone left is ranked by
+     FINISHING POSITION first and pool tier second, then cut into bands. That
+     ordering is the whole thing - 1C sorts above 3A, so the bottom pool's
+     winner meets the top pool's straggler.
+     An odd band gives its foot to the lowest slot on pool record and the rest
+     cross above it, never the middle team. */
+  function tierSizes(n, g) {
+    var base = Math.floor(n / g), rem = n % g, out = [];
+    for (var i = 0; i < g; i++) out.push(base + (i >= g - rem ? 1 : 0));
     return out;
   }
-  function splitRow(g, i, n) {
-    return '<div class="lgs-row">'
-      + '<input class="lg-in lgs-nm" id="lgs-n-' + i + '" maxlength="40" value="' + esc(g.name || '') + '" placeholder="Group name">'
-      + '<input class="lg-in lgs-tk" id="lgs-t-' + i + '" type="number" min="2" max="64" value="' + (g.take || 0) + '">'
-      + '<select class="lg-sel lgs-lg" id="lgs-l-' + i + '">'
-      +   '<option value="1"' + (Number(g.legs) === 2 ? '' : ' selected') + '>Once</option>'
-      +   '<option value="2"' + (Number(g.legs) === 2 ? ' selected' : '') + '>Twice</option></select>'
-      + (n > 1 ? '<button class="lgs-x ms" title="Remove this group" onclick="FFPLeague.splitDrop(' + i + ')">close</button>'
-               : '<span class="lgs-x"></span>')
-      + '</div>';
-  }
-  function splitBlock(d) { return '<div id="lgs-wrap">' + splitInner(d) + '</div>'; }
-  function splitInner(d) {
-    var sp = splitOf(d), on = !!sp.groups;
-    var head = '<div class="lg-fld"><div class="lg-lab">After the season, split the table?</div>'
-      + '<div class="lg-seg" id="lgs-on">'
-      +   '<button data-v="yes" class="' + (on ? 'on' : '') + '" onclick="FFPLeague.splitOn(true)">Yes</button>'
-      +   '<button data-v="no" class="' + (on ? '' : 'on') + '" onclick="FFPLeague.splitOn(false)">No</button></div>'
-      + '<div class="lgf-hint">When phase one is finished the table divides, and each group plays its own'
-      +   ' round-robin with the points carried across.</div></div>';
-    if (!on) return head;
-
-    var n = Number(d.entrant_count || 0);
-    var used = sp.groups.reduce(function (t, g) { return t + Number(g.take || 0); }, 0);
-    var left = n - used;
-    var carry = CARRY.find(function (c) { return c[0] === sp.carry; }) || CARRY[0];
-
-    return head
-      + '<div class="lg-fld"><div class="lg-lab">The groups</div>'
-      +   '<div class="lgs-row hd"><span class="lgs-nm">Group name</span><span class="lgs-tk">Teams</span>'
-      +     '<span class="lgs-lg">They play</span><span class="lgs-x"></span></div>'
-      +   sp.groups.map(function (g, i) { return splitRow(g, i, sp.groups.length); }).join('')
-      +   (sp.groups.length < 8 ? '<button class="lgs-add" onclick="FFPLeague.splitAdd()">' + ic('add') + 'Add a group</button>' : '')
-      +   (n === 0
-          ? '<div class="lgs-note">' + ic('info') + 'Add the teams and the sizes will check themselves.</div>'
-          : left === 0
-            ? '<div class="lgs-note ok">' + ic('check_circle') + 'All ' + n + ' teams are in a group.</div>'
-            : left > 0
-              ? '<div class="lgs-note">' + ic('info') + left + ' team' + (left === 1 ? '' : 's')
-                + ' left over. They finish the season at the split.</div>'
-              : '<div class="lgs-note warn">' + ic('warning') + 'The groups add up to ' + used + ', but there are only '
-                + n + ' teams. The last group will take what is left.</div>')
-      + '</div>'
-      + '<div class="lg-fld"><div class="lg-lab">Points from phase one</div>'
-      +   '<select class="lg-sel" id="lgs-carry" style="max-width:320px" onchange="FFPLeague.carryHint()">'
-      +     CARRY.map(function (c) { return '<option value="' + c[0] + '"' + (c[0] === sp.carry ? ' selected' : '') + '>' + esc(c[1]) + '</option>'; }).join('')
-      +   '</select><div class="lgf-hint" id="lgs-carryhint">' + esc(carry[2]) + '</div></div>'
-      + splitDraw(d);
-  }
-  /* The press. Greyed until phase one is finished, and it says what is holding
-     it up rather than just refusing. */
-  function splitDraw(d) {
-    var left = Number(d.phase_one_left == null ? -1 : d.phase_one_left);
-    var drawn = Number(d.split_fixtures || 0) > 0;
-    if (drawn) {
-      return '<div class="lgs-draw done">' + ic('check_circle')
-        + '<div class="g"><b>The split is drawn</b><span>' + d.split_fixtures
-        + ' fixtures across the groups. Re-drawing is blocked once a split game has been played.</span></div>'
-        + '<button class="lg-btn ghost" onclick="FFPLeague.splitRedraw(\'' + d.id + '\')">Draw it again</button></div>';
+  function tierBands(sizes, quota, bandSize) {
+    var all = [], cup = [], i, pos;
+    for (i = 0; i < sizes.length; i++) {
+      for (pos = 1; pos <= sizes[i]; pos++) all.push({ pos: pos, tier: i });
+      for (pos = 1; pos <= Math.min(quota[i] || 0, sizes[i]); pos++) cup.push({ pos: pos, tier: i });
     }
-    if (left > 0) {
-      return '<div class="lgs-draw">' + ic('lock')
-        + '<div class="g"><b>Draw the split</b><span>' + left + ' phase-one fixture'
-        + (left === 1 ? ' is' : 's are') + ' still to be played. Who is in which group is not known until they are.</span></div>'
-        + '<button class="lg-btn" disabled>Draw the split</button></div>';
-    }
-    return '<div class="lgs-draw ready">' + ic('call_split')
-      + '<div class="g"><b>Draw the split</b><span>Phase one is finished. This reads the table, cuts the groups'
-      + ' and generates each one’s fixtures. Save the format first if you have just changed it.</span></div>'
-      + '<button class="lg-btn pri" onclick="FFPLeague.splitRedraw(\'' + d.id + '\')">' + ic('call_split') + 'Draw the split</button></div>';
+    var nm = function (s) { return s.pos + String.fromCharCode(65 + s.tier); };
+    var by = function (a, b) { return (a.pos - b.pos) || (a.tier - b.tier); };
+    var taken = {}; cup.forEach(function (s) { taken[nm(s)] = 1; });
+    var rest = all.filter(function (s) { return !taken[nm(s)]; }).sort(by);
+    var bands = [cup.slice().sort(by)];
+    for (i = 0; i < rest.length; i += bandSize) bands.push(rest.slice(i, i + bandSize));
+    var place = 1;
+    return bands.filter(function (b) { return b.length; }).map(function (b) {
+      var from = place, to = place + b.length - 1; place = to + 1;
+      var play = b.length % 2 === 1 ? b.slice(0, -1) : b, ties = [];
+      for (var j = 0; j < play.length / 2; j++) ties.push([nm(play[j]), nm(play[play.length - 1 - j])]);
+      return { from: from, to: to, slots: b.map(nm), ties: ties };
+    });
   }
-
-  /* Reading the rows back before a repaint, so editing one field never discards
-     what was typed in another. */
-  function splitRead() {
-    var out = [], i = 0;
-    while (document.getElementById('lgs-n-' + i)) {
-      var nm = String((document.getElementById('lgs-n-' + i) || {}).value || '').trim();
-      var tk = parseInt((document.getElementById('lgs-t-' + i) || {}).value, 10);
-      var lg = parseInt((document.getElementById('lgs-l-' + i) || {}).value, 10);
-      out.push({ name: nm, take: isNaN(tk) ? 0 : tk, legs: lg === 2 ? 2 : 1 });
-      i += 1;
+  function tierCfg(dv) {
+    var g = Math.max(2, +(document.getElementById('tg-np') || {}).value || dv.num_groups || 3);
+    var bs = Math.max(2, +(document.getElementById('tg-bs') || {}).value || dv.band_size || 4);
+    var q = [], el, i;
+    for (i = 0; i < g; i++) {
+      el = document.getElementById('tg-q' + i);
+      q.push(el ? Math.max(0, +el.value || 0) : ((dv.tier_quota || [])[i] != null ? dv.tier_quota[i] : (i < 2 ? 2 : 0)));
     }
+    return { g: g, bs: bs, q: q, n: dv.entrant_count || 0 };
+  }
+  function tierQuotaHtml(dv) {
+    var c = tierCfg(dv), sizes = tierSizes(c.n, c.g), N = nouns(dv);
+    return sizes.map(function (sz, i) {
+      return '<div class="tg-qrow"><span class="tg-qp">' + String.fromCharCode(65 + i) + '</span>'
+        + '<span class="tg-qn">Pool ' + String.fromCharCode(65 + i)
+        + '<small>' + sz + ' ' + (sz === 1 ? N.one : N.many) + (i === 0 ? ', strongest' : '') + '</small></span>'
+        + '<input class="lg-in tg-qin" id="tg-q' + i + '" type="number" min="0" max="' + sz + '" value="'
+        + Math.min(c.q[i], sz) + '" oninput="FFPTourn.tierPreview()"></div>';
+    }).join('');
+  }
+  function tierLadderHtml(dv) {
+    var c = tierCfg(dv);
+    if (!c.n) return '<div class="tg-hint">Add ' + nouns(dv).many + ' and the bands appear here.</div>';
+    return tierBands(tierSizes(c.n, c.g), c.q, c.bs).map(function (b, i) {
+      var range = b.from + (b.to > b.from ? '&ndash;' + b.to : '');
+      var ties = b.ties.length
+        ? b.ties.map(function (t) { return '<span class="tg-tie">' + t[0] + ' <i>v</i> ' + t[1] + '</span>'; }).join('')
+        : '<span class="tg-tie tg-none">decided on pool record</span>';
+      return '<div class="tg-lrow' + (i === 0 ? ' tg-top' : '') + '"><span class="tg-lpl">' + range
+        + '<small>' + (i === 0 ? 'Cup' : '') + '</small></span><span class="tg-lties">' + ties + '</span></div>';
+    }).join('');
+  }
+  function tierPreview() {
+    var dv = (S.detail.divisions || []).find(function (x) { return x.id === S.divId; }); if (!dv) return;
+    var l = document.getElementById('tg-ladder'); if (l) l.innerHTML = tierLadderHtml(dv);
+  }
+  /* the pool count changes how many quota rows there are, so that one rebuilds
+     the rows as well - and only that one, or typing in a quota box would tear
+     the box out from under the cursor */
+  function tierPools() {
+    var dv = (S.detail.divisions || []).find(function (x) { return x.id === S.divId; }); if (!dv) return;
+    var q = document.getElementById('tg-quota'); if (q) q.innerHTML = tierQuotaHtml(dv);
+    tierPreview();
+  }
+  function fmtLabel(k) { var f = FORMATS.find(function (x) { return x[0] === k; }); return f ? f[1] : 'Knockout'; }
+  function koRounds(n) {
+    if (!n || n < 2) return [];
+    var sz = 2; while (sz < n) sz *= 2;
+    var out = [], r = sz;
+    while (r >= 2) { out.push(STAGE[_bracketStage(r / 2)] || _bracketStage(r / 2)); r = r / 2; }
     return out;
   }
-  function splitDiv() { return (S.detail.divisions || []).find(function (x) { return x.id === S.divId; }); }
-  function splitSync() {
-    var d = splitDiv(); if (!d) return null;
-    if (document.getElementById('lgs-n-0')) d.split_groups = splitRead();
-    var c = document.getElementById('lgs-carry'); if (c) d.split_carry = c.value;
-    return d;
+  function _bracketStage(half) {
+    return half >= 32 ? 'r64' : half >= 16 ? 'r32' : half >= 8 ? 'r16' : half >= 4 ? 'quarter' : half >= 2 ? 'semi' : 'final';
   }
-  function splitRepaint() {
-    var d = splitDiv(); if (!d) return;
-    var w = document.getElementById('lgs-wrap');
-    if (w) { w.innerHTML = splitInner(d); } else { renderTab(); }
-  }
-  function splitOn(yes) {
-    var d = splitSync(); if (!d) return;
-    if (!yes) {
-      if (Array.isArray(d.split_groups) && d.split_groups.length) d._splitWas = d.split_groups;
-      d.split_groups = null;
-    } else {
-      d.split_groups = (Array.isArray(d.split_groups) && d.split_groups.length) ? d.split_groups
-        : (Array.isArray(d._splitWas) && d._splitWas.length ? d._splitWas : splitDefault(d));
-    }
-    splitRepaint();
-  }
-  function splitAdd() {
-    var d = splitSync(); if (!d) return;
-    var cur = Array.isArray(d.split_groups) ? d.split_groups : [];
-    if (cur.length >= 8) { toast('Eight groups is the most a division can split into', 'error'); return; }
-    var used = cur.reduce(function (t, g) { return t + Number(g.take || 0); }, 0);
-    cur.push({ name: 'Group ' + (cur.length + 1), take: Math.max(2, Number(d.entrant_count || 0) - used), legs: 1 });
-    d.split_groups = cur; splitRepaint();
-  }
-  function splitDrop(i) {
-    var d = splitSync(); if (!d) return;
-    var cur = Array.isArray(d.split_groups) ? d.split_groups : [];
-    cur.splice(i, 1);
-    d.split_groups = cur.length ? cur : null; splitRepaint();
-  }
-  function carryHint() {
-    var val = (document.getElementById('lgs-carry') || {}).value;
-    var c = CARRY.find(function (x) { return x[0] === val; }) || CARRY[0];
-    var h = document.getElementById('lgs-carryhint'); if (h) h.textContent = c[2];
-  }
-  async function splitRedraw(id) {
-    var r; try { r = await sb().rpc('league_split_draw', { p_division: id }); } catch (e) { r = { error: e }; }
-    if (!r || r.error) {
-      var m = String((r && r.error && r.error.message) || '');
-      if (m.indexOf('phase_one_unfinished') === 0) {
-        toast(m.split(':')[1] + ' phase-one fixture(s) still to be played', 'error');
-      } else if (m.indexOf('split_already_played') === 0) {
-        toast('A split game has already been played, so it cannot be redrawn', 'error');
-      } else {
-        toast(splitSaid(m) || said(r && r.error) || 'Could not draw the split', 'error');
-      }
-      return;
-    }
-    var out = r.data || {}, gs = out.groups || [];
-    toast((out.fixtures || 0) + ' fixtures drawn across ' + gs.length + ' group' + (gs.length === 1 ? '' : 's'), 'success');
-    refreshDetail();
-  }
-
-  function lgFmtLine(d) {
-    var f = lgFmt(d);
-    var fin = (FINALS_MODES.find(function (x) { return x[0] === f.finals; }) || FINALS_MODES[0]);
-    return (f.sched === 'home_away' ? 'Home & away' : 'Single round') + ', '
-      + f.win + '/' + f.draw + '/' + f.loss + ' points, '
-      + (f.bonus.length ? f.bonus.length + (f.bonus.length === 1 ? ' bonus point, ' : ' bonus points, ') : '')
-      + (f.finals === 'none' ? 'no finals' : fin[1].toLowerCase())
-      + (splitOf(d).groups ? ', splits into ' + splitOf(d).groups.length + ' groups' : '')
-      + (d.entrant_count != null ? ', ' + d.entrant_count + ' ' + (d.entrant_count === 1 ? nouns(d).one : nouns(d).many) : '');
-  }
-  function lgDivFormat(d) {
-    var f = lgFmt(d);
-    var cur = FINALS_MODES.find(function (x) { return x[0] === f.finals; }) || FINALS_MODES[0];
-    return '<div class="lgf-edit">'
-      + '<div class="lg-fld"><div class="lg-lab">Schedule</div><div class="lg-seg" id="lgf-mode">'
-      +   '<button data-v="single" class="' + (f.sched !== 'home_away' ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lgf-mode\')">Single round</button>'
-      +   '<button data-v="home_away" class="' + (f.sched === 'home_away' ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lgf-mode\')">Home &amp; away</button></div>'
-      +   '<div class="lgf-hint">' + (f.sched === 'home_away' ? 'Everyone plays everyone twice, home and away.' : 'Everyone plays everyone once.') + '</div></div>'
-      + '<div class="lg-3">'
-      +   '<div class="lg-fld"><div class="lg-lab">Win pts</div><input class="lg-in" id="lgf-win" type="number" value="' + f.win + '"></div>'
-      +   '<div class="lg-fld"><div class="lg-lab">Draw pts</div><input class="lg-in" id="lgf-draw" type="number" value="' + f.draw + '"></div>'
-      +   '<div class="lg-fld"><div class="lg-lab">Loss pts</div><input class="lg-in" id="lgf-loss" type="number" value="' + f.loss + '"></div></div>'
-      + bpBlock(d)
-      + '<div class="lg-fld"><div class="lg-lab">Finals series</div><select class="lg-sel" id="lgf-finals" onchange="FFPLeague.finalsHint()">'
-      +   FINALS_MODES.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === f.finals ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('')
-      +   '</select><div class="lgf-hint" id="lgf-finalshint">' + esc(cur[2]) + '</div></div>'
-      + (f.finals === 'none' ? '' :
-          '<div class="lg-fld"><div class="lg-lab">3rd-place play-off</div><div class="lg-seg" id="lgf-third">'
-          + '<button data-v="true" class="' + (f.third ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lgf-third\')">Yes</button>'
-          + '<button data-v="false" class="' + (!f.third ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lgf-third\')">No</button></div></div>')
-      + splitBlock(d)
-      + '<div class="lgf-acts"><button class="lg-btn pri" onclick="FFPLeague.saveDivFormat(\'' + d.id + '\')">' + ic('check') + 'Save format</button>'
-      +   (lgFmt(d).own ? '<button class="lg-btn ghost" onclick="FFPLeague.clearDivFormat(\'' + d.id + '\')">Use the league default</button>' : '')
-      +   '</div></div>';
+  function monradRounds(n) { return (!n || n < 2) ? 0 : Math.ceil(Math.log(n) / Math.log(2)); }
+  function shapeLine(d) {
+    var n = d.entrant_count || 0, k = fmtOfDiv(d), N = nouns(d);
+    if (!n) return 'no ' + N.many + ' yet';
+    if (k === 'monrad') { var r = monradRounds(n); return n + ' ' + N.many + ', ' + r + ' rounds, every place from 1 to ' + n + ' is played off'; }
+    if (k === 'ko') { var rr = koRounds(n); return n + ' ' + N.many + ', ' + rr.length + ' rounds, ' + rr.join(' to ').toLowerCase(); }
+    var ng = d.num_groups || Math.max(2, Math.round(n / 4));
+    if (k === 'tiered') return n + ' ' + N.many + ' in ' + ng + ' pools by ability, every ' + N.one + ' placed 1 to ' + n;
+    if (k === 'grp') return n + ' ' + N.many + ' in ' + ng + ' groups, ranked into one table';
+    return n + ' ' + N.many + ' in ' + ng + ' groups, top ' + (d.groups_advance || 2) + ' of each into a knockout';
   }
   async function renderSetup(host) {
-    await loadSports(); await taxReady();
+    await loadSports(); await taxReady(); await loadMySeries();
     var ev = S.detail.event || {}, divs = S.detail.divisions || [];
+    var mode = ev.entrant_mode || 'individual';
     if (!S.divId && divs.length) S.divId = divs[0].id;
-    var head = '<div class="lgf-sec">'
-      + '<div class="lg-fld"><div class="lg-lab">Which sport is this league for?</div>'
-      + '<select class="lg-sel" id="lg-sport" onchange="FFPLeague.sportHint()">'
+    var dv = divs.find(function (x) { return x.id === S.divId; }) || null;
+
+    var modeSeg = ENTRANT_MODES.map(function (m) {
+      return '<button data-v="' + m[0] + '" class="' + (m[0] === mode ? 'on' : '') + '" onclick="FFPTourn.setEntrantMode(\'' + m[0] + '\')">' + m[1] + '</button>';
+    }).join('');
+    var modeHint = (ENTRANT_MODES.find(function (m) { return m[0] === mode; }) || ENTRANT_MODES[0])[2];
+
+    var head =
+      '<div class="tg-sec">'
+      + '<div class="lg-fld"><div class="lg-lab">Which sport is this tournament for?</div>'
+      + '<select class="lg-sel" id="tg-sport" onchange="FFPTourn.sportHint()">'
       +   '<option value="">Choose a sport\u2026</option>'
       +   sportOpts(ev.sport_key)
       + '</select>'
-      + '<div class="lgf-hint" id="lg-sporthint">' + esc(sportSetHint(ev.sport_key)) + '</div></div>'
+      + '<div class="tg-hint" id="tg-sporthint">' + esc(sportSetHint(ev.sport_key)) + '</div></div>'
       + rulesBlock(ev)
-      + '<button class="lg-btn pri" onclick="FFPLeague.saveSport()">' + ic('check') + 'Save</button></div>';
+      + serSetupHtml(ev)
+      + '<div class="lg-fld"><div class="lg-lab">Who competes?</div><div class="lg-seg" id="tg-mode">' + modeSeg + '</div>'
+      + '<div class="tg-hint" id="tg-modehint">' + esc(modeHint) + '</div></div>'
+      + '<button class="lg-btn pri" onclick="FFPTourn.saveSetup()">' + ic('check') + 'Save</button>'
+      + '</div>';
+
     if (!divs.length) {
-      host.innerHTML = head + '<div class="lgf-sec"><div class="lgf-sech">Format, per division</div>'
-        + '<div class="lg-empty" style="text-align:left;padding:4px 0">Add a division first, then set how each one is run.</div></div>';
+      host.innerHTML = head + '<div class="tg-sec"><div class="tg-sech">Format</div><div class="lg-empty" style="text-align:left;padding:4px 0">Add a division first, then set how each one is run.</div></div>';
       return;
     }
-    var rows = divs.map(function (d) {
-      var on = d.id === S.divId;
-      var made = (d.fixture_count || 0) > 0;
-      var row = '<div class="lgf-row' + (on ? ' on' : '') + '" onclick="FFPLeague.setSetupDiv(\'' + d.id + '\')">'
-        + '<span class="ms cv">' + (on ? 'expand_more' : 'chevron_right') + '</span>'
-        + '<div class="g"><b>' + esc(d.name) + '</b><span>' + esc(lgFmtLine(d)) + '</span></div>'
-        + '<span class="st' + (made ? ' done' : '') + '">' + (made ? 'Fixtures made' : 'Not generated') + '</span></div>';
-      return on ? row + lgDivFormat(d) : row;
-    }).join('');
-    host.innerHTML = head + '<div class="lgf-sec"><div class="lgf-sech">Format, per division</div>' + rows + '</div>';
-  }
-  async function saveSport() {
-    var k = v('lg-sport');
-    if (!k) { toast('Choose a sport first', 'error'); return; }
-    var p = rulesPayload(); p.sport_key = k;
-    var r; try { r = await sb().rpc('league_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast(said(r.error) || 'Could not save the sport', 'error'); return; }
-    toast('Saved', 'success'); open(S.eventId);
-  }
-  async function saveDivFormat(id) {
-    var p = { win_pts: v('lgf-win'), draw_pts: v('lgf-draw'), loss_pts: v('lgf-loss'),
-              schedule_mode: segVal('lgf-mode'), finals_mode: v('lgf-finals'),
-              bonus_rules: bpRead() };
-    if (document.getElementById('lgf-third')) p.third_place = segVal('lgf-third') === 'true';
-    if (document.getElementById('lgs-on')) {
-      var splitting = segVal('lgs-on') === 'yes';
-      var groups = splitting ? splitRead() : null;
-      if (splitting) {
-        var bad = (groups || []).find(function (g) { return !g.name || Number(g.take) < 2; });
-        if (!groups || !groups.length) { toast('Add at least one group, or turn the split off', 'error'); return; }
-        if (bad) { toast(!bad.name ? 'Every group needs a name' : '"' + bad.name + '" needs at least two teams', 'error'); return; }
-      }
-      p.split_groups = groups;
-      p.split_carry = splitting ? (v('lgs-carry') || 'full') : null;
-    }
-    var r; try { r = await sb().rpc('league_division_save', { p_league: S.eventId, p_id: id, p: p }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast(splitSaid(r.error && r.error.message) || said(r.error) || 'Could not save the format', 'error'); return; }
-    toast('Format saved', 'success'); refreshDetail();
-  }
-  async function clearDivFormat(id) {
-    var p = { win_pts: null, draw_pts: null, loss_pts: null, schedule_mode: null, finals_mode: null,
-              third_place: null, bonus_rules: null, split_groups: null, split_carry: null };
-    var r; try { r = await sb().rpc('league_division_save', { p_league: S.eventId, p_id: id, p: p }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not reset it', 'error'); return; }
-    toast('Back to the league default', 'success'); refreshDetail();
-  }
 
+    /* A division reads as one block now: a blue header states which division
+       it is, its shape and whether it is drawn, then its format and its draw
+       sit underneath. The old plain rows ran into one another. */
+    var rows = divs.map(function (d) {
+      if (S.divEdit === d.id) return divEditor(d);
+      var on = d.id === S.divId;
+      var built = (d.match_count || 0) > 0;
+      var hd = '<div class="tg-dvhd' + (on ? '' : ' off') + '" onclick="FFPTourn.setDiv(\'' + d.id + '\',\'setup\')">'
+        + '<span class="ms cv">' + (on ? 'expand_more' : 'chevron_right') + '</span>'
+        + '<div class="g"><b>' + esc(d.name) + '</b><span>' + esc(fmtLabel(fmtOfDiv(d))) + ', ' + esc(shapeLine(d)) + '</span></div>'
+        + '<span class="st' + (built ? ' done' : '') + '">' + (built ? 'Drawn' : 'Not drawn') + '</span>'
+        + '<button class="ed" title="Rename or change who it is for"'
+        +   ' onclick="event.stopPropagation();FFPTourn.editDivision(\'' + d.id + '\')">' + ic('edit') + '</button></div>';
+      return '<div class="tg-dv">' + hd + (on ? '<div class="tg-dvbody">' + divFormatEditor(d) + '</div>' : '') + '</div>';
+    }).join('');
+    var adder = S.divEdit === 'new' ? divEditor(null)
+      : '<button class="lg-btn" style="margin-top:4px" onclick="FFPTourn.editDivision(\'new\')">'
+        + ic('add') + 'Add a division</button>';
+
+    host.innerHTML = head
+      + '<div class="tg-sec"><div class="tg-sech">Divisions</div>' + rows + adder + '</div>';
+  }
+  function divFormatEditor(dv) {
+    var k = fmtOfDiv(dv), n = dv.entrant_count || 0, N = nouns(dv);
+    var changed = !!(S._fmtSaved && S._fmtSaved[dv.id] && S._fmtSaved[dv.id] !== k);
+    var cards = FORMATS.map(function (f) {
+      return '<div class="tg-fmt' + (f[0] === k ? ' on' : '') + '" onclick="FFPTourn.setDivFmt(\'' + f[0] + '\')">'
+        + '<button class="nfo" title="How ' + esc(f[1]) + ' runs"'
+        +   ' onclick="event.stopPropagation();FFPTourn.fmtInfo(\'' + f[0] + '\')">' + ic('info') + '</button>'
+        + '<div class="dia">' + fmtDia(f[0]) + '</div><b>' + f[1] + '</b><span>' + esc(say(f[2], dv)) + '</span></div>';
+    }).join('') + (S.fmtInfo ? fmtInfoBox(S.fmtInfo) : '');
+    var incl = '';
+    if (k === 'grp' || k === 'gk') {
+      incl += '<div class="' + (k === 'gk' ? 'lg-3' : 'lg-2') + '">' + capField(dv)
+        + '<div class="lg-fld"><div class="lg-lab">Number of groups</div><input class="lg-in" id="tg-ng" type="number" min="1" value="' + (dv.num_groups || Math.max(2, Math.round((n || 8) / 4))) + '" oninput="FFPTourn.capHint()"></div>'
+        + (k === 'gk' ? '<div class="lg-fld"><div class="lg-lab">Advance per group</div><input class="lg-in" id="tg-adv" type="number" min="1" value="' + (dv.groups_advance || 2) + '" oninput="FFPTourn.capHint()"></div>' : '') + '</div>'
+        + capHintRow(dv, k);
+    }
+    if (k === 'ko' || k === 'monrad') {
+      incl += '<div class="lg-2">' + capField(dv) + '<div></div></div>' + capHintRow(dv, k);
+    }
+    // Extra draws only mean something in a knockout. Monrad already keeps
+    // everyone playing, and a group table has nobody to knock out.
+    if (k === 'ko' || k === 'gk') {
+      var side = dv.side_draws || 'none';
+      var cur = SIDE_DRAWS.find(function (x) { return x[0] === side; }) || SIDE_DRAWS[0];
+      incl += '<div class="lg-fld"><div class="lg-lab">'
+        + '<button class="nfo-i" title="What each of these means"'
+        +   ' onclick="FFPTourn.sideInfo()">' + ic('info') + '</button>'
+        + 'Do beaten ' + N.many + ' keep playing?</div>'
+        + '<select class="lg-sel" id="tg-side" onchange="FFPTourn.sideHint()">'
+        + SIDE_DRAWS.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === side ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('')
+        + '</select><div class="tg-hint" id="tg-sidehint">' + esc(say(cur[2], dv)) + '</div>'
+        // the explainer opens UNDER the field, so the dropdown never gets
+        // pushed away from the question it answers
+        + (S.sideInfo ? sideInfoBox(dv) : '') + '</div>';
+      incl += '<div class="lg-fld"><div class="lg-lab">3rd-place play-off</div><div class="lg-seg" id="tg-third"><button data-v="true" class="' + (dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">Yes</button><button data-v="false" class="' + (!dv.third_place ? 'on' : '') + '" onclick="FFPTourn.seg(this,\'tg-third\')">No</button></div></div>';
+    }
+    if (k === 'tiered') {
+      var tc = tierCfg(dv);
+      incl += '<div class="lg-3">' + capField(dv)
+        + '<div class="lg-fld"><div class="lg-lab">Number of pools</div>'
+        +   '<input class="lg-in tg-num" id="tg-np" type="number" min="2" max="8" value="' + tc.g + '" oninput="FFPTourn.tierPools()"></div>'
+        + '<div class="lg-fld"><div class="lg-lab">Places per band</div>'
+        +   '<input class="lg-in tg-num" id="tg-bs" type="number" min="2" max="8" value="' + tc.bs + '" oninput="FFPTourn.tierPreview()"></div></div>'
+        + capHintRow(dv, k)
+        + '<div class="lg-fld"><div class="lg-lab">Into the top band</div>'
+        +   '<div class="tg-quota" id="tg-quota">' + tierQuotaHtml(dv) + '</div>'
+        +   '<div class="tg-hint">Pools are listed strongest first. A pool set to none sends nobody to the top band however well it plays &mdash; that is what makes it tiered rather than even.</div></div>'
+        + '<div class="lg-lab tg-lhead">What that gives you</div>'
+        + '<div class="tg-ladder" id="tg-ladder">' + tierLadderHtml(dv) + '</div>'
+        + '<div class="tg-hint">Every ' + N.one + ' finishes with a place. Winners meet winners and losers meet losers down each band, and the pool slots fill in as results land.</div>';
+    }
+    if (k === 'grp' || k === 'gk') incl += tgPtsBlock(dv);
+    if (k === 'monrad') incl += '<div class="tg-hint">Monrad re-ranks everyone after every round, so nobody is knocked out and every place is decided. There are no extra draws to add.</div>';
+    if (k === 'grp') incl += '<div class="tg-hint">Everyone plays everyone in their group and the table decides it. Nothing follows the groups.</div>';
+    return '<div class="tg-dvedit"><div class="tg-fmts">' + cards + '</div>'
+      + '<div class="tg-fmtset">' + incl
+      + (changed ? '<div class="tg-shape">Becomes ' + esc(shapeLine(dv)) + '</div>' : '')
+      + '<div class="tg-hint">Saving lays the draw out to match. Building and redrawing it live on the Draw tab.</div>'
+      + '<div class="tg-acts"><button class="lg-btn pri" onclick="FFPTourn.saveDivFormat()">' + ic('check') + 'Save format</button>'
+      + '</div></div></div>';
+  }
+  /* Three states, three different jobs. An OPEN draw with nobody in it is
+     filled, which drops entrants into the slots and leaves every time and court
+     alone. Rebuilding would delete every match and take the schedule with it,
+     so it is only offered once somebody is actually standing in the draw. */
+  /* Three different jobs, and the label has to say which one.
+       nothing there yet          -> lay it out from the format
+       laid out, nobody in it     -> drop the entrants into the slots, which
+                                     keeps every time and court already set
+       entrants standing in it    -> a real re-draw, which rebuilds it
+     A pooled format is never "filled" from a seed list: its slots are pool
+     places that resolve as the pools finish, so it only ever lays out again. */
+  function drawBtnLabel(dv) {
+    var kk = fmtOfDiv(dv), pooled = (kk === 'tiered' || kk === 'grp' || kk === 'gk');
+    if (!(dv.match_count || 0)) return pooled ? 'Lay out the draw' : 'Make the draw';
+    if (pooled) return 'Lay it out again';
+    if (!(dv.placed_count || 0)) return 'Fill the draw';
+    return 'Draw again';
+  }
+  /* CAPACITY IS A PLAIN NUMBER. A field of 10 is a field of 10: the draw is
+     built to the next power of two above it and the byes go to the top seeds,
+     so 4, 8, 16 was never a real constraint and offering only those numbers
+     made organisers round their own event up. The line underneath says exactly
+     what the number they typed will produce, so nobody has to guess. */
+  function nextPow2(n) { var b = 2; while (b < n) b *= 2; return b; }
+  function andList(a) {
+    return a.length < 2 ? String(a[0] || '')
+      : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+  }
+  function poolSizes(n, g) {
+    var base = Math.floor(n / g), rem = n % g, out = [];
+    for (var i = 1; i <= g; i++) out.push(base + (i > g - rem ? 1 : 0));
+    return out;
+  }
+  function capNow(dv) {
+    var el = document.getElementById('tg-dsize');
+    return +((el && el.value) || dv.draw_size || 0) || 0;
+  }
+  function numNow(id, fallback) {
+    var el = document.getElementById(id);
+    return +((el && el.value) || fallback || 0) || 0;
+  }
+  function capShape(dv, k) {
+    var n = capNow(dv), N = nouns(dv);
+    if (!n || n < 2) return 'Type any number. It does not have to be 4, 8, 16 and so on.';
+    if (k === 'ko') {
+      var b = nextPow2(n), byes = b - n, r1 = b / 2 - byes;
+      return n + ' ' + N.many + ' builds a draw of ' + b + '. Seeds 1 to ' + n + ' are placed'
+        + (byes ? ', the top ' + byes + ' seed' + (byes === 1 ? '' : 's') + ' get a bye' : ', nobody gets a bye')
+        + ', and round 1 is ' + r1 + ' match' + (r1 === 1 ? '' : 'es') + '.';
+    }
+    if (k === 'monrad') {
+      var rd = Math.ceil(Math.log(n) / Math.log(2));
+      return n + ' ' + N.many + ' plays ' + rd + ' rounds and finishes ranked 1 to ' + n + '.';
+    }
+    var g = numNow(k === 'tiered' ? 'tg-np' : 'tg-ng', dv.num_groups || 2);
+    if (g < 1) return 'Set the number of ' + (k === 'tiered' ? 'pools' : 'groups') + '.';
+    if (n < g * 2) return n + ' ' + N.many + ' will not fill ' + g + ' '
+      + (k === 'tiered' ? 'pools' : 'groups') + '. Each one needs at least 2, so this takes '
+      + (g * 2) + ' or more, or fewer ' + (k === 'tiered' ? 'pools' : 'groups') + '.';
+    var sz = poolSizes(n, g), fx = 0;
+    sz.forEach(function (s) { fx += s * (s - 1) / 2; });
+    var word = k === 'tiered' ? 'pools' : 'groups';
+    var line = n + ' ' + N.many + ' in ' + g + ' ' + word + ' of ' + andList(sz)
+      + ', which is ' + fx + ' pool matches';
+    if (k === 'grp') return line + ', and the table decides it.';
+    if (k === 'tiered') return line + ', then every ' + N.one + ' is placed 1 to ' + n + '.';
+    var adv = numNow('tg-adv', dv.groups_advance || 2), q = 0;
+    sz.forEach(function (s) { q += Math.min(adv, s); });
+    return line + '. The top ' + adv + ' of each gives ' + q + ' qualifiers, into a bracket of '
+      + nextPow2(q) + '.';
+  }
+  function capField(dv) {
+    return '<div class="lg-fld"><div class="lg-lab">Maximum ' + nouns(dv).many + ' expected</div>'
+      + '<input class="lg-in" id="tg-dsize" type="number" min="2" max="512" step="1" placeholder="Any number"'
+      + ' value="' + (dv.draw_size || '') + '" oninput="FFPTourn.capHint()"></div>';
+  }
+  function capHintRow(dv, k) {
+    return '<div class="tg-hint" id="tg-caphint" style="margin:-6px 0 16px">' + esc(capShape(dv, k)) + '</div>';
+  }
+  function capHint() {
+    var el = document.getElementById('tg-caphint'); if (!el) return;
+    var dv = curDv() || {};
+    el.textContent = capShape(dv, fmtOfDiv(dv));
+  }
+  // The order of play is set from the format, not from who has entered: an
+  // empty draw of a chosen size gives every round its matches, so the whole
+  // tournament can be scheduled and the names dropped in as results come.
+  /* Draw used to say "build it above" when the control was on another tab, and
+     Schedule sent you to Setup. Both now carry the thing that fixes them. The
+     select keeps the id openDivDraw already reads, and only one tab is on
+     screen at a time, so there is never two of it. */
+  function openDrawEmpty(which) {
+    var dv = ((S.detail && S.detail.divisions) || []).find(function (d) { return d.id === S.divId; }) || {};
+    var cap = dv.draw_size || 0, N = nouns(dv);
+    /* The maximum lives in one place, on Setup, beside the rest of the format.
+       With it set this just builds; without it, it says where to set it rather
+       than offering a second field that can drift from the first. */
+    var row = cap
+      ? '<span class="lb">Maximum ' + N.many + ', ' + cap + '</span>'
+        + '<button class="lg-btn pri" onclick="FFPTourn.openDivDraw()">' + ic('grid_on') + 'Open the draw</button>'
+      : '<button class="lg-btn pri" onclick="FFPTourn.tab(\'setup\')">' + ic('tune') + 'Go to Setup</button>';
+    var need = cap ? '' : ' First set the format and the maximum number of ' + N.many + ' on Setup.';
+    if (which === 'schedule') {
+      return '<div class="lg-empty act"><div class="t">Nothing to schedule yet</div>'
+        + '<div class="s">The schedule is built from the draw. Open the draw and every round appears here, '
+        + 'ready for times and ' + surfWord(true) + '.' + need + '</div>'
+        + '<div class="row">' + row + '</div></div>';
+    }
+    return '<div class="lg-empty act"><div class="t">This division has no draw yet</div>'
+      + '<div class="s">Open it and every round is created empty, so the whole tournament can be scheduled '
+      + 'before a single entry is in. Names drop into the slots as ' + N.many + ' are seeded.' + need + '</div>'
+      + '<div class="row">' + row + '</div></div>';
+  }
+  /* Say what was actually made, because "Saved" tells an organiser nothing
+     about whether their whole event now exists. */
+  function laidOutMsg(d) {
+    d = d || {};
+    var pool = d.pool_matches || 0, draw = d.draw_matches || 0;
+    var bits = [];
+    if (pool) bits.push(pool + ' pool match' + (pool === 1 ? '' : 'es'));
+    if (draw) bits.push(draw + ' in the draw');
+    if (!bits.length) return 'Nothing to lay out yet';
+    return 'Laid out: ' + bits.join(' and ') + ', ready to schedule';
+  }
+  function openDrawCancel() { S.openDrawAsk = null; renderTab(); }
+  async function openDivDraw(confirmed) {
+    var dv = ((S.detail && S.detail.divisions) || []).find(function (d) { return d.id === S.divId; }) || {};
+    if ((dv.match_count || 0) > 0 && !confirmed) { S.openDrawAsk = dv.id; renderTab(); return; }
+    var el = document.getElementById('tg-dsize');
+    var size = +((el && el.value) || dv.draw_size || 0) || 0;
+    S.openDrawAsk = null;
+    /* No size given is fine: the database works it out from the entrants the
+       division already holds, rounded up to the next power of two. It only
+       asks when there is nobody to work it out from. */
+    /* ONE call, whatever the format is. The database lays out the pools, the
+       ladder, the bracket and every round from the shape the organiser set, on
+       slot names rather than entrants, so it can all be scheduled before a
+       single entry arrives. The options are saved first so it lays out to what
+       is on screen, not to what was last stored. */
+    var r, em;
+    if (!(await saveDivFormat(true))) return;
+    var args = { p_division: S.divId }; if (size) args.p_size = size;
+    try { r = await sb().rpc('tourn_draw_open', args); } catch (e) { r = { error: e }; }
+    if (r.error) {
+      em = r.error.message || '';
+      toast(/matches_played/.test(em) ? 'A match has already been played in this division'
+          : /no_size/.test(em)  ? 'Set how many this division takes first'
+          : /no_groups/.test(em) ? 'Set the number of pools first'
+          : (said(r.error) || 'Could not lay out the draw'), 'error');
+      renderTab(); return;
+    }
+    toast(laidOutMsg(r.data), 'success');
+    S.tab = (((r.data && r.data.pool_matches) || 0) > 0 && !((r.data && r.data.draw_matches) || 0))
+      ? 'groups' : 'bracket';
+    S.drawKey = null; await refreshDetail();
+  }
+  function sideHint() {
+    var sel = document.getElementById('tg-side'), h = document.getElementById('tg-sidehint');
+    if (!sel || !h) return;
+    var x = SIDE_DRAWS.find(function (o) { return o[0] === sel.value; });
+    h.textContent = x ? say(x[2]) : '';
+  }
+  function fmtDia(k) {
+    if (k === 'grp') return '<svg width="56" height="60" viewBox="0 0 56 60" class="tgd"><rect x="2" y="4" width="52" height="12" rx="2"/><rect x="2" y="18" width="52" height="12" rx="2"/><rect x="2" y="32" width="52" height="12" rx="2"/><rect x="2" y="46" width="52" height="12" rx="2"/></svg>';
+    if (k === 'gk') return '<svg width="86" height="74" viewBox="0 0 86 74" class="tgd"><rect x="2" y="4" width="34" height="10"/><rect x="2" y="17" width="34" height="10"/><rect x="2" y="30" width="34" height="10"/><rect x="52" y="10" width="32" height="10"/><line x1="36" y1="9" x2="52" y2="15"/><line x1="36" y1="35" x2="52" y2="15"/><rect x="16" y="52" width="24" height="9"/><rect x="16" y="63" width="24" height="9"/><rect x="48" y="57" width="24" height="9"/><line x1="40" y1="56" x2="48" y2="61"/><line x1="40" y1="67" x2="48" y2="61"/></svg>';
+    if (k === 'tiered') return '<svg width="80" height="70" viewBox="0 0 80 70" class="tgd"><rect x="2" y="6" width="26" height="10"/><rect x="2" y="19" width="26" height="10"/><rect x="2" y="36" width="26" height="10"/><rect x="2" y="49" width="26" height="10"/><rect x="52" y="6" width="26" height="10"/><rect x="52" y="19" width="26" height="10"/><rect x="52" y="36" width="26" height="10"/><rect x="52" y="49" width="26" height="10"/><line x1="28" y1="11" x2="52" y2="11"/><line x1="28" y1="24" x2="52" y2="24"/><line x1="28" y1="41" x2="52" y2="41"/><line x1="28" y1="54" x2="52" y2="54"/></svg>';
+    if (k === 'monrad') return '<svg width="80" height="70" viewBox="0 0 80 70" class="tgd"><rect x="2" y="6" width="24" height="9"/><rect x="2" y="19" width="24" height="9"/><rect x="2" y="36" width="24" height="9"/><rect x="2" y="49" width="24" height="9"/><rect x="38" y="6" width="24" height="9"/><rect x="38" y="19" width="24" height="9"/><rect x="38" y="36" width="24" height="9"/><rect x="38" y="49" width="24" height="9"/><line x1="26" y1="10" x2="38" y2="10"/><line x1="26" y1="23" x2="38" y2="40"/><line x1="26" y1="40" x2="38" y2="23"/><line x1="26" y1="53" x2="38" y2="53"/></svg>';
+    return '<svg width="80" height="66" viewBox="0 0 80 66" class="tgd"><rect x="2" y="8" width="26" height="10"/><rect x="2" y="22" width="26" height="10"/><rect x="2" y="40" width="26" height="10"/><rect x="2" y="54" width="26" height="10"/><rect x="40" y="14" width="26" height="10"/><rect x="40" y="46" width="26" height="10"/><line x1="28" y1="13" x2="40" y2="19"/><line x1="28" y1="27" x2="40" y2="19"/><line x1="28" y1="45" x2="40" y2="51"/><line x1="28" y1="59" x2="40" y2="51"/></svg>';
+  }
+  function setEntrantMode(m) {
+    var ev = S.detail.event || {}; ev.entrant_mode = m;
+    document.querySelectorAll('#tg-mode button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-v') === m); });
+    // NOT renderTab(): that rebuilds the sport input from the SAVED activity,
+    // so picking Teams wiped whatever sport had just been typed and put the old
+    // one back. The buttons above already toggled themselves; the only other
+    // thing the mode changes on this tab is the line underneath.
+    var h = document.getElementById('tg-modehint');
+    if (h) h.textContent = (ENTRANT_MODES.find(function (x) { return x[0] === m; }) || ENTRANT_MODES[0])[2];
+  }
+  async function saveSetup() {
+    var k = v('tg-sport');
+    if (!k) { toast('Choose a sport first', 'error'); return; }
+    var p = rulesPayload();
+    p.sport_key = k; p.entrant_mode = (S.detail.event || {}).entrant_mode || 'individual';
+    var r; try { r = await sb().rpc('tourn_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast(said(r.error) || 'Could not save the sport', 'error'); return; }
+    await serSaveLink();
+    toast('Saved', 'success'); refreshDetail();
+  }
+  function setDivFmt(k) {
+    var divs = S.detail.divisions || [];
+    var dv = divs.find(function (x) { return x.id === S.divId; }); if (!dv) return;
+    dv.draw_format = (k === 'monrad') ? 'monrad' : (k === 'tiered' ? 'tiered' : 'ko');
+    dv.group_stage = (k === 'grp' || k === 'gk' || k === 'tiered');
+    if (k === 'grp') dv.groups_advance = 0; else if (!dv.groups_advance) dv.groups_advance = 2;
+    if (k === 'tiered') {
+      if (!dv.num_groups) dv.num_groups = 3;
+      if (!dv.band_size) dv.band_size = 4;
+      if (!dv.tier_quota) dv.tier_quota = [2, 2, 0].slice(0, dv.num_groups);
+    }
+    renderTab();
+  }
+  async function saveDivFormat(quiet) {
+    var divs = S.detail.divisions || [];
+    var dv = divs.find(function (x) { return x.id === S.divId; }); if (!dv) return;
+    var k = fmtOfDiv(dv);
+    var p = {
+      draw_format: k === 'monrad' ? 'monrad' : (k === 'tiered' ? 'tiered' : 'ko'),
+      group_stage: (k === 'grp' || k === 'gk' || k === 'tiered'),
+      num_groups: +v('tg-ng') || null,
+      groups_advance: k === 'gk' ? (+v('tg-adv') || 2) : (k === 'grp' ? 0 : (dv.groups_advance || 2)),
+      third_place: segVal('tg-third') === 'true',
+      side_draws: v('tg-side') || 'none',
+      // the most players this division takes, and the shape its draw is built
+      // to — it belongs with the rest of the format, not only with the draw
+      draw_size: +v('tg-dsize') || null
+    };
+    // only sent when the block is on screen; leaving the keys out leaves the
+    // stored values alone, which is how a knockout keeps whatever it had
+    if (k === 'grp' || k === 'gk') {
+      p.win_pts = v('tg-win'); p.draw_pts = v('tg-draw'); p.loss_pts = v('tg-loss');
+      p.bonus_rules = bpRead();
+    }
+    /* the ladder. Sent on EVERY save so switching a division back to an
+       ordinary format clears it rather than leaving a stale ladder behind -
+       the RPC uses the presence idiom for exactly this. */
+    if (k === 'tiered') {
+      var tc = tierCfg(dv);
+      p.num_groups = tc.g; p.band_size = tc.bs; p.tier_quota = tc.q;
+      p.groups_advance = tc.n || 2;   // everyone is placed, so everyone goes on
+      p.side_draws = 'places';
+    } else { p.tier_quota = null; p.band_size = null; }
+    var r; try { r = await sb().rpc('tourn_division_save', { p_tourn: S.eventId, p_id: S.divId, p: p }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast(said(r.error) || 'Could not save the format', 'error'); return false; }
+    if (quiet) return true;
+    /* Setting the format is how an organiser says what this division is. For a
+       knockout that is the whole shape, so the empty draw is opened there and
+       then: the Draw and Schedule tabs have something in them immediately and
+       the event can be scheduled before a single entry arrives. Only when the
+       division has no matches yet, so this never touches a live draw. */
+    /* The draw follows the format. Change the pools, the number who advance or
+       the band size and the whole thing is laid out again to match, because a
+       draw that still shows the old shape is worse than no draw.
+
+       Two things stop it: a result already entered, and entrants already
+       standing in the draw. Past that point the draw is real and is only
+       rebuilt when the organiser asks for it. */
+    var laid = null, o, sizeNow = (dv.draw_size || +v('tg-dsize') || 0);
+    if (sizeNow && !(dv.played_count || 0) && !(dv.placed_count || 0)) {
+      var a2 = { p_division: S.divId, p_size: sizeNow };
+      try { o = await sb().rpc('tourn_draw_open', a2); } catch (e) { o = { error: e }; }
+      if (o && !o.error && o.data) { laid = o.data; }
+    }
+    toast(laid ? ('Format saved. ' + laidOutMsg(laid)) : 'Format saved', 'success');
+    await refreshDetail(); return true;
+  }
+  function buildDivDraw() {
+    var divs = S.detail.divisions || [];
+    var dv = divs.find(function (x) { return x.id === S.divId; }); if (!dv) return;
+    /* No entrants is not a blocker any more: the draw is laid out from the
+       format and the entrants drop into it later. */
+    if ((dv.played_count || 0) > 0) {
+      showConfirm('replay', 'Draw ' + dv.name + ' again?',
+        (dv.played_count === 1 ? 'One result has' : dv.played_count + ' results have')
+          + ' already been entered in this draw. Drawing again builds it from scratch and those scores are lost.',
+        'Yes, draw it again', 'final', function () { _buildDivDraw(dv); });
+      return;
+    }
+    _buildDivDraw(dv);
+  }
+  async function _buildDivDraw(dv) {
+    if (!(await saveDivFormat(true))) return;
+    var k = fmtOfDiv(dv), r;
+    /* Nobody has entered yet: lay the whole thing out from the format instead.
+       One call builds the pools, the ladder or the bracket on slot names, so
+       the event exists and can be scheduled before the first entry. Once there
+       are entrants the builders below deal them into it properly. */
+    if (!(dv.entrant_count || 0)) {
+      var sz0 = (dv.draw_size || +v('tg-dsize') || 0);
+      var a0 = { p_division: S.divId }; if (sz0) a0.p_size = sz0;
+      try { r = await sb().rpc('tourn_draw_open', a0); } catch (e) { r = { error: e }; }
+      if (r.error) {
+        var e0 = r.error.message || '';
+        toast(/no_size/.test(e0)   ? 'Set how many this division takes first'
+            : /no_groups/.test(e0) ? 'Set the number of pools first'
+            : /matches_played/.test(e0) ? 'A match has already been played in this division'
+            : (said(r.error) || 'Could not lay out the draw'), 'error');
+        return;
+      }
+      toast(laidOutMsg(r.data), 'success');
+      S.tab = (((r.data && r.data.pool_matches) || 0) > 0 && !((r.data && r.data.draw_matches) || 0))
+        ? 'groups' : 'bracket';
+      S.drawKey = null; await refreshDetail(); return;
+    }
+    if (k === 'monrad') {
+      try { r = await sb().rpc('tourn_monrad_open', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast('Could not make the draw', 'error'); return; }
+      toast('Draw made', 'success'); S.tab = 'bracket'; S.drawKey = null; await refreshDetail(); return;
+    }
+    /* A tiered draw is TWO steps and the order matters: the pools are dealt in
+       ability blocks first, then the ladder is built on top of the pools that
+       produces. Building the ladder first would have nothing to hang the slots
+       on. */
+    if (k === 'tiered') {
+      var tg = tierCfg(dv).g;
+      try { r = await sb().rpc('tourn_groups_generate', { p_division: S.divId, p_num_groups: tg }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast(said(r.error) || 'Could not draw the pools', 'error'); return; }
+      try { r = await sb().rpc('tourn_tiered_build', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast(said(r.error) || 'Could not build the ladder', 'error'); return; }
+      toast('Pools and placings drawn', 'success'); S.tab = 'groups'; S.drawKey = null; await refreshDetail(); return;
+    }
+    if (k === 'grp' || k === 'gk') {
+      var ng = +v('tg-ng') || Math.max(2, Math.round((dv.entrant_count || 8) / 4));
+      try { r = await sb().rpc('tourn_groups_generate', { p_division: S.divId, p_num_groups: ng }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast('Could not draw groups', 'error'); return; }
+      toast((r.data || 0) + ' group fixtures drawn', 'success'); S.tab = 'groups'; S.drawKey = null; await refreshDetail(); return;
+    }
+    /* an open draw nobody is standing in yet: fill it, which keeps the times
+       and courts already assigned. Rebuilding deletes every match. */
+    if ((dv.match_count || 0) > 0 && !(dv.placed_count || 0)) {
+      try { r = await sb().rpc('tourn_draw_fill', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+      if (r.error) {
+        toast(/draw_locked/.test(r.error.message || '') ? 'This draw is locked' : 'Could not fill the draw', 'error');
+        return;
+      }
+      toast((r.data || 0) + ' placed into the draw', 'success');
+      S.tab = 'bracket'; S.drawKey = null; await refreshDetail(); return;
+    }
+    try { r = await sb().rpc('tourn_bracket_build', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not make the draw', 'error'); return; }
+    toast('Draw made', 'success'); S.tab = 'bracket'; S.drawKey = null; await refreshDetail();
+  }
   function segVal(id) { var b = document.querySelector('#' + id + ' button.on'); return b ? b.getAttribute('data-v') : null; }
   var STATUSES = [['draft', 'Draft'], ['live', 'Go Live'], ['final', 'Completed']];
   function statusSegBtns(cur, ns) { cur = (cur === 'open' ? 'live' : cur) || 'draft'; return STATUSES.map(function (s) { return '<button data-v="' + s[0] + '" class="st-' + s[0] + (s[0] === cur ? ' on' : '') + '" onclick="' + ns + '.statusPick(this,\'' + s[0] + '\')">' + s[1] + '</button>'; }).join(''); }
   var STATUS_MSG = {
-    live: ['confirmation_number', 'Go live?', 'This publishes the league to the FFP app — members can see it, register and follow it live. You can move it back to Draft anytime.', 'Yes, go live'],
-    final: ['emoji_events', 'Mark as completed?', 'This closes the league — the final table and results become the landing view for members. Only do this once every match is played.', 'Yes, mark completed'],
-    draft: ['visibility_off', 'Move back to Draft?', 'The league will be hidden from members in the FFP app until you go live again.', 'Yes, move to Draft']
+    live: ['confirmation_number', 'Go live?', 'This publishes the tournament to the FFP app — members can see it, register and follow it live. You can move it back to Draft anytime.', 'Yes, go live'],
+    final: ['emoji_events', 'Mark as completed?', 'This closes the tournament — the final bracket and results become the landing view for members. Only do this once every match is played.', 'Yes, mark completed'],
+    draft: ['visibility_off', 'Move back to Draft?', 'The tournament will be hidden from members in the FFP app until you go live again.', 'Yes, move to Draft']
   };
   function statusPick(btn, v) {
-    if (segVal('lg-status') === v) return;                 // already this status, no-op
+    if (segVal('tg-status') === v) return;
     var m = STATUS_MSG[v] || ['help', 'Change status?', '', 'Confirm'];
     showConfirm(m[0], m[1], m[2], m[3], v, function () {
-      document.querySelectorAll('#lg-status button').forEach(function (b) { b.classList.remove('on'); });
+      document.querySelectorAll('#tg-status button').forEach(function (b) { b.classList.remove('on'); });
       btn.classList.add('on');
-      saveDetails();                                       // a status change is a real action — persist immediately
+      saveDetails();
     });
   }
   /* WHERE AN EVENT ENDS. There was nowhere at all before this: a mistyped
-     league sat in the list for ever. Three different jobs, and they are
+     tournament sat in the list for ever. Three different jobs, and they are
      not interchangeable.
        ARCHIVE   hides it from members and from this list, keeps everything,
                  and Restore brings it back.
@@ -1917,31 +2577,31 @@
   function endBlock(ev) {
     var st = ev.status || 'draft';
     if (st === 'archived' || st === 'cancelled') {
-      return '<div class="lg-end"><div class="hd">This league is ' + esc(st) + '</div>'
+      return '<div class="lg-end"><div class="hd">This tournament is ' + esc(st) + '</div>'
         + '<div class="row"><div class="g"><b>Bring it back</b><span>'
         + (st === 'archived'
             ? 'It returns as a draft, hidden from members until you go live again. Nothing was lost.'
             : 'It returns as a draft and the cancelled banner comes off. Nothing was lost.')
         + '</span></div>'
-        + '<button class="lg-btn" onclick="FFPLeague.eventState(\'draft\')">' + ic('undo') + 'Restore</button></div></div>';
+        + '<button class="lg-btn" onclick="FFPTourn.eventState(\'draft\')">' + ic('undo') + 'Restore</button></div></div>';
     }
     var canDelete = st === 'draft';
-    return '<div class="lg-end"><div class="hd">Ending this league</div>'
+    return '<div class="lg-end"><div class="hd">Ending this tournament</div>'
       + '<div class="row"><div class="g"><b>Archive it</b>'
       +   '<span>Hides it from members and from your list. Every entrant, fixture and result is kept, and you can bring it back.</span></div>'
-      +   '<button class="lg-btn" onclick="FFPLeague.eventState(\'archived\')">' + ic('inventory_2') + 'Archive</button></div>'
+      +   '<button class="lg-btn" onclick="FFPTourn.eventState(\'archived\')">' + ic('inventory_2') + 'Archive</button></div>'
       + '<div class="row"><div class="g"><b>Call it off</b>'
       +   '<span>Stays in the app with a cancelled banner and sign-ups close, so anyone already registered is told rather than finding it gone.</span></div>'
-      +   '<button class="lg-btn" onclick="FFPLeague.eventState(\'cancelled\')">' + ic('event_busy') + 'Call it off</button></div>'
+      +   '<button class="lg-btn" onclick="FFPTourn.eventState(\'cancelled\')">' + ic('event_busy') + 'Call it off</button></div>'
       + '<div class="row"><div class="g"><b>Delete it</b><span>' + (canDelete
             ? 'Only while it is a draft with nobody entered and nothing drawn. It is gone for good.'
             : 'Not available. This has been published or already holds entrants, so archive it instead.')
       +   '</span></div>'
       +   '<button class="lg-btn danger"' + (canDelete ? '' : ' disabled')
-      +     ' onclick="FFPLeague.eventDelete()">' + ic('delete_forever') + 'Delete</button></div></div>';
+      +     ' onclick="FFPTourn.eventDelete()">' + ic('delete_forever') + 'Delete</button></div></div>';
   }
   async function eventState(state) {
-    var ev = (S.detail && S.detail.event) || {}, nm = esc(ev.name || 'this league');
+    var ev = (S.detail && S.detail.event) || {}, nm = esc(ev.name || 'this tournament');
     var M = {
       archived:  ['inventory_2', 'Archive ' + nm + '?', 'It disappears from the FFP app and from your list. Every entrant, fixture and result is kept, and Restore brings it back as a draft.', 'Yes, archive it', 'final'],
       cancelled: ['event_busy', 'Call off ' + nm + '?', 'Members keep seeing it, with a cancelled banner, and sign-ups close. Nothing is deleted and you can restore it.', 'Yes, call it off', 'final'],
@@ -1949,19 +2609,19 @@
     }[state];
     if (!M) return;
     showConfirm(M[0], M[1], M[2], M[3], M[4], async function () {
-      var r; try { r = await sb().rpc('lt_event_set_state', { p_scope: 'league', p_id: S.eventId, p_state: state }); } catch (e) { r = { error: e }; }
-      if (r.error) { toast(/not_owner/.test(r.error.message || '') ? 'Not your league' : 'Could not change it', 'error'); return; }
+      var r; try { r = await sb().rpc('lt_event_set_state', { p_scope: 'tourn', p_id: S.eventId, p_state: state }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast(/not_owner/.test(r.error.message || '') ? 'Not your tournament' : 'Could not change it', 'error'); return; }
       toast(state === 'draft' ? 'Restored as a draft' : (state === 'archived' ? 'Archived' : 'Called off'), 'success');
       if (state === 'archived') { S.view = 'list'; renderList(); } else { refreshDetail(); }
     });
   }
   async function eventDelete() {
-    var ev = (S.detail && S.detail.event) || {}, nm = esc(ev.name || 'this league');
+    var ev = (S.detail && S.detail.event) || {}, nm = esc(ev.name || 'this tournament');
     showConfirm('delete_forever', 'Delete ' + nm + '?',
-      'This removes the league and everything set up on it. It cannot be undone.',
+      'This removes the tournament and everything set up on it. It cannot be undone.',
       'Yes, delete it', 'final', async function () {
-      var r; try { r = await sb().rpc('lt_event_delete', { p_scope: 'league', p_id: S.eventId }); } catch (e) { r = { error: e }; }
-      if (r.error) { toast(/not_owner/.test(r.error.message || '') ? 'Not your league' : 'Could not delete it', 'error'); return; }
+      var r; try { r = await sb().rpc('lt_event_delete', { p_scope: 'tourn', p_id: S.eventId }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast(/not_owner/.test(r.error.message || '') ? 'Not your tournament' : 'Could not delete it', 'error'); return; }
       var d = r.data || {};
       if (d.ok === false) {
         toast(d.reason === 'not_draft'
@@ -1974,96 +2634,171 @@
   }
   function toggleArchived() { S.showArchived = !S.showArchived; renderList(); }
   function showConfirm(icon, title, body, okLabel, tone, onOk) {
-    var old = document.getElementById('lg-cfm'); if (old) old.remove();
-    var bk = document.createElement('div'); bk.id = 'lg-cfm'; bk.className = 'lg-cfm';
-    bk.innerHTML = '<div class="lg-cfm-in"><span class="ms lg-cfm-ic tone-' + tone + '">' + icon + '</span><div class="lg-cfm-t">' + title + '</div><div class="lg-cfm-b">' + body + '</div><div class="lg-cfm-a"><button class="lg-btn ghost" id="lg-cfm-no">Cancel</button><button class="lg-btn pri st-' + tone + '" id="lg-cfm-yes">' + okLabel + '</button></div></div>';
+    var old = document.getElementById('tg-cfm'); if (old) old.remove();
+    var bk = document.createElement('div'); bk.id = 'tg-cfm'; bk.className = 'lg-cfm';
+    bk.innerHTML = '<div class="lg-cfm-in"><span class="ms lg-cfm-ic tone-' + tone + '">' + icon + '</span><div class="lg-cfm-t">' + title + '</div><div class="lg-cfm-b">' + body + '</div><div class="lg-cfm-a"><button class="lg-btn ghost" id="tg-cfm-no">Cancel</button><button class="lg-btn pri st-' + tone + '" id="tg-cfm-yes">' + okLabel + '</button></div></div>';
     document.body.appendChild(bk);
-    bk.querySelector('#lg-cfm-no').onclick = function () { bk.remove(); };
-    bk.querySelector('#lg-cfm-yes').onclick = function () { bk.remove(); onOk(); };
+    bk.querySelector('#tg-cfm-no').onclick = function () { bk.remove(); };
+    bk.querySelector('#tg-cfm-yes').onclick = function () { bk.remove(); onOk(); };
     bk.onclick = function (e) { if (e.target === bk) bk.remove(); };
   }
   function v(id) { var e = document.getElementById(id); return e ? e.value : ''; }
-  async function saveDetails() {
-    // Sport, schedule, points and finals live on the Setup tab now, per division
-    var p = { name: v('lg-name'), city: v('lg-city'), country: v('lg-country'),
-      starts_at: v('lg-start') || null, ends_at: v('lg-end') || null,
-      status: segVal('lg-status') || 'draft', description: v('lg-desc'), rules: v('lg-rules') };
-    var r; try { r = await sb().rpc('league_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Save failed', 'error'); return; } toast('Saved', 'success'); open(S.eventId);
+  // a timestamptz split into the two inputs a person actually fills in
+  function dPart(ts) { return ts ? String(ts).slice(0, 10) : ''; }
+  function tPart(ts) { if (!ts) return ''; var d = new Date(ts); if (isNaN(d)) return '';
+    return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function joinDT(dId, tId) {
+    var d = v(dId); if (!d) return '';
+    var t = v(tId) || '00:00';
+    return new Date(d + 'T' + t).toISOString();
   }
 
-  // ---------- DIVISIONS (inline, no popups) ----------
+  async function saveDetails() {
+    var p = { name: v('tg-name'),
+      city: v('tg-city'), country: v('tg-country'), starts_at: v('tg-start') || null, ends_at: v('tg-end') || null,
+      status: segVal('tg-status') || 'draft', description: v('tg-desc'), rules: v('tg-rules'),
+      reg_opens_at: joinDT('tg-ro-d', 'tg-ro-t'), reg_closes_at: joinDT('tg-rc-d', 'tg-rc-t'),
+      entry_fee: v('tg-fee') === '' ? null : v('tg-fee'), currency: (v('tg-cur') || '').toUpperCase(),
+      pay_instructions: v('tg-payhow') };
+    var r; try { r = await sb().rpc('tourn_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Save failed', 'error'); return; }
+    try { await sb().rpc('tourn_set_stream', { p_event: S.eventId, p_url: v('tg-stream') }); } catch (e) {}
+    toast('Saved', 'success'); open(S.eventId);
+  }
+
+  // CATEGORIES (inline)
   function renderDivisions(host) {
     var divs = S.detail.divisions || [];
     var rows = divs.map(function (d) {
       if (S.divEdit === d.id) return divEditor(d);
-      return '<div class="lg-row">' + '<span class="ms drag">drag_indicator</span>' + '<div class="g"><b>' + esc(d.name) + '</b> <span>' + (d.kind === 'individual' ? 'Individual' : 'Team') + ', ' + (d.entrant_count || 0) + ' in</span></div>' + '<span class="ms act" onclick="FFPLeague.editDivision(\'' + d.id + '\')">edit</span></div>';
+      return '<div class="lg-row"><span class="ms drag">drag_indicator</span><div class="g"><b>' + esc(d.name) + '</b> <span>' + (d.kind === 'individual' ? 'Individual' : 'Team') + ', ' + (d.entrant_count || 0) + ' in</span></div><span class="ms act" onclick="FFPTourn.editDivision(\'' + d.id + '\')">edit</span></div>';
     }).join('');
-    var adder = S.divEdit === 'new' ? divEditor(null) : '<button class="lg-btn" style="margin-top:12px" onclick="FFPLeague.editDivision(\'new\')">' + ic('add') + 'Add division</button>';
-    host.innerHTML = rows + adder;
-    var f = document.getElementById('lg-dvname'); if (f) f.focus();
+    var adder = S.divEdit === 'new' ? divEditor(null) : '<button class="lg-btn" style="margin-top:12px" onclick="FFPTourn.editDivision(\'new\')">' + ic('add') + 'Add division</button>';
+    host.innerHTML = rows + adder; var f = document.getElementById('tg-dvname'); if (f) f.focus();
   }
   function divEditor(d) {
-    d = d || {}; var isTeam = (d.kind || 'team') !== 'individual';
+    d = d || {};
+    var mode = (S.detail && S.detail.event && S.detail.event.entrant_mode) || 'individual';
+    var isTeam = d.id ? (d.kind !== 'individual') : (mode === 'team');
     var gOpts = '<option value="">Open / any</option>' + genderNames().map(function (g) { return '<option' + (d.gender === g ? ' selected' : '') + '>' + esc(g) + '</option>'; }).join('');
-    return '<div class="lg-edit">'
-      + '<input class="lg-in" id="lg-dvname" placeholder="Division name" value="' + esc(d.name || '') + '">'
-      + '<div class="lg-seg" id="lg-dvkind"><button data-v="team" class="' + (isTeam ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-dvkind\')">Team</button><button data-v="individual" class="' + (!isTeam ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-dvkind\')">Individual</button></div>'
-      + '<select class="lg-sel" id="lg-dvgender" style="width:auto">' + gOpts + '</select>'
-      + '<input class="lg-in" id="lg-dvmin" type="number" placeholder="Min age" value="' + (d.min_age != null ? d.min_age : '') + '" style="width:88px">'
-      + '<input class="lg-in" id="lg-dvmax" type="number" placeholder="Max age" value="' + (d.max_age != null ? d.max_age : '') + '" style="width:88px">'
-      + '<button class="lg-btn pri" onclick="FFPLeague.saveDivision(\'' + (d.id || '') + '\')">' + ic('check') + 'Save</button>'
-      + '<button class="lg-btn ghost" onclick="FFPLeague.cancelDivision()">Cancel</button></div>';
+    // Only a mixed tournament asks per division; otherwise Setup already said.
+    var kindCtl = mode === 'mixed'
+      ? '<div class="lg-seg" id="tg-dvkind"><button data-v="team" class="' + (isTeam ? 'on' : '') + '" onclick="FFPTourn.divKind(this)">Team / pair</button><button data-v="individual" class="' + (!isTeam ? 'on' : '') + '" onclick="FFPTourn.divKind(this)">Individual</button></div>'
+      : '<span class="lg-seg" id="tg-dvkind" style="display:none"><button data-v="' + (isTeam ? 'team' : 'individual') + '" class="on"></button></span>';
+    var teamCtl = isTeam
+      ? '<input class="lg-in" id="tg-dvsize" type="number" min="1" placeholder="Players per team" title="Players per team" value="' + (d.team_size != null ? d.team_size : 2) + '" style="width:150px">'
+      : '';
+    return '<div class="lg-edit" id="tg-dved"><input class="lg-in" id="tg-dvname" placeholder="' + (isTeam ? 'Team division name' : 'Division name') + '" value="' + esc(d.name || '') + '">'
+      + kindCtl + teamCtl
+      + '<select class="lg-sel" id="tg-dvgender" style="width:auto">' + gOpts + '</select>'
+      + '<input class="lg-in" id="tg-dvmin" type="number" placeholder="Min age" value="' + (d.min_age != null ? d.min_age : '') + '" style="width:88px">'
+      + '<input class="lg-in" id="tg-dvmax" type="number" placeholder="Max age" value="' + (d.max_age != null ? d.max_age : '') + '" style="width:88px">'
+      + '<button class="lg-btn pri" onclick="FFPTourn.saveDivision(\'' + (d.id || '') + '\')">' + ic('check') + 'Save</button><button class="lg-btn ghost" onclick="FFPTourn.cancelDivision()">Cancel</button></div>';
+  }
+  // Switching a division to a team needs the team fields there and then.
+  function divKind(btn) {
+    document.querySelectorAll('#tg-dvkind button').forEach(function (b) { b.classList.remove('on'); });
+    btn.classList.add('on');
+    var team = btn.getAttribute('data-v') === 'team';
+    var ed = document.getElementById('tg-dved'); if (!ed) return;
+    var sz = document.getElementById('tg-dvsize');
+    if (team && !sz) {
+      sz = document.createElement('input');
+      sz.className = 'lg-in'; sz.id = 'tg-dvsize'; sz.type = 'number'; sz.min = '1';
+      sz.placeholder = 'Players per team'; sz.title = 'Players per team'; sz.value = '2';
+      sz.style.width = '150px';
+      ed.insertBefore(sz, document.getElementById('tg-dvgender'));
+    } else if (!team && sz) { sz.remove(); }
   }
   function editDivision(id) { S.divEdit = id; renderTab(); }
   function cancelDivision() { S.divEdit = null; renderTab(); }
   async function saveDivision(id) {
-    var nm = (document.getElementById('lg-dvname') || {}).value; if (!nm || !nm.trim()) { toast('Name required', 'error'); return; }
-    var kind = segVal('lg-dvkind') || 'team';
-    var p = { name: nm.trim(), kind: kind, team_size: kind === 'team' ? 5 : 1, gender: v('lg-dvgender') || 'any', min_age: v('lg-dvmin') || null, max_age: v('lg-dvmax') || null };
-    var r; try { r = await sb().rpc('league_division_save', { p_league: S.eventId, p_id: id || null, p: p }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Save failed', 'error'); return; }
-    S.divEdit = null; toast('Saved', 'success'); refreshDetail();
+    var nm = (document.getElementById('tg-dvname') || {}).value; if (!nm || !nm.trim()) { toast('Name required', 'error'); return; }
+    var mode = (S.detail && S.detail.event && S.detail.event.entrant_mode) || 'individual';
+    var kind = segVal('tg-dvkind') || (mode === 'team' ? 'team' : 'individual');
+    var p = { name: nm.trim(), kind: kind, team_size: kind === 'team' ? (Math.max(1, +v('tg-dvsize') || 2)) : 1, gender: v('tg-dvgender') || 'any', min_age: v('tg-dvmin') || null, max_age: v('tg-dvmax') || null };
+    var r; try { r = await sb().rpc('tourn_division_save', { p_tourn: S.eventId, p_id: id || null, p: p }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Save failed', 'error'); return; } S.divEdit = null; toast('Saved', 'success'); refreshDetail();
   }
 
-  // ---------- ENTRANTS (inline) ----------
+  // ENTRANTS (inline)
+  // Paid or not, and what it was paid by. One tap marks it, so the desk can
+  // take cash and move on without opening anything.
+  function paidCell(en) {
+    var on = !!en.paid;
+    var t = on ? ('Paid' + (en.paid_method_label ? ', ' + en.paid_method_label : '')) : 'Not paid';
+    return '<button class="tg-paid' + (on ? ' on' : '') + '" title="' + esc(t) + '"'
+      + ' onclick="FFPTourn.togglePaid(\'' + en.id + '\',' + (on ? 'false' : 'true') + ')">'
+      + ic(on ? 'paid' : 'radio_button_unchecked') + (on ? 'Paid' : 'Unpaid') + '</button>';
+  }
+
   async function renderEntrants(host) {
     var divs = S.detail.divisions || [];
     if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
     if (!S.divId) S.divId = divs[0].id;
     var N = nouns(curDv());
     var adder = S.entAdd
-      ? '<div class="lg-edit"><input class="lg-in" id="lg-entname" placeholder="' + N.One + ' name" onkeydown="if(event.key===\'Enter\')FFPLeague.saveEntrant()"><button class="lg-btn pri" onclick="FFPLeague.saveEntrant()">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPLeague.cancelEntrant()">Cancel</button></div>'
-      : '<button class="lg-btn" onclick="FFPLeague.addEntrant()">' + ic('add') + 'Add a ' + N.one + '</button>';
-    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPLeague.setDiv(this.value,\'entrants\')">' + divOpts() + '</select><span class="sp"></span>' + (S.divId ? '<button class="lg-btn" onclick="FFPLeague.bulkAthletes()">' + ic('upload_file') + 'Bulk add</button>' : '') + '</div>' + adder + '<div id="lg-roster"><div class="lg-empty">Loading…</div></div>';
-    var f = document.getElementById('lg-entname'); if (f) f.focus();
-    var r; try { r = await sb().rpc('league_roster', { p_division: S.divId }); } catch (e) { r = { error: e }; }
-    try { var sq = await sb().rpc('lt_squad_list', { p_scope: 'league', p_event: S.eventId }); S._squad = (sq && sq.data) || []; } catch (e) { S._squad = []; }
-    try { var po = await sb().rpc('lt_position_list', { p_event: S.eventId }); S._pos = (po && po.data) || []; } catch (e) { S._pos = []; }
-    var rows = (r && r.data) || []; var host2 = document.getElementById('lg-roster');
-    host2.innerHTML = rows.length ? rows.map(function (en) {
+      ? '<div class="lg-edit"><input class="lg-in" id="tg-entname" placeholder="' + N.One + ' name" onkeydown="if(event.key===\'Enter\')FFPTourn.saveEntrant()"><button class="lg-btn pri" onclick="FFPTourn.saveEntrant()">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPTourn.cancelEntrant()">Cancel</button></div>'
+      : '<button class="lg-btn" onclick="FFPTourn.addEntrant()">' + ic('add') + 'Add a ' + N.one + '</button>';
+    /* A round of a series starts from the series list, not a blank form. */
+    var inSeries = !!(S.detail && S.detail.event && S.detail.event.series_id);
+    var serBtn = (inSeries && S.divId && !S.serEnter)
+      ? '<button class="lg-btn" onclick="FFPTourn.serEnterOpen()">' + ic('groups') + 'Add from the series</button>' : '';
+    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'entrants\')">' + divOpts() + '</select><span class="sp"></span>' + serBtn + (S.divId ? '<button class="lg-btn" onclick="FFPTourn.bulkAthletes()">' + ic('upload_file') + 'Bulk add</button>' : '') + '</div>' + serEnterHtml() + adder + '<div id="tg-roster"><div class="lg-empty">Loading…</div></div>';
+    var f = document.getElementById('tg-entname'); if (f) f.focus();
+    var r; try { r = await sb().rpc('tourn_roster', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+    try { var sq = await sb().rpc('lt_squad_list', { p_scope: 'tourn', p_event: S.eventId }); S._squad = (sq && sq.data) || []; } catch (e) { S._squad = []; }
+    try {
+      var gm = await sb().from('tourn_matches').select('group_label').eq('division_id', S.divId);
+      S._grpLabels = [...new Set(((gm && gm.data) || []).map(function (x) { return x.group_label; }).filter(Boolean))];
+    } catch (e) { S._grpLabels = []; }
+    var rows = (r && r.data) || []; var host2 = document.getElementById('tg-roster');
+    // Entries that have signed up but are not in yet. A team is made by its
+    // captain and waits here until the organiser lets it in.
+    var waiting = rows.filter(function (en) { return en.status === 'pending'; });
+    var pend = waiting.length
+      ? '<div class="tg-pend"><div class="hd">' + waiting.length + (waiting.length === 1 ? ' entry waiting' : ' entries waiting') + '</div>'
+        + waiting.map(function (en) {
+            return '<div class="row"><b>' + esc(en.name) + '</b>'
+              + '<span class="sub">' + esc(en.kind === 'individual' ? 'Individual' : 'Team') + (en.club ? ', ' + esc(en.club) : '') + '</span>'
+              + '<span class="sp"></span>'
+              + '<button class="lg-btn sm" onclick="FFPTourn.decide(\'' + en.id + '\',true)">' + ic('check') + 'Approve</button>'
+              + '<button class="lg-btn sm ghost" onclick="FFPTourn.decide(\'' + en.id + '\',false)">Decline</button></div>';
+          }).join('') + '</div>'
+      : '';
+    host2.innerHTML = pend + (rows.length ? rows.map(function (en) {
       var flag = en.nationality ? ', ' + esc(en.nationality) : '';
       var isTeam = en.kind !== 'individual';
-      var sqBtn = isTeam ? '<button class="lg-btn sm" onclick="FFPLeague.sqToggle(\'' + en.id + '\')">' + ic('groups') + 'Squad (' + squadFor(en.id).length + ')</button>' : '';
-      var initial = en.logo ? '' : esc((en.name || '?').slice(0, 1));
-      var bg = en.logo ? 'background-image:url(\'' + esc(en.logo) + '\')' : '';
-      var crest = isTeam
-        ? '<span class="lg-av lg-avedit" title="Add / change logo" onclick="FFPLeague.entLogo(\'' + en.id + '\')" style="' + bg + '">' + initial + '<span class="lg-avplus ms">add</span></span>'
-        : '<span class="lg-av" style="' + bg + '">' + initial + '</span>';
+      var sqBtn = isTeam ? '<button class="lg-btn sm" onclick="FFPTourn.sqToggle(\'' + en.id + '\')">' + ic('groups') + 'Squad (' + squadFor(en.id).length + ')</button>' : '';
+      var tInit = en.logo ? '' : esc((en.name || '?').slice(0, 1));
+      var tBg = en.logo ? 'background-image:url(\'' + esc(en.logo) + '\')' : '';
+      var tCrest = isTeam
+        ? '<span class="lg-av lg-avedit" title="Add / change logo" onclick="FFPTourn.entLogo(\'' + en.id + '\')" style="' + tBg + '">' + tInit + '<span class="lg-avplus ms">add</span></span>'
+        : '<span class="lg-av" style="' + tBg + '">' + tInit + '</span>';
       // Editing replaces the row in place, so the list never jumps.
       if (S.entEdit === en.id) return entEditHtml(en);
-      var edBtn = '<span class="ms act" title="Edit details" onclick="FFPLeague.editEntrant(\'' + en.id + '\')">edit</span>';
-      var row = '<div class="lg-row">' + crest + '<div class="g"><b>' + esc(en.name) + '</b> <span>' + esc(en.status) + (en.kind === 'individual' ? flag : '') + '</span></div>' + sqBtn + edBtn + '</div>';
-      return row + (isTeam && S.sqOpen === en.id ? '<div class="lg-sq" id="lg-sq-' + en.id + '"><div class="lg-sqsrch">' + ic('search') + '<input id="lg-sqq-' + en.id + '" placeholder="Search FFP or type a name" value="' + esc((S._sqQ || {})[en.id] || '') + '" oninput="FFPLeague.sqSearch(\'' + en.id + '\',this.value)"></div><div id="lg-sqres-' + en.id + '">' + sqResHtml(en.id) + '</div></div>' : '');
-    }).join('') : '<div class="lg-empty">No ' + N.many + ' yet. Members self-register in the app, or add them here.</div>';
+      var edBtn = '<span class="ms act" title="Edit details" onclick="FFPTourn.editEntrant(\'' + en.id + '\')">edit</span>';
+      var row = '<div class="lg-row">' + tCrest + paidCell(en) + '<div class="g"><b>' + esc(en.name) + '</b> <span>' + esc(en.status) + (en.group_label ? ', Group ' + esc(en.group_label) : '') + (en.kind === 'individual' ? flag : '') + '</span></div>' + sqBtn + edBtn + '</div>';
+      return row + (isTeam && S.sqOpen === en.id ? '<div class="lg-sq" id="lg-sq-' + en.id + '"><div class="lg-sqsrch">' + ic('search') + '<input id="lg-sqq-' + en.id + '" placeholder="Search FFP or type a name" value="' + esc((S._sqQ || {})[en.id] || '') + '" oninput="FFPTourn.sqSearch(\'' + en.id + '\',this.value)"></div><div id="lg-sqres-' + en.id + '">' + sqResHtml(en.id) + '</div></div>' : '');
+    }).join('') : '<div class="lg-empty">No ' + N.many + ' yet. Members self-register in the app, or add them here.</div>');
     S._roster = rows;
   }
 
   // ---------- EDIT ONE ENTRANT ----------
   // An individual entrant is a member's own record, so their name and
   // nationality come from their FFP profile and are not the organiser's to
-  // rewrite here — only the division, seed and status are.
+  // rewrite here — only the division, seed, group and status are.
   var ENT_STATUS = [['registered', 'Registered'], ['pending', 'Pending'], ['withdrawn', 'Withdrawn']];
+
+  // Group labels come from the draw, so the choices are the groups this division
+  // actually has. Before a draw there is nothing to pick and the field is hidden
+  // rather than shown empty.
+  function groupLabels() {
+    var seen = {};
+    (S._roster || []).forEach(function (x) { if (x.group_label) seen[x.group_label] = 1; });
+    (S._grpLabels || []).forEach(function (g) { if (g) seen[g] = 1; });
+    return Object.keys(seen).sort();
+  }
 
   function entEditHtml(en) {
     var isTeam = en.kind !== 'individual';
@@ -2073,81 +2808,110 @@
     var stOpts = ENT_STATUS.map(function (x) {
       return '<option value="' + x[0] + '"' + (x[0] === en.status ? ' selected' : '') + '>' + x[1] + '</option>';
     }).join('');
-    var initial = en.logo ? '' : esc((en.name || '?').slice(0, 1));
-    var bg = en.logo ? 'background-image:url(\'' + esc(en.logo) + '\')' : '';
+    var grOpts = '<option value="">Not set</option>' + (_grades || []).map(function (x) {
+      return '<option value="' + esc(x) + '"' + (x === en.grade ? ' selected' : '') + '>' + esc(x) + '</option>';
+    }).join('');
+    var gl = groupLabels();
+    var grpField = gl.length
+      ? '<div class="f sm"><label>Group</label><select class="lg-sel" id="tg-ee-group">' +
+        '<option value="">None</option>' +
+        gl.map(function (g) {
+          return '<option value="' + esc(g) + '"' + (g === en.group_label ? ' selected' : '') + '>' + esc(g) + '</option>';
+        }).join('') + '</select></div>'
+      : '';
+    var tInit = en.logo ? '' : esc((en.name || '?').slice(0, 1));
+    var tBg = en.logo ? 'background-image:url(\'' + esc(en.logo) + '\')' : '';
     var crest = isTeam
-      ? '<span class="lg-av lg-avedit" title="Add / change logo" onclick="FFPLeague.entLogo(\'' + en.id + '\')" style="' + bg + '">' + initial + '<span class="lg-avplus ms">add</span></span>'
-      : '<span class="lg-av" style="' + bg + '">' + initial + '</span>';
+      ? '<span class="lg-av lg-avedit" title="Add / change logo" onclick="FFPTourn.entLogo(\'' + en.id + '\')" style="' + tBg + '">' + tInit + '<span class="lg-avplus ms">add</span></span>'
+      : '<span class="lg-av" style="' + tBg + '">' + tInit + '</span>';
     return '<div class="lg-edit lg-entform">' +
       '<span class="crest">' + crest + '</span>' +
       (isTeam
-        ? '<div class="f gr"><label>Team name</label><input class="lg-in" id="lg-ee-name" value="' + esc(en.team_name || en.name || '') + '" onkeydown="if(event.key===\'Enter\')FFPLeague.saveEntrantEdit()"></div>'
+        ? '<div class="f gr"><label>Team name</label><input class="lg-in" id="tg-ee-name" value="' + esc(en.team_name || en.name || '') + '" onkeydown="if(event.key===\'Enter\')FFPTourn.saveEntrantEdit()"></div>'
         : '<div class="f gr"><label>Player</label><div class="ro">' + esc(en.name) + (en.nationality ? ', ' + esc(en.nationality) : '') + '</div></div>') +
-      '<div class="f"><label>Division</label><select class="lg-sel" id="lg-ee-div">' + opts + '</select></div>' +
-      '<div class="f sm"><label>Seed</label><input class="lg-in" id="lg-ee-seed" type="number" min="1" value="' + (en.seed == null ? '' : en.seed) + '"></div>' +
-      '<div class="f"><label>Status</label><select class="lg-sel" id="lg-ee-status">' + stOpts + '</select></div>' +
-      (en.kind !== 'individual'
-        ? '<div class="f sm"><label>Code</label><input class="lg-in" id="lg-ee-code" maxlength="4" placeholder="KNI" value="' + esc(en.code || '') + '"></div>' +
-          '<div class="f sm"><label>Home colour</label><div class="lg-hex"><input class="sw" type="color" value="' + esc(en.color1 || '#0C2E63') + '" oninput="FFPLeague.hexSync(\'lg-ee-c1\',this.value)"><input class="lg-in" id="lg-ee-c1" maxlength="7" placeholder="#000000" value="' + esc(en.color1 || '') + '"></div></div>' +
-          '<div class="f sm"><label>Away colour</label><div class="lg-hex"><input class="sw" type="color" value="' + esc(en.color2 || '#1B57AE') + '" oninput="FFPLeague.hexSync(\'lg-ee-c2\',this.value)"><input class="lg-in" id="lg-ee-c2" maxlength="7" placeholder="#000000" value="' + esc(en.color2 || '') + '"></div></div>'
+      '<div class="f"><label>Division</label><select class="lg-sel" id="tg-ee-div">' + opts + '</select></div>' +
+      '<div class="f sm"><label>Seed</label><input class="lg-in" id="tg-ee-seed" type="number" min="1" value="' + (en.seed == null ? '' : en.seed) + '"></div>' +
+      (isTeam ? '' : '<div class="f"><label>Grade</label><select class="lg-sel" id="tg-ee-grade">' + grOpts + '</select></div>') +
+      grpField +
+      '<div class="f"><label>Status</label><select class="lg-sel" id="tg-ee-status">' + stOpts + '</select></div>' +
+      /* What the broadcast graphics draw this team in. The columns were always
+         on tourn_entrants and the scorebug, team sheet and lower third all read
+         them; only the editor was missing, so a tournament team went to air in
+         the default navy while the same club in a league had its own colours. */
+      (isTeam
+        ? '<div class="f sm"><label>Code</label><input class="lg-in" id="tg-ee-code" maxlength="4" placeholder="KNI" value="' + esc(en.code || '') + '"></div>' +
+          '<div class="f sm"><label>Home colour</label><div class="lg-hex"><input class="sw" type="color" value="' + esc(en.color1 || '#0C2E63') + '" oninput="FFPTourn.hexSync(\'tg-ee-c1\',this.value)"><input class="lg-in" id="tg-ee-c1" maxlength="7" placeholder="#000000" value="' + esc(en.color1 || '') + '"></div></div>' +
+          '<div class="f sm"><label>Away colour</label><div class="lg-hex"><input class="sw" type="color" value="' + esc(en.color2 || '#1B57AE') + '" oninput="FFPTourn.hexSync(\'tg-ee-c2\',this.value)"><input class="lg-in" id="tg-ee-c2" maxlength="7" placeholder="#000000" value="' + esc(en.color2 || '') + '"></div></div>'
         : '') +
       (S.entDel === en.id
-        ? '<div class="acts"><span class="delq">Remove ' + esc(en.name) + ' from the league?</span>' +
+        ? '<div class="acts"><span class="delq">Remove ' + esc(en.name) + ' from the tournament?</span>' +
             '<span class="sp"></span>' +
-            '<button class="lg-btn" onclick="FFPLeague.cancelRemoveEntrant()">Keep them</button>' +
-            '<button class="lg-btn danger solid" onclick="FFPLeague.removeEntrant()">' + ic('delete_forever') + 'Remove</button></div>' +
-          '<div class="note">Anything with fixtures or recorded stats is marked withdrawn instead, so results and the table stay intact.</div>'
+            '<button class="lg-btn" onclick="FFPTourn.cancelRemoveEntrant()">Keep them</button>' +
+            '<button class="lg-btn danger solid" onclick="FFPTourn.removeEntrant()">' + ic('delete_forever') + 'Remove</button></div>' +
+          '<div class="note">Anything drawn into matches or holding a win is marked withdrawn instead, so the bracket and results stay intact.</div>'
         : '<div class="acts">' +
-            '<button class="lg-btn pri" onclick="FFPLeague.saveEntrantEdit()">' + ic('check') + 'Save</button>' +
-            '<button class="lg-btn ghost" onclick="FFPLeague.cancelEntrantEdit()">Cancel</button>' +
+            '<button class="lg-btn pri" onclick="FFPTourn.saveEntrantEdit()">' + ic('check') + 'Save</button>' +
+            '<button class="lg-btn ghost" onclick="FFPTourn.cancelEntrantEdit()">Cancel</button>' +
             '<span class="sp"></span>' +
-            '<button class="lg-btn ghost danger" onclick="FFPLeague.askRemoveEntrant()">' + ic('delete') + 'Remove</button>' +
+            '<button class="lg-btn ghost danger" onclick="FFPTourn.askRemoveEntrant()">' + ic('delete') + 'Remove</button>' +
           '</div>') +
-      '<div class="msg" id="lg-ee-msg"></div></div>';
+      '<div class="msg" id="tg-ee-msg"></div></div>';
   }
 
   // the swatch and the hex box are two views of one value
   function hexSync(id, val) { var el = document.getElementById(id); if (el) el.value = String(val || '').toUpperCase(); }
-  function editEntrant(id) { S.entEdit = id; S.entDel = null; S.sqOpen = null; renderTab(); }
+  function editEntrant(id) {
+    S.entEdit = id; S.entDel = null; S.sqOpen = null;
+    // The grade list is fetched once; draw now, then redraw when it lands so the
+    // dropdown is never an empty select.
+    if (_grades) { renderTab(); return; }
+    renderTab();
+    gradeNames().then(function () { if (S.entEdit === id) renderTab(); });
+  }
   function cancelEntrantEdit() { S.entEdit = null; S.entDel = null; renderTab(); }
+  function askRemoveEntrant() { S.entDel = S.entEdit; renderTab(); }
+  function cancelRemoveEntrant() { S.entDel = null; renderTab(); }
 
   async function saveEntrantEdit() {
     var id = S.entEdit; if (!id) return;
     var en = (S._roster || []).find(function (x) { return x.id === id; }) || {};
     var g = function (k) { var el = document.getElementById(k); return el ? String(el.value || '').trim() : ''; };
-    var msg = document.getElementById('lg-ee-msg');
-    var patch = { division_id: g('lg-ee-div'), seed: g('lg-ee-seed'), status: g('lg-ee-status') };
+    var msg = document.getElementById('tg-ee-msg');
+    var patch = { division_id: g('tg-ee-div'), seed: g('tg-ee-seed'), status: g('tg-ee-status') };
+    if (document.getElementById('tg-ee-grade')) patch.grade = g('tg-ee-grade');
+    if (document.getElementById('tg-ee-group')) patch.group_label = g('tg-ee-group');
     if (en.kind !== 'individual') {
-      var nm = g('lg-ee-name');
+      var nm = g('tg-ee-name');
       if (!nm) { if (msg) msg.textContent = 'The ' + nouns(en).one + ' needs a name'; return; }
       patch.team_name = nm;
-      patch.code = g('lg-ee-code');
-      patch.color1 = g('lg-ee-c1');
-      patch.color2 = g('lg-ee-c2');
+      patch.code = g('tg-ee-code');
+      patch.color1 = g('tg-ee-c1');
+      patch.color2 = g('tg-ee-c2');
       var bad = [patch.color1, patch.color2].filter(function (c) { return c && !/^#[0-9a-fA-F]{6}$/.test(c); });
       if (bad.length) { if (msg) msg.textContent = 'Colours are hex codes like #101820'; return; }
     }
-    var r; try { r = await sb().rpc('league_entrant_update', { p_id: id, p: patch }); } catch (e) { r = { error: e }; }
-    if (r.error) { if (msg) msg.textContent = (r.error.message && r.error.message.indexOf('hex') > -1) ? r.error.message : 'Could not save'; return; }
-    // The move is refused when a schedule already points at this team there,
-    // so say which fixtures are in the way rather than failing silently.
-    if (r.data && r.data.ok === false && r.data.reason === 'has_fixtures') {
-      if (msg) msg.textContent = 'Already has ' + r.data.fixtures + ' fixtures in this division. Delete them first to move the ' + nouns(en).one + '.';
+    var r; try { r = await sb().rpc('tourn_entrant_update', { p_id: id, p: patch }); } catch (e) { r = { error: e }; }
+    if (r.error) { if (msg) msg.textContent = (String(r.error.message || '').indexOf('bad_hex') > -1) ? 'Colours are hex codes like #101820' : 'Could not save'; return; }
+    // A team already drawn in cannot be moved or regrouped without redoing the
+    // fixtures, so say what is in the way instead of failing quietly.
+    if (r.data && r.data.ok === false) {
+      if (msg) {
+        msg.textContent = r.data.reason === 'has_group_matches'
+          ? 'Already drawn into ' + r.data.matches + ' group matches. Redraw the groups to change this.'
+          : 'Already in ' + r.data.matches + ' matches in this division. Clear them first to move the ' + nouns(en).one + '.';
+      }
       return;
     }
-    S.entEdit = null; toast('Saved', 'success');
+    S.entEdit = null; S.entDel = null; toast('Saved', 'success');
     S._entrants = null; refreshDetail();
   }
 
-  function askRemoveEntrant() { S.entDel = S.entEdit; renderTab(); }
-  function cancelRemoveEntrant() { S.entDel = null; renderTab(); }
-
   async function removeEntrant() {
     var id = S.entEdit; if (!id) return;
-    var r; try { r = await sb().rpc('league_entrant_remove', { p_id: id }); } catch (e) { r = { error: e }; }
-    if (r.error) { var m = document.getElementById('lg-ee-msg'); if (m) m.textContent = 'Could not remove'; return; }
+    var r; try { r = await sb().rpc('tourn_entrant_remove', { p_id: id }); } catch (e) { r = { error: e }; }
+    if (r.error) { var m = document.getElementById('tg-ee-msg'); if (m) m.textContent = 'Could not remove'; return; }
     toast((r.data && r.data.action === 'withdrawn')
-      ? 'Marked withdrawn, ' + r.data.fixtures + ' fixtures kept'
+      ? 'Marked withdrawn, ' + r.data.matches + ' matches kept'
       : 'Removed', 'success');
     S.entEdit = null; S.entDel = null; S._entrants = null; refreshDetail();
   }
@@ -2156,51 +2920,16 @@
     var q = ((S._sqQ || {})[entId] || ''); var res = ((S._sqRes || {})[entId] || []);
     var out = '';
     if (res.length) out += '<div class="lg-sqres">' + res.map(function (r) {
-      return '<div class="row"><span class="av" style="' + (r.photo ? 'background-image:url(\'' + esc(r.photo) + '\')' : '') + '"></span><div class="g"><b>' + esc(r.name) + '</b><span>' + esc([r.city, r.email_hint].filter(Boolean).join(', ')) + '</span></div><button class="lg-btn sm pri" onclick="FFPLeague.sqAddMember(\'' + entId + '\',\'' + r.id + '\')">Add</button></div>';
+      return '<div class="row"><span class="av" style="' + (r.photo ? 'background-image:url(\'' + esc(r.photo) + '\')' : '') + '"></span><div class="g"><b>' + esc(r.name) + '</b><span>' + esc([r.city, r.email_hint].filter(Boolean).join(', ')) + '</span></div><button class="lg-btn sm pri" onclick="FFPTourn.sqAddMember(\'' + entId + '\',\'' + r.id + '\')">Add</button></div>';
     }).join('') + '</div>';
-    else if (q.trim().length >= 2) out += '<div class="lg-sqadd2"><button class="lg-btn sm" onclick="FFPLeague.sqInvite(\'' + entId + '\')">' + ic('mail') + 'Invite by email</button><button class="lg-btn sm" onclick="FFPLeague.sqNameOnly(\'' + entId + '\')">' + ic('edit') + 'Add name only</button></div>';
+    else if (q.trim().length >= 2) out += '<div class="lg-sqadd2"><button class="lg-btn sm" onclick="FFPTourn.sqInvite(\'' + entId + '\')">' + ic('mail') + 'Invite by email</button><button class="lg-btn sm" onclick="FFPTourn.sqNameOnly(\'' + entId + '\')">' + ic('edit') + 'Add name only</button></div>';
     var list = squadFor(entId);
     out += '<div class="lg-sqlist">' + (list.length ? list.map(function (p) {
       var b = p.member_id ? '<span class="lg-scpill">FFP</span>' : (p.invite_email ? '<span class="lg-scpill inv">INVITED</span>' : '<span class="lg-scpill txt">NAME</span>');
-      return '<div class="lg-sqrow">' + sqPhotoCell(p) + '<span class="nm">' + esc(p.name) + '</span>' + b + '<span class="sp"></span><span class="ms x" onclick="FFPLeague.sqRemove(\'' + p.id + '\')">close</span></div>';
+      return '<div class="lg-sqrow"><span class="nm">' + esc(p.name) + '</span>' + b + '<span class="sp"></span><span class="ms x" onclick="FFPTourn.sqRemove(\'' + p.id + '\')">close</span></div>';
     }).join('') : '<div class="lg-empty" style="padding:12px">No players yet.</div>') + '</div>';
     return out;
   }
-
-  // ── player portrait. A club can upload its own shot \u2014 cropped to the
-  //    passport shape every graphic uses \u2014 instead of the member's
-  //    profile photo. The small x hands the player back to it. ───────────
-  function sqPhotoCell(p) {
-    var own = !!p.photo_url_own;
-    var url = p.photo_url_own || p.photo || '';
-    return '<span class="lg-sqph' + (own ? ' own' : '') + '" title="' + (own ? 'Club portrait' : 'Profile photo \u2014 click to upload the club&#39;s own') + '"'
-      + ' style="' + (url ? "background-image:url('" + esc(url) + "')" : '') + '"'
-      + ' onclick="FFPLeague.sqPhoto(\'' + p.id + '\')">'
-      + (url ? '' : '<i class="ms">add_a_photo</i>')
-      + (own ? '<em class="x" onclick="event.stopPropagation();FFPLeague.sqPhotoClear(\'' + p.id + '\')">&times;</em>' : '')
-      + '</span>';
-  }
-  function sqPhoto(id) {
-    if (!window.FFPUpload) { toast('Uploader not ready \u2014 refresh and retry', 'error'); return; }
-    var row = (S._squad || []).filter(function (x) { return x.id === id; })[0] || {};
-    window.FFPUpload.pick({
-      bucket: 'listing-covers', key: 'squad-' + id, aspect: 7 / 9, outW: 700, outH: 900,
-      title: 'Player portrait \u2014 ' + (row.name || 'player'),
-      onDone: async function (url) {
-        try { await sb().rpc('lt_squad_set_photo', { p_id: id, p_url: url }); }
-        catch (e) { toast('Could not save the portrait', 'error'); return; }
-        toast('Portrait saved', 'check'); _sqReload(row.entrant_id || S.sqOpen);
-      },
-      onError: function () { toast('Upload failed', 'error'); }
-    });
-  }
-  async function sqPhotoClear(id) {
-    var row = (S._squad || []).filter(function (x) { return x.id === id; })[0] || {};
-    try { await sb().rpc('lt_squad_set_photo', { p_id: id, p_url: null }); }
-    catch (e) { toast('Could not clear the portrait', 'error'); return; }
-    _sqReload(row.entrant_id || S.sqOpen);
-  }
-
   function paintSqRes(entId) { var el = document.getElementById('lg-sqres-' + entId); if (el) el.innerHTML = sqResHtml(entId); }
   function sqToggle(id) { S.sqOpen = (S.sqOpen === id) ? null : id; renderTab(); }
   var _sqTimer = {};
@@ -2209,17 +2938,17 @@
     if (q.trim().length < 2) { S._sqRes = S._sqRes || {}; S._sqRes[id] = []; paintSqRes(id); return; }
     _sqTimer[id] = setTimeout(async function () { var r; try { r = await sb().rpc('lt_member_search', { p_q: q.trim() }); } catch (e) { r = null; } S._sqRes = S._sqRes || {}; S._sqRes[id] = (r && r.data) || []; paintSqRes(id); }, 300);
   }
-  async function _sqReload(id) { try { var sq = await sb().rpc('lt_squad_list', { p_scope: 'league', p_event: S.eventId }); S._squad = (sq && sq.data) || []; } catch (e) {} if (!(S._pos || []).length) { try { var po = await sb().rpc('lt_position_list', { p_event: S.eventId }); S._pos = (po && po.data) || []; } catch (e) {} } S._sqQ = S._sqQ || {}; S._sqQ[id] = ''; S._sqRes = S._sqRes || {}; S._sqRes[id] = []; var inp = document.getElementById('lg-sqq-' + id); if (inp) inp.value = ''; paintSqRes(id); renderEntrants(root()); }
-  async function sqAddMember(id, memberId) { try { await sb().rpc('lt_squad_add_member', { p_scope: 'league', p_event: S.eventId, p_entrant: id, p_member: memberId }); } catch (e) { toast('Could not add', 'error'); return; } _sqReload(id); }
-  async function sqNameOnly(id) { var nm = ((S._sqQ || {})[id] || '').trim(); if (!nm) return; try { await sb().rpc('lt_squad_add', { p_scope: 'league', p_event: S.eventId, p_entrant: id, p_name: nm }); } catch (e) { toast('Could not add', 'error'); return; } _sqReload(id); }
-  async function sqInvite(id) { var txt = ((S._sqQ || {})[id] || '').trim(); var em = txt.indexOf('@') > -1 ? txt : prompt('Their FFP email (we\'ll link their account)'); if (!em || em.indexOf('@') < 0) return; var nm = txt.indexOf('@') > -1 ? '' : txt; try { await sb().rpc('lt_squad_invite', { p_scope: 'league', p_event: S.eventId, p_entrant: id, p_name: nm, p_email: em }); } catch (e) { toast('Could not invite', 'error'); return; } try { var rf = (window.FFPAuth && FFPAuth.getRefresh && FFPAuth.getRefresh()) || null; if (rf) { var r = await fetch('https://ffp-passport-backend.vercel.app/api/lt/squad-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh: rf, scope: 'league', event_id: S.eventId, name: nm, email: em }) }); var jd = await r.json().catch(function () { return {}; }); toast(jd && jd.linked ? 'Member linked' : 'Invited — email sent', 'check'); } } catch (e) { /* email best-effort */ } _sqReload(id); }
+  async function _sqReload(id) { try { var sq = await sb().rpc('lt_squad_list', { p_scope: 'tourn', p_event: S.eventId }); S._squad = (sq && sq.data) || []; } catch (e) {} S._sqQ = S._sqQ || {}; S._sqQ[id] = ''; S._sqRes = S._sqRes || {}; S._sqRes[id] = []; var inp = document.getElementById('lg-sqq-' + id); if (inp) inp.value = ''; paintSqRes(id); renderEntrants(root()); }
+  async function sqAddMember(id, memberId) { try { await sb().rpc('lt_squad_add_member', { p_scope: 'tourn', p_event: S.eventId, p_entrant: id, p_member: memberId }); } catch (e) { toast('Could not add', 'error'); return; } _sqReload(id); }
+  async function sqNameOnly(id) { var nm = ((S._sqQ || {})[id] || '').trim(); if (!nm) return; try { await sb().rpc('lt_squad_add', { p_scope: 'tourn', p_event: S.eventId, p_entrant: id, p_name: nm }); } catch (e) { toast('Could not add', 'error'); return; } _sqReload(id); }
+  async function sqInvite(id) { var txt = ((S._sqQ || {})[id] || '').trim(); var em = txt.indexOf('@') > -1 ? txt : prompt('Their FFP email (we\'ll link their account)'); if (!em || em.indexOf('@') < 0) return; var nm = txt.indexOf('@') > -1 ? '' : txt; try { await sb().rpc('lt_squad_invite', { p_scope: 'tourn', p_event: S.eventId, p_entrant: id, p_name: nm, p_email: em }); } catch (e) { toast('Could not invite', 'error'); return; } try { var rf = (window.FFPAuth && FFPAuth.getRefresh && FFPAuth.getRefresh()) || null; if (rf) { var r = await fetch('https://ffp-passport-backend.vercel.app/api/lt/squad-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh: rf, scope: 'tourn', event_id: S.eventId, name: nm, email: em }) }); var jd = await r.json().catch(function () { return {}; }); toast(jd && jd.linked ? 'Member linked' : 'Invited — email sent', 'check'); } } catch (e) { /* email best-effort */ } _sqReload(id); }
   async function sqRemove(sqid) { try { await sb().rpc('lt_squad_remove', { p_id: sqid }); } catch (e) { return; } if (S.sqOpen) _sqReload(S.sqOpen); }
   function addEntrant() { S.entAdd = true; renderTab(); }
   function bulkAthletes() {
     var divs = ((S.detail && S.detail.divisions) || []).map(function (d) { return { id: d.id, name: d.name }; });
     if (!divs.length) { toast('Add a division first', 'error'); return; }
     _ensureBulkTool(function () {
-      FFPBulkAthletes.open({ scope: 'league', eventId: S.eventId, eventName: (S.detail && S.detail.event && S.detail.event.name) || '', divisions: divs, divisionId: S.divId,
+      FFPBulkAthletes.open({ scope: 'tourn', eventId: S.eventId, eventName: (S.detail && S.detail.event && S.detail.event.name) || '', divisions: divs, divisionId: S.divId,
         teams: (S._entrants || []).map(function (e) { return { id: e.id, name: e.team_name || e.name || 'Team' }; }),
         defaultMode: 'team',
         onDone: function () { renderEntrants(root()); } });
@@ -2232,250 +2961,478 @@
   }
   function cancelEntrant() { S.entAdd = false; renderTab(); }
   async function saveEntrant() {
-    var nm = (document.getElementById('lg-entname') || {}).value; if (!nm || !nm.trim()) return;
+    var nm = (document.getElementById('tg-entname') || {}).value; if (!nm || !nm.trim()) return;
     var kind = (S.detail.divisions.find(function (d) { return d.id === S.divId; }) || {}).kind || 'team';
-    var r; try { r = await sb().rpc('league_entrant_add', { p_league: S.eventId, p_division: S.divId, p: { team_name: nm.trim(), kind: kind } }); } catch (e) { r = { error: e }; }
+    var r; try { r = await sb().rpc('tourn_entrant_add', { p_tourn: S.eventId, p_division: S.divId, p: { team_name: nm.trim(), kind: kind } }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Add failed', 'error'); return; } S.entAdd = false; toast('Added', 'success'); refreshDetail();
   }
 
-  // ---------- FIXTURES & RESULTS ----------
-  async function renderFixtures(host) {
-    var divs = S.detail.divisions || [];
-    if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
+  // GROUP STAGE (inline draw count)
+  async function renderGroups(host) {
+    var divs = S.detail.divisions || []; if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first, then add ' + nouns(null).many + '.</div>'; return; }
     if (!S.divId) S.divId = divs[0].id;
-    var r; try { r = await sb().rpc('league_fixtures_list', { p_division: S.divId }); } catch (e) { r = { error: e }; }
-    var fx = (r && r.data) || [];
-    /* NO REGENERATE ONCE FIXTURES EXIST. league_fixtures_generate deletes every
-       regular-stage row for the division with no status guard, so pressing it on
-       a running division wipes results that are already entered (proven on live
-       data: 6 final results -> 0). Auto-generate is offered ONLY when there is
-       nothing to destroy. Changing a draw that already exists is its own job. */
-    var genBtn = fx.length ? ''
-      : '<button class="lg-btn" onclick="FFPLeague.doGen()">' + ic('auto_awesome') + 'Auto-generate fixtures</button>';
-    await loadEntrants();
-    var ffr; try { ffr = await sb().rpc('lt_fields_list', { p_scope: 'league', p_event: S.eventId }); } catch (e) { ffr = null; } S._fields = (ffr && ffr.data) || [];
-    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPLeague.setDiv(this.value,\'fixtures\')">' + divOpts() + '</select><span class="sp"></span><button class="lg-btn" onclick="FFPLeague.addMatch(\'fixtures\')">' + ic('add') + 'Add match</button>' + genBtn + '<button class="lg-btn pri" onclick="FFPLeague.saveResults()">' + ic('check') + 'Save results</button></div>'
-      + (S.addMatch === 'fixtures' ? matchEditor() : '') + '<div id="lg-fixlist"></div>';
-    var host2 = document.getElementById('lg-fixlist');
-    if (!fx.length) { host2.innerHTML = '<div class="lg-empty">No fixtures yet — auto-generate the round-robin, or add one manually.</div>'; return; }
-    host2.innerHTML = fxGroups(fx).map(function (g) {
-      var games = g.list.filter(function (f) { return !f.bye; });
-      return roundHead(g.label, games.length, roundRange(games)) + '<div class="lg-rbody">' + g.list.map(fxRow).join('') + '</div>';
+    var N = nouns(curDv());
+    var er; try { er = await sb().rpc('tourn_roster', { p_division: S.divId }); } catch (e) { er = null; }
+    var roster = (er && er.data) || [];
+    var eligible = roster.filter(function (r) { return ['registered', 'paid', 'invited'].indexOf(r.status) >= 0; });
+    var suggested = S._ng || Math.max(1, Math.round(eligible.length / 4)) || 2;
+    host.innerHTML = '<div class="lg-tool">' + (divs.length > 1 ? '<select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'groups\')">' + divOpts() + '</select>' : '')
+      + '<span class="lg-lab" style="margin:0">Number of groups</span><input class="lg-in" id="tg-ng" type="number" min="1" value="' + suggested + '" style="width:70px">'
+      + '<button class="lg-btn pri" onclick="FFPTourn.doGroups()">' + ic('shuffle') + 'Draw groups</button><span class="sp"></span>'
+      + '<span class="lg-sub" style="margin:0">' + eligible.length + ' ' + (eligible.length === 1 ? N.one : N.many) + '</span></div>'
+      + '<div id="tg-glist"><div class="lg-empty">Loading…</div></div>';
+    var host2 = document.getElementById('tg-glist');
+    if (eligible.length < 2) { host2.innerHTML = '<div class="lg-empty">Add at least 2 ' + N.many + ' (' + nouns(null).Many + ' tab) before drawing groups.</div>'; return; }
+    var mr; try { mr = await sb().from('tourn_matches').select('*').eq('division_id', S.divId).eq('stage', 'group').order('group_label').order('round').order('slot'); } catch (e) { mr = { error: e }; }
+    var ms = (mr && mr.data) || []; var names = {}; roster.forEach(function (r) { names[r.id] = r.name; });
+    var gt; try { gt = await sb().rpc('tourn_group_tables', { p_division: S.divId }); } catch (e) { gt = null; }
+    var tables = (gt && gt.data && gt.data.groups) || [];
+    if (!tables.length) { host2.innerHTML = '<div class="lg-empty"><span class="ms" style="font-size:34px;color:#c0cad2;display:block;margin-bottom:6px">groups</span><b>No groups drawn yet</b><div style="margin-top:4px">Set the number of groups above and tap <b>Draw groups</b> — your ' + eligible.length + ' ' + N.many + ' are split evenly with round-robin fixtures in each group.</div></div>'; return; }
+    var byMatch = {}; ms.forEach(function (m) { (byMatch[m.group_label] = byMatch[m.group_label] || []).push(m); });
+    host2.innerHTML = tables.map(function (g) {
+      var tbl = '<table class="tg-tbl"><tr><th class="rk"></th><th class="nm">' + N.One + '</th><th>P</th><th>W</th><th>D</th><th>L</th><th>+/-</th><th>Pts</th></tr>'
+        + (g.rows || []).map(function (r) {
+          return '<tr class="' + (r.advances ? 'adv' : '') + '"><td class="rk">' + r.rank + '</td><td class="nm"><span class="in">' + crest(r) + esc(r.name) + '</span></td><td>' + r.p + '</td><td>' + r.w + '</td><td>' + r.d + '</td><td>' + r.l + '</td><td>' + (r.gd > 0 ? '+' + r.gd : r.gd) + '</td><td class="pts">' + r.pts + '</td></tr>';
+        }).join('') + '</table>';
+      var rounds = {}; var rord = [];
+      (byMatch[g.label] || []).forEach(function (m) { var rd = m.round || 1; if (!rounds[rd]) { rounds[rd] = []; rord.push(rd); } rounds[rd].push(m); });
+      rord.sort(function (a, b) { return a - b; });
+      var fx = rord.length ? rord.map(function (rd) {
+        return '<div class="tg-rlbl">Round ' + rd + '</div>' + rounds[rd].map(function (m) {
+          return '<div class="tg-gfx" data-id="' + m.id + '"><span class="t a">' + esc(names[m.home_entrant] || 'TBD') + '</span><span class="sc"><input type="number" class="tg-hs" value="' + (m.home_score != null ? m.home_score : '') + '" placeholder="–"><input type="number" class="tg-as" value="' + (m.away_score != null ? m.away_score : '') + '" placeholder="–"></span><span class="t">' + esc(names[m.away_entrant] || 'TBD') + '</span><button class="lg-btn ghostb sm" onclick="FFPTourn.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + 'Match centre</button></div>';
+        }).join('');
+      }).join('') : '<div class="lg-sub" style="padding:8px 2px">Single ' + N.one + ' — no fixtures.</div>';
+      return '<div class="tg-group"><div class="tg-grph">Group ' + esc(g.label) + ', ' + (g.rows || []).length + ' ' + ((g.rows || []).length === 1 ? N.one : N.many) + '</div>' + tbl + '<div class="fxlab">Fixtures and results, in play order</div>' + fx + '</div>';
+    }).join('')
+      + '<div class="lg-tool" style="margin-top:18px;border-top:1px solid var(--ffp-border);padding-top:14px"><span class="sp"></span><button class="lg-btn pri" onclick="FFPTourn.saveGroupResults()">' + ic('check') + 'Save results</button><button class="lg-btn green" onclick="FFPTourn.doBracket()">' + ic('account_tree') + 'Build knockout from groups</button></div>';
+  }
+  async function doGroups() {
+    var n = parseInt((document.getElementById('tg-ng') || {}).value, 10) || 2; S._ng = n;
+    var r; try { r = await sb().rpc('tourn_groups_generate', { p_division: S.divId, p_num_groups: n }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast(/not_owner/.test(r.error.message || '') ? 'Not your tournament' : 'Could not draw groups', 'error'); return; }
+    if ((r.data || 0) === 0) { toast('Add at least 2 ' + nouns(curDv()).many + ' first', 'error'); renderTab(); return; }
+    toast(n + ' group' + (n === 1 ? '' : 's') + ' drawn, ' + r.data + ' fixtures', 'success'); renderTab();
+  }
+  async function saveGroupResults() {
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#tg-glist .tg-gfx')); var n = 0;
+    for (var i = 0; i < rows.length; i++) { var el = rows[i]; var h = el.querySelector('.tg-hs').value, a = el.querySelector('.tg-as').value; if (h === '' || a === '') continue; try { await sb().rpc('tourn_result_save', { p_match: el.getAttribute('data-id'), p_home: +h, p_away: +a, p_sets: null, p_status: 'final' }); n++; } catch (e) {} }
+    toast(n + ' results saved', 'success'); renderTab();
+  }
+  async function setDrawFormat(v) {
+    var r;
+    try { r = await sb().rpc('tourn_division_save', { p_tourn: S.eventId, p_id: S.divId, p: { draw_format: v } }); }
+    catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not change the format', 'error'); return; }
+    toast(v === 'monrad' ? 'Monrad: everyone keeps playing' : 'Knockout draw', 'success');
+    refreshDetail();
+  }
+  async function setSideDraws(v) {
+    var r;
+    try { r = await sb().rpc('tourn_division_save', { p_tourn: S.eventId, p_id: S.divId, p: { side_draws: v } }); }
+    catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not change the draws', 'error'); return; }
+    var built = (S._bracket || []).length > 0;
+    toast(built ? 'Saved. Draw the bracket again to apply it' : 'Saved', 'success');
+    refreshDetail();
+  }
+  function setDraw(k) { S.drawKey = k; renderTab(); }
+  async function monradOpen() {
+    S.brkConfirm = false;
+    var r; try { r = await sb().rpc('tourn_monrad_open', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast(String(r.error.message || '').indexOf('matches_played') > -1 ? 'Results are already in, the draw cannot be redrawn' : 'Could not make the draw', 'error'); renderTab(); return; }
+    var d = r.data || {};
+    if (d.ok === false) { toast('Needs at least two ' + nouns(curDv()).many, 'error'); renderTab(); return; }
+    toast(d.entrants + ' ' + nouns(curDv()).many + ', ' + d.rounds + ' rounds', 'success');
+    S.drawKey = null; await refreshDetail();
+  }
+  async function monradRound() {
+    var r; try { r = await sb().rpc('tourn_monrad_round', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not draw the round', 'error'); return; }
+    var d = r.data || {};
+    if (d.ok === false) {
+      toast(d.reason === 'complete' ? 'All ' + d.rounds + ' rounds are drawn'
+          : d.reason === 'round_unfinished' ? 'Finish round ' + d.round + ' first'
+          : d.reason === 'not_enough_entrants' ? 'Needs at least two ' + nouns(curDv()).many
+          : 'Could not draw the round', 'error');
+      return;
+    }
+    toast('Round ' + d.round + ' of ' + d.of + ': ' + d.matches + ' matches'
+      + (d.bye ? ', one bye' : '') + (d.rematch_forced ? ' (a rematch was unavoidable)' : ''), 'success');
+    refreshDetail();
+  }
+
+  function confirmBracket() { S.brkConfirm = true; renderTab(); }
+  function cancelBracket() { S.brkConfirm = false; renderTab(); }
+  async function doBracket() {
+    S.brkConfirm = false;
+    var r; try { r = await sb().rpc('tourn_bracket_build', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not make the draw', 'error'); renderTab(); return; }
+    toast('Draw made', 'success'); S.tab = 'bracket'; S.drawKey = null; await refreshDetail();
+  }
+
+  // BRACKET
+  async function renderBracket(host) {
+    var divs = S.detail.divisions || []; if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
+    if (!S.divId) S.divId = divs[0].id; var ev = S.detail.event || {};
+    // The draw format is per division: a straight knockout, or Monrad where
+    // nobody goes home — everyone is re-ranked each round and plays on, which
+    // is what a one-day club squash event usually wants.
+    var dv = divs.find(function (x) { return x.id === S.divId; }) || {};
+    var fmt = dv.draw_format || 'ko';
+    // Format and extra draws belong to Setup; this tab runs the draw.
+    var fmtCtl = '<span class="tg-fmtnow">' + esc(fmtLabel(fmtOfDiv(dv))) + '</span>';
+    var sideCtl = '';
+    // Drawing is set up in Setup. This tab runs what was drawn, so the only
+    // build action here is the one that belongs to running a Monrad: the next
+    // round, which can only be paired once the last one is played.
+    /* ONE button that says what pressing it will do. Wiping a built draw back
+       to empty is a different, destructive job, so it only appears once there
+       is a draw to wipe. */
+    var buildCtl = (fmt === 'monrad'
+      ? '<button class="lg-btn" onclick="FFPTourn.monradRound()">' + ic('playlist_add') + 'Draw next round</button>' : '')
+      + '<button class="lg-btn" onclick="FFPTourn.buildDivDraw()">' + ic('bolt') + drawBtnLabel(dv) + '</button>'
+      + ((dv.match_count || 0)
+          ? '<button class="lg-btn ghost" onclick="FFPTourn.openDivDraw()">' + ic('grid_on')
+            + 'Open an empty draw</button>' : '');
+    /* Replacing a built draw with an empty one throws away every match in it,
+       so it asks first, here, where the button was pressed. */
+    var askRow = S.openDrawAsk === dv.id
+      ? '<div class="tg-opendraw warn"><b>Replace the draw with an empty one?</b>'
+        + '<span>Every match in this division is rebuilt with no names in it. Results already entered stop this.</span>'
+        + '<span class="sp"></span>'
+        + '<button class="lg-btn ghost" onclick="FFPTourn.openDrawCancel()">Cancel</button>'
+        + '<button class="lg-btn pri" onclick="FFPTourn.openDivDraw(1)">Yes, open it empty</button></div>'
+      : '';
+    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'bracket\')">' + divOpts() + '</select>' + fmtCtl + sideCtl + '<span class="sp"></span>' + buildCtl + '<button class="lg-btn pri" onclick="FFPTourn.saveBracketResults()">' + ic('check') + 'Save &amp; advance</button></div>' + askRow + '<div id="tg-brk"><div class="lg-empty">Loading…</div></div>';
+    var r; try { r = await sb().rpc('tourn_bracket', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+    var ms = (r && r.data) || []; S._bracket = ms; var host2 = document.getElementById('tg-brk');
+    if (!ms.length) { host2.innerHTML = openDrawEmpty('draw'); return; }
+    // One bracket per draw: Main / Cup, then Plate, Bowl, Consolation or the
+    // placement draws. A dropdown picks which one is on screen.
+    var draws = [], seen = {};
+    ms.forEach(function (m) { var k = m.draw || 'main'; if (!seen[k]) { seen[k] = 1; draws.push({ key: k, name: m.draw_name || 'Main Draw', sort: m.draw_sort || 0 }); } });
+    draws.sort(function (a, b) { return a.sort - b.sort; });
+    if (!seen[S.drawKey || '']) S.drawKey = draws[0].key;
+    var dms = ms.filter(function (m) { return (m.draw || 'main') === S.drawKey; });
+    var drawCtl = draws.length > 1
+      ? '<div class="lg-tool" style="margin-top:0"><span class="lg-lab" style="margin:0">View</span><select class="lg-sel" style="width:auto;min-width:220px" onchange="FFPTourn.setDraw(this.value)">'
+        + draws.map(function (d) { var c = ms.filter(function (m) { return (m.draw || 'main') === d.key && m.status !== 'void'; }).length;
+            return '<option value="' + d.key + '"' + (d.key === S.drawKey ? ' selected' : '') + '>' + esc(d.name) + ', ' + c + ' matches</option>'; }).join('')
+        + '</select></div>' : '';
+    // A division switched to Monrad can still carry knockout rows from an
+    // earlier build. They are not part of this draw, so they are not drawn.
+    var monradHere = dms.some(function (m) { return m.stage === 'monrad'; });
+    if (monradHere) dms = dms.filter(function (m) { return m.stage === 'monrad'; });
+    var byRound = {}; dms.filter(function (m) { return m.stage !== 'third'; }).forEach(function (m) { (byRound[m.round] = byRound[m.round] || []).push(m); });
+    var rkeys = Object.keys(byRound).sort(function (a, b) { return a - b; });
+    var isMonrad = monradHere;
+    var cols = rkeys.map(function (rd) {
+      var items = byRound[rd].sort(function (a, b) { return a.slot - b.slot; });
+      var lab = items[0].round_label || stageLbl(items[0]);
+      if (isMonrad) lab = 'Round ' + rd + ' of ' + rkeys.length;
+      // Nobody goes home in a Monrad, so a round is not one contest but several:
+      // say what each group of matches is being played for.
+      if (isMonrad && items.some(function (m) { return m.place_lo != null; })) {
+        var bands = [], bseen = {};
+        items.forEach(function (m) {
+          var k = m.place_lo + '-' + m.place_hi;
+          if (!bseen[k]) { bseen[k] = 1; bands.push({ k: k, lo: Number(m.place_lo), hi: Number(m.place_hi) }); }
+        });
+        bands.sort(function (a, b) { return (a.lo - b.lo) || (a.hi - b.hi); });
+        var body = bands.map(function (b) {
+          var list = items.filter(function (m) { return m.place_lo + '-' + m.place_hi === b.k; });
+          // gold marks the group still alive for the title
+          var cls = (b.hi - b.lo === 1) ? (b.lo === 1 ? ' fin' : ' top') : (b.lo === 1 ? ' top' : '');
+          return '<div class="tg-band' + cls + '"><b>' + esc(bandLabel(b.lo, b.hi)) + '</b><i></i></div>'
+            + list.map(mHtml).join('');
+        }).join('');
+        return '<div class="tg-rnd"><div class="rh">' + esc(lab) + '</div>' + body + '</div>';
+      }
+      return '<div class="tg-rnd"><div class="rh">' + esc(lab) + '</div>' + items.map(mHtml).join('') + '</div>';
     }).join('');
+    var third = dms.find(function (m) { return m.stage === 'third'; });
+    host2.innerHTML = drawCtl + '<div class="tg-brk"><div class="tg-brkin">' + cols + '</div></div>'
+      + (third ? '<div class="tg-thirdwrap"><div class="rh" style="text-align:left;margin-bottom:8px">' + esc(thirdLbl(third)) + '</div><div style="max-width:230px">' + mHtml(third) + '</div></div>' : '');
   }
-  // A computed (auto) bye is virtual (id "bye-…") — not editable/removable. A stored bye is a real row (stage='bye').
-  function isVirtualBye(f) { return f.bye && typeof f.id === 'string' && f.id.indexOf('bye-') === 0; }
-  function fxDateVal(f) { return f.scheduled_at ? zoneDate(f.scheduled_at, evTz()) : ''; }
-  function delBtns(id) {
-    if (S.delFx === id) return '<button class="lg-mcbtn del" title="Confirm delete" onclick="FFPLeague.delFx(\'' + id + '\')" style="color:var(--ffp-red)">' + ic('delete_forever') + '</button><button class="lg-mcbtn" title="Keep" onclick="FFPLeague.delCancel()">' + ic('close') + '</button>';
-    return '<button class="lg-mcbtn del" title="Delete fixture" onclick="FFPLeague.delAsk(\'' + id + '\')">' + ic('delete') + '</button>';
+  function thirdLbl(m) {
+    var n = Number((m || {}).plays_for || 3);
+    return ordNum(n) + ' / ' + ordNum(n + 1) + ' play-off';
   }
-  function fxRow(f) {
-    if (S.editFx === f.id) return fxEdit(f);
-    if (isVirtualBye(f)) return '<div class="lg-bye">' + crest(f.home) + '<b>' + esc((f.home && f.home.name) || '') + '</b><span class="tag">BYE</span><span class="msg">no match this round</span></div>';
-    if (f.bye) return '<div class="lg-bye" data-id="' + f.id + '">' + crest(f.home) + '<b>' + esc((f.home && f.home.name) || '') + '</b><span class="tag">BYE</span><div class="acts"><button class="lg-mcbtn" title="Edit bye" onclick="FFPLeague.editFx(\'' + f.id + '\')">' + ic('edit') + '</button>' + delBtns(f.id) + '</div></div>';
-    var day = f.scheduled_at ? '<div class="fxday">' + zoneDay(f.scheduled_at, evTz()) + ', ' + zoneTime(f.scheduled_at, evTz()) + '</div>' : '';
-    return '<div class="lg-fx2" data-id="' + f.id + '"><div class="tm a">' + esc((f.home && f.home.name) || 'TBD') + crest(f.home) + '</div>'
-      + '<div class="mid">' + day + '<div class="sc"><input type="number" class="lg-hs" value="' + (f.home_score != null ? f.home_score : '') + '" placeholder="–"><span class="v">v</span><input type="number" class="lg-as" value="' + (f.away_score != null ? f.away_score : '') + '" placeholder="–"></div></div>'
-      + '<div class="tm">' + crest(f.away) + esc((f.away && f.away.name) || 'TBD') + '</div>'
-      + '<div class="acts"><button class="lg-mcbtn" title="Edit fixture" onclick="FFPLeague.editFx(\'' + f.id + '\')">' + ic('edit') + '</button>' + delBtns(f.id)
-      + '<button class="lg-mcbtn" title="Match centre — enter scorers &amp; stats" onclick="FFPLeague.openMatch(\'' + f.id + '\')">' + ic('scoreboard') + '</button></div></div>';
+  function seedTag(side) { return (side && side.seed != null) ? '<span class="sd">' + esc(side.seed) + '</span>' : ''; }
+  function whenLine(m) {
+    var bits = [];
+    // A time that will not parse is no time at all; never print NaN at anyone.
+    if (m.scheduled_at) { var w = evDayShort(m.scheduled_at); if (w) bits.push(w + ', ' + evTimeStr(m.scheduled_at)); }
+    if (m.court) bits.push(m.court);
+    return bits.join(', ');
   }
-  function fxEdit(f) {
-    var isBye = f.bye, teamH = (f.home && f.home.id) || '', teamA = (f.away && f.away.id) || '';
-    // A pre-season friendly is played BEFORE round 1, so the editor picks the
-    // stage. A bare round number could only ever say "Round 1", which is what
-    // used to drag a pre-season match back into the round-robin on every save.
-    var isPre = String(f.stage || '').toLowerCase() === 'preseason';
-    var flds = '<div class="f"><label>Stage</label><select class="lg-sel fe-st" style="min-width:150px" onchange="FFPLeague.fxStageChange(this)">'
-      + '<option value="regular"' + (isPre ? '' : ' selected') + '>Round</option>'
-      + '<option value="preseason"' + (isPre ? ' selected' : '') + '>Pre-season</option>'
-      + '</select></div>'
-      + '<div class="f fe-rwrap"' + (isPre ? ' style="display:none"' : '') + '><label>Round</label>'
-      + '<input class="lg-in fe-r" type="number" min="1" value="' + (isPre ? 1 : (f.round != null ? f.round : 1)) + '" style="width:90px"></div>';
-    if (!isBye) flds += '<div class="f"><label>Date</label><input class="lg-in fe-d" type="date" value="' + fxDateVal(f) + '"></div>'
-      + '<div class="f"><label>Time</label><input class="lg-in fe-t" type="time" value="' + (f.scheduled_at ? zoneTime(f.scheduled_at, evTz()) : '') + '"></div>'
-      + '<div class="f" style="flex:1;min-width:160px"><label>Venue / surface</label><select class="lg-sel fe-f" style="width:100%">' + surfaceOpts(S._fields, f.field_id) + '</select></div>'
-      + '<div class="f" style="flex:1;min-width:100%"><label>Livestream link</label><input class="lg-in fe-s" type="url" placeholder="YouTube, Twitch, Facebook…" value="' + esc(f.stream_url || '') + '"></div>';
-    return '<div class="lg-maed" data-id="' + f.id + '"><div class="ttl">Edit ' + (isBye ? 'bye' : 'fixture') + '</div>'
-      + '<div class="edrow"><select class="lg-sel fe-h" style="flex:1;min-width:150px">' + entOpts(teamH) + '</select>'
-      + (isBye ? '<span class="vv">bye</span>' : '<span class="vv">v</span><select class="lg-sel fe-a" style="flex:1;min-width:150px">' + entOpts(teamA) + '</select>') + '</div>'
-      + '<div class="edrow2">' + flds + '</div>'
-      + '<div class="edfoot"><span class="sp"></span><button class="lg-btn ghost" onclick="FFPLeague.cancelEditFx()">Cancel</button><button class="lg-btn pri" onclick="FFPLeague.saveFx(\'' + f.id + '\',' + (isBye ? 'true' : 'false') + ')">' + ic('check') + 'Save</button></div></div>';
+  function ordNum(n) { var t = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (t[(v - 20) % 10] || t[v] || t[0]); }
+  // What a match decides: the finishing places still open to the two in it.
+  // tourn_bracket sends the band, from the draw's own first place and size
+  // narrowed by the round. Down to two, the match names those two places.
+  function bandLabel(lo, hi) {
+    if (lo == null || hi == null) return 'Playing on';
+    if (hi <= lo) return ordNum(lo) + ' place';
+    if (hi - lo === 1) return lo === 1 ? 'Final' : ordNum(lo) + ' and ' + ordNum(hi);
+    return 'Playing for ' + lo + ' to ' + hi;
   }
-  // Pre-season has no round number, so the field goes away with it
-  function fxStageChange(sel) {
-    var box = sel.closest('.lg-maed'); if (!box) return;
-    var w = box.querySelector('.fe-rwrap'); if (!w) return;
-    w.style.display = sel.value === 'preseason' ? 'none' : '';
+  function mHtml(m) {
+    if (m.status === 'void') return '<div class="tg-m tg-void"></div>';
+    var hw = m.winner_entrant && m.home && m.home.id === m.winner_entrant, aw = m.winner_entrant && m.away && m.away.id === m.winner_entrant;
+    var kindTag = m.result_kind && m.result_kind !== 'played'
+      ? '<span class="tg-kind">' + esc(AWARD_SHORT[m.result_kind] || m.result_kind) + '</span>' : '';
+    var when = whenLine(m);
+    // The match-centre button sits in its own strip under the players, never
+    // over a name.
+    var foot = (m.home && m.away) || when
+      ? '<div class="tg-mf">' + (when ? '<span class="wh">' + esc(when) + '</span>' : '<span class="wh dim">Not scheduled</span>')
+        + ((m.home && m.away) ? '<button class="tg-mcb" title="Match centre" onclick="FFPTourn.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + '</button>' : '')
+        + '</div>' : '';
+    return '<div class="tg-m" data-id="' + m.id + '">'
+      + '<div class="s ' + (hw ? 'win' : (m.home ? '' : 'tbd')) + '">' + seedTag(m.home) + '<b>' + esc((m.home && m.home.name) || 'TBD') + '</b><input type="number" class="tg-hs" value="' + (m.home_score != null ? m.home_score : '') + '" placeholder="\u2013"></div>'
+      + '<div class="s ' + (aw ? 'win' : (m.away ? '' : 'tbd')) + '">' + seedTag(m.away) + '<b>' + esc((m.away && m.away.name) || ((m.status === 'bye' || (m.stage === 'monrad' && m.slot === 0)) ? 'Bye' : 'TBD')) + '</b><input type="number" class="tg-as" value="' + (m.away_score != null ? m.away_score : '') + '" placeholder="\u2013"></div>'
+      + kindTag + foot + '</div>';
   }
-  function editFx(id) { S.editFx = id; S.delFx = null; renderTab(); }
-  function cancelEditFx() { S.editFx = null; renderTab(); }
-  function delAsk(id) { S.delFx = id; renderTab(); }
-  function delCancel() { S.delFx = null; renderTab(); }
-  async function delFx(id) {
-    var r; try { r = await sb().rpc('lt_match_remove', { p_scope: 'league', p_match: id }); } catch (e) { r = { error: e }; }
-    if (r && r.error) { toast('Could not delete', 'error'); return; }
-    S.delFx = null; if (S.editFx === id) S.editFx = null; toast('Fixture deleted', 'success'); renderTab();
-  }
-  async function saveFx(id, isBye) {
-    var box = document.querySelector('.lg-maed[data-id="' + id + '"]'); if (!box) return;
-    var h = (box.querySelector('.fe-h') || {}).value || null;
-    var a = isBye ? null : ((box.querySelector('.fe-a') || {}).value || null);
-    var st = (box.querySelector('.fe-st') || {}).value || 'regular';
-    // pre-season sits before round 1; never let `|| 1` swallow the 0
-    var rdIn = +((box.querySelector('.fe-r') || {}).value);
-    var rd = st === 'preseason' ? 0 : (rdIn > 0 ? rdIn : 1);
-    if (!isBye && (!h || !a || h === a)) { toast('Pick two different ' + nouns(curDv()).many, 'error'); return; }
-    if (isBye && !h) { toast('Pick a ' + nouns(curDv()).one, 'error'); return; }
-    var r; try { r = await sb().rpc('lt_match_update', { p_scope: 'league', p_match: id, p_home: h, p_away: a, p_round: rd, p_stage: st }); } catch (e) { r = { error: e }; }
-    if (r && r.error) { toast('Save failed', 'error'); return; }
-    if (!isBye) {
-      var dv = (box.querySelector('.fe-d') || {}).value, tv = (box.querySelector('.fe-t') || {}).value, fid = (box.querySelector('.fe-f') || {}).value || null;
-      var when = (dv || tv) ? zoneToISO(dv || zoneDate(Date.now(), evTz()), tv || '00:00', evTz()) : null;
-      try { await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null }); } catch (e) { /* non-blocking */ }
-      var su = (box.querySelector('.fe-s') || {}).value;
-      try { await sb().rpc('lt_match_set_stream', { p_scope: 'league', p_match: id, p_url: (su && su.trim()) ? su.trim() : null }); } catch (e) { /* non-blocking */ }
-    }
-    S.editFx = null; toast('Fixture saved', 'success'); renderTab();
-  }
-  function matchEditor() {
-    var bye = S.addBye, pre = S.addPre && !bye;
-    /* On the schedule the editor opens under a surface, where the tab no
-       longer says which division this belongs to, so it asks. */
-    var divs = (S.detail && S.detail.divisions) || [];
-    var dsel = divs.length < 2 ? '' :
-      '<select class="lg-sel" style="width:auto;min-width:170px;margin-bottom:9px" onchange="FFPLeague.setAddDiv(this.value)">'
-      + divs.map(function (d) { return '<option value="' + d.id + '"' + (d.id === S.divId ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join('')
-      + '</select>';
-    return '<div class="lg-maed"><div class="ttl">Add ' + (bye ? 'a bye' : (pre ? 'a preseason match' : 'a fixture')) + '</div>' + dsel
-      + '<label class="fe-byetog"><input type="checkbox" id="lg-mm-pre" ' + (pre ? 'checked' : '') + ' onchange="FFPLeague.togglePre(this.checked)"> Preseason / friendly (doesn\'t count towards the table)</label>'
-      + '<label class="fe-byetog"><input type="checkbox" id="lg-mm-bye" ' + (bye ? 'checked' : '') + ' onchange="FFPLeague.toggleBye(this.checked)"> This is a bye (' + nouns(curDv()).one + ' sits out this round)</label>'
-      + '<div class="edrow" style="margin-top:11px"><select class="lg-sel" id="lg-mm-h" style="flex:1;min-width:150px">' + entOpts(null) + '</select>'
-      + (bye ? '' : '<span class="vv">v</span><select class="lg-sel" id="lg-mm-a" style="flex:1;min-width:150px">' + entOpts(null) + '</select>') + '</div>'
-      + '<div class="edrow2">' + (pre ? '' : '<div class="f"><label>Round</label><input class="lg-in" id="lg-mm-r" type="number" value="1" style="width:90px"></div>')
-      + (bye ? '' : '<div class="f"><label>Date</label><input class="lg-in" id="lg-mm-d" type="date"></div><div class="f"><label>Time</label><input class="lg-in" id="lg-mm-t" type="time"></div><div class="f" style="flex:1;min-width:160px"><label>Venue / surface</label><select class="lg-sel" id="lg-mm-f" style="width:100%">' + surfaceOpts(S._fields, null) + '</select></div>')
+  // ── AWARD A MATCH THAT WAS NOT PLAYED OUT ─────────────────────────────
+  var AWARD_KINDS = [['walkover', 'Walkover', 'Opponent did not show'],
+                     ['retired', 'Retired', 'Could not finish, injury or illness'],
+                     ['default', 'Default', 'Removed by the organiser'],
+                     ['disqualified', 'Disqualified', 'Removed for conduct']];
+  var AWARD_SHORT = { walkover: 'w/o', retired: 'ret', default: 'def', disqualified: 'dsq' };
+  var _awardM = null;
+  function awardPanel(id) {
+    var m = (S._bracket || []).find(function (x) { return x.id === id; });
+    if (!m && S._mc && S._mc.id === id) m = S._mc;
+    if (!m || !m.home || !m.away) { toast('Both ' + nouns(curDv()).many + ' must be in the match first', 'error'); return; }
+    _awardM = m;
+    var old = document.getElementById('tg-aw'); if (old) old.remove();
+    var bk = document.createElement('div'); bk.id = 'tg-aw'; bk.className = 'lg-cfm';
+    bk.innerHTML = '<div class="lg-cfm-in lg-scr">'
+      + '<span class="ms lg-cfm-ic" style="color:#c47f00">gavel</span>'
+      + '<div class="lg-cfm-t">Award the match</div>'
+      + '<div class="lg-cfm-b">' + esc(m.home.name) + ' v ' + esc(m.away.name)
+      +   '<br>The winner still advances in the draw.</div>'
+      + '<div class="tg-awgrid">'
+      +   '<div class="lg-lab" style="margin:0">Who goes through</div>'
+      +   '<div class="tg-awrow">'
+      +     '<button class="lg-btn tg-awwin on" data-w="' + m.home.id + '">' + esc(m.home.name) + '</button>'
+      +     '<button class="lg-btn tg-awwin" data-w="' + m.away.id + '">' + esc(m.away.name) + '</button>'
+      +   '</div>'
+      +   '<div class="lg-lab" style="margin:12px 0 0">Why</div>'
+      +   '<div class="tg-awrow wrap">'
+      +     AWARD_KINDS.map(function (k, i) {
+              return '<button class="lg-btn tg-awkind' + (i === 0 ? ' on' : '') + '" data-k="' + k[0] + '" title="' + esc(k[2]) + '">' + esc(k[1]) + '</button>';
+            }).join('')
+      +   '</div>'
       + '</div>'
-      + '<div class="edfoot"><span class="sp"></span><button class="lg-btn ghost" onclick="FFPLeague.cancelMatch()">Cancel</button><button class="lg-btn pri" onclick="FFPLeague.saveMatch()">' + ic('check') + (bye ? 'Add bye' : (pre ? 'Add preseason match' : 'Add fixture')) + '</button></div></div>';
-  }
-  function addMatch(tab) { S.addMatch = tab; S.addBye = false; S.addPre = false; renderTab(); }
-  // Changing the division changes who can be picked, so the roster is reloaded.
-  async function setAddDiv(id) { S.divId = id; await loadEntrants(); renderTab(); }
-  function cancelMatch() { S.addMatch = null; S.addBye = false; S.addPre = false; renderTab(); }
-  function toggleBye(v) { S.addBye = v; if (v) S.addPre = false; renderTab(); }
-  function togglePre(v) { S.addPre = v; if (v) S.addBye = false; renderTab(); }
-  async function saveMatch() {
-    var h = (document.getElementById('lg-mm-h') || {}).value || null, rd = +((document.getElementById('lg-mm-r') || {}).value) || 1;
-    if (S.addBye) {
-      if (!h) { toast('Pick a ' + nouns(curDv()).one, 'error'); return; }
-      var rb; try { rb = await sb().rpc('lt_match_add', { p_scope: 'league', p_division: S.divId, p_round: rd, p_home: h, p_away: null, p_when: null, p_field: null, p_stage: 'bye' }); } catch (e) { rb = { error: e }; }
-      if (rb.error) { toast('Could not add', 'error'); return; } S.addMatch = null; S.addBye = false; toast('Bye added', 'success'); renderTab(); return;
-    }
-    var pre = S.addPre;
-    var a = (document.getElementById('lg-mm-a') || {}).value || null;
-    if (!h || !a || h === a) { toast('Pick two different ' + nouns(curDv()).many, 'error'); return; }
-    var dv = (document.getElementById('lg-mm-d') || {}).value, tv = (document.getElementById('lg-mm-t') || {}).value, fid = (document.getElementById('lg-mm-f') || {}).value || null;
-    var when = (dv || tv) ? zoneToISO(dv || zoneDate(Date.now(), evTz()), tv || '00:00', evTz()) : null;
-    /* Added from a surface on the schedule means it belongs there, after
-       whatever is already on it that day. */
-    var slot = String(S.addMatch || '');
-    if (!fid && slot.indexOf('|') > -1) {
-      var sday = slot.split('|')[0]; fid = slot.split('|')[1];
-      var same = (S._sched || []).filter(function (x) { return x.field_id === fid && x.scheduled_at && lgDateStr(x.scheduled_at) === sday; });
-      var lastMs = same.reduce(function (acc, x) { return Math.max(acc, new Date(x.scheduled_at).getTime()); }, 0);
-      var mlen = Math.max(5, +((document.getElementById('lg-mlen') || {}).value) || 30);
-      when = lastMs ? new Date(lastMs + mlen * 60000).toISOString() : lgIso(sday, '09:00');
-    }
-    var r; try { r = await sb().rpc('lt_match_add', { p_scope: 'league', p_division: S.divId, p_round: pre ? 0 : rd, p_home: h, p_away: a, p_when: when, p_field: fid, p_stage: pre ? 'preseason' : 'regular' }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not add', 'error'); return; } S.addMatch = null; S.addPre = false; toast(pre ? 'Preseason match added' : 'Fixture added', 'success'); renderTab();
-  }
-  // A pre-season friendly is not part of the round-robin, so it gets its own
-  // section ahead of Round 1 and is never captioned "Round 1". The stage decides;
-  // the round number is only a tiebreak inside a stage.
-  function fxLabel(f) {
-    if (f && f.round_label) return f.round_label;          // the RPC says so
-    var st = String((f && f.stage) || 'regular').toLowerCase();
-    if (st === 'preseason') return 'Pre-season';
-    if (st === 'playoff') return 'Playoffs';
-    if (st === 'semi') return 'Semi-finals';
-    if (st === 'final') return 'Final';
-    return 'Round ' + ((f && f.round) != null ? f.round : 1);
-  }
-  function fxRank(f) {
-    if (f && f.stage_rank != null) return +f.stage_rank;
-    var st = String((f && f.stage) || 'regular').toLowerCase();
-    return st === 'preseason' ? 0 : st === 'playoff' ? 2 : st === 'semi' ? 3 : st === 'final' ? 4 : 1;
-  }
-  // Groups a fixture list into ordered sections: [{key, label, list}]
-  function fxGroups(fx) {
-    var by = {}, keys = [];
-    fx.forEach(function (f) {
-      var k = fxRank(f) + ':' + (fxRank(f) === 1 ? (f.round != null ? f.round : 1) : 0);
-      if (!by[k]) { by[k] = { key: k, rank: fxRank(f), round: +(f.round || 0), label: fxLabel(f), list: [] }; keys.push(k); }
-      by[k].list.push(f);
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" id="tg-aw-x">Cancel</button>'
+      +   '<button class="lg-btn pri" id="tg-aw-go">' + ic('check') + 'Award it</button></div>'
+      + '</div>';
+    document.body.appendChild(bk);
+    var pick = function (sel, el) {
+      Array.prototype.slice.call(bk.querySelectorAll(sel)).forEach(function (b) { b.classList.remove('on'); });
+      el.classList.add('on');
+    };
+    Array.prototype.slice.call(bk.querySelectorAll('.tg-awwin')).forEach(function (b) {
+      b.onclick = function () { pick('.tg-awwin', b); };
     });
-    return keys.map(function (k) { return by[k]; }).sort(function (a, b) {
-      return a.rank - b.rank || a.round - b.round;
+    Array.prototype.slice.call(bk.querySelectorAll('.tg-awkind')).forEach(function (b) {
+      b.onclick = function () { pick('.tg-awkind', b); };
     });
+    bk.querySelector('#tg-aw-x').onclick = function () { bk.remove(); _awardM = null; };
+    bk.querySelector('#tg-aw-go').onclick = function () {
+      var w = bk.querySelector('.tg-awwin.on'), k = bk.querySelector('.tg-awkind.on');
+      bk.remove();
+      doAward(_awardM.id, w && w.getAttribute('data-w'), k && k.getAttribute('data-k'));
+    };
   }
-  function roundLabel(rd) { return (+rd === 0) ? 'Pre-season' : 'Round ' + rd; }
-  // ---------- MATCH CENTRE (organiser enters the scoring timeline) ----------
+  async function doAward(id, winner, kind) {
+    if (!id || !winner || !kind) { toast('Pick a winner and a reason', 'error'); return; }
+    var r;
+    try { r = await sb().rpc('lt_match_award', { p_scope: 'tourn', p_match: id, p_winner: winner, p_kind: kind }); }
+    catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not award the match', 'error'); return; }
+    toast((r.data && r.data.advanced) ? 'Awarded, winner advanced' : 'Awarded', 'success');
+    _awardM = null; renderTab();
+  }
+
+  async function saveBracketResults() {
+    var cards = Array.prototype.slice.call(document.querySelectorAll('#tg-brk .tg-m[data-id]')); var n = 0;
+    for (var i = 0; i < cards.length; i++) { var el = cards[i]; var h = el.querySelector('.tg-hs').value, a = el.querySelector('.tg-as').value; if (h === '' || a === '') continue; try { await sb().rpc('tourn_result_save', { p_match: el.getAttribute('data-id'), p_home: +h, p_away: +a, p_sets: null, p_status: 'final' }); n++; } catch (e) {} }
+    toast(n + ' saved, winners advanced', 'success'); renderTab();
+  }
+
+
+  // ---------- RULES PDF ----------
+  // The typed Rules box carries the short version. Organisers also hand out a
+  // real rulebook, so ONE PDF rides with the tournament: the file goes to the
+  // event-docs bucket (PDF only, 20 MB, public read, write scoped to the
+  // uploader's own folder) and its URL lands on tourn_set_rules_pdf, which the
+  // detail RPC already returns inside `event`. Same shape as the logo/banner
+  // uploads: pick, store, save, reopen.
+  function rulesPdfHtml(ev) {
+    if (S.pdfBusy) {
+      return '<div class="lg-pdf">' + ic('description')
+        + '<div class="g"><b>Uploading\u2026</b><span>' + esc(S.pdfBusy) + '</span></div></div>';
+    }
+    if (ev && ev.rules_pdf_url) {
+      return '<div class="lg-pdf has">' + ic('description')
+        + '<div class="g"><b>' + esc(ev.rules_pdf_name || 'Rules.pdf') + '</b>'
+        + '<span>Entrants can open this from the app</span></div>'
+        + '<a class="lg-btn" href="' + esc(ev.rules_pdf_url) + '" target="_blank" rel="noopener">'
+        + ic('open_in_new') + 'View</a>'
+        + '<span class="ms x" title="Remove" onclick="FFPTourn.removeRulesPdf()">close</span></div>';
+    }
+    return '<div class="lg-pdf">' + ic('description')
+      + '<div class="g"><b>No rules PDF</b><span>PDF up to 20 MB, sits with the rules in the app</span></div>'
+      + '<button class="lg-btn" onclick="FFPTourn.pickRulesPdf()">' + ic('upload_file') + 'Attach PDF</button></div>';
+  }
+  // Repaint just the strip, so an upload in progress does not wipe whatever the
+  // organiser has typed into the other fields on this tab.
+  function paintRulesPdf() {
+    var h = document.getElementById('tg-pdfwrap');
+    if (h) h.innerHTML = rulesPdfHtml((S.detail && S.detail.event) || {});
+  }
+  function pickRulesPdf() {
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'application/pdf,.pdf'; inp.style.display = 'none';
+    inp.addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0];
+      if (inp.parentNode) inp.parentNode.removeChild(inp);
+      if (f) uploadRulesPdf(f);
+    });
+    document.body.appendChild(inp); inp.click();
+  }
+  // The shared image uploader cannot carry this: it hardcodes image/jpeg and a
+  // .jpg path, and rejects anything that is not an image. So this is a direct
+  // owner-scoped storage write, which is what a provider session can do.
+  async function uploadRulesPdf(f) {
+    if (!((f.type === 'application/pdf') || /\.pdf$/i.test(f.name || ''))) { toast('That file is not a PDF', 'error'); return; }
+    if (f.size > 20 * 1024 * 1024) { toast('That PDF is over 20 MB', 'error'); return; }
+    var uid = pdfOwnerId();
+    if (!uid) { toast('Please sign in again', 'error'); return; }
+    S.pdfBusy = f.name; paintRulesPdf();
+    var path = uid + '/tgrules-' + S.eventId + '-' + Date.now() + '.pdf';
+    try {
+      var up = await sb().storage.from('event-docs').upload(path, f, { contentType: 'application/pdf', upsert: true, cacheControl: '3600' });
+      if (up && up.error) throw up.error;
+      var pub = sb().storage.from('event-docs').getPublicUrl(path);
+      var url = pub && pub.data && pub.data.publicUrl;
+      if (!url) throw new Error('no_public_url');
+      var r = await sb().rpc('tourn_set_rules_pdf', { p_event: S.eventId, p_url: url, p_name: f.name });
+      if (r && r.error) throw r.error;
+    } catch (e) { S.pdfBusy = null; paintRulesPdf(); toast('Upload failed', 'error'); return; }
+    S.pdfBusy = null; toast('Rules PDF attached', 'success'); open(S.eventId);
+  }
+  async function removeRulesPdf() {
+    var r; try { r = await sb().rpc('tourn_set_rules_pdf', { p_event: S.eventId, p_url: null, p_name: null }); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not remove', 'error'); return; }
+    toast('Rules PDF removed', 'success'); open(S.eventId);
+  }
+  // The storage path must begin with auth.uid(), which is the JWT `sub`. A
+  // provider's record id is not always that value, and a mismatch is a 400 on
+  // upload, so read the claim itself.
+  function pdfOwnerId() {
+    try {
+      var tok = window.FFPAuth && window.FFPAuth.getToken && window.FFPAuth.getToken();
+      if (tok) {
+        var parts = String(tok).split('.');
+        if (parts.length === 3) {
+          var b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          while (b64.length % 4) b64 += '=';
+          var pl = JSON.parse(atob(b64));
+          if (pl && pl.sub) return String(pl.sub);
+        }
+      }
+    } catch (e) {}
+    try { var m = window.FFPAuth && window.FFPAuth.getMember && window.FFPAuth.getMember(); return (m && m.id) || null; } catch (e2) { return null; }
+  }
+  function pickImg(kind) {
+    if (!window.FFPUpload) { toast('Uploader not ready — refresh', 'error'); return; }
+    var isLogo = kind === 'logo';
+    window.FFPUpload.pick({ bucket: isLogo ? 'provider-logos' : 'listing-covers', key: (isLogo ? 'tglogo-' : 'tgcover-') + S.eventId + '-' + Date.now(),
+      aspect: isLogo ? 1 : 16 / 9, outW: isLogo ? 512 : 1600, outH: isLogo ? 512 : 900, title: isLogo ? 'Tournament logo (square)' : 'Banner (16:9)',
+      onDone: function (url) { var p = {}; p[isLogo ? 'logo_url' : 'cover_url'] = url; sb().rpc('tourn_event_save', { p_id: S.eventId, p: p }).then(function () { toast('Saved', 'success'); open(S.eventId); }); },
+      onError: function () { toast('Upload failed', 'error'); } });
+  }
+  function serImg(field) {
+    if (!window.FFPUpload) { toast('Uploader not ready \u2014 refresh', 'error'); return; }
+    var isLogo = field === 'logo_url';
+    window.FFPUpload.pick({
+      bucket: isLogo ? 'provider-logos' : 'listing-covers',
+      key: (isLogo ? 'tslogo-' : 'tscover-') + S.seriesId + '-' + Date.now(),
+      aspect: isLogo ? 1 : 16 / 9, outW: isLogo ? 512 : 1600, outH: isLogo ? 512 : 900,
+      title: isLogo ? 'Series crest (square)' : 'Series banner (16:9)',
+      onDone: function (url) {
+        var p = {}; p[field] = url;
+        sb().rpc('tourn_series_save', { p_id: S.seriesId, p: p }).then(function () {
+          S.seriesList = null; toast('Saved', 'success'); reloadSeries();
+        });
+      },
+      onError: function () { toast('Upload failed', 'error'); } });
+  }
+  function serTeamLogo(id) {
+    if (!window.FFPUpload) { toast('Uploader not ready \u2014 refresh', 'error'); return; }
+    window.FFPUpload.pick({ bucket: 'provider-logos', key: 'tsteam-' + id + '-' + Date.now(),
+      aspect: 1, outW: 400, outH: 400, title: 'Team crest (square)',
+      onDone: function (url) {
+        sb().rpc('tourn_series_team_save', { p_id: id, p_series: null, p: { logo_url: url } }).then(function () {
+          toast('Crest saved', 'success'); reloadSeries();
+        });
+      },
+      onError: function () { toast('Upload failed', 'error'); } });
+  }
+  function entLogo(id) {
+    if (!window.FFPUpload) { toast('Uploader not ready — refresh', 'error'); return; }
+    window.FFPUpload.pick({ bucket: 'provider-logos', key: 'tgteam-' + id + '-' + Date.now(), aspect: 1, outW: 400, outH: 400, title: 'Team logo (square)',
+      onDone: function (url) { sb().rpc('tourn_entrant_set_logo', { p_id: id, p_logo: url }).then(function () { toast('Logo saved', 'success'); renderTab(); }); },
+      onError: function () { toast('Upload failed', 'error'); } });
+  }
+  // ---------- MATCH CENTRE (organiser enters timeline + player stats) ----------
   var KIND_PTS = { try: 5, conversion: 2, penalty: 3, drop_goal: 3, goal: 1, point: 1, yellow_card: 0, red_card: 0 };
   var KIND_LBL = { try: 'Try', conversion: 'Conversion', penalty: 'Penalty', drop_goal: 'Drop goal', goal: 'Goal', point: 'Point', yellow_card: 'Yellow card', red_card: 'Red card' };
-  function openMatch(id) { S.matchOpen = id; S.mcTab = 'timeline'; S._mcDiv = null; S.mcStatPlayer = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = null; S._htSnap = null; S._mcSetTime = null; S._tsTeam = 'home'; S._ts = []; renderMatchCentre(); tsReload(); }
-  function closeMatch() { S.matchOpen = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } renderTab(); }
+  function openMatch(id) { S.matchOpen = id; S.mcTab = 'timeline'; S._mcDiv = null; S.mcStatPlayer = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = null; S._htSnap = null; S._mcSetTime = null; renderMatchCentre(); }
+  function closeMatch() { S.matchOpen = null; renderTab(); }
   async function renderMatchCentre() {
-    var host = document.getElementById('lg-tab'); if (!host) return;
+    var host = document.getElementById('tg-tab'); if (!host) return;
     host.innerHTML = '<div class="lg-empty">Loading match…</div>';
-    var r; try { r = await sb().rpc('lt_match_detail', { p_scope: 'league', p_match: S.matchOpen }); } catch (e) { r = { error: e }; }
+    var r; try { r = await sb().rpc('lt_match_detail', { p_scope: 'tourn', p_match: S.matchOpen }); } catch (e) { r = { error: e }; }
     var m = (r && r.data) || null;
     if (!m) { host.innerHTML = '<div class="lg-empty">Could not load.</div>'; return; }
     S._mc = m;
     if (mcIsSet(m)) { S._cfg = pbpCfg(m); pbpInit(m); return renderPBP(m, host); }
-    var ev = m.events || [];
-    var last = ev.length ? ev[ev.length - 1] : null;
-    var score = last ? last.rs : '0–0';
+    var ev = m.events || []; var last = ev.length ? ev[ev.length - 1] : null; var score = last ? last.rs : '0–0';
     var teamOpts = '<option value="' + m.home.id + '">' + esc(m.home.name) + '</option><option value="' + m.away.id + '">' + esc(m.away.name) + '</option>';
     var kinds = mcScoringKinds();
     var kindOpts = kinds.map(function (k) { return '<option value="' + esc(k.key) + '" data-pts="' + (k.points || 0) + '">' + esc(k.label) + '</option>'; }).join('');
     var tab = S.mcTab || 'timeline';
     var liveBtn = m.status === 'final' ? '<span class="lg-mcstat final">Full time</span>'
-      : (m.status === 'live' ? '<button class="lg-btn lg-livebtn" onclick="FFPLeague.setLive(\'scheduled\')">● LIVE</button>'
-        : '<button class="lg-btn" onclick="FFPLeague.setLive(\'live\')">' + ic('sensors') + 'Go live</button>');
+      : (m.status === 'live' ? '<button class="lg-btn lg-livebtn" onclick="FFPTourn.setLive(\'scheduled\')">● LIVE</button>'
+        : '<button class="lg-btn" onclick="FFPTourn.setLive(\'live\')">' + ic('sensors') + 'Go live</button>');
     host.innerHTML =
-      '<div class="lg-tool"><button class="lg-btn" onclick="FFPLeague.closeMatch()">' + ic('arrow_back') + 'Back to fixtures</button><span class="sp"></span>' + liveBtn + '<button class="lg-btn pri" onclick="FFPLeague.saveResultFromEvents()">' + ic('check') + 'Save result</button></div>'
+      '<div class="lg-tool"><button class="lg-btn" onclick="FFPTourn.closeMatch()">' + ic('arrow_back') + 'Back</button><span class="sp"></span>'
+      + '<button class="lg-btn" title="Walkover, retirement or disqualification" onclick="FFPTourn.awardPanel(\'' + m.id + '\')">' + ic('gavel') + 'Not played out</button>'
+      + liveBtn + '<button class="lg-btn pri" onclick="FFPTourn.saveResultFromEvents()">' + ic('check') + 'Save result</button></div>'
       + '<div class="lg-mchd"><div class="tm">' + crest(m.home) + '<b>' + esc(m.home.name) + '</b></div><div class="scr">' + esc(score) + '</div><div class="tm a"><b>' + esc(m.away.name) + '</b>' + crest(m.away) + '</div></div>'
-      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:10px 0"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPLeague.saveStream()">' + ic('live_tv') + 'Save stream</button></div>' + gfxRow(m)
-      + '<div class="lg-mctabs"><button class="' + (tab === 'timeline' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'timeline\')">Scoring timeline</button><button class="' + (tab === 'subs' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'subs\')">Substitutions</button><button class="' + (tab === 'stats' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'stats\')">Player stats</button><button class="' + (tab === 'team' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'team\')">Team stats</button><button class="' + (tab === 'sheet' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'sheet\')">Team sheet</button></div>'
-      + (tab === 'sheet' ? tsSheet(m)
-        : tab === 'timeline'
-        ? ('<div class="lg-mcadd">'
-          + '<input class="lg-in" id="mc-min" type="number" placeholder="Min" style="width:70px">'
+      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:10px 0"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPTourn.saveStream()">' + ic('live_tv') + 'Save stream</button></div>'
+      + '<div class="lg-mctabs"><button class="' + (tab === 'timeline' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'timeline\')">Scoring timeline</button><button class="' + (tab === 'subs' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'subs\')">Substitutions</button><button class="' + (tab === 'stats' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'stats\')">Player stats</button><button class="' + (tab === 'team' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'team\')">Team stats</button></div>'
+      + (tab === 'timeline'
+        ? ('<div class="lg-mcadd"><input class="lg-in" id="mc-min" type="number" placeholder="Min" style="width:70px">'
           + '<select class="lg-sel" id="mc-kind">' + kindOpts + '</select>'
-          + '<select class="lg-sel" id="mc-team">' + teamOpts + '</select>'
-          + '<select class="lg-sel" id="mc-player"></select>'
-          + '<button class="lg-btn pri" onclick="FFPLeague.addEvent()">' + ic('add') + 'Add</button></div>'
+          + '<select class="lg-sel" id="mc-team">' + teamOpts + '</select><select class="lg-sel" id="mc-player"></select>'
+          + '<button class="lg-btn pri" onclick="FFPTourn.addEvent()">' + ic('add') + 'Add</button></div>'
           + '<div class="lg-sub" style="margin:6px 0 0">Order: time, action, team, player</div><div id="mc-list"></div>')
         : tab === 'subs'
-        ? ('<div class="lg-mcadd">'
-          + '<input class="lg-in" id="sub-min" type="number" placeholder="Min" style="width:70px">'
+        ? ('<div class="lg-mcadd"><input class="lg-in" id="sub-min" type="number" placeholder="Min" style="width:70px">'
           + '<select class="lg-sel" id="sub-team">' + teamOpts + '</select>'
-          + '<select class="lg-sel" id="sub-off"></select>'
-          + '<select class="lg-sel" id="sub-on"></select>'
-          + '<button class="lg-btn pri" onclick="FFPLeague.addSub()">' + ic('swap_horiz') + 'Record</button></div>'
+          + '<select class="lg-sel" id="sub-off"></select><select class="lg-sel" id="sub-on"></select>'
+          + '<button class="lg-btn pri" onclick="FFPTourn.addSub()">' + ic('swap_horiz') + 'Record</button></div>'
           + '<div class="lg-sub" style="margin:6px 0 0">Player OFF ▼ – Player ON ▲</div><div id="mc-subs"></div>')
         : tab === 'stats' ? '<div id="mc-stats"><div class="lg-empty">Loading…</div></div>'
         : '<div id="mc-team"><div class="lg-empty">Loading…</div></div>');
-    if (tab === 'timeline') {
-      mcFillPlayers();
-      document.getElementById('mc-team').addEventListener('change', mcFillPlayers);
-      document.getElementById('mc-kind').addEventListener('change', mcFillPlayers);
-      renderMcList();
-    } else if (tab === 'subs') {
-      mcFillSubPlayers();
-      document.getElementById('sub-team').addEventListener('change', mcFillSubPlayers);
-      renderMcSubs();
-    } else if (tab === 'stats') { renderMcStats(); }
+    if (tab === 'timeline') { mcFillPlayers(); document.getElementById('mc-team').addEventListener('change', mcFillPlayers); document.getElementById('mc-kind').addEventListener('change', mcFillPlayers); renderMcList(); }
+    else if (tab === 'subs') { mcFillSubPlayers(); document.getElementById('sub-team').addEventListener('change', mcFillSubPlayers); renderMcSubs(); }
+    else if (tab === 'stats') { renderMcStats(); }
     else { renderMcTeam(); }
   }
   // ---------- RACKET PLAY-BY-PLAY (point-by-point) — padel/tennis + rally sports ----------
@@ -2503,7 +3460,7 @@
   }
   function pbpPersist() {
     clearTimeout(S._lTmr);
-    S._lTmr = setTimeout(function () { var t = S._live; sb().rpc('lt_match_save_sets', { p_scope: 'league', p_match: S.matchOpen, p_sets: t.sets, p_home: setsWon(t.sets, 0), p_away: setsWon(t.sets, 1), p_live: { gh: t.gh, ga: t.ga, ph: t.ph, pa: t.pa, tb: t.tb, server: t.server, sets: t.sets } }); }, 350);
+    S._lTmr = setTimeout(function () { var t = S._live; sb().rpc('lt_match_save_sets', { p_scope: 'tourn', p_match: S.matchOpen, p_sets: t.sets, p_home: setsWon(t.sets, 0), p_away: setsWon(t.sets, 1), p_live: { gh: t.gh, ga: t.ga, ph: t.ph, pa: t.pa, tb: t.tb, server: t.server, sets: t.sets } }); }, 350);
   }
   function pbpSnap() { S._lhist.push(JSON.stringify(S._live)); if (S._lhist.length > 300) S._lhist.shift(); }
   function pbpDone() { var need = S._cfg.engine === 'rally' ? S._cfg.needGames : S._cfg.needSets; if (setsWon(S._live.sets, 0) >= need || setsWon(S._live.sets, 1) >= need) S._live.done = true; }
@@ -2518,12 +3475,12 @@
       if (t.tb) { if (t[m2] >= 7 && t[m2] - t[o2] >= 2) { t.sets.push(side === 'home' ? [7, 6] : [6, 7]); t.gh = 0; t.ga = 0; t.ph = 0; t.pa = 0; t.tb = false; pbpDone(); } }
       else if (t[m2] >= 4 && (t[m2] - t[o2] >= 2 || (g && t[o2] >= 3))) { t[gm]++; t.ph = 0; t.pa = 0; t.server = t.server === 'home' ? 'away' : 'home'; if (t[gm] >= 6 && t[gm] - t[go] >= 2) { t.sets.push([t.gh, t.ga]); t.gh = 0; t.ga = 0; pbpDone(); } else if (t.gh === 6 && t.ga === 6) { t.tb = true; } }
     }
-    pbpPersist(); renderPBP(S._mc, document.getElementById('lg-tab'));
+    pbpPersist(); renderPBP(S._mc, document.getElementById('tg-tab'));
   }
-  function pbpUndo() { var h = S._lhist.pop(); if (h) { S._live = JSON.parse(h); pbpPersist(); renderPBP(S._mc, document.getElementById('lg-tab')); } }
-  function pbpServer() { S._live.server = S._live.server === 'home' ? 'away' : 'home'; pbpPersist(); renderPBP(S._mc, document.getElementById('lg-tab')); }
+  function pbpUndo() { var h = S._lhist.pop(); if (h) { S._live = JSON.parse(h); pbpPersist(); renderPBP(S._mc, document.getElementById('tg-tab')); } }
+  function pbpServer() { S._live.server = S._live.server === 'home' ? 'away' : 'home'; pbpPersist(); renderPBP(S._mc, document.getElementById('tg-tab')); }
   function pbpDecide(k) { if (k === 'let') return; var srv = S._live.server; pbpAward(k === 'stroke' ? srv : (srv === 'home' ? 'away' : 'home')); }
-  async function pbpFinish() { var t = S._live; try { await sb().rpc('league_result_save', { p_fixture: S.matchOpen, p_home: setsWon(t.sets, 0), p_away: setsWon(t.sets, 1), p_sets: t.sets, p_status: 'final' }); toast('Result saved', 'success'); renderMatchCentre(); } catch (e) { toast('Could not save result', 'error'); } }
+  async function pbpFinish() { var t = S._live; try { await sb().rpc('tourn_result_save', { p_match: S.matchOpen, p_home: setsWon(t.sets, 0), p_away: setsWon(t.sets, 1), p_sets: t.sets, p_status: 'final' }); toast('Result saved', 'success'); renderMatchCentre(); } catch (e) { toast('Could not save result', 'error'); } }
   var PBP_CSS = ".pbp-board{background:linear-gradient(158deg,#1c3e52,#0d1e2a);color:#fff;border-radius:16px;padding:16px 18px;margin-bottom:16px;max-width:660px}.pbp-hd{display:flex;align-items:center;padding:0 2px 8px;border-bottom:1px solid rgba(255,255,255,.12)}.pbp-hd .sp{flex:1}.pbp-hd .lb{width:60px;text-align:center;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.5)}.pbp-hd .lb.g{width:52px}.pbp-hd .lb.p{width:60px}.pbp-r{display:flex;align-items:center;padding:12px 2px}.pbp-r+.pbp-r{border-top:1px solid rgba(255,255,255,.08)}.pbp-r .clr{width:5px;height:34px;border-radius:3px;margin-right:12px}.pbp-r.home .clr{background:linear-gradient(180deg,#25a6d8,#12557a)}.pbp-r.away .clr{background:linear-gradient(180deg,#6a7e8c,#243645)}.pbp-r .who{flex:1;min-width:0}.pbp-r .who b{font-size:16px;font-weight:800}.pbp-r .who .srv{display:block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#7bf0bd;margin-top:2px}.pbp-r .cells{width:60px;display:flex;gap:8px;justify-content:center;font-size:15px;font-weight:700;color:rgba(255,255,255,.5)}.pbp-r .cells .w{color:#fff}.pbp-r .gm{width:52px;text-align:center;font-size:19px;font-weight:800}.pbp-r .pt{width:60px;text-align:center;font-size:34px;font-weight:900;line-height:1}.pbp-flags{text-align:center;margin-top:10px}.pbp-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:20px;background:rgba(242,169,0,.22);color:#ffe2a0}.pbp-serve{text-align:center;font-size:12px;font-weight:700;color:rgba(255,255,255,.82);margin-top:9px}.pbp-serve .ms{font-size:15px;vertical-align:-3px;color:#ffce4d;margin-right:4px}.pbp-clab{max-width:660px;text-align:center;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#6b7f8b;margin:0 0 12px}.pbp-btns{max-width:660px;display:flex;gap:14px;margin-bottom:12px}.pbp-pb{flex:1;border:0;border-radius:18px;color:#fff;cursor:pointer;padding:26px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 10px 24px rgba(15,34,48,.18)}.pbp-pb.home{background:linear-gradient(160deg,#25a6d8,#0f5578)}.pbp-pb.away{background:linear-gradient(160deg,#4a6172,#243645)}.pbp-pb:active{filter:brightness(1.07)}.pbp-pb:disabled{opacity:.5;cursor:default}.pbp-pb .pl{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.9;display:flex;align-items:center;gap:6px}.pbp-pb .pl .ms{font-size:20px}.pbp-pb .nm{font-size:22px;font-weight:900}.pbp-decide{max-width:660px;display:flex;gap:10px;margin-bottom:12px}.pbp-decide button{flex:1;border:0;border-radius:12px;padding:13px;font:inherit;font-weight:800;cursor:pointer}.pbp-decide .let{background:rgba(25,128,173,.14);color:#1980AD}.pbp-decide .stroke{background:rgba(242,169,0,.2);color:#c47f00}.pbp-decide .nolet{background:#eef2f5;color:#5b6b75}.pbp-srow{max-width:660px;display:flex;gap:10px}.pbp-srow button{flex:1;border:1px solid var(--ffp-border-mid);background:#fff;border-radius:12px;padding:12px;font:inherit;font-weight:800;color:var(--ffp-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}.pbp-srow button .ms{font-size:19px;color:#c47f00}";
   function renderPBP(m, host) {
     if (!document.getElementById('pbp-css')) { var st = document.createElement('style'); st.id = 'pbp-css'; st.textContent = PBP_CSS; document.head.appendChild(st); }
@@ -2533,184 +3490,31 @@
     var dA = rally ? { c: t.sets.map(function (s) { return s[1]; }), gm: wonA, pt: t.pa } : { c: t.sets.map(function (s) { return s[1]; }), gm: t.ga, pt: ptL(t.pa, t.ph, t.tb, cfg.golden) };
     var flag = t.tb ? 'Tiebreak' : (!rally && t.ph >= 3 && t.pa >= 3 ? (cfg.golden ? 'Golden point' : (t.ph === t.pa ? 'Deuce' : 'Advantage')) : '');
     var serveName = t.server === 'home' ? m.home.name : m.away.name;
-    var liveBtn = m.status === 'final' ? '<span class="lg-mcstat final">Full time</span>' : (m.status === 'live' ? '<button class="lg-btn lg-livebtn" onclick="FFPLeague.setLive(\'scheduled\')">● LIVE</button>' : '<button class="lg-btn" onclick="FFPLeague.setLive(\'live\')">' + ic('sensors') + 'Go live</button>');
+    var liveBtn = m.status === 'final' ? '<span class="lg-mcstat final">Full time</span>' : (m.status === 'live' ? '<button class="lg-btn lg-livebtn" onclick="FFPTourn.setLive(\'scheduled\')">● LIVE</button>' : '<button class="lg-btn" onclick="FFPTourn.setLive(\'live\')">' + ic('sensors') + 'Go live</button>');
     function row(side, d, nm, sv) { var cells = d.c.map(function (v, i) { return '<span class="' + (i === d.c.length - 1 ? 'w' : '') + '">' + v + '</span>'; }).join(''); return '<div class="pbp-r ' + side + '"><span class="clr"></span><span class="who"><b>' + esc(nm) + '</b>' + (sv ? '<span class="srv">● Serving</span>' : '') + '</span><span class="cells">' + cells + '</span><span class="gm">' + d.gm + '</span><span class="pt">' + d.pt + '</span></div>'; }
-    var decide = cfg.squash ? '<div class="pbp-decide"><button class="let" onclick="FFPLeague.pbpDecide(\'let\')">Let</button><button class="stroke" onclick="FFPLeague.pbpDecide(\'stroke\')">Stroke</button><button class="nolet" onclick="FFPLeague.pbpDecide(\'nolet\')">No let</button></div>' : '';
+    var decide = cfg.squash ? '<div class="pbp-decide"><button class="let" onclick="FFPTourn.pbpDecide(\'let\')">Let</button><button class="stroke" onclick="FFPTourn.pbpDecide(\'stroke\')">Stroke</button><button class="nolet" onclick="FFPTourn.pbpDecide(\'nolet\')">No let</button></div>' : '';
     host.innerHTML =
-      '<div class="lg-tool"><button class="lg-btn" onclick="FFPLeague.closeMatch()">' + ic('arrow_back') + 'Back</button><span class="sp"></span>' + liveBtn + '<button class="lg-btn pri" onclick="FFPLeague.pbpFinish()">' + ic('check') + 'Finish and save result</button></div>'
+      '<div class="lg-tool"><button class="lg-btn" onclick="FFPTourn.closeMatch()">' + ic('arrow_back') + 'Back</button><span class="sp"></span>' + liveBtn + '<button class="lg-btn pri" onclick="FFPTourn.pbpFinish()">' + ic('check') + 'Finish and save result</button></div>'
       + '<div class="pbp-board"><div class="pbp-hd"><span class="sp"></span><span class="lb">Sets</span><span class="lb g">' + (rally ? 'Games' : 'Gm') + '</span><span class="lb p">Pts</span></div>'
       + row('away', dA, m.away.name, t.server === 'away') + row('home', dH, m.home.name, t.server === 'home')
       + (flag ? '<div class="pbp-flags"><span class="pbp-tag">' + flag + '</span></div>' : '')
       + '<div class="pbp-serve">' + ic('sports_tennis') + esc(serveName) + ' to serve</div></div>'
       + '<div class="pbp-clab">Tap who won the ' + (rally ? 'rally' : 'point') + '</div>'
-      + '<div class="pbp-btns"><button class="pbp-pb away" ' + (t.done ? 'disabled' : '') + ' onclick="FFPLeague.pbpAward(\'away\')"><span class="pl">' + ic('add') + 'Point</span><span class="nm">' + esc(m.away.name) + '</span></button>'
-      + '<button class="pbp-pb home" ' + (t.done ? 'disabled' : '') + ' onclick="FFPLeague.pbpAward(\'home\')"><span class="pl">' + ic('add') + 'Point</span><span class="nm">' + esc(m.home.name) + '</span></button></div>'
+      + '<div class="pbp-btns"><button class="pbp-pb away" ' + (t.done ? 'disabled' : '') + ' onclick="FFPTourn.pbpAward(\'away\')"><span class="pl">' + ic('add') + 'Point</span><span class="nm">' + esc(m.away.name) + '</span></button>'
+      + '<button class="pbp-pb home" ' + (t.done ? 'disabled' : '') + ' onclick="FFPTourn.pbpAward(\'home\')"><span class="pl">' + ic('add') + 'Point</span><span class="nm">' + esc(m.home.name) + '</span></button></div>'
       + decide
-      + '<div class="pbp-srow"><button onclick="FFPLeague.pbpUndo()">' + ic('undo') + 'Undo</button><button onclick="FFPLeague.pbpServer()">' + ic('swap_horiz') + 'Change server</button></div>'
-      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:14px 0 0;max-width:660px"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPLeague.saveStream()">' + ic('live_tv') + 'Save stream</button></div>' + gfxRow(m)
+      + '<div class="pbp-srow"><button onclick="FFPTourn.pbpUndo()">' + ic('undo') + 'Undo</button><button onclick="FFPTourn.pbpServer()">' + ic('swap_horiz') + 'Change server</button></div>'
+      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:14px 0 0;max-width:660px"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPTourn.saveStream()">' + ic('live_tv') + 'Save stream</button></div>'
       + '<div class="lg-sub" style="margin:10px 0 0">Point-by-point — every tap streams live to followers. Same board as the FFP App scorer.</div>';
-  }
-
-
-  // ── broadcast graphics. The overlay URL goes into the encoder once (YoloBox
-  //    Web URL, or an OBS/vMix browser source); the control page is what the
-  //    operator drives during the match. ────────────────────────────────────
-  var GFX_BASE = 'https://app.findfitpeople.com/gfx/';
-  function gfxRow(m) {
-    if (!m || !m.id) return '';
-    return '<div class="lg-gfx">'
-      + '<span class="ms">smart_display</span>'
-      + '<div class="g"><b>Broadcast graphics</b><span>Overlay URL goes in the encoder once, at 1920\u00d71080 (16:9 HD). Tries, cards and substitutions show themselves as the scorer records them \u2014 the control link is only needed when someone is running the graphics by hand.</span></div>'
-      + '<button class="lg-btn" onclick="FFPLeague.gfxCopy(\'' + m.id + '\')">' + ic('content_copy') + 'Copy overlay URL</button>'
-      + '<button class="lg-btn" onclick="FFPLeague.gfxLink(\'' + m.id + '\')">' + ic('link') + 'Copy control link</button>'
-      + '<button class="lg-btn pri" onclick="FFPLeague.gfxOpen(\'' + m.id + '\')">' + ic('tune') + 'Open control</button>'
-      + '</div>';
-  }
-  // The control page is run by a livestream operator who is not an FFP member,
-  // so the organiser mints a key for this match and it travels in the link.
-  async function gfxOpen(id) {
-    var w = window.open('', '_blank');           // opened on the click, or the popup is blocked
-    var r; try { r = await sb().rpc('gfx_key', { p_match: id }); } catch (e) { r = null; }
-    var key = r && r.data;
-    if (!key) { if (w) w.close(); toast((r && r.error && r.error.message) || 'Could not open the control page', 'error'); return; }
-    var url = GFX_BASE + id + '/control?k=' + encodeURIComponent(key);
-    if (w) { w.location = url; } else { window.open(url, '_blank', 'noopener'); }
-  }
-  async function gfxLink(id) {
-    var r; try { r = await sb().rpc('gfx_key', { p_match: id }); } catch (e) { r = null; }
-    var key = r && r.data;
-    if (!key) { toast('Could not make the control link', 'error'); return; }
-    var url = GFX_BASE + id + '/control?k=' + encodeURIComponent(key);
-    try { navigator.clipboard.writeText(url); toast('Control link copied \u2014 send it to your operator', 'check'); }
-    catch (e) { prompt('Control link', url); }
-  }
-  function gfxCopy(id) {
-    var url = GFX_BASE + id;
-    try { navigator.clipboard.writeText(url); toast('Overlay URL copied \u2014 add it at 1920\u00d71080 in YoloBox, OBS or vMix', 'check'); }
-    catch (e) { prompt('Overlay URL', url); }
-  }
-
-
-
-  // ── TEAM SHEET. The 23 positions are fixed — 1 is the loosehead prop, 10 is
-  //    the fly-half, always. What changes each match is WHO fills each
-  //    position, picked from the club's squad. So the sheet reads
-  //    position-first: one row per position, a player dropped into it. ──────────────────────
-  function tsSquadFor(entId) { return (S._squad || []).filter(function (x) { return x.entrant_id === entId; }); }
-  function tsUsed(entId, exceptNo) {
-    var o = {}; (S._slots || []).forEach(function (x) {
-      if (Number(x.number) !== Number(exceptNo) && x.squad_id) o[x.squad_id] = 1;
-    }); return o;
-  }
-  function tsNamedCount() { return (S._slots || []).filter(function (x) { return !!x.squad_id; }).length; }
-  async function tsReload() {
-    var m = S._mc || {}; if (!m.id) return;
-    var tm = (S._tsTeam === 'away' ? m.away : m.home) || {};
-    if (!tm.id) return;
-    try { var r = await sb().rpc('lt_teamsheet_slots', { p_match: m.id, p_entrant: tm.id }); S._slots = (r && r.data) || []; }
-    catch (e) { S._slots = []; }
-    try { var c = await sb().rpc('lt_staff_list', { p_match: m.id, p_entrant: tm.id }); S._coach = ((c && c.data) || [])[0] ? c.data[0].name : ''; }
-    catch (e) { S._coach = ''; }
-    if (!(S._squad || []).length) {
-      try { var q = await sb().rpc('lt_squad_list', { p_scope: 'league', p_event: S.eventId }); S._squad = (q && q.data) || []; } catch (e) {}
-    }
-    if (S.mcTab === 'sheet') renderMatchCentre();
-  }
-  async function tsPut(num, squadId) {
-    var m = S._mc || {}; var cur = (S._slots || []).filter(function (x) { return Number(x.number) === Number(num); })[0] || {};
-    // Both sides have a number 11. Emptying a slot sends no squad id, so without
-    // the entrant the database cannot tell whose 11 it is and used to delete the
-    // other team's player. p_entrant is the side on screen.
-    var tm = (S._tsTeam === 'away' ? m.away : m.home) || {};
-    var r;
-    try {
-      r = await sb().rpc('lt_teamsheet_assign', { p_match: m.id, p_number: Number(num),
-        p_squad: squadId || null, p_captain: null, p_position: cur.grp === 'replacements' ? (cur.position || null) : null,
-        p_entrant: tm.id || null });
-    } catch (e) { r = { error: e }; }
-    if (r && r.error) { toast(r.error.message || 'Could not fill that position', 'error'); return; }
-    tsReload();
-  }
-  async function tsCovers(num, pos) {
-    var m = S._mc || {}; var cur = (S._slots || []).filter(function (x) { return Number(x.number) === Number(num); })[0] || {};
-    if (!cur.squad_id) return;
-    var r;
-    try { r = await sb().rpc('lt_teamsheet_assign', { p_match: m.id, p_number: Number(num), p_squad: cur.squad_id, p_captain: null, p_position: pos || null }); }
-    catch (e) { r = { error: e }; }
-    // supabase-js RETURNS {error}; it does not throw. Without this the call
-    // failed and the screen said nothing at all.
-    if (r && r.error) { toast(r.error.message || 'Could not set the cover', 'error'); return; }
-    tsReload();
-  }
-  async function tsCap(num) {
-    var m = S._mc || {}; var cur = (S._slots || []).filter(function (x) { return Number(x.number) === Number(num); })[0] || {};
-    if (!cur.squad_id) { toast('Put a player in that position first', 'error'); return; }
-    var r;
-    try { r = await sb().rpc('lt_teamsheet_assign', { p_match: m.id, p_number: Number(num), p_squad: cur.squad_id, p_captain: !cur.captain, p_position: cur.grp === 'replacements' ? (cur.position || null) : null }); }
-    catch (e) { r = { error: e }; }
-    if (r && r.error) { toast(r.error.message || 'Could not set the captain', 'error'); return; }
-    tsReload();
-  }
-  function tsCoach() { return S._coach || ''; }
-  async function tsSaveCoach(name) {
-    var m = S._mc || {}; var tm = ((S._tsTeam === 'away' ? m.away : m.home) || {});
-    if (!tm.id) return;
-    try { await sb().rpc('lt_staff_set', { p_match: m.id, p_entrant: tm.id, p_name: name || '', p_role: 'Head coach' }); }
-    catch (e) { toast('Could not save the coach', 'error'); return; }
-    S._coach = name || ''; toast('Saved', 'check');
-  }
-  function tsTeam(which) { S._tsTeam = which; S._slots = []; renderMatchCentre(); tsReload(); }
-  function tsSheet(m) {
-    if (!m || !m.id) return '';
-    var which = S._tsTeam || 'home';
-    var tm = (which === 'away' ? m.away : m.home) || {};
-    var slots = S._slots || [];
-    if (!slots.length) return '<div class="lg-empty" style="padding:16px">No positions for this sport.</div>';
-    var squad = tsSquadFor(tm.id);
-    var allPos = (S._pos || []);
-
-    var rows = slots.map(function (x) {
-      var used = tsUsed(tm.id, x.number);
-      var opts = '<option value="">&mdash; empty &mdash;</option>' + squad.map(function (p) {
-        return '<option value="' + p.id + '"' + (p.id === x.squad_id ? ' selected' : '')
-          + (used[p.id] ? ' disabled' : '') + '>' + esc(p.name) + '</option>';
-      }).join('');
-      var named = {};
-      var cover = x.grp === 'replacements'
-        ? '<select class="lg-sel cov" onchange="FFPLeague.tsCovers(' + x.number + ',this.value)"><option value="">Covers&hellip;</option>'
-            + allPos.filter(function (y) { if (y.grp === 'replacements' || named[y.name]) return false; named[y.name] = 1; return true; })
-                    .map(function (y) { return '<option value="' + esc(y.name) + '"' + (x.position === y.name ? ' selected' : '') + '>' + esc(y.name) + '</option>'; }).join('')
-            + '</select>'
-        : '';
-      return '<div class="row' + (x.squad_id ? ' on' : '') + '">'
-        + '<span class="no">' + x.number + '</span>'
-        + '<span class="pos">' + esc(x.grp === 'replacements' ? 'Impact Bench' : x.position) + '</span>'
-        + '<select class="lg-sel pl" onchange="FFPLeague.tsPut(' + x.number + ',this.value)">' + opts + '</select>'
-        + cover
-        + '<span class="cap' + (x.captain ? ' on' : '') + '" title="Captain" onclick="FFPLeague.tsCap(' + x.number + ')">C</span>'
-        + '</div>';
-    });
-
-    var cut = slots.filter(function (x) { return x.grp !== 'replacements'; }).length;
-    return '<div class="lg-tsheet">'
-      + '<div class="tabs">'
-      + '<button class="' + (which === 'home' ? 'on' : '') + '" onclick="FFPLeague.tsTeam(\'home\')">' + esc((m.home || {}).name || 'Home') + '</button>'
-      + '<button class="' + (which === 'away' ? 'on' : '') + '" onclick="FFPLeague.tsTeam(\'away\')">' + esc((m.away || {}).name || 'Away') + '</button>'
-      + '<span class="count">' + tsNamedCount() + ' named</span></div>'
-      + '<details class="lg-info"><summary>' + ic('info') + 'About the team sheet</summary>'
-      + '<p>The 23 positions are fixed &mdash; 2 is always the hooker, 9 always the scrum-half. Pick who fills each one today. Every player added to the club&#39;s squad under Entrants is in the list, and nobody can hold two positions at once. The livestream team sheet and try card are built from this.</p></details>'
-      + '<div class="coach"><label>Coach</label><input class="lg-in" id="lg-ts-coach" placeholder="Head coach" value="' + esc(tsCoach()) + '" onblur="FFPLeague.tsSaveCoach(this.value)"></div>'
-      + '<div class="grid"><div class="hd">Starting XV</div>' + rows.slice(0, cut).join('')
-      + '<div class="hd">Impact Bench</div>' + rows.slice(cut).join('') + '</div></div>';
   }
 
   async function saveStream() {
     var el = document.getElementById('mc-stream'); if (!el) return;
-    try { await sb().rpc('lt_match_set_stream', { p_scope: 'league', p_match: S.matchOpen, p_url: el.value.trim() }); toast('Stream link saved', 'success'); }
+    try { await sb().rpc('lt_match_set_stream', { p_scope: 'tourn', p_match: S.matchOpen, p_url: el.value.trim() }); toast('Stream link saved', 'success'); }
     catch (e) { toast('Could not save stream link', 'error'); }
   }
   async function setLive(status) {
-    try { await sb().rpc('lt_match_status', { p_scope: 'league', p_match: S.matchOpen, p_status: status }); } catch (e) { toast('Could not update', 'error'); return; }
+    try { await sb().rpc('lt_match_status', { p_scope: 'tourn', p_match: S.matchOpen, p_status: status }); } catch (e) { toast('Could not update', 'error'); return; }
     toast(status === 'live' ? 'Match is now LIVE' : 'Match set to pending', 'success'); renderMatchCentre();
   }
   function mcTeamFields() { var m = S._mc || {}; var s = (S.sports || []).find(function (x) { return x.key === m.sport_key; }); return (s && s.team_match_fields) || []; }
@@ -2718,36 +3522,104 @@
     var host = document.getElementById('mc-team'); if (!host) return; var m = S._mc || {}; await loadSports();
     var fields = mcTeamFields();
     if (!fields.length) { host.innerHTML = '<div class="lg-empty">This sport has no team match-stat fields.</div>'; return; }
-    var gr; try { gr = await sb().rpc('lt_team_match_stats_get', { p_scope: 'league', p_match: S.matchOpen }); } catch (e) { gr = null; }
-    var saved = (gr && gr.data) || {};
-    var hv = saved[m.home.id] || {}, av = saved[m.away.id] || {};
-    if (!S._mcDiv) { try { var dr = await sb().from('league_fixtures').select('division_id').eq('id', S.matchOpen).single(); S._mcDiv = dr.data && dr.data.division_id; } catch (e) {} }
+    var gr; try { gr = await sb().rpc('lt_team_match_stats_get', { p_scope: 'tourn', p_match: S.matchOpen }); } catch (e) { gr = null; }
+    var saved = (gr && gr.data) || {}; var hv = saved[m.home.id] || {}, av = saved[m.away.id] || {};
+    if (!S._mcDiv) { try { var dr = await sb().from('tourn_matches').select('division_id').eq('id', S.matchOpen).single(); S._mcDiv = dr.data && dr.data.division_id; } catch (e) {} }
     var hasPoss = fields.some(function (f) { return f.key === 'possession'; }), hasTerr = fields.some(function (f) { return f.key === 'territory'; });
     host.innerHTML = mcPeriodHtml(m) + (hasPoss || hasTerr ? trkHtml(m, hasTerr) : '')
       + '<div class="lg-teamstat"><div class="hd"><span>' + esc(m.home.name) + '</span><span class="lab"></span><span>' + esc(m.away.name) + '</span></div>'
       + fields.map(function (f) {
         return '<div class="lg-tsrow" data-key="' + esc(f.key) + '"><input class="lg-in ts-h" type="number" value="' + (hv[f.key] != null ? hv[f.key] : '') + '" placeholder="0"><span class="lab">' + esc(f.label) + (f.pct ? ' %' : '') + '</span><input class="lg-in ts-a" type="number" value="' + (av[f.key] != null ? av[f.key] : '') + '" placeholder="0"></div>';
-      }).join('')
-      + '</div><button class="lg-btn pri" style="margin-top:12px" onclick="FFPLeague.saveTeamStats()">' + ic('check') + 'Save team stats</button>';
+      }).join('') + '</div><button class="lg-btn pri" style="margin-top:12px" onclick="FFPTourn.saveTeamStats()">' + ic('check') + 'Save team stats</button>';
     if (hasPoss || hasTerr) { trkRefresh(); if (_trk().running && !S._trkInt) S._trkInt = setInterval(trkTick, 1000); }
   }
-  // ---- live possession / territory tracker (manual start/stop; fills the % fields) ----
+  async function saveTeamStats() {
+    var m = S._mc || {}; var rows = Array.prototype.slice.call(document.querySelectorAll('.lg-tsrow')); var n = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var key = rows[i].getAttribute('data-key'); var hv = rows[i].querySelector('.ts-h').value, av = rows[i].querySelector('.ts-a').value;
+      try { await sb().rpc('lt_team_stat_set', { p_scope: 'tourn', p_event: S.eventId, p_division: S._mcDiv, p_match: S.matchOpen, p_entrant: m.home.id, p_key: key, p_value: hv === '' ? null : +hv }); } catch (e) {}
+      try { await sb().rpc('lt_team_stat_set', { p_scope: 'tourn', p_event: S.eventId, p_division: S._mcDiv, p_match: S.matchOpen, p_entrant: m.away.id, p_key: key, p_value: av === '' ? null : +av }); } catch (e) {}
+      if (hv !== '' || av !== '') n++;
+    }
+    toast(n + ' team stats saved', 'success');
+  }
+  function mcTab(t) { S.mcTab = t; S.mcStatPlayer = null; renderMatchCentre(); }
+  function mcSquadFor(entrantId) { var m = S._mc || {}; return (m.home && m.home.id === entrantId) ? (m.home_squad || []) : (m.away_squad || []); }
+  function mcScoringKinds() { var m = S._mc || {}; var s = (S.sports || []).find(function (x) { return x.key === m.sport_key; }); return (s && s.scoring_kinds) || [{ key: 'point', label: 'Point', points: 1 }]; }
+  function mcKindTeamOnly(k) { var f = mcScoringKinds().find(function (x) { return x.key === k; }); return !!(f && f.team_only); }
+  function mcFillPlayers() {
+    var sel = document.getElementById('mc-player'); if (!sel) return;
+    var kEl = document.getElementById('mc-kind');
+    if (kEl && mcKindTeamOnly(kEl.value)) { sel.innerHTML = '<option value="">Team score — no scorer</option>'; sel.disabled = true; return; }
+    sel.disabled = false;
+    var sq = mcSquadFor(document.getElementById('mc-team').value);
+    sel.innerHTML = sq.map(function (p) { return '<option value="' + p.player_id + '">' + esc(p.name) + '</option>'; }).join('') + '<option value="__other">Other (type name)…</option>';
+  }
+  function mcFillSubPlayers() {
+    var offSel = document.getElementById('sub-off'), onSel = document.getElementById('sub-on'); if (!offSel || !onSel) return;
+    var sq = mcSquadFor(document.getElementById('sub-team').value);
+    var opts = sq.map(function (p) { return '<option value="' + esc(p.name) + '">' + esc(p.name) + '</option>'; }).join('') + '<option value="__other">Other (type name)…</option>';
+    offSel.innerHTML = '<option value="">Player OFF…</option>' + opts;
+    onSel.innerHTML = '<option value="">Player ON…</option>' + opts;
+  }
+  function _subVal(id) { var s = document.getElementById(id); if (!s) return ''; var v = s.value; if (v === '__other') { v = (prompt('Player name') || '').trim(); } return v; }
+  async function addSub() {
+    var team = document.getElementById('sub-team').value;
+    var off = _subVal('sub-off'), on = _subVal('sub-on');
+    if (!off && !on) { toast('Pick who is coming off and/or on', 'error'); return; }
+    var minute = parseInt((document.getElementById('sub-min') || {}).value, 10); if (isNaN(minute)) minute = null;
+    var r; try { r = await sb().rpc('lt_sub_add', { p_scope: 'tourn', p_match: S.matchOpen, p_entrant: team, p_off: off || null, p_on: on || null, p_minute: minute }); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not record', 'error'); return; }
+    var mn = document.getElementById('sub-min'); if (mn) mn.value = ''; renderMatchCentre();
+  }
+  function renderMcSubs() {
+    var host = document.getElementById('mc-subs'); if (!host) return; var m = S._mc || {}; var subs = m.subs || [];
+    if (!subs.length) { host.innerHTML = '<div class="lg-empty">No substitutions yet.</div>'; return; }
+    host.innerHTML = subs.map(function (s) {
+      var sideName = s.side === 'home' ? m.home.name : m.away.name;
+      return '<div class="lg-mcrow"><span class="mn">' + (s.minute != null ? s.minute + "'" : '') + '</span><span class="kd">▲ ' + esc(s.on || '—') + ' – ▼ ' + esc(s.off || '—') + '</span><span class="tn">' + esc(sideName) + '</span><span class="ms x" onclick="FFPTourn.removeSub(\'' + s.id + '\')">close</span></div>';
+    }).join('');
+  }
+  async function removeSub(id) { try { await sb().rpc('lt_sub_remove', { p_id: id }); } catch (e) {} renderMatchCentre(); }
+  function mcKindLabel(k) { var f = mcScoringKinds().find(function (x) { return x.key === k; }); return f ? f.label : (k || '').replace(/_/g, ' '); }
+  function renderMcList() {
+    var host = document.getElementById('mc-list'); if (!host) return; var m = S._mc || {}; var ev = m.events || [];
+    if (!ev.length) { host.innerHTML = '<div class="lg-empty">No scores yet — add them above. The app timeline and player stats update from these.</div>'; return; }
+    host.innerHTML = ev.map(function (e) {
+      var sideName = e.side === 'home' ? m.home.name : m.away.name;
+      return '<div class="lg-mcrow"><span class="mn">' + (e.minute != null ? e.minute + "'" : '') + '</span><span class="kd ' + esc(e.kind) + '">' + esc(mcKindLabel(e.kind)) + '</span><span class="pl">' + esc(e.player) + '</span><span class="tn">' + esc(sideName) + '</span><span class="rs">' + esc(e.rs) + '</span><span class="ms x" onclick="FFPTourn.removeEvent(\'' + e.id + '\')">close</span></div>';
+    }).join('');
+  }
+  async function addEvent() {
+    var team = document.getElementById('mc-team').value; var psel = document.getElementById('mc-player'); var pv = psel.value;
+    var pid = (pv && pv !== '__other') ? pv : null; var pname = null;
+    if (pv === '__other') { pname = prompt('Player name'); if (!pname) return; } else { pname = psel.options[psel.selectedIndex] ? psel.options[psel.selectedIndex].text : null; }
+    var ksel = document.getElementById('mc-kind'); var kind = ksel.value;
+    var pts = parseInt(ksel.options[ksel.selectedIndex] ? ksel.options[ksel.selectedIndex].getAttribute('data-pts') : '0', 10); if (isNaN(pts)) pts = 0;
+    if (mcKindTeamOnly(kind)) { pid = null; pname = null; }   // penalty try / own goal — team score, no named scorer
+    var minute = parseInt((document.getElementById('mc-min') || {}).value, 10); if (isNaN(minute)) minute = null;
+    var r; try { r = await sb().rpc('lt_event_add', { p_scope: 'tourn', p_match: S.matchOpen, p_entrant: team, p_player: pid, p_player_name: pname, p_minute: minute, p_kind: kind, p_points: pts }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not add', 'error'); return; }
+    var mn = document.getElementById('mc-min'); if (mn) mn.value = ''; renderMatchCentre();
+  }
+  async function removeEvent(id) { await sb().rpc('lt_event_remove', { p_id: id }); renderMatchCentre(); }
+  // ---- live possession/territory tracker + match period (ported from leagues) ----
   function _trk() { if (!S._tracker) S._tracker = { running: false, poss: null, half: null, ph: 0, pa: 0, hh: 0, ha: 0, total: 0 }; return S._tracker; }
   function fmtClock(s) { s = s || 0; var m = Math.floor(s / 60), ss = s % 60; return (m < 10 ? '0' : '') + m + ':' + (ss < 10 ? '0' : '') + ss; }
   function trkPct(a, b) { var s = a + b; return s ? Math.round(a / s * 100) : 0; }
   function trkHtml(m, hasTerr) {
     var t = _trk();
     var terr = hasTerr ? '<div class="lg-trk-grp"><div class="lg-trk-lab">Field position — which half the ball is in</div><div class="lg-trk-btns">'
-      + '<button class="lg-trk-b" data-half="home" onclick="FFPLeague.trkHalf(\'home\')">' + esc(m.home.name) + ' half</button>'
-      + '<button class="lg-trk-b" data-half="away" onclick="FFPLeague.trkHalf(\'away\')">' + esc(m.away.name) + ' half</button></div></div>' : '';
+      + '<button class="lg-trk-b" data-half="home" onclick="FFPTourn.trkHalf(\'home\')">' + esc(m.home.name) + ' half</button>'
+      + '<button class="lg-trk-b" data-half="away" onclick="FFPTourn.trkHalf(\'away\')">' + esc(m.away.name) + ' half</button></div></div>' : '';
     return '<div class="lg-trk"><div class="lg-trk-clock"><div class="t" id="trk-clock">' + fmtClock(t.total) + '</div><span class="sp"></span>'
-      + '<button class="lg-btn" id="trk-toggle" onclick="FFPLeague.trkToggle()">Start</button>'
-      + '<button class="lg-btn ghost" onclick="FFPLeague.trkReset()">Reset</button></div>'
+      + '<button class="lg-btn" id="trk-toggle" onclick="FFPTourn.trkToggle()">Start</button>'
+      + '<button class="lg-btn ghost" onclick="FFPTourn.trkReset()">Reset</button></div>'
       + '<div class="lg-trk-grp"><div class="lg-trk-lab">Possession — who has the ball</div><div class="lg-trk-btns">'
-      + '<button class="lg-trk-b" data-poss="home" onclick="FFPLeague.trkPoss(\'home\')">' + esc(m.home.name) + ' <span>0%</span></button>'
-      + '<button class="lg-trk-b" data-poss="away" onclick="FFPLeague.trkPoss(\'away\')">' + esc(m.away.name) + ' <span>0%</span></button></div></div>'
+      + '<button class="lg-trk-b" data-poss="home" onclick="FFPTourn.trkPoss(\'home\')">' + esc(m.home.name) + ' <span>0%</span></button>'
+      + '<button class="lg-trk-b" data-poss="away" onclick="FFPTourn.trkPoss(\'away\')">' + esc(m.away.name) + ' <span>0%</span></button></div></div>'
       + terr
-      + '<div class="lg-trk-apply"><span class="sum" id="trk-sum"></span><button class="lg-btn pri" onclick="FFPLeague.trkApply()">' + ic('done_all') + 'Apply to fields</button></div></div>';
+      + '<div class="lg-trk-apply"><span class="sum" id="trk-sum"></span><button class="lg-btn pri" onclick="FFPTourn.trkApply()">' + ic('done_all') + 'Apply to fields</button></div></div>';
   }
   function trkRefresh() {
     var t = _trk();
@@ -2755,12 +3627,8 @@
     clk.textContent = fmtClock(t.total);
     var tog = document.getElementById('trk-toggle'); if (tog) { tog.textContent = t.running ? 'Stop' : 'Start'; tog.classList.toggle('pri', !t.running); tog.classList.toggle('lg-livebtn', t.running); }
     var pHome = trkPct(t.ph, t.pa), pAway = (t.ph + t.pa) ? 100 - pHome : 0;
-    document.querySelectorAll('.lg-trk-b[data-poss]').forEach(function (b) {
-      var s = b.getAttribute('data-poss'); b.classList.toggle('on', t.poss === s);
-      var sp = b.querySelector('span'); if (sp) sp.textContent = (s === 'home' ? pHome : pAway) + '%';
-    });
+    document.querySelectorAll('.lg-trk-b[data-poss]').forEach(function (b) { var s = b.getAttribute('data-poss'); b.classList.toggle('on', t.poss === s); var sp = b.querySelector('span'); if (sp) sp.textContent = (s === 'home' ? pHome : pAway) + '%'; });
     document.querySelectorAll('.lg-trk-b[data-half]').forEach(function (b) { b.classList.toggle('on', t.half === b.getAttribute('data-half')); });
-    // territory = time in the OPPONENT's half: home territory = time in away half (t.ha)
     var teH = trkPct(t.ha, t.hh), teA = (t.hh + t.ha) ? 100 - teH : 0;
     var sum = document.getElementById('trk-sum'); if (sum) sum.textContent = 'Possession ' + pHome + '–' + pAway + '    Territory ' + teH + '–' + teA;
   }
@@ -2769,7 +3637,13 @@
   function trkReset() { if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = { running: false, poss: null, half: null, ph: 0, pa: 0, hh: 0, ha: 0, total: 0 }; renderMatchCentre(); }
   function trkPoss(s) { var t = _trk(); t.poss = s; trkRefresh(); }
   function trkHalf(s) { var t = _trk(); t.half = s; trkRefresh(); }
-  // ---- match period — driven by the sport's own period_minutes / period_count ----
+  function trkApply() {
+    var t = _trk();
+    var setRow = function (key, hVal, aVal) { var row = document.querySelector('.lg-tsrow[data-key="' + key + '"]'); if (!row) return; row.querySelector('.ts-h').value = hVal; row.querySelector('.ts-a').value = aVal; };
+    if (t.ph + t.pa > 0) { var pH = trkPct(t.ph, t.pa); setRow('possession', pH, 100 - pH); }
+    if (t.hh + t.ha > 0) { var teH = trkPct(t.ha, t.hh); setRow('territory', teH, 100 - teH); }
+    toast('Applied — tap Save team stats to store', 'success');
+  }
   /* THE CLOCK BELONGS TO THE SPORT, NOT TO RUGBY. lt_match_detail hands down
      period_minutes + period_count (match -> division -> event -> sport schema),
      so netball runs four 15s and sevens two 7s. Nothing here is hardcoded. */
@@ -2801,7 +3675,7 @@
     return (t < 10 ? '0' : '') + t + ':00';
   }
   function mcPeriodHtml(m) {
-    var seq = mcPeriods(m); var period = (S._mc && S._mc.period) || 'pre';
+    var seq = mcPeriods(m); var period = (S._mc && S._mc.status === 'final') ? 'ft' : ((S._mc && S._mc.period) || 'pre');
     var idx = 0; for (var i = 0; i < seq.length; i++) { if (seq[i][0] === period) { idx = i; break; } }
     var cur = seq[idx], next = seq[idx + 1];
     var chip = period === 'pre' ? '' : (cur[2] ? 'live' : (period === 'ft' ? 'ft' : 'ht'));
@@ -2811,17 +3685,17 @@
       var nk = next[0], nlab = next[1], nplay = next[2];
       var label = nk === 'ft' ? 'Full-time' : (nplay ? (idx === 0 ? 'Kick off' : 'Start ' + nlab) : nlab);
       var cls = nk === 'ft' ? 'red' : (nplay ? 'pri' : 'gold');
-      btn = '<button class="lg-btn ' + (cls === 'red' ? '' : cls) + '"' + (cls === 'red' ? ' style="background:#d6353b;border-color:#d6353b;color:#fff"' : '') + ' onclick="FFPLeague.mcSetPeriod(\'' + nk + '\')">' + esc(label) + '</button>';
+      btn = '<button class="lg-btn ' + (cls === 'red' ? '' : cls) + '"' + (cls === 'red' ? ' style="background:#d6353b;border-color:#d6353b;color:#fff"' : '') + ' onclick="FFPTourn.mcSetPeriod(\'' + nk + '\')">' + esc(label) + '</button>';
     }
-    var showSet = !cur[2] && period !== 'pre' && period !== 'ft';   // a break before a play period
+    var showSet = !cur[2] && period !== 'pre' && period !== 'ft';
     return '<div class="lg-per"><span class="lg-perchip ' + chip + '">' + (chip === 'live' ? '<span class="d"></span>' : '') + esc(cur[1]) + '</span><span class="sp"></span>' + btn + '</div>'
-      + (showSet ? '<div class="lg-perset"><span>Resume clock at</span><input class="lg-in" id="mc-settime" value="' + esc(st) + '" onchange="FFPLeague._mcSetTime(this.value)" style="width:110px"></div>' : '');
+      + (showSet ? '<div class="lg-perset"><span>Resume clock at</span><input class="lg-in" id="mc-settime" value="' + esc(st) + '" onchange="FFPTourn._mcSetTime(this.value)" style="width:110px"></div>' : '');
   }
   function _mcSetTime(v) { S._mcSetTime = v; }
   function mcSaveHalf(half, key, hv, av) {
     var m = S._mc || {};
-    try { sb().rpc('lt_team_stat_set', { p_scope: 'league', p_event: S.eventId, p_division: S._mcDiv, p_match: S.matchOpen, p_entrant: m.home.id, p_key: key, p_value: hv, p_half: half }); } catch (e) {}
-    try { sb().rpc('lt_team_stat_set', { p_scope: 'league', p_event: S.eventId, p_division: S._mcDiv, p_match: S.matchOpen, p_entrant: m.away.id, p_key: key, p_value: av, p_half: half }); } catch (e) {}
+    try { sb().rpc('lt_team_stat_set', { p_scope: 'tourn', p_event: S.eventId, p_division: S._mcDiv, p_match: S.matchOpen, p_entrant: m.home.id, p_key: key, p_value: hv, p_half: half }); } catch (e) {}
+    try { sb().rpc('lt_team_stat_set', { p_scope: 'tourn', p_event: S.eventId, p_division: S._mcDiv, p_match: S.matchOpen, p_entrant: m.away.id, p_key: key, p_value: av, p_half: half }); } catch (e) {}
   }
   function mcSaveHalves(half) {
     var t = _trk();
@@ -2846,328 +3720,561 @@
     else if (p === 'ft') { if (t.running) trkToggle(); mcSaveHalves(2); }
     else if (isPlay && p === firstPlay) { if (!t.running) trkToggle(); }
     else if (isPlay) { var q = String(S._mcSetTime || mcResumeAt(m)).split(':'); t.total = (parseInt(q[0] || '0', 10) * 60) + (parseInt(q[1] || '0', 10) || 0); if (!t.running) trkToggle(); }
-    else if (p !== 'ft') { if (t.running) trkToggle(); }   // pre or a break
-    try { await sb().rpc('lt_match_set_period', { p_scope: 'league', p_match: S.matchOpen, p_period: p }); } catch (e) {}
-    if (p === 'ft') { if ((m.events || []).length) { try { await saveResultFromEvents(); } catch (e) {} } else { try { await sb().rpc('lt_match_status', { p_scope: 'league', p_match: S.matchOpen, p_status: 'final' }); } catch (e) {} } }
-    else { try { await sb().rpc('lt_match_status', { p_scope: 'league', p_match: S.matchOpen, p_status: p === 'pre' ? 'scheduled' : 'live' }); } catch (e) {} }
+    else if (p !== 'ft') { if (t.running) trkToggle(); }
+    try { await sb().rpc('lt_match_set_period', { p_scope: 'tourn', p_match: S.matchOpen, p_period: p }); } catch (e) {}
+    if (p === 'ft') { if ((m.events || []).length) { try { await saveResultFromEvents(); } catch (e) {} } else { try { await sb().rpc('lt_match_status', { p_scope: 'tourn', p_match: S.matchOpen, p_status: 'final' }); } catch (e) {} } }
+    else { try { await sb().rpc('lt_match_status', { p_scope: 'tourn', p_match: S.matchOpen, p_status: p === 'pre' ? 'scheduled' : 'live' }); } catch (e) {} }
     if (S._mc) S._mc.period = p;
     S._mcSetTime = null;
     renderMatchCentre();
   }
-  function trkApply() {
-    var t = _trk();
-    var setRow = function (key, hVal, aVal) { var row = document.querySelector('.lg-tsrow[data-key="' + key + '"]'); if (!row) return; row.querySelector('.ts-h').value = hVal; row.querySelector('.ts-a').value = aVal; };
-    if (t.ph + t.pa > 0) { var pH = trkPct(t.ph, t.pa); setRow('possession', pH, 100 - pH); }
-    if (t.hh + t.ha > 0) { var teH = trkPct(t.ha, t.hh); setRow('territory', teH, 100 - teH); }
-    toast('Applied — tap Save team stats to store', 'success');
+  async function saveResultFromEvents() {
+    var m = S._mc || {}; var ev = m.events || [];
+    if (!ev.length) { toast('Add scoring events first', 'error'); return; }
+    var last = ev[ev.length - 1];
+    var r; try { r = await sb().rpc('tourn_result_save', { p_match: S.matchOpen, p_home: last.hs, p_away: last.as, p_sets: null, p_status: 'final' }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Save failed', 'error'); return; } toast('Result saved: ' + last.hs + '–' + last.as + ' — winner advanced', 'success');
   }
-  async function saveTeamStats() {
-    var m = S._mc || {}; var rows = Array.prototype.slice.call(document.querySelectorAll('.lg-tsrow')); var n = 0;
-    for (var i = 0; i < rows.length; i++) {
-      var key = rows[i].getAttribute('data-key');
-      var hv = rows[i].querySelector('.ts-h').value, av = rows[i].querySelector('.ts-a').value;
-      try { await sb().rpc('lt_team_stat_set', { p_scope: 'league', p_event: S.eventId, p_division: S._mcDiv, p_match: S.matchOpen, p_entrant: m.home.id, p_key: key, p_value: hv === '' ? null : +hv }); } catch (e) {}
-      try { await sb().rpc('lt_team_stat_set', { p_scope: 'league', p_event: S.eventId, p_division: S._mcDiv, p_match: S.matchOpen, p_entrant: m.away.id, p_key: key, p_value: av === '' ? null : +av }); } catch (e) {}
-      if (hv !== '' || av !== '') n++;
-    }
-    toast(n + ' team stats saved', 'success');
-  }
-  function mcTab(t) { S.mcTab = t; S.mcStatPlayer = null; renderMatchCentre(); if (t === 'sheet') tsReload(); }
-  function mcSchemaFields() {
-    var m = S._mc || {}; var s = (S.sports || []).find(function (x) { return x.key === m.sport_key; });
-    return (s && s.player_fields) || [{ key: 'points', label: 'Points' }];
-  }
+  function mcSchemaFields() { var m = S._mc || {}; var s = (S.sports || []).find(function (x) { return x.key === m.sport_key; }); return (s && s.player_fields) || [{ key: 'points', label: 'Points' }]; }
   async function renderMcStats() {
-    var host = document.getElementById('mc-stats'); if (!host) return;
-    var m = S._mc || {}; await loadSports();
-    // division for lt_player_stat_set
-    if (!S._mcDiv) { try { var dr = await sb().from('league_fixtures').select('division_id').eq('id', S.matchOpen).single(); S._mcDiv = dr.data && dr.data.division_id; } catch (e) {} }
-    var sr; try { sr = await sb().rpc('lt_match_stats', { p_scope: 'league', p_match: S.matchOpen }); } catch (e) { sr = null; }
+    var host = document.getElementById('mc-stats'); if (!host) return; var m = S._mc || {}; await loadSports();
+    if (!S._mcDiv) { try { var dr = await sb().from('tourn_matches').select('division_id').eq('id', S.matchOpen).single(); S._mcDiv = dr.data && dr.data.division_id; } catch (e) {} }
+    var sr; try { sr = await sb().rpc('lt_match_stats', { p_scope: 'tourn', p_match: S.matchOpen }); } catch (e) { sr = null; }
     S._mcStats = (sr && sr.data) || {};
-    var squads = [{ t: m.home, list: m.home_squad || [] }, { t: m.away, list: m.away_squad || [] }];
-    var flat = []; squads.forEach(function (g) { g.list.forEach(function (p) { flat.push({ p: p, ent: g.t.id, team: g.t.name }); }); });
+    var flat = []; [{ t: m.home, list: m.home_squad || [] }, { t: m.away, list: m.away_squad || [] }].forEach(function (g) { g.list.forEach(function (p) { flat.push({ p: p, ent: g.t.id, team: g.t.name }); }); });
     if (!flat.length) { host.innerHTML = '<div class="lg-empty">Add players to the team rosters (Entrants tab) to record detailed stats.</div>'; return; }
-    var fields = mcSchemaFields().concat(m.custom_fields || []);
+    var custom = (m.custom_fields || []);
+    var fields = mcSchemaFields().concat(custom);
     var pOpts = flat.map(function (x) { return '<option value="' + x.p.player_id + '">' + esc(x.p.name) + ', ' + esc(x.team) + '</option>'; }).join('');
     if (!S.mcStatPlayer) S.mcStatPlayer = flat[0].p.player_id;
     var cur = flat.find(function (x) { return x.p.player_id === S.mcStatPlayer; }) || flat[0];
     var saved = S._mcStats[S.mcStatPlayer] || {};
     host.innerHTML = '<div class="lg-sub" style="margin:4px 0 12px">Enter each player’s match stats for <b>' + esc(m.activity || 'this sport') + '</b>. These power the player &amp; team stat pages.</div>'
-      + '<div class="lg-mcadd" style="border:none"><select class="lg-sel" id="mc-sp" onchange="FFPLeague.mcPickStatPlayer(this.value)" style="flex:1;min-width:180px">' + pOpts + '</select></div>'
-      + '<div class="lg-mcfields">' + fields.map(function (f) {
-        return '<div class="lg-mcf"><label>' + esc(f.label) + (f.custom ? ' <span class="ms" style="font-size:14px;color:#c0cad2;cursor:pointer;vertical-align:-2px" onclick="FFPLeague.removeCustomStat(\'' + esc(f.key) + '\')">close</span>' : '') + '</label><input class="lg-in mc-f" data-key="' + esc(f.key) + '" type="number" value="' + (saved[f.key] != null ? saved[f.key] : '') + '" placeholder="0"></div>';
-      }).join('') + '</div>'
-      + '<div style="display:flex;gap:10px;align-items:center;margin-top:12px"><button class="lg-btn pri" onclick="FFPLeague.saveStats()">' + ic('check') + 'Save ' + esc(cur.p.name.split(' ')[0]) + '’s stats</button><button class="lg-btn ghostb" onclick="FFPLeague.addCustomStat()">' + ic('add') + 'Add your own stat</button></div>';
+      + '<div class="lg-mcadd" style="border:none"><select class="lg-sel" id="mc-sp" onchange="FFPTourn.mcPickStatPlayer(this.value)" style="flex:1;min-width:180px">' + pOpts + '</select></div>'
+      + '<div class="lg-mcfields">' + fields.map(function (f) { return '<div class="lg-mcf"><label>' + esc(f.label) + (f.custom ? ' <span class="ms" style="font-size:14px;color:#c0cad2;cursor:pointer;vertical-align:-2px" onclick="FFPTourn.removeCustomStat(\'' + esc(f.key) + '\')">close</span>' : '') + '</label><input class="lg-in mc-f" data-key="' + esc(f.key) + '" type="number" value="' + (saved[f.key] != null ? saved[f.key] : '') + '" placeholder="0"></div>'; }).join('') + '</div>'
+      + '<div style="display:flex;gap:10px;align-items:center;margin-top:14px"><button class="lg-btn pri" onclick="FFPTourn.saveStats()">' + ic('check') + 'Save ' + esc(cur.p.name.split(' ')[0]) + '’s stats</button><button class="lg-btn ghostb" onclick="FFPTourn.addCustomStat()">' + ic('add') + 'Add your own stat</button></div>';
     var sp = document.getElementById('mc-sp'); if (sp) sp.value = S.mcStatPlayer;
   }
   async function addCustomStat() {
     var label = prompt('New stat name (e.g. Turnovers, Kicks, Tackles)'); if (!label || !label.trim()) return;
-    var r; try { r = await sb().rpc('lt_event_custom_stat', { p_scope: 'league', p_event: S.eventId, p_label: label.trim() }); } catch (e) { r = { error: e }; }
+    var r; try { r = await sb().rpc('lt_event_custom_stat', { p_scope: 'tourn', p_event: S.eventId, p_label: label.trim() }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not add', 'error'); return; }
     if (S._mc) S._mc.custom_fields = r.data; toast('Stat added', 'success'); renderMcStats();
   }
   async function removeCustomStat(key) {
-    var r; try { r = await sb().rpc('lt_event_custom_stat_remove', { p_scope: 'league', p_event: S.eventId, p_key: key }); } catch (e) { r = { error: e }; }
+    var r; try { r = await sb().rpc('lt_event_custom_stat_remove', { p_scope: 'tourn', p_event: S.eventId, p_key: key }); } catch (e) { r = { error: e }; }
     if (r && !r.error && S._mc) S._mc.custom_fields = r.data; renderMcStats();
   }
-  function mcPickStatPlayer(v) { S.mcStatPlayer = v; renderMcStats(); }
+  function mcPickStatPlayer(vv) { S.mcStatPlayer = vv; renderMcStats(); }
   async function saveStats() {
-    var m = S._mc || {};
-    var pid = S.mcStatPlayer;
-    var squads = (m.home_squad || []).concat(m.away_squad || []);
-    var pl = squads.find(function (p) { return p.player_id === pid; }) || {};
+    var m = S._mc || {}; var pid = S.mcStatPlayer;
+    var squads = (m.home_squad || []).concat(m.away_squad || []); var pl = squads.find(function (p) { return p.player_id === pid; }) || {};
     var ent = (m.home_squad || []).some(function (p) { return p.player_id === pid; }) ? m.home.id : m.away.id;
-    var inputs = Array.prototype.slice.call(document.querySelectorAll('.mc-f'));
-    var n = 0;
-    for (var i = 0; i < inputs.length; i++) {
-      var key = inputs[i].getAttribute('data-key'); var val = inputs[i].value;
-      if (val === '' || val == null) continue;
-      try { await sb().rpc('lt_player_stat_set', { p_scope: 'league', p_event: S.eventId, p_division: S._mcDiv, p_match: S.matchOpen, p_entrant: ent, p_player: pid, p_player_name: pl.name || null, p_key: key, p_value: +val }); n++; } catch (e) {}
-    }
+    var inputs = Array.prototype.slice.call(document.querySelectorAll('.mc-f')); var n = 0;
+    for (var i = 0; i < inputs.length; i++) { var key = inputs[i].getAttribute('data-key'); var val = inputs[i].value; if (val === '' || val == null) continue;
+      try { await sb().rpc('lt_player_stat_set', { p_scope: 'tourn', p_event: S.eventId, p_division: S._mcDiv, p_match: S.matchOpen, p_entrant: ent, p_player: pid, p_player_name: pl.name || null, p_key: key, p_value: +val }); n++; } catch (e) {} }
     toast(n + ' stats saved for ' + (pl.name || 'player'), 'success'); renderMcStats();
   }
-  function mcSquadFor(entrantId) { var m = S._mc || {}; return (m.home && m.home.id === entrantId) ? (m.home_squad || []) : (m.away_squad || []); }
-  function mcKindTeamOnly(k) { var f = mcScoringKinds().find(function (x) { return x.key === k; }); return !!(f && f.team_only); }
-  function mcFillPlayers() {
-    var sel = document.getElementById('mc-player'); if (!sel) return;
-    var kEl = document.getElementById('mc-kind');
-    if (kEl && mcKindTeamOnly(kEl.value)) { sel.innerHTML = '<option value="">Team score — no scorer</option>'; sel.disabled = true; return; }
-    sel.disabled = false;
-    var tid = document.getElementById('mc-team').value;
-    var sq = mcSquadFor(tid);
-    sel.innerHTML = sq.map(function (p) { return '<option value="' + p.player_id + '">' + esc(p.name) + '</option>'; }).join('') + '<option value="__other">Other (type name)…</option>';
-  }
-  function mcFillSubPlayers() {
-    var offSel = document.getElementById('sub-off'), onSel = document.getElementById('sub-on'); if (!offSel || !onSel) return;
-    var tid = document.getElementById('sub-team').value;
-    var sq = mcSquadFor(tid);
-    var opts = sq.map(function (p) { return '<option value="' + esc(p.name) + '">' + esc(p.name) + '</option>'; }).join('') + '<option value="__other">Other (type name)…</option>';
-    offSel.innerHTML = '<option value="">Player OFF…</option>' + opts;
-    onSel.innerHTML = '<option value="">Player ON…</option>' + opts;
-  }
-  function _subVal(id) { var s = document.getElementById(id); if (!s) return ''; var v = s.value; if (v === '__other') { v = (prompt('Player name') || '').trim(); } return v; }
-  async function addSub() {
-    var team = document.getElementById('sub-team').value;
-    var off = _subVal('sub-off'), on = _subVal('sub-on');
-    if (!off && !on) { toast('Pick who is coming off and/or on', 'error'); return; }
-    var minute = parseInt((document.getElementById('sub-min') || {}).value, 10); if (isNaN(minute)) minute = null;
-    var r; try { r = await sb().rpc('lt_sub_add', { p_scope: 'league', p_match: S.matchOpen, p_entrant: team, p_off: off || null, p_on: on || null, p_minute: minute }); } catch (e) { r = { error: e }; }
-    if (r && r.error) { toast('Could not record', 'error'); return; }
-    var mn = document.getElementById('sub-min'); if (mn) mn.value = '';
-    renderMatchCentre();
-  }
-  function renderMcSubs() {
-    var host = document.getElementById('mc-subs'); if (!host) return;
-    var m = S._mc || {}; var subs = m.subs || [];
-    if (!subs.length) { host.innerHTML = '<div class="lg-empty">No substitutions yet.</div>'; return; }
-    host.innerHTML = subs.map(function (s) {
-      var sideName = s.side === 'home' ? m.home.name : m.away.name;
-      return '<div class="lg-mcrow"><span class="mn">' + (s.minute != null ? s.minute + "'" : '') + '</span><span class="kd">▲ ' + esc(s.on || '—') + ' – ▼ ' + esc(s.off || '—') + '</span><span class="tn">' + esc(sideName) + '</span><span class="ms x" onclick="FFPLeague.removeSub(\'' + s.id + '\')">close</span></div>';
-    }).join('');
-  }
-  async function removeSub(id) { try { await sb().rpc('lt_sub_remove', { p_id: id }); } catch (e) {} renderMatchCentre(); }
-  function mcScoringKinds() { var m = S._mc || {}; var s = (S.sports || []).find(function (x) { return x.key === m.sport_key; }); return (s && s.scoring_kinds) || [{ key: 'point', label: 'Point', points: 1 }]; }
-  function mcKindLabel(k) { var f = mcScoringKinds().find(function (x) { return x.key === k; }); return f ? f.label : (k || '').replace(/_/g, ' '); }
-  function renderMcList() {
-    var host = document.getElementById('mc-list'); if (!host) return;
-    var m = S._mc || {}; var ev = m.events || [];
-    if (!ev.length) { host.innerHTML = '<div class="lg-empty">No scores yet — add them above. The app timeline and player stats update from these.</div>'; return; }
-    host.innerHTML = ev.map(function (e) {
-      var sideName = e.side === 'home' ? m.home.name : m.away.name;
-      return '<div class="lg-mcrow"><span class="mn">' + (e.minute != null ? e.minute + "'" : '') + '</span><span class="kd ' + esc(e.kind) + '">' + esc(mcKindLabel(e.kind)) + '</span><span class="pl">' + esc(e.player) + '</span><span class="tn">' + esc(sideName) + '</span><span class="rs">' + esc(e.rs) + '</span><span class="ms x" onclick="FFPLeague.removeEvent(\'' + e.id + '\')">close</span></div>';
-    }).join('');
-  }
-  async function addEvent() {
-    var team = document.getElementById('mc-team').value;
-    var psel = document.getElementById('mc-player'); var pv = psel.value;
-    var pid = (pv && pv !== '__other') ? pv : null;
-    var pname = null;
-    if (pv === '__other') { pname = prompt('Player name'); if (!pname) return; }
-    else { pname = psel.options[psel.selectedIndex] ? psel.options[psel.selectedIndex].text : null; }
-    var ksel = document.getElementById('mc-kind'); var kind = ksel.value;
-    var pts = parseInt(ksel.options[ksel.selectedIndex] ? ksel.options[ksel.selectedIndex].getAttribute('data-pts') : '0', 10); if (isNaN(pts)) pts = 0;
-    if (mcKindTeamOnly(kind)) { pid = null; pname = null; }   // penalty try / own goal — team score, no named scorer
-    var minute = parseInt((document.getElementById('mc-min') || {}).value, 10); if (isNaN(minute)) minute = null;
-    var r; try { r = await sb().rpc('lt_event_add', { p_scope: 'league', p_match: S.matchOpen, p_entrant: team, p_player: pid, p_player_name: pname, p_minute: minute, p_kind: kind, p_points: pts }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not add', 'error'); return; }
-    var mn = document.getElementById('mc-min'); if (mn) mn.value = '';
-    renderMatchCentre();
-  }
-  async function removeEvent(id) { await sb().rpc('lt_event_remove', { p_id: id }); renderMatchCentre(); }
-  async function saveResultFromEvents() {
-    var m = S._mc || {}; var ev = m.events || [];
-    if (!ev.length) { toast('Add scoring events first', 'error'); return; }
-    var last = ev[ev.length - 1]; var hs = last.hs, as = last.as;
-    var r; try { r = await sb().rpc('league_result_save', { p_fixture: S.matchOpen, p_home: hs, p_away: as, p_sets: null, p_status: 'final' }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Save failed', 'error'); return; } toast('Result saved: ' + hs + '–' + as, 'success');
-  }
 
-  async function doGen() {
-    var r; try { r = await sb().rpc('league_fixtures_generate', { p_division: S.divId }); } catch (e) { r = { error: e }; }
-    if (r.error) { toast('Could not generate', 'error'); return; } toast((r.data || 0) + ' fixtures created', 'success'); renderTab();
-  }
-  async function saveResults() {
-    var rows = Array.prototype.slice.call(document.querySelectorAll('.lg-fx2')); var n = 0;
-    for (var i = 0; i < rows.length; i++) { var el = rows[i]; var h = el.querySelector('.lg-hs').value, a = el.querySelector('.lg-as').value; if (h === '' || a === '') continue; try { await sb().rpc('league_result_save', { p_fixture: el.getAttribute('data-id'), p_home: +h, p_away: +a, p_sets: null, p_status: 'final' }); n++; } catch (e) {} }
-    if (!n) { toast('Nothing to save \u2014 enter both scores on a fixture first', 'error'); return; }
-    toast(n === 1 ? '1 result saved' : n + ' results saved', 'success'); renderTab();
-  }
-
-  // ---------- TABLE ----------
-  async function renderTable(host) {
-    var divs = S.detail.divisions || [];
-    if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
-    if (!S.divId) S.divId = divs[0].id;
-    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPLeague.setDiv(this.value,\'table\')">' + divOpts() + '</select></div><div id="lg-tbl"><div class="lg-empty">Loading…</div></div>';
-    var r; try { r = await sb().rpc('league_table', { p_division: S.divId }); } catch (e) { r = { error: e }; }
-    var rows = ((r && r.data) || {}).rows || []; var host2 = document.getElementById('lg-tbl');
-    if (!rows.length) { host2.innerHTML = '<div class="lg-empty">No results yet — the table fills as games are played.</div>'; return; }
-    host2.innerHTML = '<div class="lg-tb head"><span>#</span><span class="nm">Entrant</span><span>P</span><span>W</span><span>D</span><span>+/-</span><span>Pts</span></div>'
-      + rows.map(function (r2, i) { return '<div class="lg-tb"><span>' + (i + 1) + '</span><span class="nm">' + esc(r2.name) + '</span><span>' + r2.p + '</span><span>' + r2.w + '</span><span>' + r2.d + '</span><span>' + (r2.gd > 0 ? '+' + r2.gd : r2.gd) + '</span><span class="pts">' + r2.pts + '</span></div>'; }).join('');
-  }
-
-
-  // ---------- RULES PDF ----------
-  // The typed Rules box carries the short version. Organisers also hand out a
-  // real rulebook, so ONE PDF rides with the league: the file goes to the
-  // event-docs bucket (PDF only, 20 MB, public read, write scoped to the
-  // uploader's own folder) and its URL lands on league_set_rules_pdf, which the
-  // detail RPC already returns inside `event`. Same shape as the logo/banner
-  // uploads: pick, store, save, reopen.
-  function rulesPdfHtml(ev) {
-    if (S.pdfBusy) {
-      return '<div class="lg-pdf">' + ic('description')
-        + '<div class="g"><b>Uploading\u2026</b><span>' + esc(S.pdfBusy) + '</span></div></div>';
-    }
-    if (ev && ev.rules_pdf_url) {
-      return '<div class="lg-pdf has">' + ic('description')
-        + '<div class="g"><b>' + esc(ev.rules_pdf_name || 'Rules.pdf') + '</b>'
-        + '<span>Entrants can open this from the app</span></div>'
-        + '<a class="lg-btn" href="' + esc(ev.rules_pdf_url) + '" target="_blank" rel="noopener">'
-        + ic('open_in_new') + 'View</a>'
-        + '<span class="ms x" title="Remove" onclick="FFPLeague.removeRulesPdf()">close</span></div>';
-    }
-    return '<div class="lg-pdf">' + ic('description')
-      + '<div class="g"><b>No rules PDF</b><span>PDF up to 20 MB, sits with the rules in the app</span></div>'
-      + '<button class="lg-btn" onclick="FFPLeague.pickRulesPdf()">' + ic('upload_file') + 'Attach PDF</button></div>';
-  }
-  // Repaint just the strip, so an upload in progress does not wipe whatever the
-  // organiser has typed into the other fields on this tab.
-  function paintRulesPdf() {
-    var h = document.getElementById('lg-pdfwrap');
-    if (h) h.innerHTML = rulesPdfHtml((S.detail && S.detail.event) || {});
-  }
-  function pickRulesPdf() {
-    var inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = 'application/pdf,.pdf'; inp.style.display = 'none';
-    inp.addEventListener('change', function (e) {
-      var f = e.target.files && e.target.files[0];
-      if (inp.parentNode) inp.parentNode.removeChild(inp);
-      if (f) uploadRulesPdf(f);
-    });
-    document.body.appendChild(inp); inp.click();
-  }
-  // The shared image uploader cannot carry this: it hardcodes image/jpeg and a
-  // .jpg path, and rejects anything that is not an image. So this is a direct
-  // owner-scoped storage write, which is what a provider session can do.
-  async function uploadRulesPdf(f) {
-    if (!((f.type === 'application/pdf') || /\.pdf$/i.test(f.name || ''))) { toast('That file is not a PDF', 'error'); return; }
-    if (f.size > 20 * 1024 * 1024) { toast('That PDF is over 20 MB', 'error'); return; }
-    var uid = pdfOwnerId();
-    if (!uid) { toast('Please sign in again', 'error'); return; }
-    S.pdfBusy = f.name; paintRulesPdf();
-    var path = uid + '/lgrules-' + S.eventId + '-' + Date.now() + '.pdf';
-    try {
-      var up = await sb().storage.from('event-docs').upload(path, f, { contentType: 'application/pdf', upsert: true, cacheControl: '3600' });
-      if (up && up.error) throw up.error;
-      var pub = sb().storage.from('event-docs').getPublicUrl(path);
-      var url = pub && pub.data && pub.data.publicUrl;
-      if (!url) throw new Error('no_public_url');
-      var r = await sb().rpc('league_set_rules_pdf', { p_event: S.eventId, p_url: url, p_name: f.name });
-      if (r && r.error) throw r.error;
-    } catch (e) { S.pdfBusy = null; paintRulesPdf(); toast('Upload failed', 'error'); return; }
-    S.pdfBusy = null; toast('Rules PDF attached', 'success'); open(S.eventId);
-  }
-  async function removeRulesPdf() {
-    var r; try { r = await sb().rpc('league_set_rules_pdf', { p_event: S.eventId, p_url: null, p_name: null }); } catch (e) { r = { error: e }; }
-    if (r && r.error) { toast('Could not remove', 'error'); return; }
-    toast('Rules PDF removed', 'success'); open(S.eventId);
-  }
-  // The storage path must begin with auth.uid(), which is the JWT `sub`. A
-  // provider's record id is not always that value, and a mismatch is a 400 on
-  // upload, so read the claim itself.
-  function pdfOwnerId() {
-    try {
-      var tok = window.FFPAuth && window.FFPAuth.getToken && window.FFPAuth.getToken();
-      if (tok) {
-        var parts = String(tok).split('.');
-        if (parts.length === 3) {
-          var b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-          while (b64.length % 4) b64 += '=';
-          var pl = JSON.parse(atob(b64));
-          if (pl && pl.sub) return String(pl.sub);
-        }
-      }
-    } catch (e) {}
-    try { var m = window.FFPAuth && window.FFPAuth.getMember && window.FFPAuth.getMember(); return (m && m.id) || null; } catch (e2) { return null; }
-  }
-  function pickImg(kind) {
-    if (!window.FFPUpload) { toast('Uploader not ready — refresh', 'error'); return; }
-    var isLogo = kind === 'logo';
-    window.FFPUpload.pick({ bucket: isLogo ? 'provider-logos' : 'listing-covers', key: (isLogo ? 'lglogo-' : 'lgcover-') + S.eventId + '-' + Date.now(),
-      aspect: isLogo ? 1 : 16 / 9, outW: isLogo ? 512 : 1600, outH: isLogo ? 512 : 900, title: isLogo ? 'League logo (square)' : 'Banner (16:9)',
-      onDone: function (url) { var p = {}; p[isLogo ? 'logo_url' : 'cover_url'] = url; sb().rpc('league_event_save', { p_id: S.eventId, p: p }).then(function () { toast('Saved', 'success'); open(S.eventId); }); },
-      onError: function (e) { toast('Upload failed', 'error'); } });
-  }
-  function entLogo(id) {
-    if (!window.FFPUpload) { toast('Uploader not ready — refresh', 'error'); return; }
-    window.FFPUpload.pick({ bucket: 'provider-logos', key: 'lgteam-' + id + '-' + Date.now(), aspect: 1, outW: 400, outH: 400, title: 'Team logo (square)',
-      onDone: function (url) { sb().rpc('league_entrant_set_logo', { p_id: id, p_logo: url }).then(function () { toast('Logo saved', 'success'); renderTab(); }); },
-      onError: function () { toast('Upload failed', 'error'); } });
-  }
-  async function refreshDetail() { var r; try { r = await sb().rpc('league_detail', { p_league: S.eventId }); } catch (e) { r = { error: e }; } S.detail = (r && r.data) || S.detail; renderTab(); }
+  async function entrantNames(divId) { var r = await sb().rpc('tourn_roster', { p_division: divId }); var map = {}; (r.data || []).forEach(function (e) { map[e.id] = e.name; }); return map; }
+  async function refreshDetail() { var r; try { r = await sb().rpc('tourn_detail', { p_tourn: S.eventId }); } catch (e) { r = { error: e }; } S.detail = (r && r.data) || S.detail; snapFormats(); renderEditor(); }
   function divOpts() { return (S.detail.divisions || []).map(function (d) { return '<option value="' + d.id + '"' + (d.id === S.divId ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join(''); }
 
-  window.FFPLeague = {
+  // Printed on load so a deploy can be confirmed in one look, without
+  // guessing from the screen: open the console and read this line.
+  var BUILD = '2026-09-30.2';
+  console.log('[FFP Tournaments] build ' + BUILD);
+  // ══════════════════════════════════════════════════════════════════════
+  // SERIES — a run of tournaments that share their teams.
+  //
+  // The point of a series is that a team is entered ONCE. Round 2 starts from
+  // the series list -- tick who is playing and the name, short name, code,
+  // colours and crest come with them -- instead of ten teams being retyped.
+  // Everything is edited inline; this console never uses a browser prompt.
+  // ══════════════════════════════════════════════════════════════════════
+  var SER_TABS = [['rounds', 'Rounds'], ['teams', 'Teams'], ['points', 'Points table'], ['details', 'Details']];
+  /* The World Rugby Sevens Series shape, offered as a starting point and then
+     the organiser's to change. It is NEVER applied without them asking. */
+  var PTS_PRESET = { '1': 20, '2': 18, '3': 16, '4': 14, '5': 12, '6': 10, '7': 8, '8': 6, 'other': 2 };
+
+  function serTabBtn(id, label) {
+    return '<button class="' + (S.serTab === id ? 'on' : '') + '" onclick="FFPTourn.serTab(\'' + id + '\')">' + label + '</button>';
+  }
+  function ser() { return (S.series && S.series.series) || {}; }
+  function serRounds() { return (S.series && S.series.rounds) || []; }
+  function serTeams() { return (S.series && S.series.teams) || []; }
+  function roundLbl(r) {
+    return r.is_finals ? 'Finals' : (r.series_round === null || r.series_round === undefined ? r.name : 'Round ' + r.series_round);
+  }
+  function dOnly(s) {
+    if (!s) return '';
+    try { return new Date(s + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }); }
+    catch (e) { return ''; }
+  }
+
+  async function loadMySeries(force) {
+    if (S.seriesList && !force) return S.seriesList;
+    var r; try { r = await sb().rpc('tourn_my_series'); } catch (e) { r = { error: e }; }
+    if (r && r.error) toast(errText(r.error, 'Could not load your series'), 'error');
+    S.seriesList = (r && r.data) || [];
+    return S.seriesList;
+  }
+
+  async function openSeries(id) {
+    S.view = 'series'; S.seriesId = id;
+    S.serTab = S.serTab || 'rounds'; S.serTeamEdit = null; S.serAddRound = false; S.serEnter = null;
+    await reloadSeries(true);
+  }
+  async function reloadSeries(first) {
+    var r; try { r = await sb().rpc('tourn_series_admin', { p_series: S.seriesId }); } catch (e) { r = { error: e }; }
+    /* A failed read used to render as "this series is empty", which is the same
+       picture as a working empty series. Never again. */
+    if (!r || r.error || !r.data) {
+      toast(errText(r && r.error, 'Could not open that series'), 'error');
+      if (first) { S.view = 'list'; return renderList(); }
+      return;
+    }
+    S.series = r.data; renderSeries();
+  }
+
+  function renderSeries() {
+    injectCss(); var el = root(); if (!el || !S.series) return;
+    var s = ser(), rs = serRounds(), ts = serTeams();
+    var live = rs.filter(function (r) { return r.status === 'live'; }).length;
+    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div>'
+      + '<div class="lg-h1">' + esc(s.name || 'Series') + '<span class="lg-pill ' + esc(s.status || 'open') + '">SERIES</span></div>'
+      + '<div class="lg-sub">' + esc([
+          rs.length + (rs.length === 1 ? ' round' : ' rounds'),
+          ts.filter(function (t) { return t.status === 'active'; }).length + ' teams',
+          live ? live + ' live now' : '', s.city
+        ].filter(Boolean).join(', ')) + '</div></div>'
+      + '<button class="lg-btn" onclick="FFPTourn.back()">' + ic('arrow_back') + 'All tournaments</button></div>'
+      + '<div class="lg-nav">' + SER_TABS.map(function (t) { return serTabBtn(t[0], t[1]); }).join('') + '</div>'
+      + '<div id="tg-tab"></div></div>';
+    renderSerTab();
+  }
+  function renderSerTab() {
+    var host = document.getElementById('tg-tab'); if (!host) return;
+    if (S.serTab === 'teams') return renderSerTeams(host);
+    if (S.serTab === 'points') return renderSerPoints(host);
+    if (S.serTab === 'details') return renderSerDetails(host);
+    return renderSerRounds(host);
+  }
+
+  // ── ROUNDS ────────────────────────────────────────────────────────────
+  function renderSerRounds(host) {
+    var rs = serRounds();
+    var rows = rs.length ? rs.map(function (r) {
+      var cov = r.cover_url || r.logo_url;
+      var unlinked = (r.entrants || 0) - (r.linked || 0);
+      return '<div class="ts-rd">'
+        + (cov ? '<span class="pic" style="background-image:url(\'' + esc(cov) + '\')"></span>'
+               : '<span class="ic">' + ic('emoji_events') + '</span>')
+        + '<div class="g"><b>' + esc(roundLbl(r)) + '</b>'
+        +   '<span>' + esc([r.name, dOnly(r.starts_at) || 'Date to be confirmed', r.city].filter(Boolean).join(', ')) + '</span>'
+        +   '<span>' + (r.entrants || 0) + (r.entrants === 1 ? ' team' : ' teams')
+        +     (unlinked > 0 ? ', <i class="warn">' + unlinked + ' not linked to the series</i>' : '') + '</span></div>'
+        + '<span class="st ' + esc(r.status) + '">' + esc(String(r.status || 'draft').toUpperCase()) + '</span>'
+        + '<div class="ax">'
+        +   '<label class="ts-num">Round <input class="lg-in" type="number" min="0" id="ts-rn-' + r.id + '" value="' + (r.series_round === null || r.series_round === undefined ? '' : r.series_round) + '"></label>'
+        +   '<label class="ts-chk"><input type="checkbox" id="ts-rf-' + r.id + '"' + (r.is_finals ? ' checked' : '') + '> Finals</label>'
+        +   '<button class="lg-btn sm" onclick="FFPTourn.serRoundSave(\'' + r.id + '\')">' + ic('check') + 'Save</button>'
+        +   '<button class="lg-btn sm" onclick="FFPTourn.open(\'' + r.id + '\')">' + ic('open_in_new') + 'Open</button>'
+        +   (unlinked > 0 ? '<button class="lg-btn sm" onclick="FFPTourn.serAdopt(\'' + r.id + '\')">' + ic('playlist_add') + 'Import its teams</button>' : '')
+        +   '<button class="lg-btn sm ghost" onclick="FFPTourn.serRoundOut(\'' + r.id + '\')">Remove from series</button>'
+        + '</div></div>';
+    }).join('') : '<div class="lg-empty" style="text-align:left;padding:4px 0">No rounds yet. Add a tournament below and it becomes Round 1.</div>';
+
+    var adder;
+    if (S.serAddRound) {
+      var mine = (S.freeEvents || []).filter(function (e) { return !e.series_id; });
+      adder = '<div class="lg-edit" style="flex-wrap:wrap">'
+        + (mine.length
+            ? '<select class="lg-sel" id="ts-newrd" style="max-width:360px">'
+              + mine.map(function (e) { return '<option value="' + e.id + '">' + esc(e.name) + (e.starts_at ? ' (' + esc(dOnly(e.starts_at)) + ')' : '') + '</option>'; }).join('')
+              + '</select>'
+              + '<label class="ts-num">Round <input class="lg-in" type="number" min="0" id="ts-newrn" value="' + (rs.length + 1) + '"></label>'
+              + '<label class="ts-chk"><input type="checkbox" id="ts-newrf"> Finals</label>'
+              + '<button class="lg-btn pri" onclick="FFPTourn.serRoundAdd()">' + ic('check') + 'Add round</button>'
+            : '<div class="lg-empty" style="text-align:left;padding:4px 10px">Every tournament you own is already in a series. Create a tournament first, then add it here.</div>')
+        + '<button class="lg-btn ghost" onclick="FFPTourn.serAddRoundCancel()">Cancel</button></div>';
+    } else {
+      adder = '<button class="lg-btn" onclick="FFPTourn.serAddRoundOpen()">' + ic('add') + 'Add a round</button>';
+    }
+    host.innerHTML = '<div class="tg-sec"><div class="tg-sech">Rounds</div>'
+      + '<div class="tg-hint" style="margin:0 0 10px">A round is an ordinary tournament. It keeps its own draw, schedule and crew; the series only decides the order and adds up the points.</div>'
+      + rows + adder + '</div>';
+  }
+
+  // ── TEAMS ─────────────────────────────────────────────────────────────
+  function teamRow(t) {
+    if (S.serTeamEdit === t.id) return teamForm(t);
+    var init = t.logo_url ? '' : esc((t.team_name || '?').slice(0, 1));
+    var bg = t.logo_url ? 'background-image:url(\'' + esc(t.logo_url) + '\')' : '';
+    var sw = (t.color1 ? '<i class="sw" style="background:' + esc(t.color1) + '"></i>' : '')
+           + (t.color2 ? '<i class="sw" style="background:' + esc(t.color2) + '"></i>' : '');
+    var n = (t.in_rounds || []).length;
+    var gaps = !t.code || !t.color1;
+    var bits = [t.code || '', t.status === 'active' ? (n ? 'in ' + n + (n === 1 ? ' round' : ' rounds') : 'not in a round yet') : 'stood down'].filter(Boolean);
+    return '<div class="lg-row ts-trow' + (t.status === 'active' ? '' : ' ts-off') + '">'
+      + '<span class="lg-av" style="' + bg + '">' + init + '</span>'
+      + '<div class="g"><b>' + esc(t.team_name) + '</b>'
+      +   '<span>' + esc(bits.join(', '))
+      +     (gaps ? ', <i class="warn">' + (!t.code && !t.color1 ? 'no code or colours' : !t.code ? 'no code' : 'no colours') + ' for the graphics</i>' : '') + '</span></div>'
+      + '<span class="ts-sw">' + sw + '</span>'
+      + '<span class="ms act" title="Edit" onclick="FFPTourn.serTeamEdit(\'' + t.id + '\')">edit</span></div>';
+  }
+  function teamForm(t) {
+    var id = t ? t.id : 'new';
+    var v = t || {};
+    var init = v.logo_url ? '' : esc((v.team_name || '?').slice(0, 1));
+    var bg = v.logo_url ? 'background-image:url(\'' + esc(v.logo_url) + '\')' : '';
+    return '<div class="lg-edit lg-entform">'
+      + '<span class="crest"><span class="lg-av' + (t ? ' lg-avedit' : '') + '"' + (t ? ' title="Add / change crest" onclick="FFPTourn.serTeamLogo(\'' + t.id + '\')"' : '') + ' style="' + bg + '">' + init + (t ? '<span class="lg-avplus ms">add</span>' : '') + '</span></span>'
+      + '<div class="f gr"><label>Team name</label><input class="lg-in" id="ts-t-name-' + id + '" value="' + esc(v.team_name || '') + '" onkeydown="if(event.key===\'Enter\')FFPTourn.serTeamSave(\'' + id + '\')"></div>'
+      + '<div class="f"><label>Short name</label><input class="lg-in" id="ts-t-short-' + id + '" placeholder="For the scorebug" value="' + esc(v.short_name || '') + '"></div>'
+      + '<div class="f sm"><label>Code</label><input class="lg-in" id="ts-t-code-' + id + '" maxlength="4" placeholder="BAT" value="' + esc(v.code || '') + '"></div>'
+      + '<div class="f sm"><label>Home colour</label><div class="lg-hex"><input class="sw" type="color" value="' + esc(v.color1 || '#0C2E63') + '" oninput="FFPTourn.hexSync(\'ts-t-c1-' + id + '\',this.value)"><input class="lg-in" id="ts-t-c1-' + id + '" maxlength="7" placeholder="#000000" value="' + esc(v.color1 || '') + '"></div></div>'
+      + '<div class="f sm"><label>Away colour</label><div class="lg-hex"><input class="sw" type="color" value="' + esc(v.color2 || '#1B57AE') + '" oninput="FFPTourn.hexSync(\'ts-t-c2-' + id + '\',this.value)"><input class="lg-in" id="ts-t-c2-' + id + '" maxlength="7" placeholder="#000000" value="' + esc(v.color2 || '') + '"></div></div>'
+      + '<div class="acts"><button class="lg-btn pri" onclick="FFPTourn.serTeamSave(\'' + id + '\')">' + ic('check') + 'Save</button>'
+      +   (t ? '<button class="lg-btn ghost" onclick="FFPTourn.serTeamStatus(\'' + t.id + '\',\'' + (t.status === 'active' ? 'retired' : 'active') + '\')">' + (t.status === 'active' ? 'Stand down' : 'Bring back') + '</button>' : '')
+      +   '<button class="lg-btn ghost" onclick="FFPTourn.serTeamCancel()">Cancel</button></div></div>';
+  }
+  function renderSerTeams(host) {
+    var ts = serTeams();
+    var on = ts.filter(function (t) { return t.status === 'active'; });
+    var off = ts.filter(function (t) { return t.status !== 'active'; });
+    var importers = serRounds().filter(function (r) { return (r.entrants || 0) > (r.linked || 0); });
+    host.innerHTML = '<div class="tg-sec"><div class="tg-sech">Teams in the series</div>'
+      + '<div class="tg-hint" style="margin:0 0 10px">Entered once. Every round you add them to brings the name, code, colours and crest with it.</div>'
+      + (on.length ? on.map(teamRow).join('') : '<div class="lg-empty" style="text-align:left;padding:4px 0">No teams yet.</div>')
+      + (S.serTeamEdit === 'new' ? teamForm(null) : '<button class="lg-btn" onclick="FFPTourn.serTeamEdit(\'new\')">' + ic('add') + 'Add a team</button>')
+      + (importers.length
+          ? '<div class="ts-imp">' + ic('playlist_add')
+            + '<div class="g"><b>Teams already typed into a round</b><span>Lift them into the series instead of entering them again. Running it twice changes nothing.</span></div>'
+            + importers.map(function (r) { return '<button class="lg-btn sm" onclick="FFPTourn.serAdopt(\'' + r.id + '\')">' + esc(roundLbl(r)) + ' (' + ((r.entrants || 0) - (r.linked || 0)) + ')</button>'; }).join('')
+            + '</div>'
+          : '')
+      + '</div>'
+      + (off.length ? '<div class="tg-sec"><div class="tg-sech">Stood down</div>'
+          + '<div class="tg-hint" style="margin:0 0 10px">Still part of the series and still on past results. They just are not offered when you pick who is playing.</div>'
+          + off.map(teamRow).join('') + '</div>' : '');
+  }
+
+  // ── POINTS TABLE ──────────────────────────────────────────────────────
+  function renderSerPoints(host) {
+    var pt = ser().points_table || {};
+    var places = Object.keys(pt).filter(function (k) { return /^[0-9]+$/.test(k); })
+                   .map(Number).sort(function (a, b) { return a - b; });
+    if (!places.length) places = [1, 2, 3, 4];
+    var rows = places.map(function (p) {
+      return '<div class="ts-pt"><span class="pl">' + ordNum(p) + '</span>'
+        + '<input class="lg-in" type="number" min="0" step="1" id="ts-p-' + p + '" value="' + (pt[String(p)] == null ? '' : pt[String(p)]) + '">'
+        + '<span class="u">points</span></div>';
+    }).join('');
+    host.innerHTML = '<div class="tg-sec"><div class="tg-sech">Series points table</div>'
+      + '<div class="tg-hint" style="margin:0 0 12px">Points come from where a team FINISHES each round, not from match results. A round still being played scores nothing until it is decided.</div>'
+      + '<div class="ts-pts">' + rows
+      + '<div class="ts-pt other"><span class="pl">Every other place</span>'
+      +   '<input class="lg-in" type="number" min="0" step="1" id="ts-p-other" value="' + (pt.other == null ? '' : pt.other) + '">'
+      +   '<span class="u">points</span></div></div>'
+      + '<div class="ts-ptrow">'
+      +   '<button class="lg-btn sm ghost" onclick="FFPTourn.serPtsPlace(1)">' + ic('add') + 'Another place</button>'
+      +   (places.length > 1 ? '<button class="lg-btn sm ghost" onclick="FFPTourn.serPtsPlace(-1)">' + ic('remove') + 'One fewer</button>' : '')
+      +   '<button class="lg-btn sm ghost" onclick="FFPTourn.serPtsPreset()">Use the standard 7s table</button>'
+      + '</div>'
+      + '<button class="lg-btn pri" style="margin-top:14px" onclick="FFPTourn.serPtsSave()">' + ic('check') + 'Save points table</button>'
+      + '</div>';
+  }
+
+  // ── DETAILS ───────────────────────────────────────────────────────────
+  function renderSerDetails(host) {
+    var s = ser();
+    var cov = s.cover_url, lg = s.logo_url;
+    host.innerHTML = '<div class="tg-sec"><div class="tg-sech">Details</div>'
+      + '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Series name</div><input class="lg-in" id="ts-d-name" value="' + esc(s.name || '') + '"></div>'
+      +   '<div class="lg-fld"><div class="lg-lab">Status</div><select class="lg-sel" id="ts-d-status">'
+      +     ['open', 'live', 'final', 'archived'].map(function (k) { return '<option value="' + k + '"' + (s.status === k ? ' selected' : '') + '>' + k.charAt(0).toUpperCase() + k.slice(1) + '</option>'; }).join('')
+      +   '</select></div></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Description</div><input class="lg-in" id="ts-d-desc" value="' + esc(s.description || '') + '"></div>'
+      + '<div class="lg-3"><div class="lg-fld"><div class="lg-lab">City</div><input class="lg-in" id="ts-d-city" list="ts-cities" value="' + esc(s.city || '') + '"><datalist id="ts-cities">' + dlOpts(cityNames()) + '</datalist></div>'
+      +   '<div class="lg-fld"><div class="lg-lab">Country</div><input class="lg-in" id="ts-d-country" list="ts-countries" value="' + esc(s.country || '') + '"><datalist id="ts-countries">' + dlOpts(countryNames()) + '</datalist></div>'
+      +   '<div class="lg-fld"><div class="lg-lab">Time zone</div><input class="lg-in" id="ts-d-tz" placeholder="Asia/Dubai" value="' + esc(s.timezone || '') + '"></div></div>'
+      + '<div class="lg-fld"><div class="lg-lab">Accent colour</div><div class="lg-hex" style="max-width:220px"><input class="sw" type="color" value="' + esc(s.accent || '#1980AD') + '" oninput="FFPTourn.hexSync(\'ts-d-accent\',this.value)"><input class="lg-in" id="ts-d-accent" maxlength="7" placeholder="#000000" value="' + esc(s.accent || '') + '"></div></div>'
+      + '<div class="ts-imgs">'
+      +   '<div class="im"><div class="lg-lab">Cover</div><div class="bx" style="' + (cov ? 'background-image:url(\'' + esc(cov) + '\')' : '') + '" onclick="FFPTourn.serImg(\'cover_url\')">' + (cov ? '' : ic('add_photo_alternate')) + '</div></div>'
+      +   '<div class="im"><div class="lg-lab">Crest</div><div class="bx sq" style="' + (lg ? 'background-image:url(\'' + esc(lg) + '\')' : '') + '" onclick="FFPTourn.serImg(\'logo_url\')">' + (lg ? '' : ic('add_photo_alternate')) + '</div></div>'
+      + '</div>'
+      + '<button class="lg-btn pri" style="margin-top:4px" onclick="FFPTourn.serDetailsSave()">' + ic('check') + 'Save</button></div>';
+  }
+
+  // ── ACTIONS ───────────────────────────────────────────────────────────
+  function gv(id) { var e = document.getElementById(id); return e ? String(e.value || '').trim() : ''; }
+  function gck(id) { var e = document.getElementById(id); return !!(e && e.checked); }
+
+  async function serCreate() {
+    var nm = gv('ts-newname'); if (!nm) { toast('Name the series first', 'error'); return; }
+    var r; try { r = await sb().rpc('tourn_series_save', { p_id: null, p: { name: nm, status: 'open' } }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error || !r.data) { toast(errText(r && r.error, 'Could not create the series'), 'error'); return; }
+    S.serCreating = false; S.seriesList = null; await loadMySeries(true);
+    openSeries(r.data);
+  }
+  async function serRoundSave(id) {
+    var n = parseInt(gv('ts-rn-' + id), 10); if (isNaN(n)) n = null;
+    var r; try { r = await sb().rpc('tourn_series_set_event', { p_series: S.seriesId, p_event: id, p_round: n, p_is_finals: gck('ts-rf-' + id) }); }
+    catch (e) { r = { error: e }; }
+    if (r && r.error) { toast(errText(r.error, 'Could not save that round'), 'error'); return; }
+    toast('Round saved'); S.seriesList = null; reloadSeries();
+  }
+  async function serRoundAdd() {
+    var id = gv('ts-newrd'); if (!id) return;
+    var n = parseInt(gv('ts-newrn'), 10); if (isNaN(n)) n = null;
+    var r; try { r = await sb().rpc('tourn_series_set_event', { p_series: S.seriesId, p_event: id, p_round: n, p_is_finals: gck('ts-newrf') }); }
+    catch (e) { r = { error: e }; }
+    if (r && r.error) { toast(errText(r.error, 'Could not add that round'), 'error'); return; }
+    S.serAddRound = false; S.seriesList = null; S.freeEvents = null;
+    toast('Round added'); reloadSeries();
+  }
+  async function serRoundOut(id) {
+    var r; try { r = await sb().rpc('tourn_series_unset_event', { p_event: id }); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast(errText(r.error, 'Could not remove that round'), 'error'); return; }
+    S.seriesList = null; S.freeEvents = null;
+    toast('Removed from the series. The tournament itself is untouched.');
+    reloadSeries();
+  }
+  async function serAddRoundOpen() {
+    S.serAddRound = true;
+    if (!S.freeEvents) {
+      var r; try { r = await sb().rpc('tourn_my_events'); } catch (e) { r = { error: e }; }
+      S.freeEvents = ((r && r.data) || []).filter(function (e) { return e.status !== 'archived'; });
+    }
+    renderSerTab();
+  }
+  async function serAdopt(roundId) {
+    var r; try { r = await sb().rpc('tourn_series_adopt_round', { p_series: S.seriesId, p_tourn: roundId }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not import those teams'), 'error'); return; }
+    var d = r.data || {};
+    toast(d.created ? d.created + ' team' + (d.created === 1 ? '' : 's') + ' added to the series' : 'Nothing new to import');
+    reloadSeries();
+  }
+  async function serTeamSave(id) {
+    var isNew = (id === 'new');
+    var p = {
+      team_name: gv('ts-t-name-' + id), short_name: gv('ts-t-short-' + id),
+      code: gv('ts-t-code-' + id).toUpperCase(), color1: gv('ts-t-c1-' + id), color2: gv('ts-t-c2-' + id)
+    };
+    if (!p.team_name) { toast('Name the team first', 'error'); return; }
+    var r; try { r = await sb().rpc('tourn_series_team_save', { p_id: isNew ? null : id, p_series: isNew ? S.seriesId : null, p: p }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not save that team'), 'error'); return; }
+    S.serTeamEdit = null; toast('Team saved'); reloadSeries();
+  }
+  async function serTeamStatus(id, st) {
+    var r; try { r = await sb().rpc('tourn_series_team_save', { p_id: id, p_series: null, p: { status: st } }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not change that team'), 'error'); return; }
+    S.serTeamEdit = null; reloadSeries();
+  }
+  async function serPtsSave() {
+    var pt = {}, bad = false;
+    document.querySelectorAll('[id^="ts-p-"]').forEach(function (el) {
+      var k = el.id.slice('ts-p-'.length), v = String(el.value || '').trim();
+      if (v === '') return;
+      var n = Number(v); if (!isFinite(n) || n < 0) { bad = true; return; }
+      pt[k] = n;
+    });
+    if (bad) { toast('Points must be zero or more', 'error'); return; }
+    var r; try { r = await sb().rpc('tourn_series_save', { p_id: S.seriesId, p: { points_table: pt } }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not save the points table'), 'error'); return; }
+    S.seriesList = null; toast('Points table saved'); reloadSeries();
+  }
+  /* Adding or removing a place must never discard what is already typed, so the
+     screen is read back into the table before it is rebuilt. */
+  function serPtsPlace(d) {
+    var pt = {};
+    document.querySelectorAll('[id^="ts-p-"]').forEach(function (el) {
+      var k = el.id.slice('ts-p-'.length), v = String(el.value || '').trim();
+      if (v !== '') pt[k] = Number(v);
+    });
+    var places = Object.keys(pt).filter(function (k) { return /^[0-9]+$/.test(k); }).map(Number).sort(function (a, b) { return a - b; });
+    var top = places.length ? places[places.length - 1] : 0;
+    if (d > 0) { if (pt[String(top + 1)] == null) pt[String(top + 1)] = 0; }
+    else if (top > 1) { delete pt[String(top)]; }
+    S.series.series.points_table = pt; renderSerTab();
+  }
+  function serPtsPreset() { S.series.series.points_table = JSON.parse(JSON.stringify(PTS_PRESET)); renderSerTab(); }
+  async function serDetailsSave() {
+    var p = {
+      name: gv('ts-d-name'), description: gv('ts-d-desc'), city: gv('ts-d-city'),
+      country: gv('ts-d-country'), timezone: gv('ts-d-tz'), accent: gv('ts-d-accent'),
+      status: gv('ts-d-status')
+    };
+    if (!p.name) { toast('A series needs a name', 'error'); return; }
+    var r; try { r = await sb().rpc('tourn_series_save', { p_id: S.seriesId, p: p }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not save'), 'error'); return; }
+    S.seriesList = null; toast('Saved'); reloadSeries();
+  }
+
+  // ── TICK WHO IS PLAYING THIS ROUND (inside a tournament) ──────────────
+  async function serEnterOpen() {
+    var sid = (S.detail && S.detail.event && S.detail.event.series_id) || null;
+    if (!sid) return;
+    var r; try { r = await sb().rpc('tourn_series_admin', { p_series: sid }); } catch (e) { r = { error: e }; }
+    if (!r || r.error || !r.data) { toast(errText(r && r.error, 'Could not read the series teams'), 'error'); return; }
+    S.serEnter = { series: r.data, picked: {} };
+    renderTab();
+  }
+  function serEnterCancel() { S.serEnter = null; renderTab(); }
+  function serEnterToggle(id) {
+    if (!S.serEnter) return;
+    if (S.serEnter.picked[id]) delete S.serEnter.picked[id]; else S.serEnter.picked[id] = true;
+    renderTab();
+  }
+  function serEnterAll(on) {
+    if (!S.serEnter) return;
+    S.serEnter.picked = {};
+    if (on) serEnterAvailable().forEach(function (t) { S.serEnter.picked[t.id] = true; });
+    renderTab();
+  }
+  /* A team already in THIS tournament is not offered again -- the database
+     refuses a double entry anyway, but offering it is the thing that makes an
+     organiser think it did not work. */
+  function serEnterAvailable() {
+    if (!S.serEnter) return [];
+    var inHere = {};
+    (S._roster || []).forEach(function (e) { if (e.series_team_id) inHere[e.series_team_id] = true; });
+    return ((S.serEnter.series || {}).teams || []).filter(function (t) {
+      return t.status === 'active' && !inHere[t.id];
+    });
+  }
+  function serEnterHtml() {
+    if (!S.serEnter) return '';
+    var av = serEnterAvailable(), n = Object.keys(S.serEnter.picked).length;
+    if (!av.length) {
+      return '<div class="ts-pick"><div class="hd">' + ic('check_circle') + 'Every team in the series is already in this round'
+        + '<button class="lg-btn sm ghost" style="margin-left:auto" onclick="FFPTourn.serEnterCancel()">Close</button></div></div>';
+    }
+    return '<div class="ts-pick"><div class="hd">' + ic('groups') + 'Who is playing this round'
+      + '<button class="lg-btn sm ghost" style="margin-left:auto" onclick="FFPTourn.serEnterAll(true)">All</button>'
+      + '<button class="lg-btn sm ghost" onclick="FFPTourn.serEnterAll(false)">None</button></div>'
+      + '<div class="bd">' + av.map(function (t) {
+          var init = t.logo_url ? '' : esc((t.team_name || '?').slice(0, 1));
+          var bg = t.logo_url ? 'background-image:url(\'' + esc(t.logo_url) + '\')' : '';
+          return '<label class="tm' + (S.serEnter.picked[t.id] ? ' on' : '') + '">'
+            + '<input type="checkbox"' + (S.serEnter.picked[t.id] ? ' checked' : '') + ' onchange="FFPTourn.serEnterToggle(\'' + t.id + '\')">'
+            + '<span class="lg-av" style="' + bg + '">' + init + '</span>'
+            + '<b>' + esc(t.team_name) + '</b>' + (t.code ? '<span class="ts-code">' + esc(t.code) + '</span>' : '') + '</label>';
+        }).join('') + '</div>'
+      + '<div class="ft"><button class="lg-btn pri" onclick="FFPTourn.serEnterDo()"' + (n ? '' : ' disabled') + '>'
+      +   ic('check') + 'Add ' + (n || 'the selected') + ' team' + (n === 1 ? '' : 's') + '</button>'
+      +   '<button class="lg-btn ghost" onclick="FFPTourn.serEnterCancel()">Cancel</button></div></div>';
+  }
+  async function serEnterDo() {
+    if (!S.serEnter || !S.divId) return;
+    var ids = Object.keys(S.serEnter.picked); if (!ids.length) return;
+    var r; try { r = await sb().rpc('tourn_series_enter', { p_division: S.divId, p_teams: ids }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not add those teams'), 'error'); return; }
+    var d = r.data || {};
+    toast((d.added || 0) + ' team' + (d.added === 1 ? '' : 's') + ' added');
+    S.serEnter = null; renderTab();
+  }
+
+  // ── LINK A TOURNAMENT TO A SERIES (the Setup tab) ─────────────────────
+  function serSetupHtml(ev) {
+    var opts = '<option value="">One-off tournament</option>'
+      + (S.seriesList || []).map(function (s) {
+          return '<option value="' + s.id + '"' + (ev.series_id === s.id ? ' selected' : '') + '>' + esc(s.name) + '</option>';
+        }).join('');
+    return '<div class="lg-fld"><div class="lg-lab">Is this part of a series?</div>'
+      + '<select class="lg-sel" id="tg-ser" style="max-width:360px" onchange="FFPTourn.serPick(this.value)">' + opts + '</select>'
+      + '<div id="tg-ser-extra" style="' + (ev.series_id ? '' : 'display:none;') + 'margin-top:10px">'
+      +   '<div class="lg-2"><div class="lg-fld"><div class="lg-lab">Round number</div><input class="lg-in" id="tg-ser-round" type="number" min="0" value="' + (ev.series_round === null || ev.series_round === undefined ? '' : ev.series_round) + '" style="max-width:140px"></div>'
+      +   '<div class="lg-fld"><div class="lg-lab">&nbsp;</div><label class="ts-chk" style="padding-top:10px"><input type="checkbox" id="tg-ser-finals"' + (ev.is_finals ? ' checked' : '') + '> This round is the finals</label></div></div></div>'
+      + '<div class="tg-hint">A series carries its teams between rounds, so the next one starts from a list instead of a blank form. Saved with the rest of this tab.</div></div>';
+  }
+  function serPick(v) { var x = document.getElementById('tg-ser-extra'); if (x) x.style.display = v ? '' : 'none'; }
+  async function serSaveLink() {
+    var ev = (S.detail && S.detail.event) || {};
+    var sel = document.getElementById('tg-ser'); if (!sel) return;
+    var v = sel.value || '';
+    var n = parseInt(gv('tg-ser-round'), 10); if (isNaN(n)) n = null;
+    var fin = gck('tg-ser-finals');
+    try {
+      if (!v) { if (ev.series_id) await sb().rpc('tourn_series_unset_event', { p_event: S.eventId }); }
+      else { await sb().rpc('tourn_series_set_event', { p_series: v, p_event: S.eventId, p_round: n, p_is_finals: fin }); }
+      S.seriesList = null;
+    } catch (e) { console.error('[tourn series link]', e); }
+  }
+
+  window.FFPTourn = {
     rulesHint: rulesHint,
+    openSeries: openSeries, serTab: function (t) { S.serTab = t; S.serTeamEdit = null; S.serAddRound = false; renderSerTab(); },
+    serCreateOpen: function () { S.serCreating = true; renderList(); }, serCreateCancel: function () { S.serCreating = false; renderList(); }, serCreate: serCreate,
+    serRoundSave: serRoundSave, serRoundAdd: serRoundAdd, serRoundOut: serRoundOut,
+    serAddRoundOpen: serAddRoundOpen, serAddRoundCancel: function () { S.serAddRound = false; renderSerTab(); },
+    serAdopt: serAdopt, serTeamEdit: function (id) { S.serTeamEdit = id; renderSerTab(); }, serTeamCancel: function () { S.serTeamEdit = null; renderSerTab(); },
+    serTeamSave: serTeamSave, serTeamStatus: serTeamStatus,
+    serPtsSave: serPtsSave, serPtsPlace: serPtsPlace, serPtsPreset: serPtsPreset, serDetailsSave: serDetailsSave,
+    serPick: serPick, serImg: serImg, serTeamLogo: serTeamLogo,
+    serEnterOpen: serEnterOpen, serEnterCancel: serEnterCancel, serEnterToggle: serEnterToggle, serEnterAll: serEnterAll, serEnterDo: serEnterDo,
+    tierPreview: tierPreview, tierPools: tierPools,
+    build: BUILD,
     open: open, startCreate: startCreate, cancelCreate: cancelCreate, doCreate: doCreate,
     back: function () { S.view = 'list'; renderList(); }, tab: function (t) { S.tab = t; S.matchOpen = null; renderEditor(); },
-    setDiv: function (val, tab) { S.divId = val; S.tab = tab; S.entEdit = null; S.entDel = null; S.sqOpen = null; renderTab(); },
+    setDiv: function (val, tab) { if (S.divId !== val) S.drawKey = null; S.divId = val; S.tab = tab; S.entEdit = null; S.entDel = null; S.sqOpen = null; renderTab(); },
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
-    statusPick: statusPick, mlenEdit: mlenEdit, eventState: eventState, eventDelete: eventDelete, toggleArchived: toggleArchived,
+    statusPick: statusPick, eventState: eventState, eventDelete: eventDelete, toggleArchived: toggleArchived,
+    openAdd: openAdd, addPoolOfficial: addPoolOfficial,
+    setAccess: setAccess, accDay: accDay, accMatch: accMatch, accSave: accSave, accCancel: accCancel,
+    pinPanel: async function (fid, nm) {
+      S.pinFor = fid; S.pin = {}; renderVenues(document.getElementById('tg-body') || document.body);
+      var r; try { r = await sb().rpc('tablet_pair_start', { p_court: null, p_field: fid }); } catch (e) { r = { error: e }; }
+      var m = String((r.error && r.error.message) || '');
+      S.pin = r.error
+        ? { err: /not_yours/.test(m) ? 'That pitch is not yours to connect.' : /too_many_codes/.test(m) ? 'Too many PINs live for this pitch. Wait a few minutes.' : 'Could not make a PIN.' }
+        : { pin: r.data && r.data.pin };
+      await renderVenues(document.getElementById('tg-body') || document.body);
+      if (S.pin && S.pin.pin) drawPinQr(TABLET_URL + '?pin=' + encodeURIComponent(S.pin.pin));
+    },
+    decide: async function (id, ok) {
+      var r; try { r = await sb().rpc('tourn_entrant_approve', { p_id: id, p_approve: !!ok }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast(ok ? 'Could not approve' : 'Could not decline', 'error'); return; }
+      toast(ok ? 'In' : 'Declined', 'success'); renderTab();
+    },
+    togglePaid: async function (id, paid) {
+      var r; try { r = await sb().rpc('tourn_entrant_pay', { p_id: id, p_paid: !!paid, p_method: null, p_ref: null, p_amount: null }); } catch (e) { r = { error: e }; }
+      if (r.error) { toast('Could not change that', 'error'); return; }
+      toast(paid ? 'Marked paid' : 'Marked unpaid', 'success'); renderTab();
+    },
+    pinClose: function () { S.pinFor = null; S.pin = null; renderVenues(document.getElementById('tg-body') || document.body); },
+    copy: function (t) { try { navigator.clipboard.writeText(t); toast('Copied', 'success'); } catch (e) {} },
     saveDetails: saveDetails, sportHint: sportHint,
-    saveSport: saveSport, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, clearDivFormat: clearDivFormat,
-    splitOn: splitOn, splitAdd: splitAdd, splitDrop: splitDrop, carryHint: carryHint, splitRedraw: splitRedraw,
-    setSetupDiv: function (id) { S.divId = id; renderTab(); },
-    finalsHint: function () {
-      var v2 = (document.getElementById('lgf-finals') || {}).value;
-      var m = FINALS_MODES.find(function (x) { return x[0] === v2; }) || FINALS_MODES[0];
-      var h = document.getElementById('lgf-finalshint'); if (h) h.textContent = m[2];
-      var t = document.getElementById('lgf-third');
-      if (t) t.parentNode.style.display = (v2 === 'none' ? 'none' : '');
-    }, pickImg: pickImg, pickRulesPdf: pickRulesPdf, removeRulesPdf: removeRulesPdf, entLogo: entLogo, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
+    divKind: divKind, setEntrantMode: setEntrantMode, saveSetup: saveSetup, sideHint: sideHint, capHint: capHint, setDivFmt: setDivFmt, fmtInfo: fmtInfo, sideInfo: sideInfo, mlenEdit: mlenEdit, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, buildDivDraw: buildDivDraw, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     addEntrant: addEntrant, bulkAthletes: bulkAthletes, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
-    editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit,
+    editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit, hexSync: hexSync,
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
     sqToggle: sqToggle, sqSearch: sqSearch, sqAddMember: sqAddMember, sqNameOnly: sqNameOnly, sqInvite: sqInvite, sqRemove: sqRemove,
-    sqPhoto: sqPhoto, sqPhotoClear: sqPhotoClear,
-    tsPut: tsPut, tsCovers: tsCovers, tsCap: tsCap, tsTeam: tsTeam, tsSaveCoach: tsSaveCoach, hexSync: hexSync,
-    gfxOpen: gfxOpen, gfxCopy: gfxCopy, gfxLink: gfxLink,
-    doGen: doGen, saveResults: saveResults,
-    ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, ofPhoto: ofPhoto,
-    openAdd: openAdd, addPoolOfficial: addPoolOfficial,
-    setAccess: setAccess, accDay: accDay, accMatch: accMatch, accSave: accSave, accCancel: accCancel, autoplan: autoplan, schedSet: schedSet, schedToggle: schedToggle, setSchedDiv: setSchedDiv, setSchedRound: setSchedRound, planSet: planSet, rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
-    rbGo: rbGo, rbSetDiv: rbSetDiv, rbByePick: rbByePick, rbByesSave: rbByesSave, rbRedraw: rbRedraw,
-    togRound: togRound, addMatch: addMatch, setAddDiv: setAddDiv, cancelMatch: cancelMatch, saveMatch: saveMatch, toggleBye: toggleBye, togglePre: togglePre,
-    editFx: editFx, fxStageChange: fxStageChange, cancelEditFx: cancelEditFx, saveFx: saveFx, delAsk: delAsk, delCancel: delCancel, delFx: delFx,
+    doGroups: doGroups, saveGroupResults: saveGroupResults,
+    confirmBracket: confirmBracket, cancelBracket: cancelBracket, doBracket: doBracket, monradOpen: monradOpen, setDrawFormat: setDrawFormat, setSideDraws: setSideDraws, setDraw: setDraw, monradRound: monradRound, awardPanel: awardPanel, doAward: doAward, saveBracketResults: saveBracketResults,
+    pickImg: pickImg, pickRulesPdf: pickRulesPdf, removeRulesPdf: removeRulesPdf, entLogo: entLogo, ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, ofPhoto: ofPhoto,
+    autoplan: autoplan, schedSet: schedSet,
+    setSchedDiv: setSchedDiv, planSet: planSet, setAddDiv: setAddDiv, applyBreaks: applyBreaks,
+    openDivDraw: openDivDraw, openDrawCancel: openDrawCancel,
+    breakAdd: breakAdd, breakSave: breakSave, breakRemove: breakRemove, breaksMoveOut: breaksMoveOut,
+    rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
+    schedToggle: schedToggle, schedMove: schedMove, setMainCourt: setMainCourt,
+    togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch,
     addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
     addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface, screenPanel: screenPanel, useMyCourts: useMyCourts, linkCourt: linkCourt, copyScreen: copyScreen,
     offAdd: offAdd, offRemove: offRemove, offSet: offSet,
     openMatch: openMatch, closeMatch: closeMatch, addEvent: addEvent, removeEvent: removeEvent, saveResultFromEvents: saveResultFromEvents, addSub: addSub, removeSub: removeSub,
-    mcTab: mcTab, mcPickStatPlayer: mcPickStatPlayer, saveStats: saveStats, setLive: setLive, saveTeamStats: saveTeamStats, saveStream: saveStream,
     trkToggle: trkToggle, trkReset: trkReset, trkPoss: trkPoss, trkHalf: trkHalf, trkApply: trkApply, mcSetPeriod: mcSetPeriod, _mcSetTime: _mcSetTime,
+    mcTab: mcTab, mcPickStatPlayer: mcPickStatPlayer, saveStats: saveStats, setLive: setLive, saveTeamStats: saveTeamStats, saveStream: saveStream,
     addCustomStat: addCustomStat, removeCustomStat: removeCustomStat,
     pbpAward: pbpAward, pbpUndo: pbpUndo, pbpServer: pbpServer, pbpDecide: pbpDecide, pbpFinish: pbpFinish
   };
-  window.ffpRenderLeagues = function () { S.view = 'list'; S.creating = false; renderList(); };
+  window.ffpRenderTournaments = function () { S.view = 'list'; S.creating = false; renderList(); };
 })();
