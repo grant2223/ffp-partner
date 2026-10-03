@@ -234,14 +234,28 @@
     _eventCount: 0,
     _logo: null, _alpha: null, _scale: null,
 
+    /* EVERY INTERNAL REFRESH WAS A NO-OP.
+       add(), remove(), setBoard(), bulkClose() and bulkSave() all finish by
+       calling W.render() with NO arguments, and the first line here was
+       `if (!host) return;` -- so every one of them returned immediately and
+       the screen was never rebuilt. The row really was written and the toast
+       really did fire, but the list never changed, which reads as "it doesn't
+       save"; switching the board did nothing at all, which reads as "I can't
+       manage sponsors" and as sponsors having disappeared. It is also why a
+       finished bulk upload looked like it had done nothing, and got clicked a
+       second time -- 6 logos stored as 12 rows.
+       The host is remembered whenever one is given, and only a call that has
+       no host AND no remembered host gives up. */
     render: async function (host, opt) {
-      if (!host) return;
-      injectCss();
       if (opt) {
         W._host = host; W._scope = opt.scope; W._event = opt.eventId;
         if (opt.entrants) W._entrants = opt.entrants;
+      } else if (host) {
+        W._host = host;
       }
       host = W._host;
+      if (!host) return;
+      injectCss();
       W._logo = null; W._alpha = null; W._scale = null;
       host.innerHTML = '<div class="spx"><div class="spx-hint">Loading sponsors…</div></div>';
 
