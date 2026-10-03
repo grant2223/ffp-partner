@@ -111,7 +111,7 @@
       '.spx-bar select{font-size:14px!important;font-weight:700;height:40px;min-width:0;flex:none;' +
         'padding:0 10px;border:1.5px solid #d7e0e8;border-radius:9px;background:#fff;color:#0b2136}' +
       '.spx-bar .note{margin-left:auto;font-size:12.5px;color:#51657a;align-self:center;max-width:300px;line-height:1.45}' +
-      '.spx-bh,.spx-br{display:grid;grid-template-columns:72px 1fr 190px 230px 1fr 34px;gap:16px;align-items:center}' +
+      '.spx-bh,.spx-br{display:grid;grid-template-columns:72px 1fr 190px 1fr 34px;gap:16px;align-items:center}' +
       '.spx-bh{padding:18px 2px 10px;font-size:10.5px;font-weight:900;letter-spacing:.14em;' +
         'color:#51657a;border-bottom:1px solid #e3e9ef}' +
       '.spx-br{padding:12px 2px;border-bottom:1px solid #eef3f7}' +
@@ -124,19 +124,45 @@
         'border:1.5px solid #d7e0e8;border-radius:9px;background:#fff;color:#0b2136}' +
       '.spx-file{display:block;font-size:11px;color:#8aa0b4;margin-top:4px;overflow:hidden;' +
         'text-overflow:ellipsis;white-space:nowrap}' +
-      '.spx-bd{border:1.5px solid #d7e0e8;border-radius:9px;min-height:40px;padding:7px 8px;display:flex;' +
-        'align-items:flex-start;gap:6px;cursor:pointer;background:#fff}' +
-      /* A sponsor on three clubs listed all three. Ellipsis here would hide a
-         club from its own board exactly the way the order of play used to
-         hide a team from its own fixture. It wraps instead. */
-      '.spx-bd i{font-style:normal;font-size:13.5px;font-weight:800;color:#1d3a52;min-width:0;' +
-        'white-space:normal;line-height:1.3}' +
-      '.spx-bd u{text-decoration:none;font-size:12.5px;font-weight:800;color:#1980AD;margin-left:auto;' +
-        'white-space:nowrap;cursor:pointer}' +
-      '.spx-bd{position:relative}' +
-      '.spx-pick{position:absolute;left:0;top:100%;z-index:5;width:100%;font-size:14px!important;' +
-        'border:1.5px solid #d7e0e8;border-radius:9px;background:#fff;opacity:0;pointer-events:none}' +
-      '.spx-pick:focus{opacity:1;pointer-events:auto}' +
+      /* STEP 1 -- WHO THE LOGOS ARE FOR.
+         The board used to be a per-row control: an opacity:0 native multi
+         select revealed only on focus. Nobody found it, so every logo landed
+         on one board and a club sponsor could not reach the 2nd and 3rd side
+         at all. The board is now chosen ONCE, up front, for the whole batch. */
+      '.spx-steps{display:flex;align-items:baseline;gap:10px;font-size:11px;font-weight:900;' +
+        'letter-spacing:.14em;margin:0 0 18px;padding:0 0 14px;border-bottom:1px solid #e3e9ef}' +
+      '.spx-steps b{color:#0b2136}.spx-steps s{text-decoration:none;color:#8aa0b4}' +
+      '.spx-steps em{font-style:normal;color:#c3d2de}' +
+      '.spx-srch{display:flex;align-items:center;gap:10px;margin:0 0 4px}' +
+      '.spx-srch input{font-size:14px!important;font-weight:700;height:42px;flex:1;min-width:0;' +
+        'padding:0 12px;border:1.5px solid #d7e0e8;border-radius:10px;background:#fff;' +
+        'box-sizing:border-box;color:#0b2136}' +
+      '.spx-srch .n{font-size:12.5px;font-weight:800;color:#51657a;white-space:nowrap}' +
+      '.spx-grp{font-size:10.5px;font-weight:900;letter-spacing:.14em;color:#8aa0b4;' +
+        'padding:18px 2px 7px;border-bottom:1px solid #e3e9ef}' +
+      '.spx-grp u{text-decoration:none;color:#1980AD;float:right;cursor:pointer;letter-spacing:.06em}' +
+      '.spx-trow{display:grid;grid-template-columns:30px 1fr 150px;gap:14px;align-items:center;' +
+        'padding:11px 2px;border-bottom:1px solid #eef3f7;cursor:pointer}' +
+      '.spx-trow:hover{background:#f7fafc}.spx-trow.on{background:#fffdf6}' +
+      '.spx-tk{width:21px;height:21px;border-radius:6px;border:2px solid #cfdae4;background:#fff;' +
+        'position:relative}' +
+      '.spx-trow.on .spx-tk{border-color:#F2A900;background:#F2A900}' +
+      '.spx-trow.on .spx-tk:after{content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;' +
+        'border:solid #12212c;border-width:0 2.5px 2.5px 0;transform:rotate(43deg)}' +
+      '.spx-tnm{font-size:15px;font-weight:800;min-width:0;color:#0b2136}' +
+      '.spx-tnm i{font-style:normal;font-weight:700;color:#8aa0b4;font-size:13px}' +
+      '.spx-tnm.evt{color:#1980AD}' +
+      '.spx-has{font-size:12.5px;font-weight:800;color:#51657a;text-align:right}' +
+      '.spx-has.none{color:#b6c3cf;font-weight:700}' +
+      '.spx-sel{position:sticky;bottom:0;background:#fff;border-top:2px solid #e3e9ef;display:flex;' +
+        'align-items:center;gap:18px;padding:16px 2px;margin-top:4px}' +
+      '.spx-sel .t{font-size:13.5px;color:#51657a;min-width:0;line-height:1.5}' +
+      '.spx-sel .t b{color:#0b2136;font-weight:800}' +
+      '.spx-for{display:flex;align-items:baseline;gap:12px;padding:0 0 16px;margin:0 0 4px;' +
+        'border-bottom:1px solid #e3e9ef;font-size:13.5px;color:#51657a;line-height:1.5}' +
+      '.spx-for b{color:#0b2136;font-weight:800}' +
+      '.spx-for u{text-decoration:none;color:#1980AD;font-weight:800;cursor:pointer;margin-left:auto;' +
+        'white-space:nowrap}' +
       '.spx-ok{font-size:11.5px;font-weight:700;color:#5d8a5f}' +
       '.spx-wn{font-size:11.5px;font-weight:800;color:#a8620a;line-height:1.3}' +
       '.spx-up{font-size:11.5px;font-weight:700;color:#8aa0b4}' +
@@ -325,34 +351,139 @@
        path already does it -- the broadcast board knocks each logo out in
        white and cannot work that out at play-out. A file without alpha is
        flagged on screen instead of surprising somebody mid-match. */
-    bulkOpen: function () { W._bulk = []; W._bulkTier = 'partner'; W.renderBulk(); },
+    bulkOpen: function () {
+      W._bulk = []; W._bulkTier = 'partner';
+      W._bulkStep = 1; W._bulkBoards = []; W._bulkQ = ''; W._bulkBusy = false;
+      W.renderBulk();
+    },
 
     /* The approved screen, built once and used by leagues, tournaments and
        competitions -- they all render through this component. */
+    /* A club runs a 1st, 2nd and 3rd side, and a club sponsor belongs on all
+       three. Step 1 picks the boards once; step 2 is just the logos. */
+    _clubOf: function (nm) {
+      var m = String(nm || '').match(/^(.*?)[\s-]+(\d+)(?:st|nd|rd|th)?(?:\s*(?:XV|XI|XIII|s|team))?$/i);
+      if (m && m[1]) return { club: m[1].trim(), n: parseInt(m[2], 10) || 1 };
+      return { club: String(nm || 'Team').trim(), n: 1 };
+    },
+    _ord: function (n) {
+      var e = ['th', 'st', 'nd', 'rd'], v = n % 100;
+      return n + (e[(v - 20) % 10] || e[v] || e[0]);
+    },
+    _boardName: function (id) {
+      if (!id) return 'Event board';
+      for (var i = 0; i < (W._entrants || []).length; i++)
+        if (W._entrants[i].id === id)
+          return W._entrants[i].team_name || W._entrants[i].name || 'Team';
+      return 'Team';
+    },
+    _chosenNames: function () {
+      return (W._bulkBoards || []).map(function (id) { return W._boardName(id); });
+    },
+
     renderBulk: function () {
       var host = W._host; if (!host) return;
       injectCss();
+      return W._bulkStep === 2 ? W._renderBulkLogos(host) : W._renderBulkTeams(host);
+    },
+
+    /* ── STEP 1 ─────────────────────────────────────────────────────────── */
+    _renderBulkTeams: function (host) {
+      var q = String(W._bulkQ || '').trim().toLowerCase();
+      var hit = function (nm) { return !q || String(nm || '').toLowerCase().indexOf(q) >= 0; };
+      var on = function (id) { return (W._bulkBoards || []).indexOf(id) >= 0; };
+
+      /* group the sides under their club, keeping the order the event gives */
+      var groups = [], byClub = {};
+      (W._entrants || []).forEach(function (e) {
+        var nm = e.team_name || e.name || 'Team';
+        if (!hit(nm)) return;
+        var c = W._clubOf(nm);
+        if (!byClub[c.club]) { byClub[c.club] = { club: c.club, sides: [] }; groups.push(byClub[c.club]); }
+        byClub[c.club].sides.push({ id: e.id, name: nm, n: c.n,
+                                    sponsors: Number(e.sponsors) || 0 });
+      });
+
+      var teamsN = (W._entrants || []).length;
+      var body = '';
+
+      if (!q || 'event board'.indexOf(q) >= 0) {
+        body += '<div class="spx-grp">THE EVENT ITSELF</div>'
+          + '<div class="spx-trow' + (on(null) ? ' on' : '') + '" onclick="FFPSponsors.bulkTeam(\'\')">'
+            + '<span class="spx-tk"></span>'
+            + '<span class="spx-tnm evt">Event board <i>&mdash; the event&#39;s own sponsors, '
+              + 'never mixed with a club&#39;s</i></span>'
+            + '<span class="spx-has' + (W._eventCount ? '' : ' none') + '">'
+              + (W._eventCount ? W._eventCount + ' sponsor' + (W._eventCount === 1 ? '' : 's')
+                               : 'no sponsors yet') + '</span>'
+          + '</div>';
+      }
+
+      groups.forEach(function (g) {
+        var ids = g.sides.map(function (x) { return x.id; });
+        var allOn = ids.every(on);
+        body += '<div class="spx-grp">' + esc(g.club.toUpperCase())
+          + (ids.length > 1
+              ? '<u onclick="FFPSponsors.bulkClub(\'' + esc(ids.join(',')) + '\',' + (allOn ? 'false' : 'true') + ')">'
+                + (allOn ? 'Clear all ' : 'Select all ') + ids.length + '</u>'
+              : '')
+          + '</div>';
+        g.sides.forEach(function (t) {
+          /* the side is labelled from the data -- never an invented "XV", because
+             this same screen serves netball, football and touch */
+          var side = ids.length > 1 ? W._ord(t.n) : '';
+          body += '<div class="spx-trow' + (on(t.id) ? ' on' : '') + '" '
+              + 'onclick="FFPSponsors.bulkTeam(\'' + esc(t.id) + '\')">'
+            + '<span class="spx-tk"></span>'
+            + '<span class="spx-tnm">' + esc(W._clubOf(t.name).club)
+              + (side ? ' <i>' + side + '</i>' : '') + '</span>'
+            + '<span class="spx-has' + (t.sponsors ? '' : ' none') + '">'
+              + (t.sponsors ? t.sponsors + ' sponsor' + (t.sponsors === 1 ? '' : 's')
+                            : 'no sponsors yet') + '</span>'
+          + '</div>';
+        });
+      });
+
+      if (!body) body = '<p class="spx-hint">No team matches that search.</p>';
+
+      var chosen = W._chosenNames();
+      host.innerHTML = '<div class="spx-bulk">'
+        + '<div class="spx-steps"><b>1 CHOOSE TEAMS</b><em>&rarr;</em><s>2 ADD LOGOS</s></div>'
+        + '<p class="spx-hint">Pick who the logos are for, then drop them all in once. A sponsor on '
+          + 'four teams is saved four times, because a board belongs to one club &mdash; you only '
+          + 'pick it once.</p>'
+        + '<div class="spx-srch">'
+          + '<input id="spx-q" type="text" value="' + esc(W._bulkQ || '') + '" '
+            + 'placeholder="Search ' + teamsN + ' team' + (teamsN === 1 ? '' : 's') + '" '
+            + 'oninput="FFPSponsors.bulkSearch(this.value)">'
+          + '<span class="n">' + groups.length + ' club' + (groups.length === 1 ? '' : 's') + ', '
+            + teamsN + ' team' + (teamsN === 1 ? '' : 's') + '</span>'
+        + '</div>'
+        + body
+        + '<div class="spx-sel">'
+          + '<span class="t">' + (chosen.length
+              ? '<b>' + chosen.length + ' team' + (chosen.length === 1 ? '' : 's') + '</b> &mdash; '
+                + esc(chosen.join(', '))
+              : 'Nothing picked yet') + '</span>'
+          + (chosen.length ? '<button class="spx-gh" onclick="FFPSponsors.bulkClear()">Clear</button>' : '')
+          + '<button class="spx-go" style="margin-left:auto"' + (chosen.length ? '' : ' disabled')
+            + ' onclick="FFPSponsors.bulkNext()">Next, add the logos</button>'
+          + '<button class="spx-gh" onclick="FFPSponsors.bulkClose()">Cancel</button>'
+        + '</div>'
+      + '</div>';
+
+      /* a re-render on every keystroke would otherwise drop the caret */
+      var qi = document.getElementById('spx-q');
+      if (qi && W._bulkQ) { qi.focus(); qi.setSelectionRange(qi.value.length, qi.value.length); }
+    },
+
+    /* ── STEP 2 ─────────────────────────────────────────────────────────── */
+    _renderBulkLogos: function (host) {
       var rows = W._bulk || [];
       var ready = rows.filter(function (r) { return r.state === 'ready'; });
-      var saves = ready.reduce(function (n, r) { return n + (r.boards.length || 1); }, 0);
-      var many = ready.filter(function (r) { return r.boards.length > 1; });
-
-      var teamOpts = function (sel) {
-        var o = '<option value=""' + ((sel.indexOf(null) >= 0 || !sel.length) ? ' selected' : '') + '>Event board</option>';
-        (W._entrants || []).forEach(function (e) {
-          var nm = e.team_name || e.name || 'Team';
-          o += '<option value="' + esc(e.id) + '"' + (sel.indexOf(e.id) >= 0 ? ' selected' : '') + '>' + esc(nm) + '</option>';
-        });
-        return o;
-      };
-      var boardLabel = function (ids) {
-        return ids.map(function (id) {
-          if (!id) return 'Event board';
-          for (var i = 0; i < (W._entrants || []).length; i++)
-            if (W._entrants[i].id === id) return W._entrants[i].team_name || W._entrants[i].name || 'Team';
-          return 'Team';
-        }).join(', ');
-      };
+      var nb = (W._bulkBoards || []).length || 1;
+      var saves = ready.length * nb;
+      var chosen = W._chosenNames();
 
       var body = rows.map(function (r, i) {
         var state = r.state === 'up' ? '<span class="spx-up">Uploading&hellip;</span>'
@@ -369,15 +500,6 @@
             + '<span class="spx-file">' + esc(r.file.name) + '</span></span>'
           + '<span><select aria-label="Tier" onchange="FFPSponsors.bulkSet(' + i + ',\'tier\',this.value)">'
             + tierOpts(r.tier) + '</select></span>'
-          /* The picker lives INSIDE the board cell. As a sibling it was a
-             seventh child of a six column grid, and the tracks resolved
-             against the wrong count -- the logo cell overran the name. */
-          + '<span class="spx-bd">'
-            + '<i>' + esc(boardLabel(r.boards)) + '</i>'
-            + '<u onclick="this.parentNode.querySelector(\'select\').focus()">change</u>'
-            + '<select multiple size="4" class="spx-pick" '
-              + 'onchange="FFPSponsors.bulkSet(' + i + ',\'boards\',this)">' + teamOpts(r.boards) + '</select>'
-            + '</span>'
           + '<span>' + state + '</span>'
           + '<span><button class="spx-x" aria-label="Remove" '
             + 'onclick="FFPSponsors.bulkDrop(' + i + ')">&times;</button></span>'
@@ -385,9 +507,9 @@
       }).join('');
 
       host.innerHTML = '<div class="spx-bulk">'
-        + '<p class="spx-hint">Drop every logo at once. Each file becomes a sponsor, named from its '
-          + 'filename, and you set the board once for the whole batch or per row. A sponsor on more than '
-          + 'one team is saved once per team, because a board belongs to one club.</p>'
+        + '<div class="spx-steps"><s>1 CHOOSE TEAMS</s><em>&rarr;</em><b>2 ADD LOGOS</b></div>'
+        + '<div class="spx-for"><span>For <b>' + esc(chosen.join(', ')) + '</b></span>'
+          + '<u onclick="FFPSponsors.bulkBack()">Change teams</u></div>'
         + '<input type="file" id="spx-files" accept="image/*" multiple style="display:none" '
           + 'onchange="FFPSponsors.bulkFiles(this.files)">'
         + '<div class="spx-drop" id="spx-drop" onclick="FFPSponsors.bulkPick()">'
@@ -398,22 +520,27 @@
             + '<div class="spx-bar">'
               + '<div class="f"><label>SET TIER FOR ALL</label>'
                 + '<select onchange="FFPSponsors.bulkAll(\'tier\',this.value)">' + tierOpts(W._bulkTier) + '</select></div>'
-              + '<div class="f"><label>PUT ALL ON BOARD</label>'
-                + '<select onchange="FFPSponsors.bulkAll(\'board\',this.value)">' + teamOpts([null]) + '</select></div>'
               + '<p class="note">The broadcast board knocks each logo out in white, so a file without '
                 + 'transparency is shown on a white plate instead.</p>'
             + '</div>'
             + '<div class="spx-bh"><span>LOGO</span><span>SPONSOR NAME</span><span>TIER</span>'
-              + '<span>BOARD</span><span>FILE</span><span></span></div>'
+              + '<span>FILE</span><span></span></div>'
             + body
             + '<div class="spx-foot">'
-              + '<button class="spx-go"' + (saves ? '' : ' disabled') + ' onclick="FFPSponsors.bulkSave()">'
-                + 'Add ' + saves + ' sponsor' + (saves === 1 ? '' : 's') + '</button>'
-              + '<button class="spx-gh" onclick="FFPSponsors.bulkClose()">Cancel</button>'
-              + '<span class="spx-count">' + rows.length + ' file' + (rows.length === 1 ? '' : 's') + ', '
-                + '<b>' + saves + ' sponsor row' + (saves === 1 ? '' : 's') + '</b>'
-                + (many.length ? ' &mdash; ' + esc(many[0].name) + ' is on ' + many[0].boards.length + ' teams' : '')
-                + '</span>'
+              /* THE GUARD. This save is a loop of awaits several seconds long.
+                 With the button still live a second click started a SECOND run
+                 over the same list and every sponsor was written twice -- it
+                 happened on the first real batch, 6 logos stored as 12 rows. */
+              + '<button class="spx-go"' + ((saves && !W._bulkBusy) ? '' : ' disabled')
+                + ' onclick="FFPSponsors.bulkSave()">'
+                + (W._bulkBusy ? 'Adding&hellip;'
+                   : 'Add ' + ready.length + ' sponsor' + (ready.length === 1 ? '' : 's')
+                     + ' to ' + nb + ' team' + (nb === 1 ? '' : 's')) + '</button>'
+              + '<button class="spx-gh"' + (W._bulkBusy ? ' disabled' : '')
+                + ' onclick="FFPSponsors.bulkClose()">Cancel</button>'
+              + '<span class="spx-count">' + ready.length + ' file' + (ready.length === 1 ? '' : 's')
+                + ' &times; ' + nb + ' team' + (nb === 1 ? '' : 's') + ' = '
+                + '<b>' + saves + ' sponsor row' + (saves === 1 ? '' : 's') + '</b></span>'
             + '</div>'
           : '')
         + '</div>';
@@ -432,6 +559,31 @@
       }
     },
 
+    bulkSearch: function (v) { W._bulkQ = v || ''; W.renderBulk(); },
+    bulkTeam: function (id) {
+      var b = W._bulkBoards || (W._bulkBoards = []);
+      var key = id ? id : null;
+      var i = b.indexOf(key);
+      if (i >= 0) b.splice(i, 1); else b.push(key);
+      W.renderBulk();
+    },
+    bulkClub: function (ids, add) {
+      var b = W._bulkBoards || (W._bulkBoards = []);
+      String(ids || '').split(',').forEach(function (id) {
+        if (!id) return;
+        var i = b.indexOf(id);
+        if (add && i < 0) b.push(id);
+        if (!add && i >= 0) b.splice(i, 1);
+      });
+      W.renderBulk();
+    },
+    bulkClear: function () { W._bulkBoards = []; W.renderBulk(); },
+    bulkNext: function () {
+      if (!(W._bulkBoards || []).length) { toast('Pick at least one team', 'error'); return; }
+      W._bulkStep = 2; W.renderBulk();
+    },
+    bulkBack: function () { W._bulkStep = 1; W.renderBulk(); },
+
     bulkClose: function () { W._bulk = null; W.render(); },
 
     bulkPick: function () {
@@ -448,7 +600,7 @@
       W._bulk = W._bulk || [];
       files.forEach(function (f) {
         W._bulk.push({ file: f, name: W.nameFromFile(f.name), tier: W._bulkTier || 'partner',
-                       boards: [null], url: null, alpha: null, scale: 1, state: 'up' });
+                       url: null, alpha: null, scale: 1, state: 'up' });
       });
       W.renderBulk();
       for (var i = 0; i < W._bulk.length; i++) {
@@ -485,45 +637,54 @@
 
     bulkSet: function (i, k, v) {
       if (!W._bulk || !W._bulk[i]) return;
-      if (k === 'boards') {
-        var sel = v, out = [];
-        for (var j = 0; j < sel.options.length; j++) if (sel.options[j].selected)
-          out.push(sel.options[j].value || null);
-        W._bulk[i].boards = out.length ? out : [null];
-      } else W._bulk[i][k] = v;
+      W._bulk[i][k] = v;
       W.renderBulk();
     },
     bulkDrop: function (i) { if (W._bulk) { W._bulk.splice(i, 1); W.renderBulk(); } },
     bulkAll: function (what, v) {
-      (W._bulk || []).forEach(function (r) {
-        if (what === 'tier') r.tier = v;
-        else r.boards = [v || null];
-      });
-      if (what === 'tier') W._bulkTier = v;
+      if (what !== 'tier') return;   // the board is chosen in step 1, for the batch
+      (W._bulk || []).forEach(function (r) { r.tier = v; });
+      W._bulkTier = v;
       W.renderBulk();
     },
 
+    /* ONE RUN AT A TIME. This is a loop of awaits that takes seconds, and the
+       button sat live throughout it: a second click re-entered here with the
+       same list still in hand and wrote every sponsor a second time. The first
+       real batch went in as 12 rows for 6 logos. The flag is set BEFORE the
+       first await and cleared in a finally, and the button reads "Adding..."
+       while it holds. */
     bulkSave: async function () {
+      if (W._bulkBusy) return;
       var rows = (W._bulk || []).filter(function (r) { return r.state === 'ready'; });
       if (!rows.length) { toast('Nothing ready to add', 'error'); return; }
+      var boards = (W._bulkBoards || []).length ? W._bulkBoards : [null];
+      W._bulkBusy = true;
+      W.renderBulk();
       var made = 0, failed = 0;
-      for (var i = 0; i < rows.length; i++) {
-        var r = rows[i];
-        for (var b = 0; b < r.boards.length; b++) {
-          var p = { name: r.name || null, logo_url: r.url, link_url: null, tier: r.tier || 'partner',
-                    entrant_id: r.boards[b] || null,
-                    has_alpha: r.alpha === null ? null : r.alpha, logo_scale: r.scale };
-          var res;
-          try {
-            res = await sb().rpc('event_sponsor_save',
-              { p_scope: W._scope, p_event: W._event, p_id: null, p: p });
-          } catch (e) { res = { error: e }; }
-          if (res && res.error) failed++; else made++;
+      try {
+        for (var i = 0; i < rows.length; i++) {
+          var r = rows[i];
+          for (var b = 0; b < boards.length; b++) {
+            var p = { name: r.name || null, logo_url: r.url, link_url: null, tier: r.tier || 'partner',
+                      entrant_id: boards[b] || null,
+                      has_alpha: r.alpha === null ? null : r.alpha, logo_scale: r.scale };
+            var res;
+            try {
+              res = await sb().rpc('event_sponsor_save',
+                { p_scope: W._scope, p_event: W._event, p_id: null, p: p });
+            } catch (e) { res = { error: e }; }
+            if (res && res.error) failed++; else made++;
+          }
         }
-      }
-      toast(failed ? (made + ' added, ' + failed + ' failed') : (made + ' sponsors added'),
+      } finally { W._bulkBusy = false; }
+      toast(failed ? (made + ' added, ' + failed + ' failed')
+                   : (made + ' sponsor row' + (made === 1 ? '' : 's') + ' added'),
             failed ? 'error' : 'success');
-      W._bulk = null;
+      /* land on the first board that was just written, so the logos are on
+         screen instead of behind a board filter showing something else */
+      W._board = boards[0] || null;
+      W._bulk = null; W._bulkStep = 1; W._bulkBoards = [];
       W.render();
     },
 
