@@ -46,6 +46,10 @@
          match: its time, who is in it, which court, and a menu for the rest.
          Same shapes as the tournaments console so an organiser running both
          is never learning two screens. */
+      /* MATCH DAY. The leagues console keeps its own copy of these rules, as it
+         does for every other screen: leagues and tournaments are different
+         sections and neither reaches into the other's file. */
+      '.md-top{padding:2px 0 0;}.md-day{display:flex;align-items:center;gap:8px;padding:2px 0 14px;}.md-day b{font-size:17px;font-weight:900;color:var(--ffp-text);}.md-day .tz{font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);margin-left:6px;}.md-day .sp{flex:1;}.md-cnt{display:flex;align-items:stretch;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);margin-bottom:6px;}.md-cn{padding:12px 22px 11px;border-right:1px solid var(--ffp-border);min-width:104px;}.md-cn:last-child{border-right:0;}.md-cn u{text-decoration:none;display:block;font-size:22px;font-weight:900;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-cn s{text-decoration:none;display:block;font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:6px;}.md-cn.ok u{color:#1F7A5C;}.md-cn.warn u{color:#B87A00;}.md-cn.blue u{color:var(--ffp-blue);}/* THE WHOLE DAY, as approved: surfaces down the side, slots across, the slot   being played bracketed in gold rather than a line struck through the names. */.md-dy{background:#fff;border-radius:12px;overflow:hidden;position:relative;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-dy .sc{overflow-x:auto;}table.md-g{border-collapse:collapse;width:100%;}table.md-g th,table.md-g td{border-right:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);vertical-align:top;}table.md-g th.cl,table.md-g td.cl{width:104px;min-width:104px;border-right:2px solid var(--ffp-border-mid);}table.md-g thead th{background:#F8FAFC;padding:11px 8px;font-size:11.5px;font-weight:900;letter-spacing:.05em;color:var(--ffp-blue);font-variant-numeric:tabular-nums;text-align:center;min-width:132px;}table.md-g thead th.cl{text-align:left;padding-left:14px;font-size:9.5px;letter-spacing:.13em;color:var(--ffp-text-muted);}table.md-g td.cl{padding:11px 14px;background:#FBFCFD;}table.md-g td.cl b{display:block;font-size:13.5px;font-weight:900;color:var(--ffp-text);}table.md-g td.cl s{text-decoration:none;display:block;font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:3px;}table.md-g td{padding:0;}table.md-g td>div{padding:8px 9px 9px;min-height:50px;}table.md-g td.dbl>div:first-child{border-bottom:2px dashed #B87A00;}table.md-g td.dbl>div{min-height:0;}table.md-g th.now,table.md-g td.now{border-left:2px solid #F2A900;border-right:2px solid #F2A900;}table.md-g th.now{border-top:3px solid #F2A900;}table.md-g th.now .nw{display:block;font-size:8.5px;font-weight:900;letter-spacing:.12em;color:#B87A00;margin-top:3px;}table.md-g tr:last-child td.now{border-bottom:3px solid #F2A900;}.md-g .tag{display:block;font-size:8.5px;font-weight:900;letter-spacing:.1em;margin-bottom:5px;}.md-g .who{text-decoration:none;display:block;font-size:11.5px;font-weight:800;line-height:1.3;color:var(--ffp-text);overflow-wrap:anywhere;}.md-g s.who{font-weight:700;color:var(--ffp-text-muted);}.md-g .sc2{font-style:normal;display:block;font-size:12px;font-weight:900;margin-top:4px;color:#1F7A5C;font-variant-numeric:tabular-nums;}.md-g .c-done{background:#E8F5EF;}.md-g .c-live{background:#FFF4DC;box-shadow:inset 0 0 0 2px #F2A900;}.md-g .c-late{background:#FDF6E6;}.md-g .c-wait{background:#fff;}.md-g .c-none{background:repeating-linear-gradient(135deg,#EEF2F6 0 6px,#F7F9FB 6px 12px);}table.md-g td.free>s{display:block;padding:20px 9px;font-size:11px;font-weight:700;color:#BCC9D6;text-decoration:none;text-align:center;}.md-nowtag{position:absolute;top:3px;font-size:10.5px;font-weight:900;letter-spacing:.09em;z-index:4;color:#B87A00;white-space:nowrap;transform:translateX(-50%);padding-bottom:7px;}.md-key{display:flex;flex-wrap:wrap;gap:20px;margin:14px 2px 0;font-size:10.5px;font-weight:800;letter-spacing:.07em;color:var(--ffp-text-muted);}.md-key span{display:flex;align-items:center;gap:8px;}.md-key i{width:18px;height:11px;border-radius:3px;display:block;flex:none;}.md-strip{display:flex;align-items:stretch;flex-wrap:wrap;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);margin:0 0 4px;}.md-dbtn{border:0;background:none;font:inherit;cursor:pointer;text-align:left;padding:11px 18px 10px;border-right:1px solid var(--ffp-border);box-shadow:inset 0 3px 0 transparent;}.md-dbtn:hover{background:#f6f9fb;}.md-dbtn b{display:block;font-size:12.5px;font-weight:800;color:var(--ffp-text-muted);}.md-dbtn s{text-decoration:none;display:block;font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--ffp-text-dim);margin-top:4px;font-variant-numeric:tabular-nums;}.md-dbtn.on{box-shadow:inset 0 3px 0 #F2A900;}.md-dbtn.on b{color:var(--ffp-text);font-weight:900;}.md-dbtn.on s{color:var(--ffp-text-muted);}.md-none{display:flex;align-items:flex-start;gap:12px;padding:16px 2px 4px;}.md-none .ms{font-size:21px;color:var(--ffp-text-dim);flex:none;}.md-none .g b{display:block;font-size:14.5px;font-weight:800;color:var(--ffp-text);}.md-none .g p{margin:5px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;}.md-none .g a{display:inline-block;margin-top:10px;}.md-sh{display:flex;align-items:flex-end;gap:13px;margin:30px 0 12px;}.md-sh h3{font-size:12.5px;font-weight:900;letter-spacing:.16em;color:var(--ffp-blue);margin:0;}.md-sh p{font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);margin:0;padding-bottom:1px;}.md-sh .ln{flex:1;height:1px;background:var(--ffp-border);margin-bottom:5px;}.md-clear{display:flex;align-items:center;gap:11px;padding:16px 2px;font-size:14px;font-weight:800;color:#1F7A5C;}.md-clear .ms{font-size:21px;}.md-rail{position:relative;padding-left:100px;}.md-rail:before{content:"";position:absolute;left:88px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,#F2A900,#E4EBF1);}.md-jb{position:relative;display:flex;align-items:center;gap:22px;padding:12px 0 13px;border-bottom:1px solid var(--ffp-border);}.md-jb:last-child{border-bottom:0;}.md-jb .tm{position:absolute;left:-100px;top:13px;width:80px;text-align:right;}.md-jb .tm u{text-decoration:none;display:block;font-size:14.5px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-jb .tm s{text-decoration:none;display:block;font-size:9.5px;font-weight:800;letter-spacing:.1em;color:var(--ffp-text-muted);margin-top:3px;}.md-jb .dot{position:absolute;left:-18px;top:18px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px #9aa8b4;}.md-jb.k-clash .dot,.md-jb.k-finish .dot{box-shadow:0 0 0 3px #B87A00;}.md-jb.k-result .dot{box-shadow:0 0 0 3px #F2A900;}.md-jb.k-official .dot,.md-jb.k-sheet .dot,.md-jb.k-entrants .dot,.md-jb.k-surface .dot{box-shadow:0 0 0 3px #7FB2D9;}.md-jb .mid{flex:1;min-width:0;max-width:620px;}.md-jb .mid .where{display:inline-block;font-size:10px;font-weight:900;letter-spacing:.12em;color:#B87A00;margin-bottom:5px;}.md-jb .mid b{display:block;font-size:15px;font-weight:800;line-height:1.3;color:var(--ffp-text);overflow-wrap:anywhere;}.md-jb .mid p{margin:4px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.45;overflow-wrap:anywhere;}.md-jb .acts{flex:none;margin-left:auto;display:flex;gap:8px;}.md-board{background:#fff;border-radius:3px 3px 12px 12px;overflow:hidden;position:relative;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-board:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--ffp-blue),#7FB2D9);}.md-bh,.md-row{display:grid;grid-template-columns:134px 292px 1fr 196px;align-items:center;}.md-bh{padding:14px 20px 11px;border-bottom:1px solid var(--ffp-border);margin-top:4px;}.md-bh span{font-size:9.5px;font-weight:900;letter-spacing:.13em;color:var(--ffp-text-muted);}.md-row{padding:14px 20px;border-bottom:1px solid var(--ffp-border);position:relative;}.md-row:last-child{border-bottom:0;}.md-row:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#C3D3E0;}.md-row.e-live:before{background:#F2A900;}.md-row.e-late:before{background:#FFD46B;}.md-row.e-live{background:linear-gradient(90deg,rgba(242,169,0,.10),rgba(242,169,0,0) 62%);}.md-row .c b{display:block;font-size:15.5px;font-weight:900;color:var(--ffp-text);}.md-row .c s{text-decoration:none;display:block;font-size:9.5px;font-weight:700;letter-spacing:.11em;color:var(--ffp-text-muted);margin-top:4px;}.md-row .on u,.md-row .nx u,.md-row .rf u{text-decoration:none;display:block;font-size:13.5px;font-weight:800;line-height:1.25;color:var(--ffp-text);overflow-wrap:anywhere;}.md-row .on u.free,.md-row .nx u.free{color:var(--ffp-text-muted);font-weight:700;}.md-row .rf u.none{color:#B87A00;}.md-row .on s,.md-row .nx s,.md-row .rf s{text-decoration:none;display:block;font-size:11px;font-weight:700;color:var(--ffp-text-muted);margin-top:4px;line-height:1.35;}.md-row .nx s.bad{color:#B87A00;}.md-divs{display:grid;grid-template-columns:repeat(auto-fit,minmax(272px,1fr));background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-dv{padding:17px 20px 19px;background:#fff;box-shadow:inset -1px -1px 0 var(--ffp-border);}.md-dv .r1{display:flex;align-items:baseline;gap:9px;}.md-dv .r1 i{width:10px;height:10px;border-radius:2px;display:block;flex:none;background:var(--dc,var(--ffp-blue));align-self:center;}.md-dv .r1 b{font-size:15px;font-weight:900;color:var(--ffp-text);}.md-dv .r1 span{margin-left:auto;font-size:10px;font-weight:900;letter-spacing:.11em;}.md-dv .r1 span.ok{color:#1F7A5C;}.md-dv .r1 span.no{color:#B87A00;}.md-dv .mt{display:flex;gap:24px;margin-top:13px;}.md-dv .mt u{text-decoration:none;display:block;font-size:24px;font-weight:900;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-dv .mt u.bad{color:#B87A00;}.md-dv .mt s{text-decoration:none;display:block;font-size:9.5px;font-weight:800;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:6px;}.md-dv .pips{display:flex;flex-wrap:wrap;gap:3px;margin-top:16px;}.md-dv .pips i{width:10px;height:14px;border-radius:2px;display:block;background:repeating-linear-gradient(135deg,#E6ECF2 0 4px,#F2F6F9 4px 8px);}.md-dv .pips i.todo{background:#E6ECF2;}.md-dv .pips i.won{background:linear-gradient(180deg,#2E9B77,#1F7A5C);}.md-dv .nt{font-size:12px;font-weight:700;color:var(--ffp-text-muted);margin-top:11px;line-height:1.45;}.md-dv .nt.bad{color:#B87A00;font-weight:800;}',
       '.sc-day{font-size:16px;font-weight:900;color:var(--ffp-text);margin:26px 0 2px;}.sc-day:first-child{margin-top:8px;}',
       '.sc-day .tz{margin-left:9px;font-size:11px;font-weight:700;color:#9aa8b4;}',
       '.sc-ch{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:9px;margin:12px 0 0;background:linear-gradient(92deg,#12242f,#21404f);box-shadow:0 2px 8px rgba(14,37,49,.18);}',
@@ -408,7 +412,7 @@
     var ev = S.detail.event || {};
     el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(', ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPLeague.back()">' + ic('arrow_back') + 'All leagues</button></div>'
-      + '<div class="lg-nav"><span class="lgf-phase">Set up</span>' + tabBtn('information', 'Information') + tabBtn('setup', 'Setup') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', evNouns().Many) + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('sponsors', 'Sponsors') + tabBtn('schedule', 'Schedule') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
+      + '<div class="lg-nav"><span class="lgf-phase">Set up</span>' + tabBtn('information', 'Information') + tabBtn('setup', 'Setup') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', evNouns().Many) + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('sponsors', 'Sponsors') + tabBtn('matchday', 'Match day') + tabBtn('schedule', 'Schedule') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
     renderTab();
   }
   function tabBtn(id, label) { return '<button class="' + (S.tab === id ? 'on' : '') + '" onclick="FFPLeague.tab(\'' + id + '\')">' + label + '</button>'; }
@@ -421,10 +425,315 @@
     if (S.tab === 'fixtures') return S.matchOpen ? renderMatchCentre() : renderFixtures(host);
     if (S.tab === 'venues') return renderVenues(host);
     if (S.tab === 'officials') return renderOfficials(host);
+    if (S.tab === 'matchday') return renderMatchDay(host);
     if (S.tab === 'schedule') return renderSchedule(host);
     if (S.tab === 'sponsors') return renderSponsors(host);
     if (S.tab === 'table') return renderTable(host);
   }
+  /* ───────────────────────── MATCH DAY ─────────────────────────
+     The screen an organiser stands on during a round. It asks league_day,
+     which hands over to THIS sport's own league function, so the words that
+     come back are the sport's own: pitch or court, referee or umpire. This is
+     the leagues console's own copy; it shares nothing with the tournaments
+     file, and nothing in it decides anything about a sport. */
+  var MD_DCOL = ['#1B4A73','#7A4FA3','#0F7A6B','#B23A48','#8A5A00',
+                 '#5B3E8E','#0F6E7A','#2F6B2F','#A4454F','#B06A00'];
+  var MD_KIND = { clash: 'CLASH', result: 'NO RESULT', finish: 'STILL LIVE',
+                  official: 'OFFICIAL', sheet: 'TEAM SHEET', surface: 'NO GROUND',
+                  entrants: 'NO TEAMS' };
+
+  function mdDayLabel(ymd) {
+    var a = String(ymd || '').split('-'); if (a.length !== 3) return 'Today';
+    var dt = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2], 12, 0, 0));
+    var D = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return D[dt.getUTCDay()] + ' ' + dt.getUTCDate() + ' ' + M[dt.getUTCMonth()] + ' ' + dt.getUTCFullYear();
+  }
+  function mdShiftDay(ymd, delta) {
+    var a = String(ymd || '').split('-'); if (a.length !== 3) return ymd;
+    var dt = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2], 12, 0, 0));
+    dt.setUTCDate(dt.getUTCDate() + delta);
+    return dt.toISOString().slice(0, 10);
+  }
+
+  async function renderMatchDay(host) {
+    host.innerHTML = '<div class="lg-empty">Loading the day\u2026</div>';
+    /* THE CHOSEN DAY BELONGS TO THE EVENT BEING LOOKED AT. Keeping it across
+       events is how this screen ended up reporting 1 December at a tournament
+       that played in October, and then calling that empty day a clean one. */
+    if (S.mdFor !== S.eventId) { S.mdFor = S.eventId; S.mdDay = null; }
+
+    var d = await mdFetch(S.mdDay);
+    if (!d) { host.innerHTML = '<div class="lg-empty">Could not load the day.</div>'; return; }
+
+    /* land on a day that actually has matches rather than on an empty one */
+    if (!S.mdDay && !(d.headline && d.headline.total) && (d.days || []).length) {
+      var pick = mdNearestDay(d.days, d.day);
+      if (pick && pick !== d.day) { var d2 = await mdFetch(pick); if (d2) d = d2; }
+    }
+    S.mdDay = d.day || S.mdDay;
+    S.md = d;
+
+    if (d.unsupported) {
+      host.innerHTML = mdHead(d) + mdDays(d)
+        + '<div class="lg-empty">There is no match day panel for this sport yet.</div>';
+      return;
+    }
+    host.innerHTML = mdHead(d) + mdDays(d) + mdGrid(d) + mdJobs(d) + mdSurfaces(d) + mdDivisions(d) + mdKey(d);
+  }
+
+  async function mdFetch(day) {
+    var r; try {
+      r = await sb().rpc('league_day', { p_event: S.eventId, p_day: day || null, p_now: null });
+    } catch (e) { r = { error: e }; }
+    return (r && !r.error) ? (r.data || {}) : null;
+  }
+  /* the next day that has matches, or the last one if they are all behind us */
+  function mdNearestDay(days, from) {
+    var up = (days || []).filter(function (x) { return x.matches > 0 && x.day >= from; });
+    if (up.length) return up[0].day;
+    var back = (days || []).filter(function (x) { return x.matches > 0; });
+    return back.length ? back[back.length - 1].day : null;
+  }
+  function mdDayShort(ymd) {
+    var a = String(ymd || '').split('-'); if (a.length !== 3) return '';
+    var dt = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2], 12, 0, 0));
+    var D = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return D[dt.getUTCDay()] + ' ' + dt.getUTCDate() + ' ' + M[dt.getUTCMonth()];
+  }
+  /* EVERY DAY THIS EVENT PLAYS ON, so nobody has to find them with the arrows. */
+  function mdDays(d) {
+    var days = (d.days || []).filter(function (x) { return x.matches > 0; });
+    if (days.length < 2) return '';
+    return '<div class="md-strip">' + days.map(function (x) {
+      return '<button class="md-dbtn' + (x.day === d.day ? ' on' : '') + '"'
+        + ' onclick="FFPLeague.mdPick(\'' + x.day + '\')">'
+        + '<b>' + esc(mdDayShort(x.day)) + '</b>'
+        + '<s>' + (x.played || 0) + ' OF ' + x.matches + '</s></button>';
+    }).join('') + '</div>';
+  }
+
+  /* THE WHOLE DAY, the element the approved panel leads on: one row per
+     surface, one column per slot, so the organiser sees the shape of the day
+     before they read a word. Hatched means that division has nobody entered.
+     Two matches in one cell is a clash and is drawn as one. */
+  function mdGrid(d) {
+    var ms = (d.matches || []).filter(function (m) { return m.at; });
+    if (!ms.length) return '';
+    /* a round tag wears its division's colour, as approved, so a court
+       hosting three divisions in a day can be read down the column */
+    var ready = {}, dcol = {};
+    (d.divisions || []).forEach(function (x, i) {
+      ready[x.division_id] = !!x.ready;
+      dcol[x.division_id] = MD_DCOL[i % MD_DCOL.length];
+    });
+
+    var slots = [];
+    ms.forEach(function (m) { if (slots.indexOf(m.at) < 0) slots.push(m.at); });
+    slots.sort();
+
+    var rows = (d.surfaces || []).map(function (x) {
+      return { key: x.field_id, name: x.name, code: x.screen_code };
+    });
+    if (ms.some(function (m) { return !m.field_id; })) {
+      rows.push({ key: null, name: 'No ' + surfWord() + ' yet', code: '' });
+    }
+    if (!rows.length || !slots.length) return '';
+
+    var now = d.as_at || '';
+    var nowSlot = null;
+    slots.forEach(function (t) { if (t <= now) nowSlot = t; });
+
+    var head = '<tr><th class="cl">' + esc(Surf().toUpperCase()) + '</th>'
+      + slots.map(function (t) {
+          return '<th' + (t === nowSlot ? ' class="now"' : '') + '>' + esc(t)
+            + (t === nowSlot ? '<span class="nw">PLAYING NOW</span>' : '') + '</th>';
+        }).join('') + '</tr>';
+
+    var body = rows.map(function (r) {
+      return '<tr><td class="cl"><b>' + esc(r.name) + '</b>'
+        + (r.code ? '<s>' + esc(r.code) + '</s>' : '') + '</td>'
+        + slots.map(function (t) {
+            var cell = ms.filter(function (m) {
+              return m.at === t && (m.field_id || null) === (r.key || null); });
+            var cls = (t === nowSlot ? 'now' : '');
+            if (!cell.length) return '<td class="free ' + cls + '"><s>free</s></td>';
+            if (cell.length > 1) cls += ' dbl';
+            return '<td class="' + cls + '">' + cell.map(function (m) {
+              var k = m.status === 'final' ? 'c-done'
+                    : m.status === 'live' ? 'c-live'
+                    : (ready[m.division_id] === false ? 'c-none'
+                    : (m.late ? 'c-late' : 'c-wait'));
+              var named = m.home && m.away && !/^TBD$/.test(m.home) && !/^TBD$/.test(m.away);
+              return '<div class="' + k + '">'
+                + '<b class="tag" style="color:' + (dcol[m.division_id] || 'var(--ffp-blue)')
+                  + '">' + esc(m.label || '') + '</b>'
+                + (named ? '<u class="who">' + esc(m.home) + '<br>' + esc(m.away) + '</u>' : '')
+                + (m.score ? '<em class="sc2">' + esc(m.score) + '</em>' : '')
+                + '</div>';
+            }).join('') + '</td>';
+          }).join('') + '</tr>';
+    }).join('');
+
+    return '<div class="md-sh"><h3>THE WHOLE DAY</h3><p>'
+      + rows.length + ' ' + esc(rows.length === 1 ? surfWord() : surfWord(true))
+      + ' down, ' + slots.length + ' slots across</p><span class="ln"></span></div>'
+      + '<div class="md-dy"><div class="sc"><table class="md-g"><thead>' + head
+      + '</thead><tbody>' + body + '</tbody></table></div></div>';
+  }
+
+  /* the key, at the foot of the panel as approved */
+  function mdKey() {
+    return ''
+      + '<div class="md-key">'
+      + '<span><i style="background:#E8F5EF;box-shadow:inset 0 0 0 1px #BFE0D2"></i>PLAYED</span>'
+      + '<span><i style="background:#FFF4DC;box-shadow:inset 0 0 0 2px #F2A900"></i>BEING PLAYED</span>'
+      + '<span><i style="background:#FDF6E6;box-shadow:inset 0 0 0 1px #E8D9B0"></i>PAST ITS TIME</span>'
+      + '<span><i style="background:#fff;box-shadow:inset 0 0 0 1px var(--ffp-border-mid)"></i>TO COME</span>'
+      + '<span><i style="background:repeating-linear-gradient(135deg,#EEF2F6 0 6px,#F7F9FB 6px 12px);box-shadow:inset 0 0 0 1px var(--ffp-border-mid)"></i>NOBODY ENTERED</span>'
+      + '</div>';
+  }
+
+  function mdHead(d) {
+    var h = d.headline || {};
+    var sw = (d.surface_word || 'pitch').toUpperCase();
+    var empty = (d.divisions || []).filter(function (x) { return !x.ready; })
+                 .reduce(function (a, x) { return a + (x.matches || 0); }, 0);
+    var cn = function (v, lab, tone) {
+      return '<div class="md-cn' + (tone ? ' ' + tone : '') + '"><u>' + (v || 0) + '</u><s>'
+           + esc(lab) + '</s></div>';
+    };
+    return '<div class="md-top"><div class="md-day">'
+      + '<button class="sc-ic" title="The day before" onclick="FFPLeague.mdDay(-1)">' + ic('chevron_left') + '</button>'
+      + '<b>' + esc(mdDayLabel(d.day || S.mdDay)) + '</b>'
+      + '<button class="sc-ic" title="The day after" onclick="FFPLeague.mdDay(1)">' + ic('chevron_right') + '</button>'
+      + (d.as_at ? '<span class="tz">as at ' + esc(d.as_at) + ', ' + esc(d.timezone || '') + '</span>' : '')
+      + '<span class="sp"></span>'
+      + '<button class="lg-btn sm" onclick="FFPLeague.mdRefresh()">' + ic('refresh') + 'Refresh</button>'
+      + '</div><div class="md-cnt">'
+      + cn(h.played, 'PLAYED', 'ok')
+      + cn(h.live, 'ON THE ' + sw, 'warn')
+      + cn(h.late, 'LATE', 'warn')
+      + cn(h.clashes, 'CLASHES', 'warn')
+      + cn(empty, 'NO TEAMS', 'blue')
+      + cn(h.total, 'TODAY')
+      + '</div></div>';
+  }
+
+  function mdJobs(d) {
+    var t = d.todo || [];
+    /* NO MATCHES IS NOT THE SAME AS NOTHING WRONG. Saying every match has what
+       it needs, on a day with no matches at all, is how this panel told an
+       organiser their tournament was fine when it was not even being read. */
+    if (!(d.headline && d.headline.total)) {
+      var near = mdNearestDay(d.days, d.day);
+      return '<div class="md-sh"><h3>NOTHING ON THIS DAY</h3><span class="ln"></span></div>'
+        + '<div class="md-none">' + ic('event_busy') + '<div class="g">'
+        + '<b>No matches are scheduled on ' + esc(mdDayLabel(d.day)) + '.</b>'
+        + (near && near !== d.day
+            ? '<p>The nearest day with matches is ' + esc(mdDayLabel(near)) + '.</p>'
+              + '<a class="lg-btn sm" onclick="FFPLeague.mdPick(\'' + near + '\')">Go to that day</a>'
+            : '<p>Nothing on this event has a date and time yet. Set them on the Schedule tab.</p>')
+        + '</div></div>';
+    }
+    if (!t.length) {
+      return '<div class="md-sh"><h3>NOTHING NEEDS YOU</h3><span class="ln"></span></div>'
+        + '<div class="md-clear">' + ic('check_circle')
+        + '<b>Every match today has a time, a ' + esc(d.surface_word || 'pitch')
+        + ' and somebody to run it.</b></div>';
+    }
+    return '<div class="md-sh"><h3>NEEDS ATTENTION</h3><p>' + t.length
+      + (t.length === 1 ? ' job' : ' jobs') + ', soonest first</p><span class="ln"></span></div>'
+      + '<div class="md-rail">' + t.map(mdJob).join('') + '</div>';
+  }
+  function mdJob(j) {
+    var act = j.action || '';
+    var btn = j.match_id
+      ? '<button class="lg-btn sm" onclick="FFPLeague.mdGo(\'' + j.match_id + '\')">Open match</button>'
+      : '<button class="lg-btn sm" onclick="FFPLeague.tab(\'entrants\')">Add ' + esc(evNouns().Many) + '</button>';
+    return '<div class="md-jb k-' + esc(act) + '">'
+      + '<div class="tm"><u>' + esc(j.at || '') + '</u><s>' + esc(MD_KIND[act] || act.toUpperCase()) + '</s></div>'
+      + '<i class="dot"></i>'
+      + '<div class="mid">'
+      + (j.surface || j.label ? '<span class="where">' + esc(j.surface || j.label) + '</span>' : '')
+      + '<b>' + esc(j.match || '') + '</b>'
+      + '<p>' + esc(j.need || '') + '</p></div>'
+      + '<div class="acts">' + btn + '</div></div>';
+  }
+
+  function mdSurfaces(d) {
+    var list = d.surfaces || [];
+    if (!list.length) return '';
+    return '<div class="md-sh"><h3>EVERY ' + esc((d.surface_word || 'pitch').toUpperCase())
+      + ' IN USE TODAY</h3><span class="ln"></span></div>'
+      + '<div class="md-board"><div class="md-bh"><span>' + esc(Surf()) + '</span>'
+      + '<span>ON NOW</span><span>NEXT UP</span><span>SCORER</span></div>'
+      + list.map(function (x) {
+          var on = x.on_now, nx = x.next;
+          var edge = on ? ' e-live' : ((nx && nx.late) ? ' e-late' : '');
+          return '<div class="md-row' + edge + '">'
+            + '<div class="c"><b>' + esc(x.name || '') + '</b><s>'
+              + esc(x.screen_code || '') + '&nbsp;&nbsp;' + (x.played || 0) + ' of ' + (x.matches || 0) + '</s></div>'
+            + '<div class="on">' + (on
+                ? '<u>' + esc(on.match || '') + '</u><s>' + esc([on.label, on.score].filter(Boolean).join(', ')) + '</s>'
+                : '<u class="free">' + esc(Surf()) + ' free</u>') + '</div>'
+            + '<div class="nx">' + (nx
+                ? '<u>' + esc([nx.at, (/^TBD v TBD$/.test(nx.match || '') ? 'Not decided yet' : nx.match)]
+                    .filter(Boolean).join('  ')) + '</u>'
+                  + '<s' + (nx.late ? ' class="bad"' : '') + '>'
+                  + esc(nx.late ? 'Past its time, nobody on yet' : (nx.label || '')) + '</s>'
+                : '<u class="free">Nothing more today</u>') + '</div>'
+            + '<div class="rf">' + (x.scorer
+                ? '<u>' + esc(x.scorer) + '</u>'
+                : '<u class="none">Nobody</u>') + '</div>'
+            + '</div>';
+        }).join('') + '</div>';
+  }
+
+  function mdDivisions(d) {
+    var v = d.divisions || [];
+    if (!v.length) return '';
+    return '<div class="md-sh"><h3>DIVISIONS</h3><span class="ln"></span></div>'
+      + '<div class="md-divs">' + v.map(function (x, i) {
+          return '<div class="md-dv lg-d' + (i % 10) + '">'
+            + '<div class="r1"><i></i><b>' + esc(x.division || '') + '</b>'
+            + '<span class="' + (x.ready ? 'ok' : 'no') + '">'
+            + (x.ready ? 'RUNNING' : 'NOBODY IN IT') + '</span></div>'
+            + '<div class="mt">'
+            + '<div><u' + (x.ready ? '' : ' class="bad"') + '>' + (x.entrants || 0) + '</u><s>IN</s></div>'
+            + '<div><u>' + (x.matches || 0) + '</u><s>MATCHES</s></div>'
+            + '<div><u>' + (x.today || 0) + '</u><s>TODAY</s></div>'
+            + '</div>' + mdPips(x) + mdNote(x) + '</div>';
+        }).join('') + '</div>';
+  }
+
+  /* ONE MARK PER MATCH, filled when it is played. A thin bar at 1 of 48 says
+     nothing; 48 marks with one filled says it exactly. */
+  function mdPips(x) {
+    var total = x.matches || 0;
+    if (!total || total > 120) return '';
+    var done = x.played || 0, out = [];
+    for (var i = 0; i < total; i++) {
+      out.push('<i class="' + (i < done ? 'won' : (x.ready ? 'todo' : '')) + '"></i>');
+    }
+    return '<div class="pips">' + out.join('') + '</div>';
+  }
+  function mdNote(x) {
+    if (!x.ready) {
+      return '<div class="nt bad">' + (x.matches || 0)
+        + ' matches are booked and not one entry is in. Add them or hand the slots back.</div>';
+    }
+    var left = (x.matches || 0) - (x.played || 0);
+    return '<div class="nt">' + (x.entrants || 0) + ' in, ' + (x.played || 0)
+      + ' played, ' + left + ' to go.</div>';
+  }
+
+  function mdDay(delta) { S.mdDay = mdShiftDay(S.mdDay, delta); renderTab(); }
+  function mdPick(day) { S.mdDay = day; renderTab(); }
+  function mdRefresh() { renderTab(); }
+  function mdGo(id) { openMatch(id); }
+
   function renderSponsors(host) {
     if (window.FFPSponsors) window.FFPSponsors.render(host, { scope: 'league', eventId: S.eventId,
       // the editor needs the clubs so it can offer a board per team.
@@ -3416,7 +3725,8 @@
     doGen: doGen, saveResults: saveResults,
     ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, ofPhoto: ofPhoto,
     openAdd: openAdd, addPoolOfficial: addPoolOfficial,
-    setAccess: setAccess, accDay: accDay, accMatch: accMatch, accSave: accSave, accCancel: accCancel, autoplan: autoplan, schedSet: schedSet, schedToggle: schedToggle, setSchedDiv: setSchedDiv, setSchedRound: setSchedRound, planSet: planSet, rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
+    setAccess: setAccess, accDay: accDay, accMatch: accMatch, accSave: accSave, accCancel: accCancel, autoplan: autoplan, schedSet: schedSet, schedToggle: schedToggle,
+    mdDay: mdDay, mdPick: mdPick, mdRefresh: mdRefresh, mdGo: mdGo, setSchedDiv: setSchedDiv, setSchedRound: setSchedRound, planSet: planSet, rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
     rbGo: rbGo, rbSetDiv: rbSetDiv, rbByePick: rbByePick, rbByesSave: rbByesSave, rbRedraw: rbRedraw,
     togRound: togRound, addMatch: addMatch, setAddDiv: setAddDiv, cancelMatch: cancelMatch, saveMatch: saveMatch, toggleBye: toggleBye, togglePre: togglePre,
     editFx: editFx, fxStageChange: fxStageChange, cancelEditFx: cancelEditFx, saveFx: saveFx, delAsk: delAsk, delCancel: delCancel, delFx: delFx,
