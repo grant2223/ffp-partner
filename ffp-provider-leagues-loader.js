@@ -78,6 +78,8 @@
       '.sc-m{display:flex;align-items:center;gap:10px;padding:9px 2px 9px 9px;border-bottom:1px solid var(--ffp-border);border-left:3px solid var(--dc,transparent);}',
       '.sc-m.open{border-bottom:0;}',
       '.sc-m .t{width:136px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}',
+      '.sc-m .tm{display:flex;align-items:center;justify-content:center;height:36px;padding:0;border-radius:10px;background:#f2f6f9;border:1px solid var(--ffp-border);color:var(--ffp-text);font-size:13.5px;font-weight:800;font-variant-numeric:tabular-nums;}',
+      '.sc-m .tm.none{color:var(--ffp-text-dim);font-weight:700;font-size:12px;}',
       '.sc-m .g{flex:1;min-width:0;}',
       '.sc-m .g b{display:block;font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
       '.sc-m .g span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
@@ -1451,7 +1453,6 @@
   function schedRow(m) {
     var names = m._names || {};
     var tv = lgTimeStr(m.scheduled_at);
-    var dv = lgDateStr(m.scheduled_at) || ((S.detail.event && S.detail.event.starts_at) || '');
     var open = S.schedOpen === m.id;
     var offTxt = (m._offs || []).map(function (o) {
       return ((SLOT_LABEL[o.role] || o.role || '') + ' ' + o.name).trim(); }).join(', ');
@@ -1461,25 +1462,42 @@
        that one. Where it is played is stated, venue over surface; changing it
        is a decision and belongs in the menu with the rest of them. */
     var sub = (m._dnm ? m._dnm + ', ' : '') + fxLabel(m);
-    var fld = (S._fields || []).filter(function (f) { return f.id === m.field_id; })[0] || null;
-    var place = fld
-      ? '<div class="v"><b>' + esc(fld.venue || 'Venue not set') + '</b><span>' + esc(fld.name || '') + '</span></div>'
-      : '<div class="v none"><b>No ' + surfWord() + ' yet</b><span>Set it in the menu</span></div>';
+    var place = schedPlace(m);
     var row = '<div class="sc-m lg-d' + (m._dix || 0) + (open ? ' open' : '') + '" data-id="' + m.id + '">'
-      + '<input class="lg-in t st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + m.id + '\')">'
+      /* THE TIME IS SHOWN HERE AND CHANGED IN THE MENU, with the day, the
+         surface and the officials. An input loose in the row meant a stray
+         scroll over it re-timed a match, and every change rebuilt the list
+         under the organiser's cursor. */
+      + '<div class="t tm' + (tv ? '' : ' none') + '">' + esc(tv || 'No time') + '</div>'
       + '<div class="g"><b>' + esc(names[m.home_entrant] || 'TBD') + ' v ' + esc(names[m.away_entrant] || 'TBD') + '</b>'
       + '<span>' + esc(sub) + '</span>'
-      + (offTxt ? '<span class="off">' + esc(offTxt) + '</span>' : '') + '</div>'
+      + '<span class="off"' + (offTxt ? '' : ' style="display:none"') + '>' + esc(offTxt) + '</span></div>'
       + place
       + '<button class="sc-ic" title="More" onclick="FFPLeague.schedToggle(\'' + m.id + '\')">' + ic(open ? 'expand_less' : 'more_horiz') + '</button>'
       + '</div>';
-    if (!open) return row;
+    return open ? row + schedMore(m) : row;
+  }
+
+  function schedPlace(m) {
+    var fld = (S._fields || []).filter(function (f) { return f.id === m.field_id; })[0] || null;
+    return fld
+      ? '<div class="v"><b>' + esc(fld.venue || 'Venue not set') + '</b><span>' + esc(fld.name || '') + '</span></div>'
+      : '<div class="v none"><b>No ' + surfWord() + ' yet</b><span>Set it in the menu</span></div>';
+  }
+
+  /* THE MENU IS BUILT ON ITS OWN so it can be put in and taken out without
+     touching anything else on the page. Every control that changes a match
+     lives in here, the time included. */
+  function schedMore(m) {
+    var tv = lgTimeStr(m.scheduled_at);
+    var dv = lgDateStr(m.scheduled_at) || ((S.detail.event && S.detail.event.starts_at) || '');
     var roleOpts = '<option value="">Role…</option>' + ROLES.map(function (r) { return '<option>' + r + '</option>'; }).join('');
     var offOpts = '<option value="">Official…</option>' + (S._offs || []).map(function (x) { return '<option value="' + x.id + '">' + esc(x.name || x.email) + '</option>'; }).join('');
     var tags = (m._offs || []).filter(function (o) { return SLOTS.indexOf(o.role) < 0; }).map(function (o) {
       return '<div class="lg-offtag"><span class="role">' + esc(o.role || 'Official') + '</span><span class="nm">' + esc(o.name) + '</span><span class="sp"></span><span class="ms x" onclick="FFPLeague.offRemove(\'' + o.id + '\')">close</span></div>';
     }).join('');
-    return row + '<div class="sc-more" data-id="' + m.id + '">'
+    return '<div class="sc-more" data-id="' + m.id + '">'
+      + '<span class="lg-lab" style="margin:0">Time</span><input class="lg-in st-t" type="time" value="' + tv + '" onchange="FFPLeague.schedSet(\'' + m.id + '\')">'
       + '<span class="lg-lab" style="margin:0">Day</span><input class="lg-in st-d" type="date" value="' + dv + '" onchange="FFPLeague.schedSet(\'' + m.id + '\')">'
       + '<span class="lg-lab" style="margin:0">' + Surf() + '</span>'
       + '<select class="lg-sel st-f" onchange="FFPLeague.schedSet(\'' + m.id + '\')">' + surfaceOpts(S._fields, m.field_id) + '</select>'
@@ -1519,10 +1537,81 @@
             p_referee: pick('referee'), p_ar1: pick('ar1'), p_ar2: pick('ar2') });
     } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not save the officials', 'error'); return; }
-    toast('Officials saved', 'success'); renderTab();
+    /* The officials just saved are put onto the match in memory and the row
+       is redrawn on its own, so the menu stays open and the page stays put. */
+    var m = (S._sched || []).filter(function (x) { return x.id === matchId; })[0];
+    if (m) {
+      var nameOf = {};
+      (S._offs || []).forEach(function (o) { nameOf[o.id] = o.name || o.email || 'Official'; });
+      var kept = (m._offs || []).filter(function (o) { return SLOTS.indexOf(o.role) < 0; });
+      SLOTS.forEach(function (rl) {
+        var v = pick(rl);
+        if (v) kept.push({ id: null, official_id: v, role: rl, name: nameOf[v] || 'Official' });
+      });
+      m._offs = kept;
+    }
+    toast('Officials saved', 'success'); schedPatch(matchId);
   }
 
-  function schedToggle(id) { S.schedOpen = (S.schedOpen === id) ? null : id; renderTab(); }
+  /* KEEP THE ORGANISER'S PLACE. Where a rebuild is genuinely needed the page
+     is put back exactly where it was, both the window and whatever the shell
+     is scrolling. */
+  function schedKeepPlace(fn) {
+    var keep = [], el = document.getElementById('lg-tab');
+    while (el && el !== document.body) { if (el.scrollTop > 0) keep.push([el, el.scrollTop]); el = el.parentElement; }
+    var y = window.scrollY || document.documentElement.scrollTop || 0;
+    fn();
+    var put = function () {
+      keep.forEach(function (k) { k[0].scrollTop = k[1]; });
+      window.scrollTo(0, y);
+    };
+    put();
+    if (window.requestAnimationFrame) window.requestAnimationFrame(put);
+  }
+
+  /* ONE ROW REDRAWN WHERE IT STANDS. The list is deliberately not re-sorted:
+     moving a match out from under the cursor the moment it is edited is the
+     thing that made this screen unusable. It sorts again next time the tab is
+     drawn. */
+  function schedPatch(id) {
+    var m = (S._sched || []).filter(function (x) { return x.id === id; })[0];
+    var row = document.querySelector('.sc-m[data-id="' + id + '"]');
+    if (!m || !row) return;
+    var tv = lgTimeStr(m.scheduled_at);
+    var t = row.querySelector('.tm');
+    if (t) { t.textContent = tv || 'No time'; t.className = 't tm' + (tv ? '' : ' none'); }
+    var v = row.querySelector('.v');
+    if (v) { var box = document.createElement('div'); box.innerHTML = schedPlace(m);
+             if (box.firstChild) row.replaceChild(box.firstChild, v); }
+    var off = row.querySelector('.g .off');
+    if (off) {
+      var txt = (m._offs || []).map(function (o) {
+        return ((SLOT_LABEL[o.role] || o.role || '') + ' ' + o.name).trim(); }).join(', ');
+      off.textContent = txt; off.style.display = txt ? '' : 'none';
+    }
+  }
+
+  /* OPENING A ROW IS NOT A REASON TO REBUILD THE PAGE. The menu is inserted
+     after the row and taken out again on its own, so nothing above it moves
+     and the page stays exactly where it was. */
+  function schedToggle(id) {
+    var prev = S.schedOpen;
+    if (prev) {
+      var pm = document.querySelector('.sc-more[data-id="' + prev + '"]');
+      if (pm && pm.parentNode) pm.parentNode.removeChild(pm);
+      var pr = document.querySelector('.sc-m[data-id="' + prev + '"]');
+      if (pr) { pr.classList.remove('open');
+                var pb = pr.querySelector('.sc-ic'); if (pb) pb.innerHTML = ic('more_horiz'); }
+    }
+    if (prev === id) { S.schedOpen = null; return; }
+    S.schedOpen = id;
+    var row = document.querySelector('.sc-m[data-id="' + id + '"]');
+    var m = (S._sched || []).filter(function (x) { return x.id === id; })[0];
+    if (!row || !m) { schedKeepPlace(renderTab); return; }
+    row.classList.add('open');
+    var b = row.querySelector('.sc-ic'); if (b) b.innerHTML = ic('expand_less');
+    row.insertAdjacentHTML('afterend', schedMore(m));
+  }
 
 
   /* One press plans every division at once, so two divisions cannot be handed
@@ -1541,18 +1630,29 @@
     renderTab();
   }
   async function schedSet(id) {
-    var row = document.querySelector('.sc-m[data-id="' + id + '"]'); if (!row) return;
+    /* Time, day and surface all live in the menu now, so a closed menu means
+       nothing was touched and the match keeps what it already had. */
     var more = document.querySelector('.sc-more[data-id="' + id + '"]');
-    var dv = ((more && more.querySelector('.st-d')) || {}).value;
-    var tv = row.querySelector('.st-t').value;
-    // the surface lives in the menu now, so a closed menu means "leave it alone"
-    var fsel = more && more.querySelector('.st-f');
     var cur = (S._sched || []).filter(function (x) { return x.id === id; })[0] || {};
+    var val = function (sel) { var el = more && more.querySelector(sel); return el ? el.value : null; };
+    var tv = val('.st-t'); if (tv === null) tv = lgTimeStr(cur.scheduled_at);
+    var dv = val('.st-d'); if (dv === null) dv = lgDateStr(cur.scheduled_at);
+    var fsel = more && more.querySelector('.st-f');
     var fid = fsel ? (fsel.value || null) : (cur.field_id || null);
+    var was = lgDateStr(cur.scheduled_at);
     var base = dv || (S.detail.event && S.detail.event.starts_at) || lgDateStr(new Date().toISOString());
     var when = (tv || dv) ? lgIso(base, tv || '00:00') : null;
-    await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when, p_field: fid, p_court: null, p_official: null });
-    toast('Rescheduled', 'success'); renderTab();
+    var r; try {
+      r = await sb().rpc('lt_match_schedule', { p_scope: 'league', p_match: id, p_when: when,
+            p_field: fid, p_court: null, p_official: null });
+    } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not reschedule', 'error'); return; }
+    cur.scheduled_at = when; cur.field_id = fid;
+    toast('Rescheduled', 'success');
+    /* A change of DAY moves the match under a different heading, so the list
+       has to be drawn again. Everything else is redrawn where it stands. */
+    if (base !== was) { schedKeepPlace(renderTab); return; }
+    schedPatch(id);
   }
   async function offAdd(matchId) {
     var row = document.querySelector('.sc-more[data-id="' + matchId + '"]'); if (!row) return;
@@ -1561,7 +1661,10 @@
     var r; try { r = await sb().rpc('lt_match_official_add', { p_scope: 'league', p_match: matchId, p_official: off, p_role: role }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not assign', 'error'); return; } toast('Assigned', 'success'); renderTab();
   }
-  async function offRemove(id) { await sb().rpc('lt_match_official_remove', { p_id: id }); renderTab(); }
+  async function offRemove(id) {
+    await sb().rpc('lt_match_official_remove', { p_id: id });
+    schedKeepPlace(renderTab);
+  }
 
   // ---------- DETAILS ----------
   async function renderInformation(host) {
