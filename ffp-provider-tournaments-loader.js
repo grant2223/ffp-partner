@@ -167,6 +167,7 @@
       '.lg-teamstat .hd{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;padding:8px 2px 12px;border-bottom:1px solid var(--ffp-border);} .lg-teamstat .hd span{font-size:13px;font-weight:800;text-align:center;} .lg-teamstat .hd span:first-child{text-align:left;} .lg-teamstat .hd span:last-child{text-align:right;}',
       '.lg-tsrow{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #f0f3f6;} .lg-tsrow .lab{text-align:center;font-size:12.5px;font-weight:700;color:#43525c;} .lg-tsrow .lg-in{padding:8px 10px;text-align:center;}',
       '#tg-root .lg-nav{gap:15px;align-items:center;}#tg-root .lg-nav .tg-phase{padding:0 2px 0 0;}#tg-root .lg-nav .tg-navsep{margin:0 2px;}',
+      '.md-top{padding:2px 0 0;}.md-day{display:flex;align-items:center;gap:8px;padding:2px 0 14px;}.md-day b{font-size:17px;font-weight:900;color:var(--ffp-text);}.md-day .tz{font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);margin-left:6px;}.md-day .sp{flex:1;}.md-cnt{display:flex;align-items:stretch;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);margin-bottom:6px;}.md-cn{padding:12px 22px 11px;border-right:1px solid var(--ffp-border);min-width:104px;}.md-cn:last-child{border-right:0;}.md-cn u{text-decoration:none;display:block;font-size:22px;font-weight:900;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-cn s{text-decoration:none;display:block;font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:6px;}.md-cn.ok u{color:#1F7A5C;}.md-cn.warn u{color:#B87A00;}.md-cn.blue u{color:var(--ffp-blue);}.md-sh{display:flex;align-items:flex-end;gap:13px;margin:30px 0 12px;}.md-sh h3{font-size:12.5px;font-weight:900;letter-spacing:.16em;color:var(--ffp-blue);margin:0;}.md-sh p{font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);margin:0;padding-bottom:1px;}.md-sh .ln{flex:1;height:1px;background:var(--ffp-border);margin-bottom:5px;}.md-clear{display:flex;align-items:center;gap:11px;padding:16px 2px;font-size:14px;font-weight:800;color:#1F7A5C;}.md-clear .ms{font-size:21px;}.md-rail{position:relative;padding-left:100px;}.md-rail:before{content:"";position:absolute;left:88px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,#F2A900,#E4EBF1);}.md-jb{position:relative;display:flex;align-items:center;gap:22px;padding:12px 0 13px;border-bottom:1px solid var(--ffp-border);}.md-jb:last-child{border-bottom:0;}.md-jb .tm{position:absolute;left:-100px;top:13px;width:80px;text-align:right;}.md-jb .tm u{text-decoration:none;display:block;font-size:14.5px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-jb .tm s{text-decoration:none;display:block;font-size:9.5px;font-weight:800;letter-spacing:.1em;color:var(--ffp-text-muted);margin-top:3px;}.md-jb .dot{position:absolute;left:-18px;top:18px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px #9aa8b4;}.md-jb.k-clash .dot,.md-jb.k-finish .dot{box-shadow:0 0 0 3px #B87A00;}.md-jb.k-result .dot{box-shadow:0 0 0 3px #F2A900;}.md-jb.k-official .dot,.md-jb.k-sheet .dot,.md-jb.k-entrants .dot{box-shadow:0 0 0 3px #7FB2D9;}.md-jb .mid{flex:1;min-width:0;max-width:620px;}.md-jb .mid .where{display:inline-block;font-size:10px;font-weight:900;letter-spacing:.12em;color:#B87A00;margin-bottom:5px;}.md-jb .mid b{display:block;font-size:15px;font-weight:800;line-height:1.3;color:var(--ffp-text);overflow-wrap:anywhere;}.md-jb .mid p{margin:4px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.45;overflow-wrap:anywhere;}.md-jb .acts{flex:none;margin-left:auto;display:flex;gap:8px;}.md-board{background:#fff;border-radius:3px 3px 12px 12px;overflow:hidden;position:relative;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-board:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--ffp-blue),#7FB2D9);}.md-bh,.md-row{display:grid;grid-template-columns:134px 292px 1fr 196px;align-items:center;}.md-bh{padding:14px 20px 11px;border-bottom:1px solid var(--ffp-border);margin-top:4px;}.md-bh span{font-size:9.5px;font-weight:900;letter-spacing:.13em;color:var(--ffp-text-muted);}.md-row{padding:14px 20px;border-bottom:1px solid var(--ffp-border);position:relative;}.md-row:last-child{border-bottom:0;}.md-row:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#C3D3E0;}.md-row.e-live:before{background:#F2A900;}.md-row.e-late:before{background:#FFD46B;}.md-row.e-live{background:linear-gradient(90deg,rgba(242,169,0,.10),rgba(242,169,0,0) 62%);}.md-row .c b{display:block;font-size:15.5px;font-weight:900;color:var(--ffp-text);}.md-row .c s{text-decoration:none;display:block;font-size:9.5px;font-weight:700;letter-spacing:.11em;color:var(--ffp-text-muted);margin-top:4px;}.md-row .on u,.md-row .nx u,.md-row .rf u{text-decoration:none;display:block;font-size:13.5px;font-weight:800;line-height:1.25;color:var(--ffp-text);overflow-wrap:anywhere;}.md-row .on u.free,.md-row .nx u.free{color:var(--ffp-text-muted);font-weight:700;}.md-row .rf u.none{color:#B87A00;}.md-row .on s,.md-row .nx s,.md-row .rf s{text-decoration:none;display:block;font-size:11px;font-weight:700;color:var(--ffp-text-muted);margin-top:4px;line-height:1.35;}.md-row .nx s.bad{color:#B87A00;}.md-divs{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--ffp-border);border-radius:12px;overflow:hidden;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-dv{padding:17px 20px 19px;background:#fff;}.md-dv .r1{display:flex;align-items:baseline;gap:9px;}.md-dv .r1 i{width:10px;height:10px;border-radius:2px;display:block;flex:none;background:var(--dc,var(--ffp-blue));align-self:center;}.md-dv .r1 b{font-size:15px;font-weight:900;color:var(--ffp-text);}.md-dv .r1 span{margin-left:auto;font-size:10px;font-weight:900;letter-spacing:.11em;}.md-dv .r1 span.ok{color:#1F7A5C;}.md-dv .r1 span.no{color:#B87A00;}.md-dv .mt{display:flex;gap:24px;margin-top:13px;}.md-dv .mt u{text-decoration:none;display:block;font-size:24px;font-weight:900;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-dv .mt u.bad{color:#B87A00;}.md-dv .mt s{text-decoration:none;display:block;font-size:9.5px;font-weight:800;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:6px;}.md-sim{margin:28px 0 40px;padding:16px 2px 0;border-top:1px solid var(--ffp-border);display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;}.md-sim>.ms{font-size:21px;color:#B87A00;flex:none;margin-top:1px;}.md-sim .g{flex:1;min-width:260px;}.md-sim .g b{display:block;font-size:14px;font-weight:900;color:var(--ffp-text);}.md-sim .g p{margin:4px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;}.md-sim .acts{display:flex;gap:9px;flex:none;}',
       '.tg-unit{font-size:12px;color:var(--ffp-text-muted);}.sc-day{font-size:16px;font-weight:900;color:var(--ffp-text);margin:26px 0 2px;}.sc-day:first-child{margin-top:8px;}.sc-ch{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:9px;margin:12px 0 0;background:linear-gradient(92deg,#12242f,#21404f);box-shadow:0 2px 8px rgba(14,37,49,.18);}.sc-ch b{font-size:13.5px;font-weight:900;color:#fff;letter-spacing:.01em;}.sc-ch .mn{font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#f0b736;}.sc-mkm{border:0;background:none;padding:0;font:inherit;font-size:11.5px;font-weight:700;color:#7ec9e8;cursor:pointer;}.sc-mkm:hover{color:#fff;}.sc-ch .ct{margin-left:auto;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.58);}.sc-add{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.12);border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;font-weight:800;color:#fff;cursor:pointer;}.sc-add:hover{background:rgba(255,255,255,.2);}.sc-add .ms{font-size:16px;}.sc-day .tz{margin-left:9px;font-size:11px;font-weight:700;color:#9aa8b4;}.sc-m{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--ffp-border);}.sc-m.open{border-bottom:0;}.sc-m .t{width:136px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-m .tm{display:flex;align-items:center;justify-content:center;height:36px;padding:0;border-radius:10px;background:#f2f6f9;border:1px solid var(--ffp-border);color:var(--ffp-text);font-size:13.5px;font-weight:800;font-variant-numeric:tabular-nums;}.sc-m .tm.none{color:var(--ffp-text-dim);font-weight:700;font-size:12px;}.sc-plan{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);padding:2px 2px 6px;}.sc-plan .lg-in{width:64px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-plan .lg-in.w{width:136px;}.sc-m .g{flex:1;min-width:0;}.sc-m .g b{display:block;font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.sc-m .g span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.sc-m .c{width:170px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-ic{flex:none;border:0;background:none;padding:4px;cursor:pointer;color:#8a99a8;line-height:0;border-radius:6px;}.sc-ic:hover{background:#eef2f5;color:var(--ffp-text);}.sc-ic:disabled{opacity:.28;cursor:default;background:none;}.sc-ic .ms{font-size:19px;}.sc-more{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:4px 2px 14px 146px;border-bottom:1px solid var(--ffp-border);}.sc-more .lg-in,.sc-more .lg-sel{padding:7px 9px;font-size:13px;width:auto;min-width:0;flex:none;height:36px;box-sizing:border-box;}.sc-more .st-d{width:158px;}.sc-more .st-f{width:196px;}.sc-more .a-role{width:168px;}.sc-more .a-off{width:186px;}#lg-root .sc-more .st-off{width:178px;flex:none;}.sc-more .sp{flex:1;}',
       /* the venue the court belongs to, on the court bar rather than repeated
          down every row underneath it */
@@ -645,7 +646,7 @@
     el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.activity || sportLabelFor(ev.sport_key)].filter(Boolean).join(', ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPTourn.back()">' + ic('arrow_back') + 'All tournaments</button></div>'
       + '<div class="lg-nav"><span class="tg-phase">Set up</span>' + tabBtn('information', 'Information') + tabBtn('setup', 'Setup') + tabBtn('entrants', nouns(null).Many) + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials')
-      + '<span class="tg-navsep"></span><span class="tg-phase">Run</span>' + (anyGroups() ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Draw') + tabBtn('schedule', 'Schedule') + tabBtn('sponsors', 'Sponsors') + '</div><div id="tg-tab"></div></div>';
+      + '<span class="tg-navsep"></span><span class="tg-phase">Run</span>' + tabBtn('matchday', 'Match day') + (anyGroups() ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Draw') + tabBtn('schedule', 'Schedule') + tabBtn('sponsors', 'Sponsors') + '</div><div id="tg-tab"></div></div>';
     renderTab();
   }
   function snapFormats() { S._fmtSaved = {}; ((S.detail && S.detail.divisions) || []).forEach(function (d) { S._fmtSaved[d.id] = fmtOfDiv(d); }); }
@@ -655,6 +656,7 @@
     var host = document.getElementById('tg-tab'); if (!host) return;
     if (S.tab === 'information' || S.tab === 'details') return renderInformation(host);
     if (S.tab === 'setup') return renderSetup(host);
+    if (S.tab === 'matchday') return renderMatchDay(host);
     /* Divisions had its own tab, but a division's format and its draw already
        live on Setup, so it is set up there in one place. An old link or a
        stale tab still lands somewhere sensible. */
@@ -667,6 +669,226 @@
     if (S.tab === 'schedule') return renderSchedule(host);
     if (S.tab === 'sponsors') return renderSponsors(host);
   }
+  /* ───────────────────────── MATCH DAY ─────────────────────────
+     The one screen an organiser stands on all day. It asks the database for
+     the day through tourn_day, which hands over to THIS sport's own day
+     function, so what comes back already speaks the sport: courts or pitches,
+     markers or referees, games or points. Nothing in here decides anything
+     about a sport. */
+  var MD_KIND = { clash: 'CLASH', result: 'NO RESULT', finish: 'STILL LIVE',
+                  official: 'OFFICIAL', sheet: 'TEAM SHEET', entrants: 'NO PLAYERS' };
+
+  function mdDayLabel(ymd) {
+    var a = String(ymd || '').split('-'); if (a.length !== 3) return 'Today';
+    var dt = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2], 12, 0, 0));
+    var D = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return D[dt.getUTCDay()] + ' ' + dt.getUTCDate() + ' ' + M[dt.getUTCMonth()] + ' ' + dt.getUTCFullYear();
+  }
+  function mdShiftDay(ymd, delta) {
+    var a = String(ymd || '').split('-'); if (a.length !== 3) return ymd;
+    var dt = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2], 12, 0, 0));
+    dt.setUTCDate(dt.getUTCDate() + delta);
+    return dt.toISOString().slice(0, 10);
+  }
+
+  async function renderMatchDay(host) {
+    host.innerHTML = '<div class="lg-empty">Loading the day…</div>';
+    S.mdDay = S.mdDay || (S.detail.event && S.detail.event.starts_at)
+              || evDateStr(new Date().toISOString());
+    var r; try {
+      r = await sb().rpc('tourn_day', { p_event: S.eventId, p_day: S.mdDay, p_now: null });
+    } catch (e) { r = { error: e }; }
+    if (!r || r.error) { host.innerHTML = '<div class="lg-empty">Could not load the day.</div>'; return; }
+    var d = r.data || {};
+    if (d.unsupported) {
+      host.innerHTML = mdHead({ day: S.mdDay, headline: {} })
+        + '<div class="lg-empty">There is no match day panel for this sport yet.</div>';
+      return;
+    }
+    S.md = d;
+    host.innerHTML = mdHead(d) + mdJobs(d) + mdSurfaces(d) + mdDivisions(d) + mdSimStrip(d);
+  }
+
+  function mdHead(d) {
+    var h = d.headline || {};
+    var sw = (d.surface_word || 'court').toUpperCase();
+    var empty = (d.divisions || []).filter(function (x) { return !x.ready; })
+                 .reduce(function (a, x) { return a + (x.matches || 0); }, 0);
+    var cn = function (v, lab, tone) {
+      return '<div class="md-cn' + (tone ? ' ' + tone : '') + '"><u>' + (v || 0) + '</u><s>'
+           + esc(lab) + '</s></div>';
+    };
+    return '<div class="md-top"><div class="md-day">'
+      + '<button class="sc-ic" title="The day before" onclick="FFPTourn.mdDay(-1)">' + ic('chevron_left') + '</button>'
+      + '<b>' + esc(mdDayLabel(d.day || S.mdDay)) + '</b>'
+      + '<button class="sc-ic" title="The day after" onclick="FFPTourn.mdDay(1)">' + ic('chevron_right') + '</button>'
+      + (d.as_at ? '<span class="tz">as at ' + esc(d.as_at) + ', ' + esc(d.timezone || '') + '</span>' : '')
+      + '<span class="sp"></span>'
+      + (d.simulated ? '<span class="tz" style="color:#B87A00;font-weight:900;">SIMULATED ENTRIES IN THIS EVENT</span>' : '')
+      + '<button class="lg-btn sm" onclick="FFPTourn.mdRefresh()">' + ic('refresh') + 'Refresh</button>'
+      + '</div><div class="md-cnt">'
+      + cn(h.played, 'COMPLETED', 'ok')
+      + cn(h.live, 'ON ' + sw, 'warn')
+      + cn(h.late, 'LATE', 'warn')
+      + cn(h.clashes, 'CLASHES', 'warn')
+      + cn(empty, 'NO PLAYERS', 'blue')
+      + cn(h.total, 'TODAY')
+      + '</div></div>';
+  }
+
+  function mdJobs(d) {
+    var t = d.todo || [];
+    if (!t.length) {
+      return '<div class="md-sh"><h3>NOTHING NEEDS YOU</h3><span class="ln"></span></div>'
+        + '<div class="md-clear">' + ic('check_circle')
+        + '<b>Every match today has a time, a ' + esc(d.surface_word || 'court')
+        + ' and somebody to run it.</b></div>';
+    }
+    return '<div class="md-sh"><h3>NEEDS ATTENTION</h3><p>' + t.length
+      + (t.length === 1 ? ' job' : ' jobs') + ', soonest first</p><span class="ln"></span></div>'
+      + '<div class="md-rail">' + t.map(mdJob).join('') + '</div>';
+  }
+  function mdJob(j) {
+    var act = j.action || '';
+    var btn = j.match_id
+      ? '<button class="lg-btn sm" onclick="FFPTourn.mdGo(\'' + j.match_id + '\')">Open match</button>'
+      : '<button class="lg-btn sm" onclick="FFPTourn.tab(\'entrants\')">Add ' + esc(nouns(null).Many) + '</button>';
+    return '<div class="md-jb k-' + esc(act) + '">'
+      + '<div class="tm"><u>' + esc(j.at || '') + '</u><s>' + esc(MD_KIND[act] || act.toUpperCase()) + '</s></div>'
+      + '<i class="dot"></i>'
+      + '<div class="mid">'
+      + (j.surface || j.label ? '<span class="where">' + esc(j.surface || j.label) + '</span>' : '')
+      + '<b>' + esc(j.match || '') + '</b>'
+      + '<p>' + esc(j.need || '') + '</p></div>'
+      + '<div class="acts">' + btn + '</div></div>';
+  }
+
+  function mdSurfaces(d) {
+    var list = d.surfaces || [];
+    if (!list.length) return '';
+    var marking = d.sport === 'squash' ? 'MARKING' : 'SCORER';
+    return '<div class="md-sh"><h3>EVERY ' + esc((d.surface_word || 'court').toUpperCase())
+      + ', RIGHT NOW</h3><span class="ln"></span></div>'
+      + '<div class="md-board"><div class="md-bh"><span>' + esc(Surf()) + '</span>'
+      + '<span>ON NOW</span><span>NEXT UP</span><span>' + marking + '</span></div>'
+      + list.map(function (x) {
+          var on = x.on_now, nx = x.next;
+          var edge = on ? ' e-live' : ((nx && nx.late) ? ' e-late' : '');
+          return '<div class="md-row' + edge + '">'
+            + '<div class="c"><b>' + esc(x.name || '') + '</b><s>'
+              + esc(x.screen_code || '') + '&nbsp;&nbsp;' + (x.played || 0) + ' of ' + (x.matches || 0) + '</s></div>'
+            + '<div class="on">' + (on
+                ? '<u>' + esc(on.match || '') + '</u><s>' + esc([on.label, on.score].filter(Boolean).join(', ')) + '</s>'
+                : '<u class="free">' + esc(Surf()) + ' free</u>') + '</div>'
+            + '<div class="nx">' + (nx
+                /* "TBD v TBD" is how a slot reads before it has anybody in it,
+                   whether that is a knockout waiting on the round before or a
+                   division nobody has entered. Either way it is not a name. */
+                ? '<u>' + esc([nx.at, (/^TBD v TBD$/.test(nx.match || '') ? 'Not decided yet' : nx.match)]
+                    .filter(Boolean).join('  ')) + '</u>'
+                  + '<s' + (nx.late ? ' class="bad"' : '') + '>'
+                  + esc(nx.late ? 'Past its time, nobody on yet' : (nx.label || '')) + '</s>'
+                : '<u class="free">Nothing more today</u>') + '</div>'
+            + '<div class="rf">' + (x.marks_next
+                ? '<u>' + esc(x.marks_next) + '</u><s>lost the last one, marks next</s>'
+                : (x.scorer ? '<u>' + esc(x.scorer) + '</u>' : '<u class="none">Nobody</u>')) + '</div>'
+            + '</div>';
+        }).join('') + '</div>';
+  }
+
+  function mdDivisions(d) {
+    var v = d.divisions || [];
+    if (!v.length) return '';
+    return '<div class="md-sh"><h3>DIVISIONS</h3><span class="ln"></span></div>'
+      + '<div class="md-divs">' + v.map(function (x, i) {
+          return '<div class="md-dv tg-d' + (i % 10) + '">'
+            + '<div class="r1"><i></i><b>' + esc(x.division || '') + '</b>'
+            + '<span class="' + (x.ready ? 'ok' : 'no') + '">'
+            + (x.ready ? 'RUNNING' : 'NOBODY IN IT') + '</span></div>'
+            + '<div class="mt">'
+            + '<div><u' + (x.ready ? '' : ' class="bad"') + '>' + (x.entrants || 0) + '</u><s>IN</s></div>'
+            + '<div><u>' + (x.matches || 0) + '</u><s>MATCHES</s></div>'
+            + '<div><u>' + (x.today || 0) + '</u><s>TODAY</s></div>'
+            + '</div></div>';
+        }).join('') + '</div>';
+  }
+
+  /* SEE THE WHOLE THING BEFORE ANYBODY HAS ENTERED IT. The organiser sets the
+     format, the divisions, the surfaces and the times, then asks for a
+     simulation: temporary sides go in, the draw is built, and the schedule,
+     the app, the board and the graphics all show the real thing. Clearing it
+     takes every invented row back out and leaves the slots exactly as set. */
+  function mdSimStrip(d) {
+    var empty = (d.divisions || []).filter(function (x) { return !x.ready; }).length;
+    if (S.mdClearAsk) {
+      return '<div class="md-sim">' + ic('warning') + '<div class="g">'
+        + '<b>Clear the simulation?</b>'
+        + '<p>Every invented ' + esc(nouns(null).many) + ', player and result comes out. '
+        + 'Your days, times and ' + esc(surfWord(true)) + ' are left exactly as they are, '
+        + 'and anything really entered is never touched.</p></div>'
+        + '<div class="acts"><button class="lg-btn" onclick="FFPTourn.mdSimCancel()">Keep it</button>'
+        + '<button class="lg-btn pri" onclick="FFPTourn.mdSimClear()">Yes, clear it</button></div></div>';
+    }
+    if (d.simulated) {
+      return '<div class="md-sim">' + ic('science') + '<div class="g">'
+        + '<b>This event is holding a simulation</b>'
+        + '<p>The sides on this screen were invented so you can see how the day reads. '
+        + 'Play it out to watch the draw fill and the graphics follow, then clear it before you open entries.</p></div>'
+        + '<div class="acts"><button class="lg-btn" onclick="FFPTourn.mdSimPlay()">Play it out</button>'
+        + '<button class="lg-btn" onclick="FFPTourn.mdSimAsk()">Clear it</button></div></div>';
+    }
+    if (!empty) return '';
+    return '<div class="md-sim">' + ic('science') + '<div class="g">'
+      + '<b>' + empty + (empty === 1 ? ' division has' : ' divisions have') + ' nobody in them</b>'
+      + '<p>Fill them with temporary ' + esc(nouns(null).many)
+      + ' and the draw, the schedule, the app and the graphics all come to life, '
+      + 'so you can check the whole day before you open entries.</p></div>'
+      + '<div class="acts"><button class="lg-btn pri" onclick="FFPTourn.mdSimFill()">Simulate the event</button></div></div>';
+  }
+
+  function mdDay(delta) { S.mdDay = mdShiftDay(S.mdDay, delta); renderTab(); }
+  function mdRefresh() { renderTab(); }
+  function mdGo(id) { S.tab = 'schedule'; S.schedOpen = id; openMatch(id); }
+  function mdSimAsk() { S.mdClearAsk = true; renderTab(); }
+  function mdSimCancel() { S.mdClearAsk = false; renderTab(); }
+
+  async function mdSimFill() {
+    if (S.mdBusy) return; S.mdBusy = true;
+    var r; try { r = await sb().rpc('tourn_sim_fill', { p_event: S.eventId }); }
+    catch (e) { r = { error: e }; }
+    S.mdBusy = false;
+    if (!r || r.error) { toast('Could not simulate', 'error'); return; }
+    var d = r.data || {};
+    if (!d.entrants_added) { toast('Nothing to simulate, every division already has entries', 'error'); return; }
+    toast(d.entrants_added + ' temporary ' + nouns(null).many
+      + (d.players_added ? ' and ' + d.players_added + ' players' : '') + ' put in', 'success');
+    if (S.detail && S.detail.event) S.detail.event.sim_at = new Date().toISOString();
+    renderTab();
+  }
+  async function mdSimPlay() {
+    if (S.mdBusy) return; S.mdBusy = true;
+    var r; try { r = await sb().rpc('tourn_sim_play', { p_event: S.eventId }); }
+    catch (e) { r = { error: e }; }
+    S.mdBusy = false;
+    if (!r || r.error) { toast('Could not play it out', 'error'); return; }
+    var d = r.data || {};
+    toast((d.played || 0) + ((d.played === 1) ? ' match played' : ' matches played'), 'success');
+    renderTab();
+  }
+  async function mdSimClear() {
+    if (S.mdBusy) return; S.mdBusy = true;
+    var r; try { r = await sb().rpc('tourn_sim_clear', { p_event: S.eventId }); }
+    catch (e) { r = { error: e }; }
+    S.mdBusy = false; S.mdClearAsk = false;
+    if (!r || r.error) { toast('Could not clear it', 'error'); return; }
+    var d = r.data || {};
+    toast(d.cleared ? (d.entrants_removed || 0) + ' temporary entries taken out' : 'There was nothing to clear',
+          d.cleared ? 'success' : 'error');
+    if (S.detail && S.detail.event) S.detail.event.sim_at = null;
+    renderTab();
+  }
+
   function renderSponsors(host) {
     if (window.FFPSponsors) window.FFPSponsors.render(host, { scope: 'tourn', eventId: S.eventId,
       // the editor needs the clubs so it can offer a board per team.
@@ -4530,6 +4752,8 @@
     breakAdd: breakAdd, breakSave: breakSave, breakRemove: breakRemove, breaksMoveOut: breaksMoveOut,
     rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
     schedToggle: schedToggle, schedMove: schedMove, setMainCourt: setMainCourt,
+    mdDay: mdDay, mdRefresh: mdRefresh, mdGo: mdGo, mdSimFill: mdSimFill, mdSimPlay: mdSimPlay,
+    mdSimAsk: mdSimAsk, mdSimCancel: mdSimCancel, mdSimClear: mdSimClear,
     togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch,
     addVenue: addVenue, editVenue: editVenue, cancelVenue: cancelVenue, saveVenue: saveVenue, removeVenue: removeVenue,
     addSurface: addSurface, cancelSurface: cancelSurface, saveSurface: saveSurface, removeSurface: removeSurface, screenPanel: screenPanel, useMyCourts: useMyCourts, linkCourt: linkCourt, copyScreen: copyScreen,
