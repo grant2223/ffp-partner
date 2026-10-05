@@ -201,7 +201,7 @@
         + '<div class="vc-add"><input class="vc-in" id="vc-count" type="number" min="1" max="40" value="4" style="width:90px"><button class="vc-btn pri" onclick="FFPCourts.addMany()">' + ic('add') + 'Create courts</button></div></div></div>';
     var how = '<div class="vc-how">'
       + '<div><i>1</i><div><b>On the TV</b><span>Open the browser, or plug in a streaming stick, and go to ' + SCREEN_BASE + '</span></div></div>'
-      + '<div><i>2</i><div><b>Type the court\'s code</b><span>Or the full address. Leave it open: the screen stays awake.</span></div></div>'
+      + '<div><i>2</i><div><b>Type the code</b><span>Or the full address. Leave it open: the screen stays awake.</span></div></div>'
       + '<div><i>3</i><div><b>Play</b><span>Tournament and league matches on that court show up by themselves. At a club night, players scan the screen\'s QR code.</span></div></div>'
       + '</div>';
     h.innerHTML = top + body + (S.courts.length ? promosHtml() : '') + tabletsHtml() + how;
