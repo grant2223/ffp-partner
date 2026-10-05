@@ -1,11 +1,11 @@
 /* FFP Partner — Courts & screens (desktop).
-   A venue's courts, each with a permanent court screen: score.findfitpeople.com/<code>.
+   A venue's courts, each with a permanent court screen: scoreboard.findfitpeople.com/<code>.
    The TV on a court is set up once. It then shows whatever is played on that
    court: tournament matches and league fixtures allocated to it, and club-night
    matches players put on it from the scorer (by scanning the QR on the screen).
    Exposes window.ffpRenderCourts (panel hook) + window.FFPCourts (actions). Icons use .ms. */
 (function () {
-  var SCREEN_BASE = 'score.findfitpeople.com';
+  var SCREEN_BASE = 'scoreboard.findfitpeople.com';
   var TABLET_URL = 'https://app.findfitpeople.com/tablet';
   var QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
   var sb = function () { return window.supabase; };
