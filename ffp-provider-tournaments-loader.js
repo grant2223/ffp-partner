@@ -1088,7 +1088,7 @@
   // A scoreboard is set up by typing an address into a TV's browser with a
   // remote, so the court's five-character code is the thing that matters. The
   // full /display/<uuid> link is no use to anyone holding a remote control.
-  var SCREEN_BASE = 'score.findfitpeople.com';   // the scoreboard address (Vercel, ffp-app)
+  var SCREEN_BASE = 'scoreboard.findfitpeople.com';   // the scoreboard address (Vercel, ffp-app)
   var GFX_BASE    = 'gfx.findfitpeople.com';     // the broadcast graphics source, same code, all day
   function screenPanel(code, court, permanent) {
     var url = SCREEN_BASE + '/' + code;
@@ -1470,6 +1470,13 @@
   async function removeOfficial(id) { await sb().rpc('lt_official_remove', { p_id: id }); renderTab(); }
 
   // ---------- VENUES ----------
+  /* THE TAB HOST IS #tg-tab. The id these three call sites looked up does not
+     exist and never did, so the `|| document.body` fallback won every time, and
+     renderVenues' `host.innerHTML = ...` then DELETED THE WHOLE DASHBOARD --
+     sidebar, topbar, tabs -- leaving the venues panel alone on a blank page
+     with no way back. It fired on "Connect a tablet" and on closing that PIN
+     panel. Re-render through here. Never hand renderVenues the page body. */
+  function reVenues() { var h = document.getElementById('tg-tab'); if (h) return renderVenues(h); }
   async function renderVenues(host) {
     host.innerHTML = '<div class="lg-tool"><div><div class="lg-h1" style="font-size:18px">Venues &amp; surfaces</div><div class="lg-sub">A venue can hold many ' + surfWord(true) + '</div></div><span class="sp"></span><button class="lg-btn pri" onclick="FFPTourn.addVenue()">' + ic('add') + 'Add venue</button></div>'
       + (S.venAdd ? venueEditor(null) : '') + '<div id="tg-venlist"><div class="lg-empty">Loading…</div></div>';
@@ -4875,13 +4882,13 @@
     openAdd: openAdd, addPoolOfficial: addPoolOfficial,
     setAccess: setAccess, accDay: accDay, accMatch: accMatch, accSave: accSave, accCancel: accCancel,
     pinPanel: async function (fid, nm) {
-      S.pinFor = fid; S.pin = {}; renderVenues(document.getElementById('tg-body') || document.body);
+      S.pinFor = fid; S.pin = {}; reVenues();
       var r; try { r = await sb().rpc('tablet_pair_start', { p_court: null, p_field: fid }); } catch (e) { r = { error: e }; }
       var m = String((r.error && r.error.message) || '');
       S.pin = r.error
         ? { err: /not_yours/.test(m) ? 'That pitch is not yours to connect.' : /too_many_codes/.test(m) ? 'Too many PINs live for this pitch. Wait a few minutes.' : 'Could not make a PIN.' }
         : { pin: r.data && r.data.pin };
-      await renderVenues(document.getElementById('tg-body') || document.body);
+      await reVenues();
       if (S.pin && S.pin.pin) drawPinQr(TABLET_URL + '?pin=' + encodeURIComponent(S.pin.pin));
     },
     decide: async function (id, ok) {
@@ -4894,7 +4901,7 @@
       if (r.error) { toast('Could not change that', 'error'); return; }
       toast(paid ? 'Marked paid' : 'Marked unpaid', 'success'); renderTab();
     },
-    pinClose: function () { S.pinFor = null; S.pin = null; renderVenues(document.getElementById('tg-body') || document.body); },
+    pinClose: function () { S.pinFor = null; S.pin = null; reVenues(); },
     copy: function (t) { try { navigator.clipboard.writeText(t); toast('Copied', 'success'); } catch (e) {} },
     saveDetails: saveDetails, sportHint: sportHint,
     divKind: divKind, setEntrantMode: setEntrantMode, saveSetup: saveSetup, sideHint: sideHint, capHint: capHint, setDivFmt: setDivFmt, fmtInfo: fmtInfo, sideInfo: sideInfo, mlenEdit: mlenEdit, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, buildDivDraw: buildDivDraw, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
