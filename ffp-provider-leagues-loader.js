@@ -827,7 +827,7 @@
   // A scoreboard is set up by typing an address into a TV's browser with a
   // remote, so the court's five-character code is the thing that matters. The
   // full /display/<uuid> link is no use to anyone holding a remote control.
-  var SCREEN_BASE = 'score.findfitpeople.com';   // the scoreboard address (Vercel, ffp-app)
+  var SCREEN_BASE = 'scoreboard.findfitpeople.com';   // the scoreboard address (Vercel, ffp-app)
   var GFX_BASE    = 'gfx.findfitpeople.com';     // the broadcast graphics source, same code, all day
   function screenPanel(code, court, permanent) {
     var url = SCREEN_BASE + '/' + code;
