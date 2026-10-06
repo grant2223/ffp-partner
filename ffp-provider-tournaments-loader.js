@@ -74,7 +74,7 @@
     var sc = document.createElement('script'); sc.src = QR_LIB; sc.onload = go; sc.onerror = function () {}; document.head.appendChild(sc);
   }
 
-  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, grpDraw: false, brkConfirm: false,
+  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, divDel: null, _divUse: null, entAdd: false, entEdit: null, entDel: null, grpDraw: false, brkConfirm: false,
     /* SERIES: the list for the dropdowns, the one being edited, and the
        panel that picks which series teams play a round. */
     seriesList: null, seriesId: null, series: null, serTab: 'rounds', serTeamEdit: null,
@@ -3293,12 +3293,62 @@
     var teamCtl = isTeam
       ? '<input class="lg-in" id="tg-dvsize" type="number" min="1" placeholder="Players per team" title="Players per team" value="' + (d.team_size != null ? d.team_size : 2) + '" style="width:150px">'
       : '';
-    return '<div class="lg-edit" id="tg-dved"><input class="lg-in" id="tg-dvname" placeholder="' + (isTeam ? 'Team division name' : 'Division name') + '" value="' + esc(d.name || '') + '">'
+    return '<div class="lg-edit' + (d.id && S.divDel === d.id ? ' lg-entform' : '') + '" id="tg-dved"><input class="lg-in" id="tg-dvname" placeholder="' + (isTeam ? 'Team division name' : 'Division name') + '" value="' + esc(d.name || '') + '">'
       + kindCtl + teamCtl
       + '<select class="lg-sel" id="tg-dvgender" style="width:auto">' + gOpts + '</select>'
       + '<input class="lg-in" id="tg-dvmin" type="number" placeholder="Min age" value="' + (d.min_age != null ? d.min_age : '') + '" style="width:88px">'
       + '<input class="lg-in" id="tg-dvmax" type="number" placeholder="Max age" value="' + (d.max_age != null ? d.max_age : '') + '" style="width:88px">'
-      + '<button class="lg-btn pri" onclick="FFPTourn.saveDivision(\'' + (d.id || '') + '\')">' + ic('check') + 'Save</button><button class="lg-btn ghost" onclick="FFPTourn.cancelDivision()">Cancel</button></div>';
+      + divActs(d) + '</div>';
+  }
+  /* REMOVING A DIVISION. The same shape the entrant delete already uses: a
+     ghost red Remove in the editor, a question that names exactly what goes,
+     and a solid red confirm. A division that has matches drawn is NOT deleted
+     -- the draw and the results are the record of what was played -- so the
+     question becomes a refusal that says what is in the way. */
+  function divActs(d) {
+    if (!d.id || S.divDel !== d.id) {
+      return '<button class="lg-btn pri" onclick="FFPTourn.saveDivision(\'' + (d.id || '') + '\')">' + ic('check') + 'Save</button>'
+        + '<button class="lg-btn ghost" onclick="FFPTourn.cancelDivision()">Cancel</button>'
+        + (d.id ? '<span class="sp"></span><button class="lg-btn ghost danger" onclick="FFPTourn.askRemoveDivision(\'' + d.id + '\')">' + ic('delete') + 'Remove</button>' : '');
+    }
+    var u = S._divUse || {};
+    if (u.loading) return '<span class="delq">Checking what is in ' + esc(d.name) + '…</span>';
+    if (u.matches > 0) {
+      return '<div class="acts"><span class="delq">' + esc(d.name) + ' cannot be removed</span>'
+        + '<span class="sp"></span>'
+        + '<button class="lg-btn" onclick="FFPTourn.cancelRemoveDivision()">Back</button></div>'
+        + '<div class="msg">' + usageLine(u) + '</div>'
+        + '<div class="note">Rename it, or move its ' + (d.kind === 'individual' ? 'players' : 'teams')
+        + ' to another division and finish the event. Nothing that has been played is ever thrown away.</div>';
+    }
+    return '<div class="acts"><span class="delq">Remove ' + esc(d.name) + ' from the tournament?</span>'
+      + '<span class="sp"></span>'
+      + '<button class="lg-btn" onclick="FFPTourn.cancelRemoveDivision()">Keep it</button>'
+      + '<button class="lg-btn danger solid" onclick="FFPTourn.removeDivision(\'' + d.id + '\')">' + ic('delete_forever') + 'Remove</button></div>'
+      + '<div class="note">' + (u.entrants > 0
+          ? usageLine(u) + ' Nothing has been drawn, so the division and those entries go together.'
+          : 'Nothing has been drawn in this division and nobody is entered, so it goes on its own.') + '</div>';
+  }
+  function usageLine(u) {
+    var p = [];
+    if (u.entrants > 0) p.push(u.entrants + (u.entrants === 1 ? ' entry' : ' entries'));
+    if (u.matches > 0) p.push(u.matches + (u.matches === 1 ? ' match drawn' : ' matches drawn'));
+    if (u.played > 0) p.push(u.played + ' of them played');
+    return p.length ? p.join(', ') + '.' : '';
+  }
+  async function askRemoveDivision(id) {
+    S.divDel = id; S._divUse = { loading: true }; renderTab();
+    var r; try { r = await sb().rpc('tourn_division_usage', { p_division: id }); } catch (e) { r = { error: e }; }
+    S._divUse = (r && r.data) || { entrants: 0, matches: 0, played: 0 };
+    renderTab();
+  }
+  function cancelRemoveDivision() { S.divDel = null; S._divUse = null; renderTab(); }
+  async function removeDivision(id) {
+    var r; try { r = await sb().rpc('tourn_division_remove', { p_division: id }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not remove it', 'error'); return; }
+    S.divDel = null; S._divUse = null; S.divEdit = null;
+    if (S.divId === id) S.divId = null;
+    toast('Division removed', 'success'); refreshDetail();
   }
   // Switching a division to a team needs the team fields there and then.
   function divKind(btn) {
@@ -3315,8 +3365,8 @@
       ed.insertBefore(sz, document.getElementById('tg-dvgender'));
     } else if (!team && sz) { sz.remove(); }
   }
-  function editDivision(id) { S.divEdit = id; renderTab(); }
-  function cancelDivision() { S.divEdit = null; renderTab(); }
+  function editDivision(id) { S.divEdit = id; S.divDel = null; S._divUse = null; renderTab(); }
+  function cancelDivision() { S.divEdit = null; S.divDel = null; S._divUse = null; renderTab(); }
   async function saveDivision(id) {
     var nm = (document.getElementById('tg-dvname') || {}).value; if (!nm || !nm.trim()) { toast('Name required', 'error'); return; }
     var mode = (S.detail && S.detail.event && S.detail.event.entrant_mode) || 'individual';
@@ -4907,6 +4957,7 @@
     copy: function (t) { try { navigator.clipboard.writeText(t); toast('Copied', 'success'); } catch (e) {} },
     saveDetails: saveDetails, sportHint: sportHint,
     divKind: divKind, setEntrantMode: setEntrantMode, saveSetup: saveSetup, sideHint: sideHint, capHint: capHint, setDivFmt: setDivFmt, fmtInfo: fmtInfo, sideInfo: sideInfo, mlenEdit: mlenEdit, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, buildDivDraw: buildDivDraw, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
+    askRemoveDivision: askRemoveDivision, cancelRemoveDivision: cancelRemoveDivision, removeDivision: removeDivision,
     addEntrant: addEntrant, bulkAthletes: bulkAthletes, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit, hexSync: hexSync,
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
