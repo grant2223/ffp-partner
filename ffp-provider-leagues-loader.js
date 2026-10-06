@@ -148,6 +148,10 @@
       '.lg-crest{width:32px;height:32px;border-radius:9px;flex:none;background:#0d3550 center/cover no-repeat;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.14);vertical-align:middle;} .lg-crest.big{width:38px;height:38px;}',
       '.lg-fx2{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:14px 4px;border-bottom:1px solid #f0f3f6;} .lg-fx2 .tm{display:flex;align-items:center;gap:10px;min-width:0;font-size:14.5px;font-weight:800;color:var(--ffp-text);} .lg-fx2 .tm.a{flex-direction:row-reverse;text-align:right;} .lg-fx2 .tm span:not(.lg-crest){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
       '.lg-fx2 .mid{display:flex;flex-direction:column;align-items:center;gap:4px;} .lg-fx2 .fxday{font-size:11px;font-weight:700;color:#9aa8b4;white-space:nowrap;} .lg-fx2 .sc{display:flex;align-items:center;gap:7px;} .lg-fx2 .sc input{width:46px;height:42px;text-align:center;border:1.5px solid #d7dee5;border-radius:9px;font:inherit;font-weight:800;font-size:15px;} .lg-fx2 .sc .v{font-size:12px;font-weight:800;color:#b7c2cc;}',
+      /* team sheet size -- the organiser's own two numbers. The shell forces
+         input{font-size:16px!important}, so the big figures need !important of
+         their own or they render at the shell's size. */
+      '.sz{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end;margin:4px 0 2px;} .sz .f{display:flex;flex-direction:column;gap:6px;} .sz .f>label{font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#7c8b97;} #lg-root .sz .f .lg-in{width:92px;min-width:0;flex:none;box-sizing:border-box;height:44px;padding:0;text-align:center;font-size:19px!important;font-weight:900;} .sz .eq{display:flex;align-items:center;height:44px;font-size:21px;font-weight:700;color:#c0cad2;} .sz .out{display:flex;flex-direction:column;gap:2px;height:44px;justify-content:center;} .sz .out b{font-size:21px;font-weight:900;color:#12232f;line-height:1;} .sz .out span{font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#7c8b97;} .sz .def{margin-left:auto;align-self:center;} .szf{display:flex;gap:9px;align-items:flex-start;margin-top:16px;padding-top:14px;border-top:1px solid var(--ffp-border);font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .szf .ms{font-size:17px;flex:none;color:var(--ffp-gold,#c79a2e);}',
       /* bye */
       '.lg-bye{display:flex;align-items:center;gap:11px;padding:13px 4px;border-bottom:1px solid #f0f3f6;} .lg-bye b{font-size:14px;font-weight:800;} .lg-bye .lg-crest{opacity:.5;} .lg-bye .tag{font-size:10px;font-weight:900;letter-spacing:.09em;color:#a86a08;background:#fff4e0;padding:4px 10px;border-radius:20px;} .lg-bye .msg{font-size:12.5px;color:#9aa8b4;font-weight:600;}',
       /* collapsible round header */
@@ -1223,12 +1227,12 @@
         return '<button class="lg-btn" onclick="FFPLeague.useMyCourts(\'' + p.id + '\')">' + ic('connected_tv') + 'Add ' + surfWord(true) + ' from ' + esc(p.name) + '</button>';
       }).join('') + '</div>' : '';
     if (useBar) h2.insertAdjacentHTML('beforebegin', '<div id="lg-vcbar">' + useBar + '</div>');
-    if (!vs.length && !S.venAdd) { h2.innerHTML = '<div class="lg-empty">No venues yet. Add a venue, then its pitches/courts.</div>'; return; }
+    if (!vs.length && !S.venAdd) { h2.innerHTML = '<div class="lg-empty">No venues yet. Add a venue, then its ' + surfWord(true) + '.</div>'; return; }
     h2.innerHTML = vs.map(function (v) {
       if (S.venEdit === v.id) return venueEditor(v);
       var surfaces = (v.surfaces || []).map(function (s) {
         var link = (S._vcMine || []).length
-          ? '<select class="lg-sel lg-vclink" title="Which screen shows this court" onchange="FFPLeague.linkCourt(\'' + s.id + '\',this.value)">'
+          ? '<select class="lg-sel lg-vclink" title="Which screen shows this ' + surfWord() + '" onchange="FFPLeague.linkCourt(\'' + s.id + '\',this.value)">'
             + '<option value="">Event-only screen</option>'
             + S._vcMine.map(function (c) { var one = S._vcMine.every(function (x) { return x.provider_id === c.provider_id; }); return '<option value="' + c.id + '"' + (c.id === s.venue_court_id ? ' selected' : '') + '>' + esc(one ? c.name + ' screen' : c.name + ', ' + c.venue) + '</option>'; }).join('')
             + '</select>' : '';
@@ -1658,7 +1662,7 @@
           ? '<select class="lg-sel rb-dv" onchange="FFPLeague.rbSetDiv(this.value)">'
             + ds.map(function (d) { return '<option value="' + d.id + '"' + (d.id === rbDivId() ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join('')
             + '</select>' : '')
-      + rbRow('schedule', 'Times and courts',
+      + rbRow('schedule', 'Times and ' + surfWord(true),
               'Keeps every fixture exactly as it is. Each match is given a new date, a new time and ' + aSurf() + '.',
               ds.length > 1 ? 'Covers every division at once.' : '', "autoplan(1)", false)
       + rbRow('shuffle', 'Redraw the fixtures',
@@ -2344,7 +2348,7 @@
       +   '</div></div>';
   }
   async function renderSetup(host) {
-    await loadSports(); await taxReady();
+    await loadSports(); await taxReady(); await loadSheetSize();
     var ev = S.detail.event || {}, divs = S.detail.divisions || [];
     if (!S.divId && divs.length) S.divId = divs[0].id;
     var head = '<div class="lgf-sec">'
@@ -2355,7 +2359,8 @@
       + '</select>'
       + '<div class="lgf-hint" id="lg-sporthint">' + esc(sportSetHint(ev.sport_key)) + '</div></div>'
       + rulesBlock(ev)
-      + '<button class="lg-btn pri" onclick="FFPLeague.saveSport()">' + ic('check') + 'Save</button></div>';
+      + '<button class="lg-btn pri" onclick="FFPLeague.saveSport()">' + ic('check') + 'Save</button></div>'
+      + sheetSizeHtml();
     if (!divs.length) {
       host.innerHTML = head + '<div class="lgf-sec"><div class="lgf-sech">Format, per division</div>'
         + '<div class="lg-empty" style="text-align:left;padding:4px 0">Add a division first, then set how each one is run.</div></div>';
@@ -2371,6 +2376,88 @@
       return on ? row + lgDivFormat(d) : row;
     }).join('');
     host.innerHTML = head + '<div class="lgf-sec"><div class="lgf-sech">Format, per division</div>' + rows + '</div>';
+  }
+  /* --- TEAM SHEET SIZE ----------------------------------------------------
+     The organiser's own numbers. The Abu Dhabi Community Football League names
+     11 and 6 where football's own shape is 11 and 7. BOTH are typed; neither is
+     worked out from the other (Grant: "require On Field input and On Bench
+     input"). league_sheet_size reads from the same places league_set_sheet_size
+     validates against, so this panel can never offer a number the save then
+     refuses, and it carries the sport's own surface word -- a football league
+     reads "On the pitch", a netball league "On the court". A sport with no
+     positions of its own has no team sheet, and the section does not appear. */
+  async function loadSheetSize() {
+    try { var r = await sb().rpc('league_sheet_size', { p_league: S.eventId }); S._sz = (r && r.data) || null; }
+    catch (e) { S._sz = null; }
+    return S._sz;
+  }
+  function sheetSizeHtml() {
+    var d = S._sz;
+    if (!d || d.error || !d.has_positions) return '';
+    var surf = d.surface || 'field';
+    return '<div class="og-sec">'
+      + '<div class="og-hd">' + ic('groups')
+      +   '<div class="t"><b>Team sheet size</b><span>How many start, and how many sit on the bench. The team sheet is the two added up.</span></div></div>'
+      + '<div class="sz">'
+      +   '<div class="f"><label>On the ' + esc(surf) + '</label>'
+      +     '<input class="lg-in" id="lg-szf" type="text" inputmode="numeric" value="' + d.on_field + '" oninput="FFPLeague.sheetSizeTotal()" onchange="FFPLeague.sheetSizeSave()"></div>'
+      +   '<div class="eq">+</div>'
+      +   '<div class="f"><label>On the bench</label>'
+      +     '<input class="lg-in" id="lg-szb" type="text" inputmode="numeric" value="' + d.bench + '" oninput="FFPLeague.sheetSizeTotal()" onchange="FFPLeague.sheetSizeSave()"></div>'
+      +   '<div class="eq">=</div>'
+      +   '<div class="out"><b id="lg-szt">' + (d.on_field + d.bench) + '</b><span>on the team sheet</span></div>'
+      +   (d.is_default ? '' : '<button class="lg-btn def" onclick="FFPLeague.sheetSizeDefault()">' + ic('restart_alt')
+      +     esc(szSportName()) + ' default, ' + d.sport_on_field + ' and ' + d.sport_bench + '</button>')
+      + '</div>'
+      + '<div class="szf">' + ic('lock_clock')
+      +   '<div>Every division in this league uses these numbers. Changing them does not touch a sheet that is already set, so a match played last week keeps the names it had.</div></div>'
+      + '</div>';
+  }
+  /* lt_sport_schemas names a sport so a picker can tell two apart -- "Football
+     / Soccer". A label takes the name people use. */
+  function szSportName() {
+    var n = (S._sz && S._sz.sport_name) || 'Sport';
+    return String(n).split('/')[0].trim();
+  }
+  function szNum(id) {
+    var el = document.getElementById(id); if (!el) return null;
+    var t = String(el.value).trim(); if (!t) return null;
+    var n = Number(t); return isFinite(n) ? Math.round(n) : null;
+  }
+  function sheetSizeTotal() {
+    var f = szNum('lg-szf'), b = szNum('lg-szb'), t = document.getElementById('lg-szt');
+    if (t) t.textContent = (f === null || b === null) ? '—' : String(f + b);
+  }
+  /* the server's words, in the organiser's language */
+  var SZ_SAID = {
+    not_yours: 'This league is not yours to change',
+    both_or_neither: 'Both numbers are needed',
+    sport_has_no_positions: 'This sport has no team sheet',
+    on_field_out_of_range: 'A SURF holds at most MAX',
+    bench_out_of_range: 'The bench holds up to 30',
+    smaller_than_a_sheet_already_set: 'A team sheet in this league already uses slot USED'
+  };
+  function szToast(r) {
+    var m = (r && SZ_SAID[r.error]) || 'Could not save the team sheet size';
+    m = m.replace('SURF', (S._sz && S._sz.surface) || 'side')
+         .replace('MAX', String(r && r.max))
+         .replace('USED', String(r && r.used_up_to));
+    toast(m, 'error');
+  }
+  async function sheetSizeSave() {
+    var f = szNum('lg-szf'), b = szNum('lg-szb');
+    sheetSizeTotal();
+    if (f === null || b === null) return;      /* the other number is still being typed */
+    var r; try { r = (await sb().rpc('league_set_sheet_size', { p_league: S.eventId, p_on_field: f, p_bench: b })).data; } catch (e) { r = null; }
+    if (!r || r.error) { szToast(r); await loadSheetSize(); renderTab(); return; }
+    toast('Team sheet size saved, ' + r.on_field + ' and ' + r.bench, 'success');
+    await loadSheetSize(); renderTab();
+  }
+  async function sheetSizeDefault() {
+    var r; try { r = (await sb().rpc('league_set_sheet_size', { p_league: S.eventId, p_on_field: null, p_bench: null })).data; } catch (e) { r = null; }
+    if (!r || r.error) { szToast(r); return; }
+    toast('Back to the ' + szSportName() + ' default', 'success');
+    await loadSheetSize(); renderTab();
   }
   async function saveSport() {
     var k = v('lg-sport');
@@ -3285,13 +3372,15 @@
   async function renderMcTeam() {
     var host = document.getElementById('mc-team'); if (!host) return; var m = S._mc || {}; await loadSports();
     var fields = mcTeamFields();
-    if (!fields.length) { host.innerHTML = '<div class="lg-empty">This sport has no team match-stat fields.</div>'; return; }
+    if (!fields.length) { host.innerHTML = '<div class="lg-empty">This sport has no team match-stat fields.</div>'; return; } // sport-words-ok — a stat field, not a playing surface
     var gr; try { gr = await sb().rpc('lt_team_match_stats_get', { p_scope: 'league', p_match: S.matchOpen }); } catch (e) { gr = null; }
     var saved = (gr && gr.data) || {};
     var hv = saved[m.home.id] || {}, av = saved[m.away.id] || {};
     if (!S._mcDiv) { try { var dr = await sb().from('league_fixtures').select('division_id').eq('id', S.matchOpen).single(); S._mcDiv = dr.data && dr.data.division_id; } catch (e) {} }
-    var hasPoss = fields.some(function (f) { return f.key === 'possession'; }), hasTerr = fields.some(function (f) { return f.key === 'territory'; });
-    host.innerHTML = mcPeriodHtml(m) + (hasPoss || hasTerr ? trkHtml(m, hasTerr) : '')
+    var fPoss = fields.filter(function (f) { return f.key === 'possession'; })[0];
+    var fTerr = fields.filter(function (f) { return f.key === 'territory'; })[0];
+    var hasPoss = !!fPoss, hasTerr = !!fTerr;
+    host.innerHTML = mcPeriodHtml(m) + (hasPoss || hasTerr ? trkHtml(m, fPoss, fTerr) : '')
       + '<div class="lg-teamstat"><div class="hd"><span>' + esc(m.home.name) + '</span><span class="lab"></span><span>' + esc(m.away.name) + '</span></div>'
       + fields.map(function (f) {
         return '<div class="lg-tsrow" data-key="' + esc(f.key) + '"><input class="lg-in ts-h" type="number" value="' + (hv[f.key] != null ? hv[f.key] : '') + '" placeholder="0"><span class="lab">' + esc(f.label) + (f.pct ? ' %' : '') + '</span><input class="lg-in ts-a" type="number" value="' + (av[f.key] != null ? av[f.key] : '') + '" placeholder="0"></div>';
@@ -3303,17 +3392,17 @@
   function _trk() { if (!S._tracker) S._tracker = { running: false, poss: null, half: null, ph: 0, pa: 0, hh: 0, ha: 0, total: 0 }; return S._tracker; }
   function fmtClock(s) { s = s || 0; var m = Math.floor(s / 60), ss = s % 60; return (m < 10 ? '0' : '') + m + ':' + (ss < 10 ? '0' : '') + ss; }
   function trkPct(a, b) { var s = a + b; return s ? Math.round(a / s * 100) : 0; }
-  function trkHtml(m, hasTerr) {
+  function trkHtml(m, fPoss, fTerr) {
     var t = _trk();
-    var terr = hasTerr ? '<div class="lg-trk-grp"><div class="lg-trk-lab">Field position — which half the ball is in</div><div class="lg-trk-btns">'
+    var terr = fTerr ? '<div class="lg-trk-grp"><div class="lg-trk-lab">' + esc(fTerr.label) + ' — which half the ball is in</div><div class="lg-trk-btns">'
       + '<button class="lg-trk-b" data-half="home" onclick="FFPLeague.trkHalf(\'home\')">' + esc(m.home.name) + ' half</button>'
       + '<button class="lg-trk-b" data-half="away" onclick="FFPLeague.trkHalf(\'away\')">' + esc(m.away.name) + ' half</button></div></div>' : '';
     return '<div class="lg-trk"><div class="lg-trk-clock"><div class="t" id="trk-clock">' + fmtClock(t.total) + '</div><span class="sp"></span>'
       + '<button class="lg-btn" id="trk-toggle" onclick="FFPLeague.trkToggle()">Start</button>'
       + '<button class="lg-btn ghost" onclick="FFPLeague.trkReset()">Reset</button></div>'
-      + '<div class="lg-trk-grp"><div class="lg-trk-lab">Possession — who has the ball</div><div class="lg-trk-btns">'
+      + (fPoss ? '<div class="lg-trk-grp"><div class="lg-trk-lab">' + esc(fPoss.label) + ' — who has the ball</div><div class="lg-trk-btns">'
       + '<button class="lg-trk-b" data-poss="home" onclick="FFPLeague.trkPoss(\'home\')">' + esc(m.home.name) + ' <span>0%</span></button>'
-      + '<button class="lg-trk-b" data-poss="away" onclick="FFPLeague.trkPoss(\'away\')">' + esc(m.away.name) + ' <span>0%</span></button></div></div>'
+      + '<button class="lg-trk-b" data-poss="away" onclick="FFPLeague.trkPoss(\'away\')">' + esc(m.away.name) + ' <span>0%</span></button></div></div>' : '')
       + terr
       + '<div class="lg-trk-apply"><span class="sum" id="trk-sum"></span><button class="lg-btn pri" onclick="FFPLeague.trkApply()">' + ic('done_all') + 'Apply to fields</button></div></div>';
   }
@@ -3705,7 +3794,9 @@
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
     statusPick: statusPick, mlenEdit: mlenEdit, eventState: eventState, eventDelete: eventDelete, toggleArchived: toggleArchived,
     saveDetails: saveDetails, sportHint: sportHint,
-    saveSport: saveSport, bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, clearDivFormat: clearDivFormat,
+    saveSport: saveSport,
+    sheetSizeTotal: sheetSizeTotal, sheetSizeSave: sheetSizeSave, sheetSizeDefault: sheetSizeDefault,
+    bpAdd: bpAdd, bpDel: bpDel, bpType: bpType, saveDivFormat: saveDivFormat, clearDivFormat: clearDivFormat,
     splitOn: splitOn, splitAdd: splitAdd, splitDrop: splitDrop, carryHint: carryHint, splitRedraw: splitRedraw,
     setSetupDiv: function (id) { S.divId = id; renderTab(); },
     finalsHint: function () {
