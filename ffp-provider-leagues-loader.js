@@ -34,7 +34,7 @@
     return nouns({ kind: kinds[0] || 'team' });
   }
 
-  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, entAdd: false, entEdit: null, entDel: null, rb: null, rbDiv: null, rbInfo: null, rbByes: null };
+  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, divDel: null, _divUse: null, entAdd: false, entEdit: null, entDel: null, rb: null, rbDiv: null, rbInfo: null, rbByes: null };
 
   function injectCss() {
     if (document.getElementById('lgb-css')) return;
@@ -2615,17 +2615,66 @@
   function divEditor(d) {
     d = d || {}; var isTeam = (d.kind || 'team') !== 'individual';
     var gOpts = '<option value="">Open / any</option>' + genderNames().map(function (g) { return '<option' + (d.gender === g ? ' selected' : '') + '>' + esc(g) + '</option>'; }).join('');
-    return '<div class="lg-edit">'
+    return '<div class="lg-edit' + (d.id && S.divDel === d.id ? ' lg-entform' : '') + '">'
       + '<input class="lg-in" id="lg-dvname" placeholder="Division name" value="' + esc(d.name || '') + '">'
       + '<div class="lg-seg" id="lg-dvkind"><button data-v="team" class="' + (isTeam ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-dvkind\')">Team</button><button data-v="individual" class="' + (!isTeam ? 'on' : '') + '" onclick="FFPLeague.seg(this,\'lg-dvkind\')">Individual</button></div>'
       + '<select class="lg-sel" id="lg-dvgender" style="width:auto">' + gOpts + '</select>'
       + '<input class="lg-in" id="lg-dvmin" type="number" placeholder="Min age" value="' + (d.min_age != null ? d.min_age : '') + '" style="width:88px">'
       + '<input class="lg-in" id="lg-dvmax" type="number" placeholder="Max age" value="' + (d.max_age != null ? d.max_age : '') + '" style="width:88px">'
-      + '<button class="lg-btn pri" onclick="FFPLeague.saveDivision(\'' + (d.id || '') + '\')">' + ic('check') + 'Save</button>'
-      + '<button class="lg-btn ghost" onclick="FFPLeague.cancelDivision()">Cancel</button></div>';
+      + divActs(d) + '</div>';
   }
-  function editDivision(id) { S.divEdit = id; renderTab(); }
-  function cancelDivision() { S.divEdit = null; renderTab(); }
+  /* REMOVING A DIVISION. The same shape the entrant delete already uses: a
+     ghost red Remove in the editor, a question that names exactly what goes,
+     and a solid red confirm. A division that has fixtures is NOT deleted --
+     the fixtures and the table are the record of matches that were played --
+     so the question becomes a refusal that says what is in the way. */
+  function divActs(d) {
+    if (!d.id || S.divDel !== d.id) {
+      return '<button class="lg-btn pri" onclick="FFPLeague.saveDivision(\'' + (d.id || '') + '\')">' + ic('check') + 'Save</button>'
+        + '<button class="lg-btn ghost" onclick="FFPLeague.cancelDivision()">Cancel</button>'
+        + (d.id ? '<span class="sp"></span><button class="lg-btn ghost danger" onclick="FFPLeague.askRemoveDivision(\'' + d.id + '\')">' + ic('delete') + 'Remove</button>' : '');
+    }
+    var u = S._divUse || {};
+    if (u.loading) return '<span class="delq">Checking what is in ' + esc(d.name) + '…</span>';
+    if (u.fixtures > 0) {
+      return '<div class="acts"><span class="delq">' + esc(d.name) + ' cannot be removed</span>'
+        + '<span class="sp"></span>'
+        + '<button class="lg-btn" onclick="FFPLeague.cancelRemoveDivision()">Back</button></div>'
+        + '<div class="msg">' + usageLine(u) + '</div>'
+        + '<div class="note">Rename it, or move its ' + (d.kind === 'individual' ? 'players' : 'teams')
+        + ' to another division and finish the season. Nothing that has been played is ever thrown away.</div>';
+    }
+    return '<div class="acts"><span class="delq">Remove ' + esc(d.name) + ' from the league?</span>'
+      + '<span class="sp"></span>'
+      + '<button class="lg-btn" onclick="FFPLeague.cancelRemoveDivision()">Keep it</button>'
+      + '<button class="lg-btn danger solid" onclick="FFPLeague.removeDivision(\'' + d.id + '\')">' + ic('delete_forever') + 'Remove</button></div>'
+      + '<div class="note">' + (u.entrants > 0
+          ? usageLine(u) + ' Nothing has been drawn, so the division and those entries go together.'
+          : 'Nothing has been drawn in this division and nobody is entered, so it goes on its own.') + '</div>';
+  }
+  function usageLine(u) {
+    var p = [];
+    if (u.entrants > 0) p.push(u.entrants + (u.entrants === 1 ? ' entry' : ' entries'));
+    if (u.fixtures > 0) p.push(u.fixtures + (u.fixtures === 1 ? ' fixture drawn' : ' fixtures drawn'));
+    if (u.played > 0) p.push(u.played + ' of them played');
+    return p.length ? p.join(', ') + '.' : '';
+  }
+  async function askRemoveDivision(id) {
+    S.divDel = id; S._divUse = { loading: true }; renderTab();
+    var r; try { r = await sb().rpc('league_division_usage', { p_division: id }); } catch (e) { r = { error: e }; }
+    S._divUse = (r && r.data) || { entrants: 0, fixtures: 0, played: 0 };
+    renderTab();
+  }
+  function cancelRemoveDivision() { S.divDel = null; S._divUse = null; renderTab(); }
+  async function removeDivision(id) {
+    var r; try { r = await sb().rpc('league_division_remove', { p_division: id }); } catch (e) { r = { error: e }; }
+    if (r.error) { toast('Could not remove it', 'error'); return; }
+    S.divDel = null; S._divUse = null; S.divEdit = null;
+    if (S.divId === id) S.divId = null;
+    toast('Division removed', 'success'); refreshDetail();
+  }
+  function editDivision(id) { S.divEdit = id; S.divDel = null; S._divUse = null; renderTab(); }
+  function cancelDivision() { S.divEdit = null; S.divDel = null; S._divUse = null; renderTab(); }
   async function saveDivision(id) {
     var nm = (document.getElementById('lg-dvname') || {}).value; if (!nm || !nm.trim()) { toast('Name required', 'error'); return; }
     var kind = segVal('lg-dvkind') || 'team';
@@ -3806,6 +3855,7 @@
       var t = document.getElementById('lgf-third');
       if (t) t.parentNode.style.display = (v2 === 'none' ? 'none' : '');
     }, pickImg: pickImg, pickRulesPdf: pickRulesPdf, removeRulesPdf: removeRulesPdf, entLogo: entLogo, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
+    askRemoveDivision: askRemoveDivision, cancelRemoveDivision: cancelRemoveDivision, removeDivision: removeDivision,
     addEntrant: addEntrant, bulkAthletes: bulkAthletes, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit,
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
