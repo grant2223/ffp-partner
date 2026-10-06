@@ -1498,21 +1498,21 @@
     var claimed = {};
     vs.forEach(function (v2) { (v2.surfaces || []).forEach(function (x) { claimed[x.id] = true; }); });
     var orphans = allFields.filter(function (f2) { return !claimed[f2.id]; });
-    if (!vs.length && !orphans.length && !S.venAdd) { h2.innerHTML = '<div class="lg-empty">No venues yet. Add a venue, then its courts.</div>'; return; }
+    if (!vs.length && !orphans.length && !S.venAdd) { h2.innerHTML = '<div class="lg-empty">No venues yet. Add a venue, then its ' + surfWord(true) + '.</div>'; return; }
     // A surface that belongs to no venue is still a surface: it has a screen,
     // it can take a tablet, and Auto-plan will put matches on it. Shown here
     // so it can be seen and removed, rather than only turning up on the grid.
     function orphanCard() {
       if (!orphans.length) return '';
       return '<div class="lg-venue"><div class="lg-vh"><span class="lg-vpin"><span class="ms">connected_tv</span></span>'
-        + '<div class="g"><b>Courts added from your own venue</b><span>Not under a venue above. Remove any you did not mean to add, then Auto-plan again.</span></div></div>'
+        + '<div class="g"><b>' + Surf(true) + ' added from your own venue</b><span>Not under a venue above. Remove any you did not mean to add, then Auto-plan again.</span></div></div>'
         + '<div class="lg-surfs">' + orphans.map(function (s) {
             var vc = (S._vcMine || []).find(function (c) { return c.id === s.venue_court_id; });
             return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name)
               + (vc && vc.name !== s.name ? '<span class="lg-vcnote">' + esc(vc.name) + ' at ' + esc(vc.venue) + '</span>' : '')
               + '<span class="sp"></span>'
-              + (s.screen_code ? '<button class="lg-scrbtn perm" title="Scoreboard for this court" onclick="FFPTourn.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\',true)"><span class="ms">connected_tv</span>' + esc(s.screen_code) + '</button>' : '')
-              + '<button class="lg-btn sm" title="Connect a scoring tablet to this court" onclick="FFPTourn.pinPanel(\'' + s.id + '\',\'' + esc(s.name) + '\')"><span class="ms">tablet_android</span>Connect a tablet</button>'
+              + (s.screen_code ? '<button class="lg-scrbtn perm" title="Scoreboard for this ' + surfWord() + '" onclick="FFPTourn.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\',true)"><span class="ms">connected_tv</span>' + esc(s.screen_code) + '</button>' : '')
+              + '<button class="lg-btn sm" title="Connect a scoring tablet to this ' + surfWord() + '" onclick="FFPTourn.pinPanel(\'' + s.id + '\',\'' + esc(s.name) + '\')"><span class="ms">tablet_android</span>Connect a tablet</button>'
               + '<span class="ms x" onclick="FFPTourn.removeSurface(\'' + s.id + '\')">delete</span></div>'
               + (S.pinFor === s.id ? pinHtml(s) : '');
           }).join('') + '</div></div>';
@@ -1521,19 +1521,19 @@
       if (S.venEdit === v2.id) return venueEditor(v2);
       var surfaces = (v2.surfaces || []).map(function (s) {
         var link = (S._vcMine || []).length
-          ? '<select class="lg-sel lg-vclink" title="Which screen shows this court" onchange="FFPTourn.linkCourt(\'' + s.id + '\',this.value)">'
+          ? '<select class="lg-sel lg-vclink" title="Which screen shows this ' + surfWord() + '" onchange="FFPTourn.linkCourt(\'' + s.id + '\',this.value)">'
             + '<option value="">Event-only screen</option>'
             + S._vcMine.map(function (c) { var one = S._vcMine.every(function (x) { return x.provider_id === c.provider_id; }); return '<option value="' + c.id + '"' + (c.id === s.venue_court_id ? ' selected' : '') + '>' + esc(one ? c.name + ' screen' : c.name + ', ' + c.venue) + '</option>'; }).join('')
             + '</select>' : '';
         return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name)
           + '<span class="sp"></span>'
           + '<button class="lg-mainb' + (s.is_main ? ' on' : '') + '"'
-          +   ' title="' + (s.is_main ? 'The final is played here' : 'Make this the main field, where the final is played') + '"'
+          +   ' title="' + (s.is_main ? 'The final is played here' : 'Make this the main ' + surfWord() + ', where the final is played') + '"'
           +   ' onclick="FFPTourn.setMainCourt(\'' + s.id + '\',' + (s.is_main ? 'false' : 'true') + ')">'
-          +   ic('stadium') + (s.is_main ? 'Main field' : 'Set as main') + '</button>' + link
+          +   ic('stadium') + (s.is_main ? 'Main ' + surfWord() : 'Set as main') + '</button>' + link
           // The code a TV is set up with — see screenPanel().
-          + (s.screen_code ? '<button class="lg-scrbtn' + (s.permanent ? ' perm' : '') + '" title="Scoreboard for this court" onclick="FFPTourn.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\',' + (s.permanent ? 'true' : 'false') + ')"><span class="ms">' + (s.permanent ? 'connected_tv' : 'cast') + '</span>' + esc(s.screen_code) + '</button>' : '')
-          + '<button class="lg-btn sm" title="Connect a scoring tablet to this pitch" onclick="FFPTourn.pinPanel(\'' + s.id + '\',\'' + esc(s.name) + '\')"><span class="ms">tablet_android</span>Connect a tablet</button>'
+          + (s.screen_code ? '<button class="lg-scrbtn' + (s.permanent ? ' perm' : '') + '" title="Scoreboard for this ' + surfWord() + '" onclick="FFPTourn.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\',' + (s.permanent ? 'true' : 'false') + ')"><span class="ms">' + (s.permanent ? 'connected_tv' : 'cast') + '</span>' + esc(s.screen_code) + '</button>' : '')
+          + '<button class="lg-btn sm" title="Connect a scoring tablet to this ' + surfWord() + '" onclick="FFPTourn.pinPanel(\'' + s.id + '\',\'' + esc(s.name) + '\')"><span class="ms">tablet_android</span>Connect a tablet</button>'
           + '<span class="ms x" onclick="FFPTourn.removeSurface(\'' + s.id + '\')">delete</span></div>'
           + (S.pinFor === s.id ? pinHtml(s) : '');
       }).join('');
@@ -1583,7 +1583,7 @@
       + '<span class="qr" id="tg-qr"></span>'
       + '<span class="g"><span class="lb">' + esc(s2.name) + ', connect a tablet</span>'
       + '<div class="code">' + esc(p.pin.slice(0, 3) + ' ' + p.pin.slice(3)) + '</div>'
-      + '<div class="exp">Good for 15 minutes. Anyone with the PIN can connect a tablet to this pitch.</div>'
+      + '<div class="exp">Good for 15 minutes. Anyone with the PIN can connect a tablet to this ' + surfWord() + '.</div>'
       + '<div class="how">On the tablet open <b>' + esc(TABLET_URL.replace(/^https?:\/\//, '')) + '</b> and type the PIN, or point its camera at this square. It stays here until you disconnect it.</div>'
       + '<div class="acts"><button class="lg-btn" onclick="FFPTourn.pinPanel(\'' + s2.id + '\',\'' + esc(s2.name) + '\')"><span class="ms">refresh</span>New PIN</button>'
       + '<button class="lg-btn" onclick="FFPTourn.copy(\'' + esc(url) + '\')"><span class="ms">content_copy</span>Copy the link</button>'
@@ -1913,7 +1913,7 @@
            field is chosen once on the Venues tab, so this only reports it. */
         html += '<div class="sc-ch"><b>' + esc(f.name) + '</b>'
           + (f.venue ? '<span class="vn">' + esc(f.venue) + '</span>' : '')
-          + (f.is_main ? '<span class="mn">Main field</span>' : '')
+          + (f.is_main ? '<span class="mn">Main ' + surfWord() + '</span>' : '')
           + '<span class="ct">' + list.length + (list.length === 1 ? ' match' : ' matches') + '</span>'
           + '<button class="sc-add" onclick="FFPTourn.addMatch(\'' + slot + '\')">' + ic('add') + 'Add match</button></div>'
           + items.map(function (it) {
@@ -1932,7 +1932,7 @@
         + loose.map(function (m) { return schedRow(m, null, true, true); }).join('')
         + (S.addMatch === 'loose' ? matchEditor() : '');
     }
-    if (!html) html = '<div class="lg-empty">No schedule yet. Auto-plan builds every division in one go, so no two are given the same court at the same moment.</div>';
+    if (!html) html = '<div class="lg-empty">No schedule yet. Auto-plan builds every division in one go, so no two are given the same ' + surfWord() + ' at the same moment.</div>';
     box.innerHTML = html + (S.rbAsk ? rebuildConfirm() : '');
   }
 
@@ -2287,8 +2287,8 @@
      So it is set on the Venues tab and only reported on the schedule. */
   async function setMainCourt(fieldId, on) {
     try { await sb().rpc('lt_field_set_main', { p_id: fieldId, p_on: on !== false }); }
-    catch (e) { toast('Could not set the main field', 'error'); return; }
-    toast(on === false ? 'No main field set' : 'Main field set, the final will be played there', 'success');
+    catch (e) { toast('Could not set the main ' + surfWord(), 'error'); return; }
+    toast(on === false ? 'No main ' + surfWord() + ' set' : 'Main ' + Surf() + ' set, the final will be played there', 'success');
     renderTab();
   }
   function matchEditor() {
@@ -2440,7 +2440,7 @@
              'Pick it for a one-day club event where everyone wants a full day of matches.'],
     tiered: ['{Many} are banded by ability first, then pooled inside their band, so matches stay even.',
              'With 12 {many} in 3 bands of 4, a strong {one} never draws a beginner in round one.',
-             'Pick it for a mixed-ability field where a lopsided first round would spoil the day.']
+             'Pick it for a mixed-ability field where a lopsided first round would spoil the day.'] // sport-words-ok -- the field is the entrants, not the ground
   };
   function fmtInfoBox(k) {
     var f = FORMATS.find(function (x) { return x[0] === k; }), i = FMT_INFO[k];
@@ -4172,12 +4172,14 @@
   async function renderMcTeam() {
     var host = document.getElementById('mc-team'); if (!host) return; var m = S._mc || {}; await loadSports();
     var fields = mcTeamFields();
-    if (!fields.length) { host.innerHTML = '<div class="lg-empty">This sport has no team match-stat fields.</div>'; return; }
+    if (!fields.length) { host.innerHTML = '<div class="lg-empty">This sport has no team match-stat fields.</div>'; return; } // sport-words-ok -- a stat field, not a playing surface
     var gr; try { gr = await sb().rpc('lt_team_match_stats_get', { p_scope: 'tourn', p_match: S.matchOpen }); } catch (e) { gr = null; }
     var saved = (gr && gr.data) || {}; var hv = saved[m.home.id] || {}, av = saved[m.away.id] || {};
     if (!S._mcDiv) { try { var dr = await sb().from('tourn_matches').select('division_id').eq('id', S.matchOpen).single(); S._mcDiv = dr.data && dr.data.division_id; } catch (e) {} }
-    var hasPoss = fields.some(function (f) { return f.key === 'possession'; }), hasTerr = fields.some(function (f) { return f.key === 'territory'; });
-    host.innerHTML = mcPeriodHtml(m) + (hasPoss || hasTerr ? trkHtml(m, hasTerr) : '')
+    var fPoss = fields.filter(function (f) { return f.key === 'possession'; })[0];
+    var fTerr = fields.filter(function (f) { return f.key === 'territory'; })[0];
+    var hasPoss = !!fPoss, hasTerr = !!fTerr;
+    host.innerHTML = mcPeriodHtml(m) + (hasPoss || hasTerr ? trkHtml(m, fPoss, fTerr) : '')
       + '<div class="lg-teamstat"><div class="hd"><span>' + esc(m.home.name) + '</span><span class="lab"></span><span>' + esc(m.away.name) + '</span></div>'
       + fields.map(function (f) {
         return '<div class="lg-tsrow" data-key="' + esc(f.key) + '"><input class="lg-in ts-h" type="number" value="' + (hv[f.key] != null ? hv[f.key] : '') + '" placeholder="0"><span class="lab">' + esc(f.label) + (f.pct ? ' %' : '') + '</span><input class="lg-in ts-a" type="number" value="' + (av[f.key] != null ? av[f.key] : '') + '" placeholder="0"></div>';
@@ -4258,17 +4260,17 @@
   function _trk() { if (!S._tracker) S._tracker = { running: false, poss: null, half: null, ph: 0, pa: 0, hh: 0, ha: 0, total: 0 }; return S._tracker; }
   function fmtClock(s) { s = s || 0; var m = Math.floor(s / 60), ss = s % 60; return (m < 10 ? '0' : '') + m + ':' + (ss < 10 ? '0' : '') + ss; }
   function trkPct(a, b) { var s = a + b; return s ? Math.round(a / s * 100) : 0; }
-  function trkHtml(m, hasTerr) {
+  function trkHtml(m, fPoss, fTerr) {
     var t = _trk();
-    var terr = hasTerr ? '<div class="lg-trk-grp"><div class="lg-trk-lab">Field position — which half the ball is in</div><div class="lg-trk-btns">'
+    var terr = fTerr ? '<div class="lg-trk-grp"><div class="lg-trk-lab">' + esc(fTerr.label) + ' — which half the ball is in</div><div class="lg-trk-btns">'
       + '<button class="lg-trk-b" data-half="home" onclick="FFPTourn.trkHalf(\'home\')">' + esc(m.home.name) + ' half</button>'
       + '<button class="lg-trk-b" data-half="away" onclick="FFPTourn.trkHalf(\'away\')">' + esc(m.away.name) + ' half</button></div></div>' : '';
     return '<div class="lg-trk"><div class="lg-trk-clock"><div class="t" id="trk-clock">' + fmtClock(t.total) + '</div><span class="sp"></span>'
       + '<button class="lg-btn" id="trk-toggle" onclick="FFPTourn.trkToggle()">Start</button>'
       + '<button class="lg-btn ghost" onclick="FFPTourn.trkReset()">Reset</button></div>'
-      + '<div class="lg-trk-grp"><div class="lg-trk-lab">Possession — who has the ball</div><div class="lg-trk-btns">'
+      + (fPoss ? '<div class="lg-trk-grp"><div class="lg-trk-lab">' + esc(fPoss.label) + ' — who has the ball</div><div class="lg-trk-btns">'
       + '<button class="lg-trk-b" data-poss="home" onclick="FFPTourn.trkPoss(\'home\')">' + esc(m.home.name) + ' <span>0%</span></button>'
-      + '<button class="lg-trk-b" data-poss="away" onclick="FFPTourn.trkPoss(\'away\')">' + esc(m.away.name) + ' <span>0%</span></button></div></div>'
+      + '<button class="lg-trk-b" data-poss="away" onclick="FFPTourn.trkPoss(\'away\')">' + esc(m.away.name) + ' <span>0%</span></button></div></div>' : '')
       + terr
       + '<div class="lg-trk-apply"><span class="sum" id="trk-sum"></span><button class="lg-btn pri" onclick="FFPTourn.trkApply()">' + ic('done_all') + 'Apply to fields</button></div></div>';
   }
@@ -4886,7 +4888,7 @@
       var r; try { r = await sb().rpc('tablet_pair_start', { p_court: null, p_field: fid }); } catch (e) { r = { error: e }; }
       var m = String((r.error && r.error.message) || '');
       S.pin = r.error
-        ? { err: /not_yours/.test(m) ? 'That pitch is not yours to connect.' : /too_many_codes/.test(m) ? 'Too many PINs live for this pitch. Wait a few minutes.' : 'Could not make a PIN.' }
+        ? { err: /not_yours/.test(m) ? 'That ' + surfWord() + ' is not yours to connect.' : /too_many_codes/.test(m) ? 'Too many PINs live for this ' + surfWord() + '. Wait a few minutes.' : 'Could not make a PIN.' }
         : { pin: r.data && r.data.pin };
       await reVenues();
       if (S.pin && S.pin.pin) drawPinQr(TABLET_URL + '?pin=' + encodeURIComponent(S.pin.pin));
