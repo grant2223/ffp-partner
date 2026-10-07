@@ -74,7 +74,7 @@
     var sc = document.createElement('script'); sc.src = QR_LIB; sc.onload = go; sc.onerror = function () {}; document.head.appendChild(sc);
   }
 
-  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, divDel: null, _divUse: null, entAdd: false, entEdit: null, entDel: null, grpDraw: false, brkConfirm: false,
+  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, divDel: null, _divUse: null, _potm: null, entAdd: false, entEdit: null, entDel: null, grpDraw: false, brkConfirm: false,
     /* SERIES: the list for the dropdowns, the one being edited, and the
        panel that picks which series teams play a round. */
     seriesList: null, seriesId: null, series: null, serTab: 'rounds', serTeamEdit: null,
@@ -137,6 +137,10 @@
       '.tg-qin{width:74px;flex:none;min-width:0;box-sizing:border-box;text-align:center;}',
       '.tg-lhead{margin-top:18px;} .tg-ladder{margin:2px 0 4px;} .tg-intake{margin-bottom:4px;} .tg-xhint{margin:-6px 0 2px;}',
       '.tg-finat{display:flex;align-items:center;gap:11px;margin-top:11px;} .tg-finat span{font-size:13px;font-weight:700;color:#43525c;} .tg-tin{width:178px;min-width:0;flex:none;box-sizing:border-box;}',
+      /* the vote settings. The leagues loader draws these with .sz/.szf, which
+         this file does not define - so they get their own, scoped names. */
+      '.tp-vrow{display:flex;gap:14px;flex-wrap:wrap;} .tp-vrow .f{flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:5px;} .tp-vrow .f label{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#7c8b97;} .tp-vrow .f .lg-sel{width:100%;min-width:0;flex:none;box-sizing:border-box;height:44px;padding:0 12px;}',
+      '.tp-vnote{display:flex;gap:9px;align-items:flex-start;margin-top:13px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;} .tp-vnote .ms{font-size:18px;color:var(--ffp-blue);flex:none;margin-top:1px;}',
       '.tg-lrow{display:flex;align-items:center;gap:14px;padding:12px 2px 12px 12px;border-bottom:1px solid var(--ffp-border);position:relative;} .tg-lrow:last-child{border-bottom:0;}',
       '.tg-lrow::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:2px;background:#d7dee5;} .tg-lrow.tg-top::before{background:linear-gradient(180deg,#ffd868,#f2a900);}',
       '.tg-lpl{width:74px;flex:none;font-size:15px;font-weight:900;color:#12232f;font-variant-numeric:tabular-nums;} .tg-lpl small{display:block;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#a86a00;}',
@@ -2807,7 +2811,7 @@
     return n + ' ' + N.many + ' in ' + ng + ' groups, top ' + (d.groups_advance || 2) + ' of each into a knockout';
   }
   async function renderSetup(host) {
-    await loadSports(); await taxReady(); await loadMySeries();
+    await loadSports(); await taxReady(); await loadMySeries(); await loadPotm();
     var ev = S.detail.event || {}, divs = S.detail.divisions || [];
     var mode = ev.entrant_mode || 'individual';
     if (!S.divId && divs.length) S.divId = divs[0].id;
@@ -2858,7 +2862,67 @@
         + ic('add') + 'Add a division</button>';
 
     host.innerHTML = head
+      + potmVoteHtml()
       + '<div class="tg-sec"><div class="tg-sech">Divisions</div>' + rows + adder + '</div>';
+  }
+
+  /* ── FANS' PLAYER OF THE MATCH ──────────────────────────────────────────
+     Two choices and nothing else: whether the people watching get a vote, and
+     whether it closes on the whistle or fifteen minutes after it. Everything
+     else about the award is decided elsewhere - who is eligible is the team
+     sheet, and the coach's own pick is made on the sheet.
+
+     A tournament is its OWN section with its own RPCs (tourn_potm_settings,
+     tourn_set_potm_vote). It does not borrow the league's. */
+  async function loadPotm() {
+    try { var r = await sb().rpc('tourn_potm_settings', { p_tourn: S.eventId }); S._potm = (r && r.data) || null; }
+    catch (e) { S._potm = null; }
+    return S._potm;
+  }
+  function potmVoteHtml() {
+    var d = S._potm;
+    if (!d || d.error) return '';
+    var on = !!d.on, close = d.close || 'whistle';
+    return '<div class="og-sec tp-vote">'
+      + '<div class="og-hd">' + ic('how_to_vote')
+      +   '<div class="t"><b>Player of the Match</b><span>Everyone named on either team sheet is eligible. '
+      +   'Members vote in the FFP app, one vote each, and the winner is announced the moment voting closes.</span></div></div>'
+      + '<div class="tp-vrow">'
+      +   '<div class="f"><label>Fan voting</label>'
+      +     '<select class="lg-sel" id="tg-pvon" onchange="FFPTourn.potmVoteSave()">'
+      +       '<option value="on"' + (on ? ' selected' : '') + '>On for every match in this tournament</option>'
+      +       '<option value="off"' + (on ? '' : ' selected') + '>Off</option>'
+      +     '</select></div>'
+      +   (on
+          ? '<div class="f"><label>Voting closes</label>'
+            + '<select class="lg-sel" id="tg-pvcl" onchange="FFPTourn.potmVoteSave()">'
+            +   '<option value="whistle"' + (close === 'whistle' ? ' selected' : '') + '>At the end of the match</option>'
+            +   '<option value="plus15"' + (close === 'plus15' ? ' selected' : '') + '>15 minutes after the end</option>'
+            + '</select></div>'
+          : '')
+      + '</div>'
+      /* the note answers the rule that is actually SET. Printing the case for
+         fifteen minutes while the whistle is selected reads as a mistake. */
+      + (on
+        ? '<div class="tp-vnote">' + ic('schedule')
+          + '<div>' + (close === 'plus15'
+              ? 'Fifteen minutes gives anyone still at the venue, or watching the stream, time to vote after the end. '
+              : 'Voting shuts the moment the match is over, so the winner is known while everyone is still there. ')
+          + 'Totals stay hidden until voting closes, so nobody votes the bandwagon.</div></div>'
+        : '')
+      + '</div>';
+  }
+  async function potmVoteSave() {
+    var onEl = document.getElementById('tg-pvon');
+    var clEl = document.getElementById('tg-pvcl');
+    var on = onEl ? onEl.value === 'on' : null;
+    var cl = clEl ? clEl.value : null;
+    var r; try { r = (await sb().rpc('tourn_set_potm_vote',
+      { p_tourn: S.eventId, p_on: on, p_close: cl })).data; } catch (e) { r = null; }
+    if (!r || r.error) { toast('Could not save the voting settings', 'error'); return; }
+    toast(r.on ? 'Fan voting on, closing ' + (r.close === 'plus15' ? '15 minutes after the end' : 'at the end of the match')
+               : 'Fan voting off', 'success');
+    await loadPotm(); renderTab();
   }
   function divFormatEditor(dv) {
     var k = fmtOfDiv(dv), n = dv.entrant_count || 0, N = nouns(dv);
@@ -5052,7 +5116,7 @@
     serPick: serPick, serImg: serImg, serTeamLogo: serTeamLogo,
     serEnterOpen: serEnterOpen, serEnterCancel: serEnterCancel, serEnterToggle: serEnterToggle, serEnterAll: serEnterAll, serEnterDo: serEnterDo,
     tierPreview: tierPreview, tierPools: tierPools, tierIntake: tierIntake,
-    finalsWhen: finalsWhen,
+    finalsWhen: finalsWhen, potmVoteSave: potmVoteSave,
     build: BUILD,
     open: open, startCreate: startCreate, cancelCreate: cancelCreate, doCreate: doCreate,
     back: function () { S.view = 'list'; renderList(); }, tab: function (t) { S.tab = t; S.matchOpen = null; renderEditor(); },
