@@ -2425,9 +2425,13 @@
             + '</select></div>'
           : '')
       + '</div>'
+      /* the note answers the rule that is actually SET. Printing the case for
+         fifteen minutes while the whistle is selected reads as a mistake. */
       + (on
         ? '<div class="szf">' + ic('schedule')
-          + '<div>Fifteen minutes gives anyone still at the ground, or watching the stream, time to vote after the whistle. '
+          + '<div>' + (close === 'plus15'
+              ? 'Fifteen minutes gives anyone still at the ground, or watching the stream, time to vote after the whistle. '
+              : 'Voting shuts on the whistle, so the winner is known while everyone is still at the ground. ')
           + 'Totals stay hidden until voting closes, so nobody votes the bandwagon.</div></div>'
         : '')
       + '</div>';
