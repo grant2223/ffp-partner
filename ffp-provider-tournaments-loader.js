@@ -135,7 +135,7 @@
       '.tg-qrow:nth-child(2) .tg-qp{background:linear-gradient(160deg,#ffe6a8,#f6c95e);} .tg-qrow:nth-child(n+3) .tg-qp{background:#e7edf1;color:#7b8f9c;}',
       '.tg-qn{flex:1;min-width:0;font-size:14px;font-weight:800;color:#12232f;} .tg-qn small{display:block;font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);}',
       '.tg-qin{width:74px;flex:none;min-width:0;box-sizing:border-box;text-align:center;}',
-      '.tg-lhead{margin-top:18px;} .tg-ladder{margin:2px 0 4px;}',
+      '.tg-lhead{margin-top:18px;} .tg-ladder{margin:2px 0 4px;} .tg-intake{margin-bottom:4px;} .tg-xhint{margin:-6px 0 2px;}',
       '.tg-lrow{display:flex;align-items:center;gap:14px;padding:12px 2px 12px 12px;border-bottom:1px solid var(--ffp-border);position:relative;} .tg-lrow:last-child{border-bottom:0;}',
       '.tg-lrow::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:2px;background:#d7dee5;} .tg-lrow.tg-top::before{background:linear-gradient(180deg,#ffd868,#f2a900);}',
       '.tg-lpl{width:74px;flex:none;font-size:15px;font-weight:900;color:#12232f;font-variant-numeric:tabular-nums;} .tg-lpl small{display:block;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#a86a00;}',
@@ -2646,7 +2646,41 @@
       el = document.getElementById('tg-q' + i);
       q.push(el ? Math.max(0, +el.value || 0) : ((dv.tier_quota || [])[i] != null ? dv.tier_quota[i] : (i < 2 ? 2 : 0)));
     }
-    return { g: g, bs: bs, q: q, n: dv.entrant_count || 0 };
+    return { g: g, bs: bs, q: q, n: dv.entrant_count || 0, mode: intakeOf(dv) };
+  }
+  function intakeOf(dv) { return dv.cup_intake === 'cross' ? 'cross' : 'quota'; }
+
+  /* ── RANKED ACROSS THE POOLS ────────────────────────────────────────────
+     The database orders every team by FINISHING POSITION first and then by
+     record per match played (_tourn_cross_rank), so seed n belongs to a known
+     position: with pools of 3, 3 and 4 the first three seeds are the pool
+     winners, the next three the runners-up, and so on. Naming each slot that
+     way is the only honest preview - a bare "seed 4" is nothing an organiser
+     can plan against, and it is not what the sport calls it either. */
+  function crossSeeds(sizes) {
+    var POS = ['pool winner', 'runner-up', '3rd-placed', '4th-placed', '5th-placed', '6th-placed'];
+    var NTH = ['Best', '2nd-best', '3rd-best', '4th-best', '5th-best', '6th-best'];
+    var maxPos = Math.max.apply(null, sizes), out = [], pos, within, n, word, txt;
+    for (pos = 1; pos <= maxPos; pos++) {
+      n = sizes.filter(function (s) { return s >= pos; }).length;
+      word = POS[pos - 1] || (pos + 'th-placed');
+      for (within = 1; within <= n; within++) {
+        txt = n === 1 ? word : (NTH[within - 1] || (within + 'th-best')) + ' ' + word;
+        out.push(txt.charAt(0).toUpperCase() + txt.slice(1));
+      }
+    }
+    return out;
+  }
+  function crossBands(sizes, bandSize) {
+    var seeds = crossSeeds(sizes), bands = [], place = 1, i, j;
+    for (i = 0; i < seeds.length; i += bandSize) {
+      var b = seeds.slice(i, i + bandSize), from = place, to = place + b.length - 1;
+      place = to + 1;
+      var play = b.length % 2 === 1 ? b.slice(0, -1) : b, ties = [];
+      for (j = 0; j < play.length / 2; j++) ties.push([play[j], play[play.length - 1 - j]]);
+      bands.push({ from: from, to: to, slots: b, ties: ties });
+    }
+    return bands;
   }
   function tierQuotaHtml(dv) {
     var c = tierCfg(dv), sizes = tierSizes(c.n, c.g), N = nouns(dv);
@@ -2661,11 +2695,13 @@
   function tierLadderHtml(dv) {
     var c = tierCfg(dv);
     if (!c.n) return '<div class="tg-hint">Add ' + nouns(dv).many + ' and the bands appear here.</div>';
-    return tierBands(tierSizes(c.n, c.g), c.q, c.bs).map(function (b, i) {
+    var sizes = tierSizes(c.n, c.g);
+    var bands = c.mode === 'cross' ? crossBands(sizes, c.bs) : tierBands(sizes, c.q, c.bs);
+    return bands.map(function (b, i) {
       var range = b.from + (b.to > b.from ? '&ndash;' + b.to : '');
       var ties = b.ties.length
-        ? b.ties.map(function (t) { return '<span class="tg-tie">' + t[0] + ' <i>v</i> ' + t[1] + '</span>'; }).join('')
-        : '<span class="tg-tie tg-none">decided on pool record</span>';
+        ? b.ties.map(function (t) { return '<span class="tg-tie">' + esc(t[0]) + ' <i>v</i> ' + esc(t[1]) + '</span>'; }).join('')
+        : '<span class="tg-tie tg-none">decided on ' + (c.mode === 'cross' ? 'record' : 'pool record') + '</span>';
       return '<div class="tg-lrow' + (i === 0 ? ' tg-top' : '') + '"><span class="tg-lpl">' + range
         + '<small>' + (i === 0 ? 'Cup' : '') + '</small></span><span class="tg-lties">' + ties + '</span></div>';
     }).join('');
@@ -2673,6 +2709,18 @@
   function tierPreview() {
     var dv = (S.detail.divisions || []).find(function (x) { return x.id === S.divId; }); if (!dv) return;
     var l = document.getElementById('tg-ladder'); if (l) l.innerHTML = tierLadderHtml(dv);
+  }
+  /* switching the intake takes the quota rows off the screen or puts them
+     back, so the whole block is laid out again rather than patched */
+  function tierIntake(sel) {
+    var dv = (S.detail.divisions || []).find(function (x) { return x.id === S.divId; }); if (!dv) return;
+    /* the block is laid out again, so anything typed into the pool count, the
+       band size or the quota boxes and not yet saved is read off the screen
+       FIRST - switching the intake must not quietly undo it */
+    var c = tierCfg(dv);
+    dv.num_groups = c.g; dv.band_size = c.bs; dv.tier_quota = c.q;
+    dv.cup_intake = (sel && sel.value === 'cross') ? 'cross' : 'quota';
+    renderTab();
   }
   /* the pool count changes how many quota rows there are, so that one rebuilds
      the rows as well - and only that one, or typing in a quota box would tear
@@ -2802,12 +2850,25 @@
         + '<div class="lg-fld"><div class="lg-lab">Places per band</div>'
         +   '<input class="lg-in tg-num" id="tg-bs" type="number" min="2" max="8" value="' + tc.bs + '" oninput="FFPTourn.tierPreview()"></div></div>'
         + capHintRow(dv, k)
-        + '<div class="lg-fld"><div class="lg-lab">Into the top band</div>'
-        +   '<div class="tg-quota" id="tg-quota">' + tierQuotaHtml(dv) + '</div>'
-        +   '<div class="tg-hint">Pools are listed strongest first. A pool set to none sends nobody to the top band however well it plays &mdash; that is what makes it tiered rather than even.</div></div>'
+        + '<div class="lg-fld tg-intake"><div class="lg-lab">How the top band is filled</div>'
+        +   '<select class="lg-sel" id="tg-intake" onchange="FFPTourn.tierIntake(this)">'
+        +     '<option value="quota"' + (tc.mode === 'quota' ? ' selected' : '') + '>Pool by pool, a set number from each</option>'
+        +     '<option value="cross"' + (tc.mode === 'cross' ? ' selected' : '') + '>Ranked across the pools</option>'
+        +   '</select></div>'
+        /* Ranked across the pools has no quota to set, and the ladder below
+           already names every slot - a second list of the same thing would be
+           the same fact twice down one screen. */
+        + (tc.mode === 'cross'
+            ? '<div class="tg-hint tg-xhint">Every pool winner is compared with every other pool winner, then the runners-up with the runners-up, and so on down. Pools of different sizes play different numbers of matches, so records are compared per match played &mdash; points, then difference, then points scored.</div>'
+            : '<div class="lg-fld"><div class="lg-lab">Into the top band</div>'
+              + '<div class="tg-quota" id="tg-quota">' + tierQuotaHtml(dv) + '</div>'
+              + '<div class="tg-hint">Pools are listed strongest first. A pool set to none sends nobody to the top band however well it plays &mdash; that is what makes it tiered rather than even.</div></div>')
         + '<div class="lg-lab tg-lhead">What that gives you</div>'
         + '<div class="tg-ladder" id="tg-ladder">' + tierLadderHtml(dv) + '</div>'
-        + '<div class="tg-hint">Every ' + N.one + ' finishes with a place. Winners meet winners and losers meet losers down each band, and the pool slots fill in as results land.</div>';
+        /* ranked across the pools has no pool slots to fill - every place is
+           settled from the one ranking once the last pool game is played */
+        + '<div class="tg-hint">Every ' + N.one + ' finishes with a place. Winners meet winners and losers meet losers down each band, and the '
+        + (tc.mode === 'cross' ? 'slots fill in once the pools are done' : 'pool slots fill in as results land') + '.</div>';
     }
     if (k === 'grp' || k === 'gk') incl += tgPtsBlock(dv);
     if (k === 'monrad') incl += '<div class="tg-hint">Monrad re-ranks everyone after every round, so nobody is knocked out and every place is decided. There are no extra draws to add.</div>';
@@ -3018,6 +3079,7 @@
       if (!dv.num_groups) dv.num_groups = 3;
       if (!dv.band_size) dv.band_size = 4;
       if (!dv.tier_quota) dv.tier_quota = [2, 2, 0].slice(0, dv.num_groups);
+      if (!dv.cup_intake) dv.cup_intake = 'quota';
     }
     renderTab();
   }
@@ -3048,9 +3110,10 @@
     if (k === 'tiered') {
       var tc = tierCfg(dv);
       p.num_groups = tc.g; p.band_size = tc.bs; p.tier_quota = tc.q;
+      p.cup_intake = tc.mode;
       p.groups_advance = tc.n || 2;   // everyone is placed, so everyone goes on
       p.side_draws = 'places';
-    } else { p.tier_quota = null; p.band_size = null; }
+    } else { p.tier_quota = null; p.band_size = null; p.cup_intake = 'quota'; }
     var r; try { r = await sb().rpc('tourn_division_save', { p_tourn: S.eventId, p_id: S.divId, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast(said(r.error) || 'Could not save the format', 'error'); return false; }
     if (quiet) return true;
@@ -4924,7 +4987,7 @@
     serPtsSave: serPtsSave, serPtsPlace: serPtsPlace, serPtsPreset: serPtsPreset, serDetailsSave: serDetailsSave,
     serPick: serPick, serImg: serImg, serTeamLogo: serTeamLogo,
     serEnterOpen: serEnterOpen, serEnterCancel: serEnterCancel, serEnterToggle: serEnterToggle, serEnterAll: serEnterAll, serEnterDo: serEnterDo,
-    tierPreview: tierPreview, tierPools: tierPools,
+    tierPreview: tierPreview, tierPools: tierPools, tierIntake: tierIntake,
     build: BUILD,
     open: open, startCreate: startCreate, cancelCreate: cancelCreate, doCreate: doCreate,
     back: function () { S.view = 'list'; renderList(); }, tab: function (t) { S.tab = t; S.matchOpen = null; renderEditor(); },
