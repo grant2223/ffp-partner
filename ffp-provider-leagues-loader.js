@@ -34,7 +34,7 @@
     return nouns({ kind: kinds[0] || 'team' });
   }
 
-  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, divDel: null, _divUse: null, entAdd: false, entEdit: null, entDel: null, rb: null, rbDiv: null, rbInfo: null, rbByes: null };
+  var S = { view: 'list', eventId: null, detail: null, tab: 'information', divId: null, sports: null, creating: false, divEdit: null, divDel: null, _divUse: null, _potm: null, entAdd: false, entEdit: null, entDel: null, rb: null, rbDiv: null, rbInfo: null, rbByes: null };
 
   function injectCss() {
     if (document.getElementById('lgb-css')) return;
@@ -2360,7 +2360,8 @@
       + '<div class="lgf-hint" id="lg-sporthint">' + esc(sportSetHint(ev.sport_key)) + '</div></div>'
       + rulesBlock(ev)
       + '<button class="lg-btn pri" onclick="FFPLeague.saveSport()">' + ic('check') + 'Save</button></div>'
-      + sheetSizeHtml();
+      + sheetSizeHtml()
+      + potmVoteHtml();
     if (!divs.length) {
       host.innerHTML = head + '<div class="lgf-sec"><div class="lgf-sech">Format, per division</div>'
         + '<div class="lg-empty" style="text-align:left;padding:4px 0">Add a division first, then set how each one is run.</div></div>';
@@ -2387,10 +2388,63 @@
      reads "On the pitch", a netball league "On the court". A sport with no
      positions of its own has no team sheet, and the section does not appear. */
   async function loadSheetSize() {
+    await loadPotm();
     try { var r = await sb().rpc('league_sheet_size', { p_league: S.eventId }); S._sz = (r && r.data) || null; }
     catch (e) { S._sz = null; }
     return S._sz;
   }
+  /* FANS' PLAYER OF THE MATCH. Two choices and nothing else: whether the
+     people watching get a vote, and whether it closes on the whistle or
+     fifteen minutes after it. Everything else about the award is already
+     decided elsewhere -- who is eligible is the team sheet, and the coach's
+     own pick is made on the sheet. */
+  async function loadPotm() {
+    try { var r = await sb().rpc('league_potm_settings', { p_league: S.eventId }); S._potm = (r && r.data) || null; }
+    catch (e) { S._potm = null; }
+    return S._potm;
+  }
+  function potmVoteHtml() {
+    var d = S._potm;
+    if (!d || d.error) return '';
+    var on = !!d.on, close = d.close || 'whistle';
+    return '<div class="og-sec">'
+      + '<div class="og-hd">' + ic('how_to_vote')
+      +   '<div class="t"><b>Player of the Match</b><span>Everyone named on either team sheet is eligible. '
+      +   'Members vote in the FFP app, one vote each, and the winner is announced the moment voting closes.</span></div></div>'
+      + '<div class="sz">'
+      +   '<div class="f"><label>Fan voting</label>'
+      +     '<select class="lg-sel" id="lg-pvon" onchange="FFPLeague.potmVoteSave()">'
+      +       '<option value="on"' + (on ? ' selected' : '') + '>On for every match in this league</option>'
+      +       '<option value="off"' + (on ? '' : ' selected') + '>Off</option>'
+      +     '</select></div>'
+      +   (on
+          ? '<div class="f"><label>Voting closes</label>'
+            + '<select class="lg-sel" id="lg-pvcl" onchange="FFPLeague.potmVoteSave()">'
+            +   '<option value="whistle"' + (close === 'whistle' ? ' selected' : '') + '>At the full-time whistle</option>'
+            +   '<option value="plus15"' + (close === 'plus15' ? ' selected' : '') + '>15 minutes after full time</option>'
+            + '</select></div>'
+          : '')
+      + '</div>'
+      + (on
+        ? '<div class="szf">' + ic('schedule')
+          + '<div>Fifteen minutes gives anyone still at the ground, or watching the stream, time to vote after the whistle. '
+          + 'Totals stay hidden until voting closes, so nobody votes the bandwagon.</div></div>'
+        : '')
+      + '</div>';
+  }
+  async function potmVoteSave() {
+    var onEl = document.getElementById('lg-pvon');
+    var clEl = document.getElementById('lg-pvcl');
+    var on = onEl ? onEl.value === 'on' : null;
+    var cl = clEl ? clEl.value : null;
+    var r; try { r = (await sb().rpc('league_set_potm_vote',
+      { p_league: S.eventId, p_on: on, p_close: cl })).data; } catch (e) { r = null; }
+    if (!r || r.error) { toast('Could not save the voting settings', 'error'); return; }
+    toast(r.on ? 'Fan voting on, closing ' + (r.close === 'plus15' ? '15 minutes after full time' : 'at the whistle')
+               : 'Fan voting off', 'success');
+    await loadPotm(); renderTab();
+  }
+
   function sheetSizeHtml() {
     var d = S._sz;
     if (!d || d.error || !d.has_positions) return '';
@@ -3856,6 +3910,7 @@
       if (t) t.parentNode.style.display = (v2 === 'none' ? 'none' : '');
     }, pickImg: pickImg, pickRulesPdf: pickRulesPdf, removeRulesPdf: removeRulesPdf, entLogo: entLogo, editDivision: editDivision, cancelDivision: cancelDivision, saveDivision: saveDivision,
     askRemoveDivision: askRemoveDivision, cancelRemoveDivision: cancelRemoveDivision, removeDivision: removeDivision,
+    potmVoteSave: potmVoteSave,
     addEntrant: addEntrant, bulkAthletes: bulkAthletes, cancelEntrant: cancelEntrant, saveEntrant: saveEntrant,
     editEntrant: editEntrant, cancelEntrantEdit: cancelEntrantEdit, saveEntrantEdit: saveEntrantEdit,
     askRemoveEntrant: askRemoveEntrant, cancelRemoveEntrant: cancelRemoveEntrant, removeEntrant: removeEntrant,
