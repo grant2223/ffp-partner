@@ -382,6 +382,23 @@
       '.lg-surf .lg-vcnote{font-size:12px;font-weight:700;color:#7c8b97;margin-left:8px;}',
       '/* Open an empty draw: the format decides the shape, not the entry list. */',
       '.tg-opendraw{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--ffp-border);}'
+      /* the organiser's own words for the draws: a label saying what each
+         draw IS, then the field, so nobody has to know which one "Shield"
+         was. The only tag is on a division that has gone its own way. */
+      + '.tg-dnames{border-top:1px solid var(--ffp-border-mid);}'
+      + '.tg-dnames .r{display:flex;align-items:center;gap:14px;padding:11px 0;flex-wrap:wrap;'
+        + 'border-bottom:1px solid var(--ffp-border);}'
+      + '.tg-dnames .r .g{flex:0 1 330px;min-width:0;}'
+      + '.tg-dnames .r .g b{display:block;font-size:13.5px;font-weight:800;color:var(--ffp-text);}'
+      + '.tg-dnames .r .g span{display:block;margin-top:1px;font-size:12px;font-weight:600;'
+        + 'color:var(--ffp-text-muted);line-height:1.45;}'
+      + '.tg-dnames .r .f{flex:0 1 260px;min-width:0;}'
+      + '.tg-dnames .r .f .lg-in{width:100%;min-width:0;box-sizing:border-box;}'
+      + '.tg-dnames .r .f .own{display:flex;align-items:center;gap:4px;margin-top:5px;'
+        + 'font-style:normal;font-size:11.5px;font-weight:800;color:var(--ffp-gold);}'
+      + '.tg-dnames .r .f .own .ms{font-size:15px;color:var(--ffp-gold) !important;}'
+      + '.tg-dnscope{max-width:320px;}'
+      + '@media (max-width:560px){.tg-dnames .r .g,.tg-dnames .r .f{flex:1 1 100%;}}'
       /* a division is a block with a header that stands out, not a plain row */
       + '.tg-dv{margin-bottom:16px;}'
       + '.tg-dvhd{display:flex;align-items:center;gap:13px;padding:13px 17px;border-radius:12px;cursor:pointer;background:linear-gradient(95deg,var(--ffp-blue-darker),var(--ffp-blue));color:#fff;}'
@@ -3579,8 +3596,64 @@
     if (k === 'grp') return n + ' ' + N.many + ' in ' + ng + ' groups, ranked into one table';
     return n + ' ' + N.many + ' in ' + ng + ' groups, top ' + (d.groups_advance || 2) + ' of each into a knockout';
   }
+  /* THE TWO WAYS A MATCH GETS A REFEREE. The wording is the answer to the
+     question above it, so the hint changes with the choice rather than
+     describing the option that was not taken. */
+  var REFS = [
+    ['previous_match', 'Players from the previous match',
+     'The two who have just come off that court mark the next match on it, and they can '
+     + 'enter the score from their own phone. The first match of the day on each court still '
+     + 'needs someone named, and the day check lists them.'],
+    ['named', 'Officials I name myself',
+     'Nobody is put on a match automatically. Name your officials on the Officials tab and '
+     + 'give them the days or matches they cover.']
+  ];
+  function refsOf(ev) {
+    var k = (ev && ev.refs_source) || 'named';
+    return REFS.find(function (x) { return x[0] === k; }) || REFS[1];
+  }
+  function refsHint() {
+    var el = document.getElementById('tg-refshint'); if (!el) return;
+    var k = v('tg-refs');
+    el.textContent = (REFS.find(function (x) { return x[0] === k; }) || REFS[1])[2];
+  }
+  function refsInfoBox() {
+    return '<div class="tg-nfobox solo">'
+      + '<button class="close" onclick="FFPTourn.refsInfo()" title="Close">' + ic('close') + '</button>'
+      + '<h4>' + ic('info') + 'Who ends up marking what</h4>'
+      + '<p><b>Players from the previous match.</b> Whoever has just finished on that court marks '
+      + 'the next match on it, so nobody has to be rostered. The <b>first match of the day on each '
+      + 'court</b> has no previous match, so it is the one you still name somebody for. The day '
+      + 'check on the Match day tab lists exactly those and nothing else.</p>'
+      + '<p>Entering the score from a phone needs an FFP account, so an entrant added by name '
+      + 'alone marks on the court screen instead.</p>'
+      + '<p><b>Officials I name myself.</b> Nobody is put on a match automatically. Name them on '
+      + 'the Officials tab and give each one the days or matches they cover.</p>'
+      + '<p>Naming an official on a single match always wins, whichever of the two is set, so a '
+      + 'final can have a real referee on it.</p>'
+      + '</div>';
+  }
+  function refsInfo() { S.refsInfo = !S.refsInfo; renderTab(); }
+  function refsField(ev) {
+    var cur = refsOf(ev);
+    return '<div class="lg-fld"><div class="lg-lab">'
+      + '<button class="nfo-i" title="Who ends up marking what"'
+      +   ' onclick="FFPTourn.refsInfo()">' + ic('info') + '</button>'
+      + 'Who marks each match?</div>'
+      + '<select class="lg-sel" id="tg-refs" onchange="FFPTourn.refsHint()">'
+      + REFS.map(function (x) {
+          return '<option value="' + x[0] + '"' + (x[0] === cur[0] ? ' selected' : '') + '>'
+            + esc(x[1]) + '</option>';
+        }).join('')
+      + '</select><div class="tg-hint" id="tg-refshint">' + esc(cur[2]) + '</div>'
+      /* the explainer opens UNDER the field, so the dropdown never gets pushed
+         away from the question it answers */
+      + (S.refsInfo ? refsInfoBox() : '') + '</div>';
+  }
+
   async function renderSetup(host) {
     await loadSports(); await taxReady(); await loadMySeries(); await loadPotm();
+    await loadDrawNames();
     var ev = S.detail.event || {}, divs = S.detail.divisions || [];
     var mode = ev.entrant_mode || 'individual';
     if (!S.divId && divs.length) S.divId = divs[0].id;
@@ -3603,6 +3676,7 @@
       + serSetupHtml(ev)
       + '<div class="lg-fld"><div class="lg-lab">Who competes?</div><div class="lg-seg" id="tg-mode">' + modeSeg + '</div>'
       + '<div class="tg-hint" id="tg-modehint">' + esc(modeHint) + '</div></div>'
+      + refsField(ev)
       + '<button class="lg-btn pri" onclick="FFPTourn.saveSetup()">' + ic('check') + 'Save</button>'
       + '</div>';
 
@@ -3635,6 +3709,7 @@
 
     host.innerHTML = head
       + potmVoteHtml()
+      + drawNamesHtml()
       + '<div class="tg-sec"><div class="tg-sech">Divisions</div>' + rows + adder + '</div>';
   }
 
@@ -3695,6 +3770,121 @@
     toast(r.on ? 'Fan voting on, closing ' + (r.close === 'plus15' ? '15 minutes after the end' : 'at the end of the match')
                : 'Fan voting off', 'success');
     await loadPotm(); renderTab();
+  }
+  /* ── THE ORGANISER'S OWN WORDS FOR THE DRAWS ────────────────────────────
+     The label on the left says what the draw IS, in terms that stay true
+     whatever it gets called: "Beaten in round one". Rows run in the order the
+     draws feed each other, which is the order tourn_draws already sorts them,
+     so the Bowl sits under the draw it comes off.
+
+     Only what the organiser CHANGED is sent. Rendering the inherited word in
+     the box and posting the lot back would quietly give a division its own
+     copy of a word it was merely inheriting, and the next event-wide rename
+     would then skip it. */
+  var DN_KEYS = ['main', 'plate', 'bowl', 'shield'];
+  var DN_ROLE = {
+    main:   ['Top draw', 'everyone starts here'],
+    plate:  ['Beaten in round one', 'a knockout of their own'],
+    bowl:   ['Beaten in the draw above', 'a third chance for the earliest out'],
+    shield: ['Beaten in the quarter-finals', 'so nobody who came in on a bye finishes on two']
+  };
+  async function loadDrawNames() {
+    try { var r = await sb().rpc('tourn_draw_names_get', { p_tourn: S.eventId });
+          S._dn = (r && r.data) || null; }
+    catch (e) { S._dn = null; }
+    return S._dn;
+  }
+  function dnDivs() { return ((S._dn && S._dn.divisions) || []); }
+  function dnDrawOf(div, key) {
+    return ((div && div.draws) || []).find(function (x) { return x.key === key; }) || null;
+  }
+  /* the keys actually in play: one division's own, or every key any division
+     has, so a rename across the event cannot miss a draw */
+  function dnKeys(scope) {
+    var ds = dnDivs(), want = {};
+    ds.forEach(function (d) {
+      if (scope && d.id !== scope) return;
+      ((d.draws) || []).forEach(function (x) { want[x.key] = 1; });
+    });
+    return DN_KEYS.filter(function (k) { return want[k]; });
+  }
+  function dnValue(scope, key) {
+    var ds = dnDivs();
+    if (scope) { var d0 = dnDrawOf(ds.find(function (d) { return d.id === scope; }), key);
+                 return d0 ? d0.name : ''; }
+    if (S._dn && S._dn.event && S._dn.event[key]) return S._dn.event[key];
+    for (var i = 0; i < ds.length; i++) {
+      var dr = dnDrawOf(ds[i], key); if (dr) return dr.name;
+    }
+    return '';
+  }
+  /* which divisions have gone their own way on this draw - said plainly,
+     because the event-wide box above will not change them */
+  function dnOwn(scope, key) {
+    if (scope) return '';
+    var names = dnDivs().filter(function (d) {
+      var dr = dnDrawOf(d, key); return dr && dr.source === 'division';
+    }).map(function (d) { return d.name; });
+    if (!names.length) return '';
+    return names.join(', ') + (names.length > 1 ? ' use their own words' : ' uses its own word');
+  }
+  function drawNamesHtml() {
+    var ds = dnDivs(); if (!ds.length) return '';
+    var scope = S.dnScope || '';
+    if (scope && !ds.some(function (d) { return d.id === scope; })) { scope = ''; S.dnScope = ''; }
+    var keys = dnKeys(scope); if (!keys.length) return '';
+    var rows = keys.map(function (k) {
+      var role = DN_ROLE[k] || [k, ''], val = dnValue(scope, k), own = dnOwn(scope, k);
+      return '<div class="r"><div class="g"><b>' + esc(role[0]) + '</b><span>' + esc(role[1]) + '</span></div>'
+        + '<div class="f"><input class="lg-in dn-in" data-k="' + esc(k) + '" maxlength="40"'
+        +   ' value="' + esc(val) + '" placeholder="' + esc(val) + '"'
+        +   ' data-was="' + esc(val) + '">'
+        + (own ? '<em class="own">' + ic('call_split') + esc(own) + '</em>' : '')
+        + '</div></div>';
+    }).join('');
+    return '<div class="tg-sec">'
+      + '<div class="tg-sech">What the draws are called</div>'
+      + '<div class="og-hd">' + ic('label')
+      +   '<div class="t"><b>Your words, not ours</b>'
+      +   '<span>Cup, Plate, Shield and Bowl are squash and rugby words. Whatever you type here is '
+      +   'what appears on the draw, the schedule, the venue screens and every player\'s app.</span></div></div>'
+      + '<div class="lg-fld tg-dnscope"><div class="lg-lab">Applies to</div>'
+      +   '<select class="lg-sel" id="tg-dnscope" onchange="FFPTourn.dnScope(this.value)">'
+      +     '<option value=""' + (scope ? '' : ' selected') + '>All divisions</option>'
+      +     ds.map(function (d) {
+            return '<option value="' + d.id + '"' + (d.id === scope ? ' selected' : '') + '>'
+              + esc(d.name) + ' only</option>'; }).join('')
+      +   '</select></div>'
+      + '<div class="tg-dnames">' + rows + '</div>'
+      + '<div class="lg-fldbar" style="margin-top:15px">'
+      +   '<button class="lg-btn pri" onclick="FFPTourn.dnSave()">' + ic('check') + 'Save</button>'
+      +   '<button class="lg-btn" onclick="FFPTourn.dnReset()">' + ic('restart_alt')
+      +     'Back to standard names</button>'
+      + '</div></div>';
+  }
+  function dnScope(val) { S.dnScope = val || ''; renderTab(); }
+  async function dnPost(rows, msg) {
+    var r; try { r = await sb().rpc('tourn_draw_names_set',
+      { p_tourn: S.eventId, p_division: S.dnScope || null, p_rows: rows }); }
+    catch (e) { r = { error: e }; }
+    if (r.error) { toast(said(r.error) || 'Could not save the draw names', 'error'); return false; }
+    await loadDrawNames(); toast(msg, 'success'); await refreshDetail(); renderTab();
+    return true;
+  }
+  async function dnSave() {
+    var rows = {}, n = 0;
+    document.querySelectorAll('.tg-dnames .dn-in').forEach(function (el) {
+      var was = el.getAttribute('data-was') || '';
+      var now = String(el.value || '').trim();
+      if (now !== was) { rows[el.getAttribute('data-k')] = now; n++; }
+    });
+    if (!n) { toast('Nothing changed', 'success'); return; }
+    await dnPost(rows, 'Saved');
+  }
+  async function dnReset() {
+    var rows = {};
+    dnKeys(S.dnScope || '').forEach(function (k) { rows[k] = ''; });
+    await dnPost(rows, 'Back to the standard names');
   }
   function divFormatEditor(dv) {
     var k = fmtOfDiv(dv), n = dv.entrant_count || 0, N = nouns(dv);
@@ -3957,6 +4147,7 @@
     if (!k) { toast('Choose a sport first', 'error'); return; }
     var p = rulesPayload();
     p.sport_key = k; p.entrant_mode = (S.detail.event || {}).entrant_mode || 'individual';
+    if (document.getElementById('tg-refs')) p.refs_source = v('tg-refs');
     var r; try { r = await sb().rpc('tourn_event_save', { p_id: S.eventId, p: p }); } catch (e) { r = { error: e }; }
     if (r.error) { toast(said(r.error) || 'Could not save the sport', 'error'); return; }
     await serSaveLink();
@@ -6034,6 +6225,8 @@
     serPick: serPick, serImg: serImg, serTeamLogo: serTeamLogo,
     serEnterOpen: serEnterOpen, serEnterCancel: serEnterCancel, serEnterToggle: serEnterToggle, serEnterAll: serEnterAll, serEnterDo: serEnterDo,
     tierPreview: tierPreview, tierPools: tierPools, tierIntake: tierIntake,
+    refsHint: refsHint, refsInfo: refsInfo,
+    dnScope: dnScope, dnSave: dnSave, dnReset: dnReset,
     finalsWhen: finalsWhen, potmVoteSave: potmVoteSave,
     build: BUILD,
     open: open, startCreate: startCreate, cancelCreate: cancelCreate, doCreate: doCreate,
