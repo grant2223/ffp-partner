@@ -274,6 +274,11 @@
       '.sc-day .dw-t{border:none;border-radius:8px;background:var(--ffp-gold,#FFC847);color:#3a2600;font:inherit;font-size:11.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;padding:6px 11px;cursor:pointer;}',
       '.sc-day .dw-t.off{background:#dbe7ef;color:#55707f;}',
       '.sc-daynote{flex:1 0 100%;font-size:12px;font-weight:600;color:#8a99a8;margin-top:2px;}',
+      /* Save. Gold while there is something to save, stood down when there is
+         not, so the tab always says plainly whether the work is in. */
+      '.sc-save{border:none;background:#e3ebf1;color:#7c8b97;}',
+      '.sc-save.on{background:var(--ffp-gold,#FFC847);color:#3a2600;}',
+      '.sc-save[disabled]{cursor:default;}',
       '/* A break shown where it falls, so the gap in the day is not a mystery. */',
       '.sc-bar{display:flex;align-items:center;gap:9px;padding:9px 11px;margin:2px 0;border-radius:8px;background:repeating-linear-gradient(135deg,#f1f5f8,#f1f5f8 9px,#e7edf2 9px,#e7edf2 18px);border:1px dashed #c8d4dd;}',
       '.sc-bar .ms{color:#5c6f7c;font-size:17px;}',
@@ -1791,7 +1796,7 @@
              rest:  +ev.plan_rest || 0,
              turn:  turnMins() };
   }
-  var _planT = null, _planBad = false;
+  var _planBad = false;
   /* WHAT IS ON SCREEN IS WHAT IS STORED.
      This used to save only what the organiser TYPED, and only the match length
      if they had pressed "change". So a panel showing 45 min, 09:00 to 21:00 and
@@ -1830,7 +1835,47 @@
     S.plan = planFromEvent(ev, 1);
     await planSave();
   }
-  function planSet() { S.plan = planNow(); clearTimeout(_planT); _planT = setTimeout(planSave, 700); }
+  /* NOTHING IN THIS TAB SAVES ITSELF. A typed figure, a day's window and a
+     break all sit pending until the organiser presses Save, so a half-typed
+     number is never written and the schedule never moves behind their back. */
+  function pend() { return (S._pend = S._pend || { plan: false, days: {}, breaks: {} }); }
+  function schedDirty() {
+    var q = pend();
+    return !!(q.plan || Object.keys(q.days).length || Object.keys(q.breaks).length);
+  }
+  /* Touched straight on the button rather than through a re-render, because a
+     re-render on every keystroke takes the focus out of the field. */
+  function schedBar() {
+    var b = document.getElementById('tg-save'); if (!b) return;
+    var d = schedDirty();
+    b.disabled = !d; b.classList.toggle('on', d);
+    b.textContent = d ? 'Save changes' : 'Saved';
+  }
+  function planSet() { S.plan = planNow(); pend().plan = true; schedBar(); }
+  /* One press writes the lot: the day's settings, every playing window that
+     changed, and every break that changed. */
+  async function scheduleSave() {
+    var q = pend(), ok = true, moved = false;
+    if (q.plan) { if (!(await planSave())) ok = false; }
+    var ds = Object.keys(q.days);
+    for (var i = 0; i < ds.length; i++) {
+      var r; try {
+        r = await sb().from('tourn_days').upsert(q.days[ds[i]], { onConflict: 'tourn_id,on_date' });
+      } catch (e) { r = { error: e }; }
+      if (r && r.error) { ok = false; }
+    }
+    var bs = Object.keys(q.breaks);
+    for (var j = 0; j < bs.length; j++) {
+      var r2; try { r2 = await sb().from('tourn_breaks').update(q.breaks[bs[j]]).eq('id', bs[j]); }
+      catch (e) { r2 = { error: e }; }
+      if (r2 && r2.error) { ok = false; } else { moved = true; }
+    }
+    if (!ok) { toast('Could not save everything', 'error'); return; }
+    S._pend = null; S._dayWin = null; S._breaks = null;
+    if (moved) await applyBreaks(false);
+    toast('Saved', 'success');
+    renderTab();
+  }
   function setSchedDiv(v) { S.schedDiv = v || ''; renderTab(); }
 
   async function renderSchedule(host) {
@@ -2026,6 +2071,9 @@
     return '<div class="lg-tool">'
       + (divs.length > 1 ? '<select class="lg-sel" style="width:auto;min-width:190px" title="Filters what you are looking at. Auto-plan always builds every division." onchange="FFPTourn.setSchedDiv(this.value)">' + dopt + '</select>' : '')
       + '<span class="sp"></span>'
+      + '<button class="lg-btn sc-save' + (schedDirty() ? ' on' : '') + '" id="tg-save"'
+      +   (schedDirty() ? '' : ' disabled') + ' onclick="FFPTourn.scheduleSave()">'
+      +   (schedDirty() ? 'Save changes' : 'Saved') + '</button>'
       + (built
         ? '<button class="lg-btn ghost sc-rb" onclick="FFPTourn.rebuildAsk()">' + ic('warning') + 'Rebuild schedule</button>'
         : '<button class="lg-btn pri" onclick="FFPTourn.autoplan()">' + ic('auto_awesome') + 'Auto-plan the tournament</button>')
@@ -2082,6 +2130,9 @@
     var list = S._planDays || [];
     if (!list.length) return '';
     var by = {}; (S._dayWin || []).forEach(function (r) { by[r.on_date] = r; });
+    // anything waiting on Save is what the organiser should be looking at
+    var held = (S._pend && S._pend.days) || {};
+    Object.keys(held).forEach(function (k) { by[k] = held[k]; });
     return '<div class="sc-brk sc-day"><span class="lb">Playing times, day by day</span>'
       + list.map(function (d) {
           var r = by[d] || {}, shut = !!r.closed;
@@ -2105,29 +2156,21 @@
   async function daySave(d) {
     var row = document.querySelector('.sc-day .b[data-d="' + d + '"]'); if (!row) return;
     var a = row.querySelector('.dw-s').value, b = row.querySelector('.dw-e').value;
-    if (!a || !b || b <= a) { toast('A day has to end after it starts', 'error'); renderTab(); return; }
-    var r; try {
-      r = await sb().from('tourn_days')
-        .upsert({ tourn_id: S.eventId, on_date: d, opens: a, closes: b, closed: false },
-                { onConflict: 'tourn_id,on_date' });
-    } catch (e) { r = { error: e }; }
-    if (r && r.error) { toast('Could not save the times for that day', 'error'); return; }
-    S._dayWin = null; toast('Saved. Rebuild the schedule to use it', 'success'); renderTab();
+    if (!a || !b || b <= a) { toast('A day has to end after it starts', 'error'); return; }
+    pend().days[d] = { tourn_id: S.eventId, on_date: d, opens: a, closes: b, closed: false };
+    schedBar();
   }
   /* Switching a day off and on again. A day switched off is stored closed
      rather than deleted, because "not played" is a decision, and a deleted
      row would quietly fall back to the event's own times. */
   async function dayShut(d) {
-    var was = ((S._dayWin || []).filter(function (r) { return r.on_date === d; })[0] || {}).closed;
+    var held = pend().days[d];
+    var was = held ? held.closed
+                   : ((S._dayWin || []).filter(function (r) { return r.on_date === d; })[0] || {}).closed;
     var P = S.plan || {};
-    var row = { tourn_id: S.eventId, on_date: d, closed: !was,
-                opens: was ? (P.start || '09:00') : null, closes: was ? (P.end || '21:00') : null };
-    var r; try {
-      r = await sb().from('tourn_days').upsert(row, { onConflict: 'tourn_id,on_date' });
-    } catch (e) { r = { error: e }; }
-    if (r && r.error) { toast('Could not change that day', 'error'); return; }
-    S._dayWin = null;
-    toast(was ? 'That day is in play again' : 'That day is closed. Rebuild to move its matches', 'success');
+    pend().days[d] = { tourn_id: S.eventId, on_date: d, closed: !was,
+                       opens: was ? (P.start || '09:00') : null,
+                       closes: was ? (P.end || '21:00') : null };
     renderTab();
   }
 
@@ -2227,13 +2270,13 @@
   async function breaksMoveOut() { await applyBreaks(true); renderTab(); }
   async function breakSave(id) {
     var row = document.querySelector('.sc-brk .b[data-id="' + id + '"]'); if (!row) return;
-    var s = row.querySelector('.bk-s').value, e2 = row.querySelector('.bk-e').value;
-    if (!s || !e2 || e2 <= s) { toast('A break has to end after it starts', 'error'); renderTab(); return; }
-    var patch = { field_id: row.querySelector('.bk-f').value || null, on_date: row.querySelector('.bk-d').value || null,
-                  starts_at: s, ends_at: e2, label: row.querySelector('.bk-l').value || null };
-    var r; try { r = await sb().from('tourn_breaks').update(patch).eq('id', id); } catch (e) { r = { error: e }; }
-    if (r && r.error) { toast('Could not save the break', 'error'); return; }
-    await applyBreaks(true); renderTab();
+    var st = row.querySelector('.bk-s').value, en = row.querySelector('.bk-e').value;
+    if (!st || !en || en <= st) { toast('A break has to end after it starts', 'error'); return; }
+    pend().breaks[id] = { field_id: row.querySelector('.bk-f').value || null,
+                          on_date: row.querySelector('.bk-d').value || null,
+                          starts_at: st, ends_at: en,
+                          label: row.querySelector('.bk-l').value || null };
+    schedBar();
   }
   async function breakRemove(id) {
     var r; try { r = await sb().from('tourn_breaks').delete().eq('id', id); } catch (e) { r = { error: e }; }
@@ -5308,7 +5351,7 @@
     setSchedDiv: setSchedDiv, planSet: planSet, setAddDiv: setAddDiv, applyBreaks: applyBreaks,
     openDivDraw: openDivDraw, openDrawCancel: openDrawCancel,
     breakAdd: breakAdd, breakSave: breakSave, breakRemove: breakRemove, breaksMoveOut: breaksMoveOut,
-    daySave: daySave, dayShut: dayShut,
+    daySave: daySave, dayShut: dayShut, scheduleSave: scheduleSave,
     rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
     schedToggle: schedToggle, schedMove: schedMove, setMainCourt: setMainCourt,
     mdDay: mdDay, mdPick: mdPick, mdRefresh: mdRefresh, mdGo: mdGo, mdSimFill: mdSimFill, mdSimPlay: mdSimPlay,
