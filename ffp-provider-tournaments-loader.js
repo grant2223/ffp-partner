@@ -297,6 +297,19 @@
       '.tg-oop .lg-btn,.tg-oop .lg-scrbtn{margin-left:auto;flex:none;margin-right:0;}',
       '.tg-oop .lg-scrbtn{font-size:15px;letter-spacing:.12em;padding:8px 14px;}',
       '.tg-oopdays{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px;}',
+      /* Scoped to .md-g, which is what the table is actually called. Scoped
+         to .md-grid it never matched, and the number fell back to a big
+         italic em that took a line of its own above the division. */
+      '.md-g .mno{display:inline-block;font-style:normal;font-weight:900;font-size:9px;'
+        + 'line-height:1.35;color:#56606b;background:#eef2f5;border-radius:4px;'
+        + 'padding:0 4px;margin-right:4px;vertical-align:1px;letter-spacing:.02em;'
+        + 'font-variant-numeric:tabular-nums;}',
+      /* the division sits beside it rather than under it, so the number
+         costs the cell no height at all */
+      '.md-g .mno + .tag{display:inline-block;}',
+      '.sc-m .g b .mno{display:inline-block;font-style:normal;font-weight:900;font-size:11px;'
+        + 'color:#56606b;background:#eef2f5;border-radius:5px;padding:1px 6px;margin-right:7px;'
+        + 'vertical-align:1px;font-variant-numeric:tabular-nums;}',
       '.lg-scrurl .seg{font-style:normal;white-space:nowrap;}',
       '.tg-mail{background:#fff;border-radius:14px;padding:18px 20px 16px;margin:0 0 18px;box-shadow:0 1px 0 var(--ffp-border),0 6px 18px rgba(14,40,66,.06);}',
       '.tg-mail .hd{display:flex;align-items:center;gap:9px;margin-bottom:14px;}',
@@ -975,6 +988,7 @@
               return '<div class="' + k + '" draggable="true"'
                 + ' ondragstart="FFPTourn.mdDrag(event,\'' + m.match_id + '\')"'
                 + ' ondragend="FFPTourn.mdDragEnd(event)">'
+                + (m.no ? '<em class="mno">M' + m.no + '</em>' : '')
                 + '<b class="tag" style="color:' + (dcol[m.division_id] || 'var(--ffp-blue)')
                   + '">' + esc(dnm[m.division_id] || '') + '</b>'
                 + (m.label ? '<em class="rnd">' + esc(m.label) + '</em>' : '')
@@ -2187,12 +2201,13 @@
 
     var mr; try {
       mr = await sb().from('tourn_matches')
-        .select('id,division_id,stage,group_label,round,play_round,draw,slot,status,home_entrant,away_entrant,scheduled_at,court,field_id,pinned')
+        .select('id,division_id,stage,group_label,round,play_round,draw,slot,status,home_entrant,away_entrant,scheduled_at,court,field_id,pinned,match_no,next_match_id,next_slot,loser_next_match_id,loser_next_slot')
         .eq('tourn_id', S.eventId);
     } catch (e) { mr = { error: e }; }
     // A bye is not a match: nobody turns up for it and it takes no court,
     // so it has no place on a schedule. A void one is cancelled.
     var ms = ((mr && mr.data) || []).filter(function (m) { return m.status !== 'void' && m.status !== 'bye'; });
+    S._schedMs = ms;
     if (!ms.length) { box.innerHTML = openDrawEmpty('schedule'); return; }
     /* Courts only matter once there is something to put on them, so this is
        asked after the draw, not before it. */
@@ -2785,6 +2800,20 @@
       + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPTourn.rebuildCancel()">Cancel</button>'
       + '<button class="lg-btn pri" onclick="FFPTourn.autoplan(1)">Yes, rebuild</button></div></div></div>';
   }
+  function slotFrom(all, m, slot) {
+    if (!all || !m) return '';
+    for (var i = 0; i < all.length; i++) {
+      var f2 = all[i];
+      if (!f2.match_no) continue;
+      if (f2.next_match_id === m.id && f2.next_slot === slot) return 'Winner M' + f2.match_no;
+    }
+    for (var j = 0; j < all.length; j++) {
+      var f3 = all[j];
+      if (!f3.match_no) continue;
+      if (f3.loser_next_match_id === m.id && f3.loser_next_slot === slot) return 'Loser M' + f3.match_no;
+    }
+    return '';
+  }
   function schedRow(m, fieldId, isFirst, isLast) {
     var names = m._names || {};
     var tv = m.scheduled_at ? evTimeStr(m.scheduled_at) : '';
@@ -2805,7 +2834,9 @@
          scroll over it re-timed a match, and every change rebuilt the list
          under the organiser's cursor. */
       + '<div class="t tm' + (tv ? '' : ' none') + (m.pinned ? ' pin' : '') + '">' + esc(tv || 'No time') + '</div>'
-      + '<div class="g"><b>' + esc(names[m.home_entrant] || 'TBD') + ' v ' + esc(names[m.away_entrant] || 'TBD') + '</b>'
+      + '<div class="g"><b>' + (m.match_no ? '<em class="mno">M' + m.match_no + '</em>' : '')
+      +   esc(names[m.home_entrant] || slotFrom(S._schedMs, m, 1) || 'TBD') + ' v '
+      +   esc(names[m.away_entrant] || slotFrom(S._schedMs, m, 2) || 'TBD') + '</b>'
       + '<span>' + esc(sub) + '</span>'
       + '<span class="clash"' + (bk ? '' : ' style="display:none"') + '>' + (bk ? 'Inside ' + esc(breakName(bk)) : '') + '</span>'
       + '<span class="off"' + (offTxt ? '' : ' style="display:none"') + '>' + esc(offTxt) + '</span></div>'
