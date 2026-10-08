@@ -4757,7 +4757,7 @@
       // Editing replaces the row in place, so the list never jumps.
       if (S.entEdit === en.id) return entEditHtml(en);
       var edBtn = '<span class="ms act" title="Edit details" onclick="FFPTourn.editEntrant(\'' + en.id + '\')">edit</span>';
-      var row = '<div class="lg-row">' + tCrest + paidCell(en) + '<div class="g"><b>' + esc(en.name) + '</b> <span>' + esc(en.status) + (en.group_label ? ', Group ' + esc(en.group_label) : '') + (en.kind === 'individual' ? flag : '') + '</span></div>' + sqBtn + edBtn + '</div>';
+      var row = '<div class="lg-row">' + tCrest + paidCell(en) + '<div class="g"><b>' + esc(en.name) + '</b> <span>' + esc(en.status) + (hasGroups() && en.group_label ? ', Group ' + esc(en.group_label) : '') + (en.kind === 'individual' ? flag : '') + '</span></div>' + sqBtn + edBtn + '</div>';
       return row + (isTeam && S.sqOpen === en.id ? '<div class="lg-sq" id="lg-sq-' + en.id + '"><div class="lg-sqsrch">' + ic('search') + '<input id="lg-sqq-' + en.id + '" placeholder="Search FFP or type a name" value="' + esc((S._sqQ || {})[en.id] || '') + '" oninput="FFPTourn.sqSearch(\'' + en.id + '\',this.value)" onkeydown="FFPTourn.sqKey(\'' + en.id + '\',event)"></div><div id="lg-sqres-' + en.id + '">' + sqResHtml(en.id) + '</div></div>' : '');
     }).join('') : '<div class="lg-empty">No ' + N.many + ' yet. Members self-register in the app, or add them here.</div>');
     S._roster = rows;
@@ -4842,12 +4842,13 @@
   // rewrite here — only the division, seed, group and status are.
   var ENT_STATUS = [['registered', 'Registered'], ['pending', 'Pending'], ['withdrawn', 'Withdrawn']];
 
-  // Group labels come from the draw, so the choices are the groups this division
-  // actually has. Before a draw there is nothing to pick and the field is hidden
-  // rather than shown empty.
+  /* Group labels come from the DRAW - the division's group matches - and from
+     nowhere else. Reading them off the entrants as well is what let a pool
+     that no longer exists keep naming itself: one stale row was enough to put
+     the Group picker back on screen. No group matches, no groups. */
+  function hasGroups() { return ((S._grpLabels || []).length > 0); }
   function groupLabels() {
     var seen = {};
-    (S._roster || []).forEach(function (x) { if (x.group_label) seen[x.group_label] = 1; });
     (S._grpLabels || []).forEach(function (g) { if (g) seen[g] = 1; });
     return Object.keys(seen).sort();
   }
