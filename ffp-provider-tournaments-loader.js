@@ -266,6 +266,14 @@
       '.sc-brk .b .lg-in.nm{width:140px;}',
       '.sc-brk .b .sc-ic{color:#8a99a8;}',
       '.sc-brk .sc-abk{padding:7px 12px;font-size:12.5px;}',
+      /* Playing times, day by day. Same furniture as the breaks above it: a
+         filled chip per day, solid fields, no hairline outlines. */
+      '.sc-day .b .dd{font-style:normal;font-size:12.5px;font-weight:900;color:#12232f;min-width:86px;}',
+      '.sc-day .b.off{opacity:.62;}',
+      '.sc-day .b.off .lg-in{color:#8a99a8;}',
+      '.sc-day .dw-t{border:none;border-radius:8px;background:var(--ffp-gold,#FFC847);color:#3a2600;font:inherit;font-size:11.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;padding:6px 11px;cursor:pointer;}',
+      '.sc-day .dw-t.off{background:#dbe7ef;color:#55707f;}',
+      '.sc-daynote{flex:1 0 100%;font-size:12px;font-weight:600;color:#8a99a8;margin-top:2px;}',
       '/* A break shown where it falls, so the gap in the day is not a mystery. */',
       '.sc-bar{display:flex;align-items:center;gap:9px;padding:9px 11px;margin:2px 0;border-radius:8px;background:repeating-linear-gradient(135deg,#f1f5f8,#f1f5f8 9px,#e7edf2 9px,#e7edf2 18px);border:1px dashed #c8d4dd;}',
       '.sc-bar .ms{color:#5c6f7c;font-size:17px;}',
@@ -1911,6 +1919,11 @@
     });
     S._sched = ms;
 
+    /* S._days is already the event's match days from lt_event_days - these are
+       the organiser's playing windows, which is a different thing. */
+    var dy; try { dy = await sb().from('tourn_days').select('id,on_date,opens,closes,closed').eq('tourn_id', S.eventId); } catch (e) { dy = { error: e }; }
+    S._dayWin = (dy && dy.data) || [];
+
     var br; try { br = await sb().from('tourn_breaks').select('id,field_id,on_date,starts_at,ends_at,label,sort').eq('tourn_id', S.eventId); } catch (e) { br = { error: e }; }
     var breaks = ((br && br.data) || []).sort(function (a, b) { return (a.sort - b.sort) || String(a.starts_at).localeCompare(String(b.starts_at)); });
     S._breaks = breaks;
@@ -1940,6 +1953,19 @@
         dayList.push(p.getUTCFullYear() + '-' + pad2(p.getUTCMonth() + 1) + '-' + pad2(p.getUTCDate()));
       }
     }
+
+    /* The days a playing window can be set for: the planned run of the event,
+       so a Sunday can be given its times before anything is on it, plus any
+       day that already has matches. */
+    var planDays = {};
+    var pbase = (S.detail.event && S.detail.event.starts_at) || evDateStr(new Date().toISOString());
+    var pa = String(pbase).split('-');
+    for (var pk = 0; pk < Math.max(1, P.days); pk++) {
+      var pd = new Date(Date.UTC(+pa[0], +pa[1] - 1, +pa[2] + pk, 12, 0, 0));
+      planDays[pd.getUTCFullYear() + '-' + pad2(pd.getUTCMonth() + 1) + '-' + pad2(pd.getUTCDate())] = 1;
+    }
+    dayList.forEach(function (d) { planDays[d] = 1; });
+    S._planDays = Object.keys(planDays).sort();
 
     top.innerHTML = schedTop(built, divs, fields, breaks, dayList, P) + (built ? divKey(divs) : '');
 
@@ -2043,7 +2069,66 @@
       +     '<div class="lg-fld"></div>'
       +   '</div>'
       + '</div>'
+      + dayBlock(P)
       + breakBlock(fields, breaks, dayList);
+  }
+
+  /* PLAYING TIMES, DAY BY DAY. The event's own start and end above are the
+     default; a day listed here overrides them, and a day switched off is not
+     played at all. Saved, not typed into the planner, so a later Rebuild uses
+     the same windows. Breaks below still shut a single court mid-day - this is
+     only when the whole day opens and closes. */
+  function dayBlock(P) {
+    var list = S._planDays || [];
+    if (!list.length) return '';
+    var by = {}; (S._dayWin || []).forEach(function (r) { by[r.on_date] = r; });
+    return '<div class="sc-brk sc-day"><span class="lb">Playing times, day by day</span>'
+      + list.map(function (d) {
+          var r = by[d] || {}, shut = !!r.closed;
+          return '<span class="b' + (shut ? ' off' : '') + '" data-d="' + d + '">'
+            + '<em class="dd">' + esc(dayShortYmd(d)) + '</em>'
+            + '<input class="lg-in w dw-s" type="time" value="' + esc(hm(r.opens) || P.start) + '"'
+              + (shut ? ' disabled' : '') + ' onchange="FFPTourn.daySave(\'' + d + '\')">'
+            + '<em>to</em>'
+            + '<input class="lg-in w dw-e" type="time" value="' + esc(hm(r.closes) || P.end) + '"'
+              + (shut ? ' disabled' : '') + ' onchange="FFPTourn.daySave(\'' + d + '\')">'
+            + '<button class="dw-t' + (shut ? ' off' : '') + '" onclick="FFPTourn.dayShut(\'' + d + '\')">'
+              + (shut ? 'Closed' : 'Playing') + '</button>'
+            + '</span>';
+        }).join('')
+      + '<div class="sc-daynote">A day you have not changed plays '
+      + esc(P.start || '09:00') + ' to ' + esc(P.end || '21:00') + '.</div>'
+      + '</div>';
+  }
+  /* One row, saved on change. The window is written whole so the row either
+     holds both ends or is not there at all. */
+  async function daySave(d) {
+    var row = document.querySelector('.sc-day .b[data-d="' + d + '"]'); if (!row) return;
+    var a = row.querySelector('.dw-s').value, b = row.querySelector('.dw-e').value;
+    if (!a || !b || b <= a) { toast('A day has to end after it starts', 'error'); renderTab(); return; }
+    var r; try {
+      r = await sb().from('tourn_days')
+        .upsert({ tourn_id: S.eventId, on_date: d, opens: a, closes: b, closed: false },
+                { onConflict: 'tourn_id,on_date' });
+    } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not save the times for that day', 'error'); return; }
+    S._dayWin = null; toast('Saved. Rebuild the schedule to use it', 'success'); renderTab();
+  }
+  /* Switching a day off and on again. A day switched off is stored closed
+     rather than deleted, because "not played" is a decision, and a deleted
+     row would quietly fall back to the event's own times. */
+  async function dayShut(d) {
+    var was = ((S._dayWin || []).filter(function (r) { return r.on_date === d; })[0] || {}).closed;
+    var P = S.plan || {};
+    var row = { tourn_id: S.eventId, on_date: d, closed: !was,
+                opens: was ? (P.start || '09:00') : null, closes: was ? (P.end || '21:00') : null };
+    var r; try {
+      r = await sb().from('tourn_days').upsert(row, { onConflict: 'tourn_id,on_date' });
+    } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not change that day', 'error'); return; }
+    S._dayWin = null;
+    toast(was ? 'That day is in play again' : 'That day is closed. Rebuild to move its matches', 'success');
+    renderTab();
   }
 
   // A court can be shut for part of a day. Breaks are saved, not typed into the
@@ -5223,6 +5308,7 @@
     setSchedDiv: setSchedDiv, planSet: planSet, setAddDiv: setAddDiv, applyBreaks: applyBreaks,
     openDivDraw: openDivDraw, openDrawCancel: openDrawCancel,
     breakAdd: breakAdd, breakSave: breakSave, breakRemove: breakRemove, breaksMoveOut: breaksMoveOut,
+    daySave: daySave, dayShut: dayShut,
     rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
     schedToggle: schedToggle, schedMove: schedMove, setMainCourt: setMainCourt,
     mdDay: mdDay, mdPick: mdPick, mdRefresh: mdRefresh, mdGo: mdGo, mdSimFill: mdSimFill, mdSimPlay: mdSimPlay,
