@@ -257,7 +257,7 @@
       '   Rebuild steps over the same ones. */',
       '.sc-brk{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;padding:4px 2px 14px;border-bottom:1px solid var(--ffp-border);margin-bottom:4px;}',
       '.sc-brk .lb{flex:1 0 100%;font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#5c6f7c;margin-bottom:1px;}',
-      '.sc-brk .b{display:inline-flex;align-items:center;gap:6px;background:#f4f7f9;border:1px solid var(--ffp-border);border-radius:10px;padding:5px 6px 5px 8px;}',
+      '.sc-brk .b{display:inline-flex;align-items:center;gap:6px;background:#eef3f7;border:none;border-radius:10px;padding:5px 6px 5px 8px;}',
       '.sc-brk .b em{font-style:normal;font-size:12.5px;font-weight:700;color:#5c6f7c;}',
       '.sc-brk .b .lg-sel{width:auto;min-width:118px;padding:6px 26px 6px 9px;font-size:12.5px;}',
       '.sc-brk .b .lg-sel.dy{min-width:124px;}',
@@ -271,7 +271,7 @@
       '.sc-day .b .dd{font-style:normal;font-size:12.5px;font-weight:900;color:#12232f;min-width:86px;}',
       '.sc-day .b.off{opacity:.62;}',
       '.sc-day .b.off .lg-in{color:#8a99a8;}',
-      '.sc-day .dw-t{border:none;border-radius:8px;background:var(--ffp-gold,#FFC847);color:#3a2600;font:inherit;font-size:11.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;padding:6px 11px;cursor:pointer;}',
+      '.sc-day .dw-t{border:none;border-radius:8px;background:linear-gradient(180deg,#ffd15a,#f2a900);color:#3a2600;font:inherit;font-size:11.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;padding:6px 11px;cursor:pointer;}',
       '.sc-day .dw-t.off{background:#dbe7ef;color:#55707f;}',
       '.sc-daynote{flex:1 0 100%;font-size:12px;font-weight:600;color:#8a99a8;margin-top:2px;}',
       /* Save. Gold while there is something to save, stood down when there is
@@ -279,6 +279,19 @@
       '.sc-save{border:none;background:#e3ebf1;color:#7c8b97;}',
       '.sc-save.on{background:var(--ffp-gold,#FFC847);color:#3a2600;}',
       '.sc-save[disabled]{cursor:default;}',
+      /* Who plays, on the row and in the sheet. Solid fills throughout: gold
+         where a choice is on, light blue where it is not. */
+      '.sc-day .dw-w{border:none;border-radius:8px;background:#e8eef3;color:#55707f;font:inherit;font-size:11.5px;font-weight:800;padding:6px 11px;cursor:pointer;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      '.sc-day .dw-w.set{background:#123a52;color:#fff;}',
+      '.lg-who{max-width:620px;text-align:left;align-items:stretch;}',
+      '.lg-who .lg-cfm-t,.lg-who .lg-cfm-b{text-align:center;}',
+      '.dw-lab{font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#5c6f7c;margin:22px 0 9px;}',
+      '.dw-row{display:flex;flex-wrap:wrap;gap:9px;}',
+      '.dw-c{border:none;border-radius:10px;background:#e8eef3;color:#2c3f4c;font:inherit;font-size:13px;font-weight:800;padding:10px 15px;cursor:pointer;}',
+      '.sc-ic.pin.on{color:#b07d08;}',
+      '.sc-ic.pin.on .ms{font-variation-settings:"FILL" 1;}',
+      '.sc-m .tm.pin{background:linear-gradient(180deg,#ffd15a,#f2a900);color:#3a2600;}',
+      '.dw-c.on{background:linear-gradient(180deg,#ffd15a,#f2a900);color:#3a2600;}',
       '/* A break shown where it falls, so the gap in the day is not a mystery. */',
       '.sc-bar{display:flex;align-items:center;gap:9px;padding:9px 11px;margin:2px 0;border-radius:8px;background:repeating-linear-gradient(135deg,#f1f5f8,#f1f5f8 9px,#e7edf2 9px,#e7edf2 18px);border:1px dashed #c8d4dd;}',
       '.sc-bar .ms{color:#5c6f7c;font-size:17px;}',
@@ -1913,7 +1926,7 @@
 
     var mr; try {
       mr = await sb().from('tourn_matches')
-        .select('id,division_id,stage,group_label,round,play_round,draw,slot,status,home_entrant,away_entrant,scheduled_at,court,field_id')
+        .select('id,division_id,stage,group_label,round,play_round,draw,slot,status,home_entrant,away_entrant,scheduled_at,court,field_id,pinned')
         .eq('tourn_id', S.eventId);
     } catch (e) { mr = { error: e }; }
     // A bye is not a match: nobody turns up for it and it takes no court,
@@ -1966,7 +1979,7 @@
 
     /* S._days is already the event's match days from lt_event_days - these are
        the organiser's playing windows, which is a different thing. */
-    var dy; try { dy = await sb().from('tourn_days').select('id,on_date,opens,closes,closed').eq('tourn_id', S.eventId); } catch (e) { dy = { error: e }; }
+    var dy; try { dy = await sb().from('tourn_days').select('id,on_date,opens,closes,closed,only_divisions,only_rounds').eq('tourn_id', S.eventId); } catch (e) { dy = { error: e }; }
     S._dayWin = (dy && dy.data) || [];
 
     var br; try { br = await sb().from('tourn_breaks').select('id,field_id,on_date,starts_at,ends_at,label,sort').eq('tourn_id', S.eventId); } catch (e) { br = { error: e }; }
@@ -2118,7 +2131,8 @@
       +   '</div>'
       + '</div>'
       + dayBlock(P)
-      + breakBlock(fields, breaks, dayList);
+      + breakBlock(fields, breaks, dayList)
+      + dayWhoSheet();
   }
 
   /* PLAYING TIMES, DAY BY DAY. The event's own start and end above are the
@@ -2145,32 +2159,120 @@
               + (shut ? ' disabled' : '') + ' onchange="FFPTourn.daySave(\'' + d + '\')">'
             + '<button class="dw-t' + (shut ? ' off' : '') + '" onclick="FFPTourn.dayShut(\'' + d + '\')">'
               + (shut ? 'Closed' : 'Playing') + '</button>'
+            + (shut ? '' : '<button class="dw-w' + (dayWhoLabel(r, S.detail.divisions || []) === 'Everyone' ? '' : ' set')
+                + '" onclick="FFPTourn.dayWhoOpen(\'' + d + '\')">'
+                + esc(dayWhoLabel(r, S.detail.divisions || [])) + '</button>')
             + '</span>';
         }).join('')
       + '<div class="sc-daynote">A day you have not changed plays '
       + esc(P.start || '09:00') + ' to ' + esc(P.end || '21:00') + '.</div>'
       + '</div>';
   }
-  /* One row, saved on change. The window is written whole so the row either
+  /* WHO MAY PLAY IN A DAY'S WINDOW. Friday evening for Division 1 and 2's
+     first round means two things at once: those matches go there, and nothing
+     else may. Null is everyone, which is what every day means until it is
+     told otherwise. */
+  function roundsInEvent() {
+    var r = {};
+    (S._sched || []).forEach(function (m) {
+      var n = m.play_round || m.round; if (n) r[n] = 1;
+    });
+    var out = Object.keys(r).map(Number).sort(function (a, b) { return a - b; });
+    return out.length ? out : [1];
+  }
+  function dayWhoLabel(r, divs) {
+    var dv = r.only_divisions, rd = r.only_rounds;
+    if ((!dv || !dv.length) && (!rd || !rd.length)) return 'Everyone';
+    var bits = [];
+    if (dv && dv.length) bits.push(dv.map(function (id) {
+      return ((divs.filter(function (x) { return x.id === id; })[0] || {}).name || '?');
+    }).join(', '));
+    if (rd && rd.length) bits.push(rd.length === 1 ? 'Round ' + rd[0] : 'Rounds ' + rd.join(', '));
+    return bits.join(' \u2013 ');
+  }
+  function dayWhoOpen(d) { S.dayWho = d; renderTab(); }
+  function dayWhoClose() { S.dayWho = null; renderTab(); }
+  /* The picker is full bleed, like every other sheet in this portal. */
+  function dayWhoSheet() {
+    var d = S.dayWho; if (!d) return '';
+    var divs = S.detail.divisions || [];
+    var held = (S._pend && S._pend.days && S._pend.days[d]) || null;
+    var cur = held || ((S._dayWin || []).filter(function (r) { return r.on_date === d; })[0]) || {};
+    var selD = S._whoD || (S._whoD = (cur.only_divisions || []).slice());
+    var selR = S._whoR || (S._whoR = (cur.only_rounds || []).slice());
+    var chip = function (on, label, call) {
+      return '<button class="dw-c' + (on ? ' on' : '') + '" onclick="' + call + '">' + esc(label) + '</button>';
+    };
+    return '<div class="lg-cfm"><div class="lg-cfm-in lg-who">'
+      + '<div class="lg-cfm-t">Who plays on ' + esc(dayShortYmd(d)) + '?</div>'
+      + '<div class="lg-cfm-b">Pick nothing and the day is open to everyone.</div>'
+      + '<div class="dw-lab">Divisions</div><div class="dw-row">'
+      +   divs.map(function (x) {
+            return chip(selD.indexOf(x.id) >= 0, x.name, "FFPTourn.dayWhoTog('d','" + x.id + "')");
+          }).join('')
+      + '</div>'
+      + '<div class="dw-lab">Rounds</div><div class="dw-row">'
+      +   roundsInEvent().map(function (n) {
+            return chip(selR.indexOf(n) >= 0, 'Round ' + n, "FFPTourn.dayWhoTog('r','" + n + "')");
+          }).join('')
+      + '</div>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPTourn.dayWhoClose()">Cancel</button>'
+      + '<button class="lg-btn pri" onclick="FFPTourn.dayWhoApply()">Apply</button></div>'
+      + '</div></div>';
+  }
+  function dayWhoTog(kind, v) {
+    var arr = kind === 'd' ? (S._whoD = S._whoD || []) : (S._whoR = S._whoR || []);
+    var val = kind === 'd' ? v : Number(v);
+    var i = arr.indexOf(val);
+    if (i >= 0) arr.splice(i, 1); else arr.push(val);
+    renderTab();
+  }
+  /* Held with the rest of the tab's edits - nothing here saves itself. */
+  function dayWhoApply() {
+    var d = S.dayWho; if (!d) return;
+    var base = dayBase(d);
+    base.only_divisions = (S._whoD && S._whoD.length) ? S._whoD : null;
+    base.only_rounds    = (S._whoR && S._whoR.length) ? S._whoR : null;
+    pend().days[d] = base;
+    S.dayWho = null; S._whoD = null; S._whoR = null;
+    renderTab();
+  }
+
+  /* THE ROW AS IT STANDS: whatever is waiting on Save, else what is stored,
+     else the event's own times. Every writer below starts here, so one
+     change to a day never drops another. */
+  function dayBase(d) {
+    var held = (S._pend && S._pend.days && S._pend.days[d]) || null;
+    if (held) return held;
+    var cur = ((S._dayWin || []).filter(function (r) { return r.on_date === d; })[0]) || {};
+    var P = S.plan || {};
+    return { tourn_id: S.eventId, on_date: d,
+             opens: cur.closed ? null : (hm(cur.opens) || P.start || '09:00'),
+             closes: cur.closed ? null : (hm(cur.closes) || P.end || '21:00'),
+             closed: !!cur.closed,
+             only_divisions: cur.only_divisions || null,
+             only_rounds: cur.only_rounds || null };
+  }
+  /* One row, held until Save. The window is written whole so the row either
      holds both ends or is not there at all. */
   async function daySave(d) {
     var row = document.querySelector('.sc-day .b[data-d="' + d + '"]'); if (!row) return;
     var a = row.querySelector('.dw-s').value, b = row.querySelector('.dw-e').value;
     if (!a || !b || b <= a) { toast('A day has to end after it starts', 'error'); return; }
-    pend().days[d] = { tourn_id: S.eventId, on_date: d, opens: a, closes: b, closed: false };
+    var row0 = dayBase(d);
+    row0.opens = a; row0.closes = b; row0.closed = false;
+    pend().days[d] = row0;
     schedBar();
   }
   /* Switching a day off and on again. A day switched off is stored closed
      rather than deleted, because "not played" is a decision, and a deleted
      row would quietly fall back to the event's own times. */
   async function dayShut(d) {
-    var held = pend().days[d];
-    var was = held ? held.closed
-                   : ((S._dayWin || []).filter(function (r) { return r.on_date === d; })[0] || {}).closed;
-    var P = S.plan || {};
-    pend().days[d] = { tourn_id: S.eventId, on_date: d, closed: !was,
-                       opens: was ? (P.start || '09:00') : null,
-                       closes: was ? (P.end || '21:00') : null };
+    var row0 = dayBase(d), P = S.plan || {}, was = !!row0.closed;
+    row0.closed = !was;
+    row0.opens = was ? (row0.opens || P.start || '09:00') : null;
+    row0.closes = was ? (row0.closes || P.end || '21:00') : null;
+    pend().days[d] = row0;
     renderTab();
   }
 
@@ -2292,7 +2394,13 @@
     return '<div class="lg-cfm"><div class="lg-cfm-in">'
       + '<span class="ms lg-cfm-ic" style="color:var(--ffp-gold)">warning</span>'
       + '<div class="lg-cfm-t">Rebuild the whole schedule?</div>'
-      + '<div class="lg-cfm-b">This replans every match in every division and will move matches that ' + nouns(curDv()).many + ' and officials have already been given times for. Results already entered are kept.</div>'
+      + '<div class="lg-cfm-b">This replans every match in every division and will move matches that ' + nouns(curDv()).many + ' and officials have already been given times for. Results already entered are kept.'
+      /* A pin is a promise. Say here that it is kept, before the press, not
+         after - an organiser who has fixed the opening match is asking this
+         exact question. */
+      + (pinnedCount() ? ' <b>' + pinnedCount() + (pinnedCount() === 1 ? ' pinned match stays' : ' pinned matches stay')
+          + ' exactly where ' + (pinnedCount() === 1 ? 'it is' : 'they are') + '.</b>' : '')
+      + '</div>'
       + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPTourn.rebuildCancel()">Cancel</button>'
       + '<button class="lg-btn pri" onclick="FFPTourn.autoplan(1)">Yes, rebuild</button></div></div></div>';
   }
@@ -2315,12 +2423,20 @@
          court and the officials. An input loose in the row meant a stray
          scroll over it re-timed a match, and every change rebuilt the list
          under the organiser's cursor. */
-      + '<div class="t tm' + (tv ? '' : ' none') + '">' + esc(tv || 'No time') + '</div>'
+      + '<div class="t tm' + (tv ? '' : ' none') + (m.pinned ? ' pin' : '') + '">' + esc(tv || 'No time') + '</div>'
       + '<div class="g"><b>' + esc(names[m.home_entrant] || 'TBD') + ' v ' + esc(names[m.away_entrant] || 'TBD') + '</b>'
       + '<span>' + esc(sub) + '</span>'
       + '<span class="clash"' + (bk ? '' : ' style="display:none"') + '>' + (bk ? 'Inside ' + esc(breakName(bk)) : '') + '</span>'
       + '<span class="off"' + (offTxt ? '' : ' style="display:none"') + '>' + esc(offTxt) + '</span></div>'
       + place
+      /* Nothing to hold until it has a slot, so the pin is off rather than
+         offered and refused. */
+      + '<button class="sc-ic pin' + (m.pinned ? ' on' : '') + '"'
+        + ((m.pinned || (m.scheduled_at && m.field_id)) ? '' : ' disabled')
+        + ' title="' + (m.pinned ? 'Pinned here, a rebuild will not move it'
+            : (m.scheduled_at && m.field_id) ? 'Pin this match here'
+            : 'Give it a time and ' + aSurf() + ' first') + '"'
+        + ' onclick="FFPTourn.pinMatch(\'' + m.id + '\')">' + ic('push_pin') + '</button>'
       + '<button class="sc-ic" title="Earlier" ' + (isFirst ? 'disabled' : '') + ' onclick="FFPTourn.schedMove(\'' + m.id + '\',-1)">' + ic('arrow_upward') + '</button>'
       + '<button class="sc-ic" title="Later" ' + (isLast ? 'disabled' : '') + ' onclick="FFPTourn.schedMove(\'' + m.id + '\',1)">' + ic('arrow_downward') + '</button>'
       + '<button class="sc-ic" title="More" onclick="FFPTourn.schedToggle(\'' + m.id + '\')">' + ic(open ? 'expand_less' : 'more_horiz') + '</button>'
@@ -2468,6 +2584,23 @@
   }
   // Reordering swaps this match's time with its neighbour on the same court,
   // so the order of play changes without anyone typing a time.
+  async function pinMatch(id) {
+    var m = (S._sched || []).filter(function (x) { return x.id === id; })[0]; if (!m) return;
+    var want = !m.pinned;
+    var r; try { r = await sb().rpc('tourn_match_pin', { p_match: id, p_on: want }); }
+    catch (e) { r = { error: e }; }
+    if (r.error || !(r.data && r.data.ok)) {
+      toast((r.data && r.data.detail) === 'give it a time and a court first'
+        ? 'Give it a time and ' + aSurf() + ' first' : 'Could not pin it', 'error');
+      return;
+    }
+    m.pinned = want;
+    toast(want ? 'Pinned, a rebuild will leave it where it is' : 'Unpinned', 'success');
+    schedKeepPlace(renderTab);
+  }
+  function pinnedCount() {
+    return (S._sched || []).filter(function (m) { return m.pinned; }).length;
+  }
   async function schedMove(id, dir) {
     var all = S._sched || [];
     var me = all.find(function (x) { return x.id === id; }); if (!me || !me.scheduled_at) return;
@@ -5352,6 +5485,8 @@
     openDivDraw: openDivDraw, openDrawCancel: openDrawCancel,
     breakAdd: breakAdd, breakSave: breakSave, breakRemove: breakRemove, breaksMoveOut: breaksMoveOut,
     daySave: daySave, dayShut: dayShut, scheduleSave: scheduleSave,
+    dayWhoOpen: dayWhoOpen, dayWhoClose: dayWhoClose, dayWhoTog: dayWhoTog,
+    dayWhoApply: dayWhoApply, pinMatch: pinMatch,
     rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
     schedToggle: schedToggle, schedMove: schedMove, setMainCourt: setMainCourt,
     mdDay: mdDay, mdPick: mdPick, mdRefresh: mdRefresh, mdGo: mdGo, mdSimFill: mdSimFill, mdSimPlay: mdSimPlay,
