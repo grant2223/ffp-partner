@@ -178,7 +178,7 @@
       '.lg-teamstat .hd{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;padding:8px 2px 12px;border-bottom:1px solid var(--ffp-border);} .lg-teamstat .hd span{font-size:13px;font-weight:800;text-align:center;} .lg-teamstat .hd span:first-child{text-align:left;} .lg-teamstat .hd span:last-child{text-align:right;}',
       '.lg-tsrow{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #f0f3f6;} .lg-tsrow .lab{text-align:center;font-size:12.5px;font-weight:700;color:#43525c;} .lg-tsrow .lg-in{padding:8px 10px;text-align:center;}',
       '#tg-root .lg-nav{gap:15px;align-items:center;}#tg-root .lg-nav .tg-phase{padding:0 2px 0 0;}#tg-root .lg-nav .tg-navsep{margin:0 2px;}',
-      '.md-top{padding:2px 0 0;}.md-day{display:flex;align-items:center;gap:8px;padding:2px 0 14px;}.md-day b{font-size:17px;font-weight:900;color:var(--ffp-text);}.md-day .tz{font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);margin-left:6px;}.md-day .sp{flex:1;}.md-cnt{display:flex;align-items:stretch;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);margin-bottom:6px;}.md-cn{padding:12px 22px 11px;border-right:1px solid var(--ffp-border);min-width:104px;}.md-cn:last-child{border-right:0;}.md-cn u{text-decoration:none;display:block;font-size:22px;font-weight:900;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-cn s{text-decoration:none;display:block;font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:6px;}.md-cn.ok u{color:#1F7A5C;}.md-cn.warn u{color:#B87A00;}.md-cn.blue u{color:var(--ffp-blue);}/* THE WHOLE DAY, as approved: surfaces down the side, slots across, the slot   being played bracketed in gold rather than a line struck through the names. */.md-dy{background:#fff;border-radius:12px;overflow:hidden;position:relative;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-dy .sc{overflow-x:auto;}table.md-g{border-collapse:collapse;width:100%;}table.md-g th,table.md-g td{border-right:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);vertical-align:top;}table.md-g th.cl,table.md-g td.cl{width:104px;min-width:104px;border-right:2px solid var(--ffp-border-mid);}table.md-g thead th{background:#F8FAFC;padding:11px 8px;font-size:11.5px;font-weight:900;letter-spacing:.05em;color:var(--ffp-blue);font-variant-numeric:tabular-nums;text-align:center;min-width:132px;}table.md-g thead th.cl{text-align:left;padding-left:14px;font-size:9.5px;letter-spacing:.13em;color:var(--ffp-text-muted);}table.md-g td.cl{padding:11px 14px;background:#FBFCFD;}table.md-g td.cl b{display:block;font-size:13.5px;font-weight:900;color:var(--ffp-text);}table.md-g td.cl s{text-decoration:none;display:block;font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:3px;}table.md-g td{padding:0;}table.md-g td>div{padding:8px 9px 9px;min-height:50px;}table.md-g td.dbl>div:first-child{border-bottom:2px dashed #B87A00;}table.md-g td.dbl>div{min-height:0;}table.md-g th.now,table.md-g td.now{border-left:2px solid #F2A900;border-right:2px solid #F2A900;}table.md-g th.now{border-top:3px solid #F2A900;}table.md-g th.now .nw{display:block;font-size:8.5px;font-weight:900;letter-spacing:.12em;color:#B87A00;margin-top:3px;}table.md-g tr:last-child td.now{border-bottom:3px solid #F2A900;}.md-g .tag{display:block;font-size:9px;font-weight:900;letter-spacing:.08em;margin-bottom:1px;}.md-g .rnd{display:block;font-style:normal;font-size:10px;font-weight:800;color:var(--ffp-text-muted);margin-bottom:5px;line-height:1.25;}.md-g .who{text-decoration:none;display:block;font-size:11.5px;font-weight:800;line-height:1.3;color:var(--ffp-text);overflow-wrap:anywhere;}.md-g s.who{font-weight:700;color:var(--ffp-text-muted);}.md-g .who .vs{display:block;font-style:normal;font-size:9px;font-weight:900;letter-spacing:.14em;color:#9AA8B4;margin:2px 0;}.md-g s.who.tbd{font-weight:800;color:var(--ffp-text-muted);}.md-g s.who.tbd i{display:block;font-style:normal;font-size:10.5px;font-weight:700;color:#9AA8B4;margin-top:3px;}.md-g .sc2{font-style:normal;display:block;font-size:12px;font-weight:900;margin-top:4px;color:#1F7A5C;font-variant-numeric:tabular-nums;}.md-g .c-done{background:#E8F5EF;}.md-g .c-live{background:#FFF4DC;box-shadow:inset 0 0 0 2px #F2A900;}.md-g .c-late{background:#FDF6E6;}.md-g .c-wait{background:#fff;}.md-g .c-none{background:repeating-linear-gradient(135deg,#EEF2F6 0 6px,#F7F9FB 6px 12px);}table.md-g td.free{min-height:50px;}table.md-g td.free:after{content:"";display:block;min-height:50px;}table.md-g td[data-fid]{transition:background .12s;}table.md-g td.dz{background:#FFF4DC;box-shadow:inset 0 0 0 2px #F2A900;}.md-g td>div[draggable]{cursor:grab;}.md-g td>div[draggable]:active{cursor:grabbing;}.md-g td>div.dragging{opacity:.4;}.md-nowtag{position:absolute;top:3px;font-size:10.5px;font-weight:900;letter-spacing:.09em;z-index:4;color:#B87A00;white-space:nowrap;transform:translateX(-50%);padding-bottom:7px;}.md-key{display:flex;flex-wrap:wrap;gap:20px;margin:14px 2px 0;font-size:10.5px;font-weight:800;letter-spacing:.07em;color:var(--ffp-text-muted);}.md-key span{display:flex;align-items:center;gap:8px;}.md-key i{width:18px;height:11px;border-radius:3px;display:block;flex:none;}.md-strip{display:flex;align-items:stretch;flex-wrap:wrap;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);margin:0 0 4px;}.md-dbtn{border:0;background:none;font:inherit;cursor:pointer;text-align:left;padding:11px 18px 10px;border-right:1px solid var(--ffp-border);box-shadow:inset 0 3px 0 transparent;}.md-dbtn:hover{background:#f6f9fb;}.md-dbtn b{display:block;font-size:12.5px;font-weight:800;color:var(--ffp-text-muted);}.md-dbtn s{text-decoration:none;display:block;font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--ffp-text-dim);margin-top:4px;font-variant-numeric:tabular-nums;}.md-dbtn.on{box-shadow:inset 0 3px 0 #F2A900;}.md-dbtn.on b{color:var(--ffp-text);font-weight:900;}.md-dbtn.on s{color:var(--ffp-text-muted);}.md-none{display:flex;align-items:flex-start;gap:12px;padding:16px 2px 4px;}.md-none .ms{font-size:21px;color:var(--ffp-text-dim);flex:none;}.md-none .g b{display:block;font-size:14.5px;font-weight:800;color:var(--ffp-text);}.md-none .g p{margin:5px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;}.md-none .g a{display:inline-block;margin-top:10px;}.md-sh{display:flex;align-items:flex-end;gap:13px;margin:30px 0 12px;}.md-sh h3{font-size:12.5px;font-weight:900;letter-spacing:.16em;color:var(--ffp-blue);margin:0;}.md-sh p{font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);margin:0;padding-bottom:1px;}.md-sh .ln{flex:1;height:1px;background:var(--ffp-border);margin-bottom:5px;}.md-clear{display:flex;align-items:center;gap:11px;padding:16px 2px;font-size:14px;font-weight:800;color:#1F7A5C;}.md-clear .ms{font-size:21px;}.md-rail{position:relative;padding-left:100px;}.md-rail:before{content:"";position:absolute;left:88px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,#F2A900,#E4EBF1);}.md-jb{position:relative;display:flex;align-items:center;gap:22px;padding:12px 0 13px;border-bottom:1px solid var(--ffp-border);}.md-jb:last-child{border-bottom:0;}.md-jb .tm{position:absolute;left:-100px;top:13px;width:80px;text-align:right;}.md-jb .tm u{text-decoration:none;display:block;font-size:14.5px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-jb .tm s{text-decoration:none;display:block;font-size:9.5px;font-weight:800;letter-spacing:.1em;color:var(--ffp-text-muted);margin-top:3px;}.md-jb .dot{position:absolute;left:-18px;top:18px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px #9aa8b4;}.md-jb.k-clash .dot,.md-jb.k-finish .dot{box-shadow:0 0 0 3px #B87A00;}.md-jb.k-result .dot{box-shadow:0 0 0 3px #F2A900;}.md-jb.k-official .dot,.md-jb.k-sheet .dot,.md-jb.k-entrants .dot{box-shadow:0 0 0 3px #7FB2D9;}.md-jb .mid{flex:1;min-width:0;max-width:620px;}.md-jb .mid .where{display:inline-block;font-size:10px;font-weight:900;letter-spacing:.12em;color:#B87A00;margin-bottom:5px;}.md-jb .mid b{display:block;font-size:15px;font-weight:800;line-height:1.3;color:var(--ffp-text);overflow-wrap:anywhere;}.md-jb .mid p{margin:4px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.45;overflow-wrap:anywhere;}.md-jb .acts{flex:none;margin-left:auto;display:flex;gap:8px;}.md-board{background:#fff;border-radius:3px 3px 12px 12px;overflow:hidden;position:relative;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-board:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--ffp-blue),#7FB2D9);}.md-bh,.md-row{display:grid;grid-template-columns:134px 292px 1fr 196px;align-items:center;}.md-bh{padding:14px 20px 11px;border-bottom:1px solid var(--ffp-border);margin-top:4px;}.md-bh span{font-size:9.5px;font-weight:900;letter-spacing:.13em;color:var(--ffp-text-muted);}.md-row{padding:14px 20px;border-bottom:1px solid var(--ffp-border);position:relative;}.md-row:last-child{border-bottom:0;}.md-row:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#C3D3E0;}.md-row.e-live:before{background:#F2A900;}.md-row.e-late:before{background:#FFD46B;}.md-row.e-live{background:linear-gradient(90deg,rgba(242,169,0,.10),rgba(242,169,0,0) 62%);}.md-row .c b{display:block;font-size:15.5px;font-weight:900;color:var(--ffp-text);}.md-row .c s{text-decoration:none;display:block;font-size:9.5px;font-weight:700;letter-spacing:.11em;color:var(--ffp-text-muted);margin-top:4px;}.md-row .on u,.md-row .nx u,.md-row .rf u{text-decoration:none;display:block;font-size:13.5px;font-weight:800;line-height:1.25;color:var(--ffp-text);overflow-wrap:anywhere;}.md-row .on u.free,.md-row .nx u.free{color:var(--ffp-text-muted);font-weight:700;}.md-row .rf u.none{color:#B87A00;}.md-row .on s,.md-row .nx s,.md-row .rf s{text-decoration:none;display:block;font-size:11px;font-weight:700;color:var(--ffp-text-muted);margin-top:4px;line-height:1.35;}.md-row .nx s.bad{color:#B87A00;}.md-divs{display:grid;grid-template-columns:repeat(auto-fit,minmax(272px,1fr));background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-dv{padding:17px 20px 19px;background:#fff;box-shadow:inset -1px -1px 0 var(--ffp-border);}.md-dv .r1{display:flex;align-items:baseline;gap:9px;}.md-dv .r1 i{width:10px;height:10px;border-radius:2px;display:block;flex:none;background:var(--dc,var(--ffp-blue));align-self:center;}.md-dv .r1 b{font-size:15px;font-weight:900;color:var(--ffp-text);}.md-dv .r1 span{margin-left:auto;font-size:10px;font-weight:900;letter-spacing:.11em;}.md-dv .r1 span.ok{color:#1F7A5C;}.md-dv .r1 span.no{color:#B87A00;}.md-dv .mt{display:flex;gap:24px;margin-top:13px;}.md-dv .mt u{text-decoration:none;display:block;font-size:24px;font-weight:900;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-dv .mt u.bad{color:#B87A00;}.md-dv .mt s{text-decoration:none;display:block;font-size:9.5px;font-weight:800;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:6px;}.md-dv .pips{display:flex;flex-wrap:wrap;gap:3px;margin-top:16px;}.md-dv .pips i{width:10px;height:14px;border-radius:2px;display:block;background:repeating-linear-gradient(135deg,#E6ECF2 0 4px,#F2F6F9 4px 8px);}.md-dv .pips i.todo{background:#E6ECF2;}.md-dv .pips i.won{background:linear-gradient(180deg,#2E9B77,#1F7A5C);}.md-dv .nt{font-size:12px;font-weight:700;color:var(--ffp-text-muted);margin-top:11px;line-height:1.45;}.md-dv .nt.bad{color:#B87A00;font-weight:800;}.md-sim{margin:28px 0 40px;padding:16px 2px 0;border-top:1px solid var(--ffp-border);display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;}.md-sim>.ms{font-size:21px;color:#B87A00;flex:none;margin-top:1px;}.md-sim .g{flex:1;min-width:260px;}.md-sim .g b{display:block;font-size:14px;font-weight:900;color:var(--ffp-text);}.md-sim .g p{margin:4px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;}.md-sim .acts{display:flex;gap:9px;flex:none;}',
+      '.md-top{padding:2px 0 0;}.md-day{display:flex;align-items:center;gap:8px;padding:2px 0 14px;}.md-day b{font-size:17px;font-weight:900;color:var(--ffp-text);}.md-day .tz{font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);margin-left:6px;}.md-day .sp{flex:1;}.md-cnt{display:flex;align-items:stretch;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);margin-bottom:6px;}.md-cn{padding:12px 22px 11px;border-right:1px solid var(--ffp-border);min-width:104px;}.md-cn:last-child{border-right:0;}.md-cn u{text-decoration:none;display:block;font-size:22px;font-weight:900;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-cn s{text-decoration:none;display:block;font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:6px;}.md-cn.ok u{color:#1F7A5C;}.md-cn.warn u{color:#B87A00;}.md-cn.blue u{color:var(--ffp-blue);}/* THE WHOLE DAY, as approved: surfaces down the side, slots across, the slot   being played bracketed in gold rather than a line struck through the names. */.md-dy{background:#fff;border-radius:12px;overflow:hidden;position:relative;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-dy .sc{overflow-x:auto;}table.md-g{border-collapse:collapse;width:100%;}table.md-g th,table.md-g td{border-right:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);vertical-align:top;}table.md-g th.cl,table.md-g td.cl{width:104px;min-width:104px;border-right:2px solid var(--ffp-border-mid);}table.md-g thead th{background:#F8FAFC;padding:11px 8px;font-size:11.5px;font-weight:900;letter-spacing:.05em;color:var(--ffp-blue);font-variant-numeric:tabular-nums;text-align:center;min-width:132px;}table.md-g thead th.cl{text-align:left;padding-left:14px;font-size:9.5px;letter-spacing:.13em;color:var(--ffp-text-muted);}table.md-g td.cl{padding:11px 14px;background:#FBFCFD;}table.md-g td.cl b{display:block;font-size:13.5px;font-weight:900;color:var(--ffp-text);}table.md-g td.cl s{text-decoration:none;display:block;font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:3px;}table.md-g td{padding:0;}table.md-g td>div{padding:8px 9px 9px;min-height:50px;}table.md-g td.dbl>div:first-child{border-bottom:2px dashed #B87A00;}table.md-g td.dbl>div{min-height:0;}table.md-g th.now,table.md-g td.now{border-left:2px solid #F2A900;border-right:2px solid #F2A900;}table.md-g th.now{border-top:3px solid #F2A900;}table.md-g th.now .nw{display:block;font-size:8.5px;font-weight:900;letter-spacing:.12em;color:#B87A00;margin-top:3px;}table.md-g tr:last-child td.now{border-bottom:3px solid #F2A900;}.md-g .tag{display:block;font-size:9px;font-weight:900;letter-spacing:.08em;margin-bottom:1px;}.md-g .rnd{display:block;font-style:normal;font-size:10px;font-weight:800;color:var(--ffp-text-muted);margin-bottom:5px;line-height:1.25;}.md-g .who{text-decoration:none;display:block;font-size:11.5px;font-weight:800;line-height:1.3;color:var(--ffp-text);overflow-wrap:anywhere;}.md-g s.who{font-weight:700;color:var(--ffp-text-muted);}.md-g .who .vs{display:block;font-style:normal;font-size:9px;font-weight:900;letter-spacing:.14em;color:#9AA8B4;margin:2px 0;}.md-g s.who.tbd{font-weight:800;color:var(--ffp-text-muted);}.md-g s.who.tbd i{display:block;font-style:normal;font-size:10.5px;font-weight:700;color:#9AA8B4;margin-top:3px;}.md-g .sc2{font-style:normal;display:block;font-size:12px;font-weight:900;margin-top:4px;color:#1F7A5C;font-variant-numeric:tabular-nums;}.md-g .c-done{background:#E8F5EF;}.md-g .c-live{background:#FFF4DC;box-shadow:inset 0 0 0 2px #F2A900;}.md-g .c-late{background:#FDF6E6;}.md-g .c-wait{background:#fff;}.md-g .c-none{background:repeating-linear-gradient(135deg,#EEF2F6 0 6px,#F7F9FB 6px 12px);}table.md-g td.free{min-height:50px;}table.md-g td.free:after{content:"";display:block;min-height:50px;}table.md-g td[data-fid]{transition:background .12s;}table.md-g td.dz{background:#FFF4DC;box-shadow:inset 0 0 0 2px #F2A900;}table.md-g td.dz.swap{box-shadow:inset 0 0 0 2px #1980AD;background:#eaf4fa;}.md-g td>div[draggable]{cursor:grab;}.md-g td>div[draggable]:active{cursor:grabbing;}.md-g td>div.dragging{opacity:.4;}.md-nowtag{position:absolute;top:3px;font-size:10.5px;font-weight:900;letter-spacing:.09em;z-index:4;color:#B87A00;white-space:nowrap;transform:translateX(-50%);padding-bottom:7px;}.md-key{display:flex;flex-wrap:wrap;gap:20px;margin:14px 2px 0;font-size:10.5px;font-weight:800;letter-spacing:.07em;color:var(--ffp-text-muted);}.md-key span{display:flex;align-items:center;gap:8px;}.md-key i{width:18px;height:11px;border-radius:3px;display:block;flex:none;}.md-strip{display:flex;align-items:stretch;flex-wrap:wrap;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);margin:0 0 4px;}.md-dbtn{border:0;background:none;font:inherit;cursor:pointer;text-align:left;padding:11px 18px 10px;border-right:1px solid var(--ffp-border);box-shadow:inset 0 3px 0 transparent;}.md-dbtn:hover{background:#f6f9fb;}.md-dbtn b{display:block;font-size:12.5px;font-weight:800;color:var(--ffp-text-muted);}.md-dbtn s{text-decoration:none;display:block;font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--ffp-text-dim);margin-top:4px;font-variant-numeric:tabular-nums;}.md-dbtn.on{box-shadow:inset 0 3px 0 #F2A900;}.md-dbtn.on b{color:var(--ffp-text);font-weight:900;}.md-dbtn.on s{color:var(--ffp-text-muted);}.md-none{display:flex;align-items:flex-start;gap:12px;padding:16px 2px 4px;}.md-none .ms{font-size:21px;color:var(--ffp-text-dim);flex:none;}.md-none .g b{display:block;font-size:14.5px;font-weight:800;color:var(--ffp-text);}.md-none .g p{margin:5px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;}.md-none .g a{display:inline-block;margin-top:10px;}.md-sh{display:flex;align-items:flex-end;gap:13px;margin:30px 0 12px;}.md-sh h3{font-size:12.5px;font-weight:900;letter-spacing:.16em;color:var(--ffp-blue);margin:0;}.md-sh p{font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);margin:0;padding-bottom:1px;}.md-sh .ln{flex:1;height:1px;background:var(--ffp-border);margin-bottom:5px;}.md-clear{display:flex;align-items:center;gap:11px;padding:16px 2px;font-size:14px;font-weight:800;color:#1F7A5C;}.md-clear .ms{font-size:21px;}.md-rail{position:relative;padding-left:100px;}.md-rail:before{content:"";position:absolute;left:88px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,#F2A900,#E4EBF1);}.md-jb{position:relative;display:flex;align-items:center;gap:22px;padding:12px 0 13px;border-bottom:1px solid var(--ffp-border);}.md-jb:last-child{border-bottom:0;}.md-jb .tm{position:absolute;left:-100px;top:13px;width:80px;text-align:right;}.md-jb .tm u{text-decoration:none;display:block;font-size:14.5px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-jb .tm s{text-decoration:none;display:block;font-size:9.5px;font-weight:800;letter-spacing:.1em;color:var(--ffp-text-muted);margin-top:3px;}.md-jb .dot{position:absolute;left:-18px;top:18px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px #9aa8b4;}.md-jb.k-clash .dot,.md-jb.k-finish .dot{box-shadow:0 0 0 3px #B87A00;}.md-jb.k-result .dot{box-shadow:0 0 0 3px #F2A900;}.md-jb.k-official .dot,.md-jb.k-sheet .dot,.md-jb.k-entrants .dot{box-shadow:0 0 0 3px #7FB2D9;}.md-jb .mid{flex:1;min-width:0;max-width:620px;}.md-jb .mid .where{display:inline-block;font-size:10px;font-weight:900;letter-spacing:.12em;color:#B87A00;margin-bottom:5px;}.md-jb .mid b{display:block;font-size:15px;font-weight:800;line-height:1.3;color:var(--ffp-text);overflow-wrap:anywhere;}.md-jb .mid p{margin:4px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.45;overflow-wrap:anywhere;}.md-jb .acts{flex:none;margin-left:auto;display:flex;gap:8px;}.md-board{background:#fff;border-radius:3px 3px 12px 12px;overflow:hidden;position:relative;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-board:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--ffp-blue),#7FB2D9);}.md-bh,.md-row{display:grid;grid-template-columns:134px 292px 1fr 196px;align-items:center;}.md-bh{padding:14px 20px 11px;border-bottom:1px solid var(--ffp-border);margin-top:4px;}.md-bh span{font-size:9.5px;font-weight:900;letter-spacing:.13em;color:var(--ffp-text-muted);}.md-row{padding:14px 20px;border-bottom:1px solid var(--ffp-border);position:relative;}.md-row:last-child{border-bottom:0;}.md-row:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#C3D3E0;}.md-row.e-live:before{background:#F2A900;}.md-row.e-late:before{background:#FFD46B;}.md-row.e-live{background:linear-gradient(90deg,rgba(242,169,0,.10),rgba(242,169,0,0) 62%);}.md-row .c b{display:block;font-size:15.5px;font-weight:900;color:var(--ffp-text);}.md-row .c s{text-decoration:none;display:block;font-size:9.5px;font-weight:700;letter-spacing:.11em;color:var(--ffp-text-muted);margin-top:4px;}.md-row .on u,.md-row .nx u,.md-row .rf u{text-decoration:none;display:block;font-size:13.5px;font-weight:800;line-height:1.25;color:var(--ffp-text);overflow-wrap:anywhere;}.md-row .on u.free,.md-row .nx u.free{color:var(--ffp-text-muted);font-weight:700;}.md-row .rf u.none{color:#B87A00;}.md-row .on s,.md-row .nx s,.md-row .rf s{text-decoration:none;display:block;font-size:11px;font-weight:700;color:var(--ffp-text-muted);margin-top:4px;line-height:1.35;}.md-row .nx s.bad{color:#B87A00;}.md-divs{display:grid;grid-template-columns:repeat(auto-fit,minmax(272px,1fr));background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-dv{padding:17px 20px 19px;background:#fff;box-shadow:inset -1px -1px 0 var(--ffp-border);}.md-dv .r1{display:flex;align-items:baseline;gap:9px;}.md-dv .r1 i{width:10px;height:10px;border-radius:2px;display:block;flex:none;background:var(--dc,var(--ffp-blue));align-self:center;}.md-dv .r1 b{font-size:15px;font-weight:900;color:var(--ffp-text);}.md-dv .r1 span{margin-left:auto;font-size:10px;font-weight:900;letter-spacing:.11em;}.md-dv .r1 span.ok{color:#1F7A5C;}.md-dv .r1 span.no{color:#B87A00;}.md-dv .mt{display:flex;gap:24px;margin-top:13px;}.md-dv .mt u{text-decoration:none;display:block;font-size:24px;font-weight:900;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-dv .mt u.bad{color:#B87A00;}.md-dv .mt s{text-decoration:none;display:block;font-size:9.5px;font-weight:800;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:6px;}.md-dv .pips{display:flex;flex-wrap:wrap;gap:3px;margin-top:16px;}.md-dv .pips i{width:10px;height:14px;border-radius:2px;display:block;background:repeating-linear-gradient(135deg,#E6ECF2 0 4px,#F2F6F9 4px 8px);}.md-dv .pips i.todo{background:#E6ECF2;}.md-dv .pips i.won{background:linear-gradient(180deg,#2E9B77,#1F7A5C);}.md-dv .nt{font-size:12px;font-weight:700;color:var(--ffp-text-muted);margin-top:11px;line-height:1.45;}.md-dv .nt.bad{color:#B87A00;font-weight:800;}.md-sim{margin:28px 0 40px;padding:16px 2px 0;border-top:1px solid var(--ffp-border);display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;}.md-sim>.ms{font-size:21px;color:#B87A00;flex:none;margin-top:1px;}.md-sim .g{flex:1;min-width:260px;}.md-sim .g b{display:block;font-size:14px;font-weight:900;color:var(--ffp-text);}.md-sim .g p{margin:4px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;}.md-sim .acts{display:flex;gap:9px;flex:none;}',
       '.tg-unit{font-size:12px;color:var(--ffp-text-muted);}.sc-day{font-size:16px;font-weight:900;color:var(--ffp-text);margin:26px 0 2px;}.sc-day:first-child{margin-top:8px;}.sc-ch{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:9px;margin:12px 0 0;background:linear-gradient(92deg,#12242f,#21404f);box-shadow:0 2px 8px rgba(14,37,49,.18);}.sc-ch b{font-size:13.5px;font-weight:900;color:#fff;letter-spacing:.01em;}.sc-ch .mn{font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#f0b736;}.sc-mkm{border:0;background:none;padding:0;font:inherit;font-size:11.5px;font-weight:700;color:#7ec9e8;cursor:pointer;}.sc-mkm:hover{color:#fff;}.sc-ch .ct{margin-left:auto;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.58);}.sc-add{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.12);border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;font-weight:800;color:#fff;cursor:pointer;}.sc-add:hover{background:rgba(255,255,255,.2);}.sc-add .ms{font-size:16px;}.sc-day .tz{margin-left:9px;font-size:11px;font-weight:700;color:#9aa8b4;}.sc-m{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--ffp-border);}.sc-m.open{border-bottom:0;}.sc-m .t{width:136px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-m .tm{display:flex;align-items:center;justify-content:center;height:36px;padding:0;border-radius:10px;background:#eaf0f5;border:none;color:var(--ffp-text);font-size:13.5px;font-weight:800;font-variant-numeric:tabular-nums;}.sc-m .tm.none{color:var(--ffp-text-dim);font-weight:700;font-size:12px;}.sc-plan{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);padding:2px 2px 6px;}.sc-plan .lg-in{width:64px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-plan .lg-in.w{width:136px;}.sc-m .g{flex:1;min-width:0;}.sc-m .g b{display:block;font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.sc-m .g span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.sc-m .c{width:170px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-ic{flex:none;border:0;background:none;padding:4px;cursor:pointer;color:#8a99a8;line-height:0;border-radius:6px;}.sc-ic:hover{background:#eef2f5;color:var(--ffp-text);}.sc-ic:disabled{opacity:.28;cursor:default;background:none;}.sc-ic .ms{font-size:19px;}.sc-more{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:4px 2px 14px 146px;border-bottom:1px solid var(--ffp-border);}.sc-more .lg-in,.sc-more .lg-sel{padding:7px 9px;font-size:13px;width:auto;min-width:0;flex:none;height:36px;box-sizing:border-box;}.sc-more .st-d{width:158px;}.sc-more .st-f{width:196px;}.sc-more .a-role{width:168px;}.sc-more .a-off{width:186px;}#lg-root .sc-more .st-off{width:178px;flex:none;}.sc-more .sp{flex:1;}',
       /* the venue the court belongs to, on the court bar rather than repeated
          down every row underneath it */
@@ -291,6 +291,26 @@
       '.sc-ic.pin.on{color:#b07d08;}',
       '.sc-ic.pin.on .ms{font-variation-settings:"FILL" 1;}',
       '.sc-m .tm.pin{background:linear-gradient(180deg,#ffd15a,#f2a900);color:#3a2600;}',
+      '.tg-mail{background:#fff;border-radius:14px;padding:18px 20px 16px;margin:0 0 18px;box-shadow:0 1px 0 var(--ffp-border),0 6px 18px rgba(14,40,66,.06);}',
+      '.tg-mail .hd{display:flex;align-items:center;gap:9px;margin-bottom:14px;}',
+      '.tg-mail .hd>.ms{font-size:20px;color:var(--ffp-blue);}',
+      '.tg-mail .hd b{font-size:15px;font-weight:900;color:var(--ffp-text);}',
+      '.tg-mail .nums{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}',
+      '.tg-mail .nums span{flex:1 1 130px;background:#eef3f7;border-radius:11px;padding:12px 14px;}',
+      '.tg-mail .nums span.bad{background:#fff4e0;}',
+      '.tg-mail .nums u{text-decoration:none;display:block;font-size:24px;font-weight:900;line-height:1;color:var(--ffp-text);font-variant-numeric:tabular-nums;}',
+      '.tg-mail .nums span.bad u{color:#b07d08;}',
+      '.tg-mail .nums s{text-decoration:none;display:block;margin-top:6px;font-size:9.5px;font-weight:900;letter-spacing:.12em;color:var(--ffp-text-muted);}',
+      '.tg-mail .note{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;font-weight:600;color:#6b5a38;line-height:1.5;margin-bottom:14px;}',
+      '.tg-mail .note .ms{font-size:17px;color:#b07d08;flex:none;}',
+      '.tg-mail .acts{display:flex;gap:9px;flex-wrap:wrap;align-items:center;}',
+      '.tg-mail .acts .sp{flex:1;}',
+      '#tg-root .tg-mailta{width:100%;min-width:0;height:auto;padding:12px 14px;font-size:14px;line-height:1.6;resize:vertical;margin-top:18px;}',
+      '.tg-mailprev{margin:auto;width:100%;max-width:680px;height:100%;display:flex;flex-direction:column;padding:18px 16px;}',
+      '.tg-mailprev .bar{display:flex;align-items:center;gap:10px;padding-bottom:12px;}',
+      '.tg-mailprev .bar b{font-size:15px;font-weight:900;color:var(--ffp-text);}',
+      '.tg-mailprev .bar .sp{flex:1;}',
+      '.tg-mailprev iframe{flex:1;width:100%;border:0;border-radius:14px;background:#eef2f6;}',
       '.tg-dvhd .st.stale{background:#fff1d6;color:#8a5a00;}',
       '.tg-stale{display:flex;align-items:center;gap:12px;padding:13px 16px;background:#fff8ea;border-top:2px solid #f2a900;}',
       '.tg-stale>.ms{font-size:21px;color:#b07d08;flex:none;}',
@@ -779,7 +799,7 @@
     S.mdDragId = null;
     if (e.target && e.target.classList) e.target.classList.remove('dragging');
     var q = document.querySelectorAll('.md-g td.dz');
-    for (var i = 0; i < q.length; i++) q[i].classList.remove('dz');
+    for (var i = 0; i < q.length; i++) { q[i].classList.remove('dz'); q[i].classList.remove('swap'); }
   }
   function mdCell(e) {
     var n = e.target;
@@ -790,12 +810,15 @@
     if (!S.mdDragId) return;
     e.preventDefault();
     try { e.dataTransfer.dropEffect = 'move'; } catch (x) {}
-    var td = mdCell(e); if (td) td.classList.add('dz');
+    var td = mdCell(e); if (!td) return;
+    td.classList.add('dz');
+    /* dropping onto a match is a swap, so it does not look like an empty slot */
+    td.classList.toggle('swap', !!td.querySelector('div[draggable]'));
   }
-  function mdLeave(e) { var td = mdCell(e); if (td) td.classList.remove('dz'); }
+  function mdLeave(e) { var td = mdCell(e); if (td) { td.classList.remove('dz'); td.classList.remove('swap'); } }
   async function mdDrop(e) {
     e.preventDefault();
-    var td = mdCell(e); if (td) td.classList.remove('dz');
+    var td = mdCell(e); if (td) { td.classList.remove('dz'); td.classList.remove('swap'); }
     var id = S.mdDragId || (function () { try { return e.dataTransfer.getData('text/plain'); } catch (x) { return null; } })();
     S.mdDragId = null;
     if (!td || !id) return;
@@ -809,22 +832,48 @@
     if ((me.field_id || null) === fid && me.at === at) return;   // put back where it was
 
     var when = evIso(day, at);
-    var r; try {
-      r = await sb().rpc('lt_match_schedule', { p_scope: 'tourn', p_match: id, p_when: when,
-            p_field: fid, p_court: null, p_official: null });
-    } catch (x) { r = { error: x }; }
-    if (r && r.error) { toast('Could not move it', 'error'); return; }
-
     var surf = ((S.md && S.md.surfaces) || []).filter(function (x) { return x.field_id === fid; })[0];
     var where = (surf && surf.name) || Surf();
-    /* A grid that quietly stacks two matches in one slot is how a court gets
-       double-booked, so the move goes through and the clash is said out loud. */
-    var also = all.filter(function (x) {
-      return x.match_id !== id && (x.field_id || null) === fid && x.at === at; }).length;
+
+    /* what is already sitting in the cell being dropped on */
+    var sitting = all.filter(function (x) {
+      return x.match_id !== id && (x.field_id || null) === fid && x.at === at; });
+
+    var put = async function (mid, w, fld) {
+      var q; try {
+        q = await sb().rpc('lt_match_schedule', { p_scope: 'tourn', p_match: mid, p_when: w,
+              p_field: fld, p_court: null, p_official: null });
+      } catch (x) { q = { error: x }; }
+      return !(q && q.error);
+    };
+
+    /* ONE MATCH THERE -> THE TWO TRADE PLACES. Two or more is already a clash
+       the organiser is looking at, and guessing which of them to send away
+       would be worse than saying so. */
+    if (sitting.length === 1) {
+      var other = sitting[0];
+      var backWhen = me.at ? evIso(day, me.at) : null;
+      var backFid = me.field_id || null;
+      if (!backWhen || !backFid) { toast('Give it a time and ' + aSurf() + ' first', 'error'); return; }
+      if (!(await put(id, when, fid))) { toast('Could not swap them', 'error'); return; }
+      if (!(await put(other.match_id, backWhen, backFid))) {
+        /* put the first one back rather than leave both on one court */
+        await put(id, backWhen, backFid);
+        toast('Could not swap them', 'error'); return;
+      }
+      var hereBk = inBreak({ scheduled_at: when, field_id: fid });
+      var thereBk = inBreak({ scheduled_at: backWhen, field_id: backFid });
+      if (hereBk || thereBk) toast('Swapped, but one of them is now inside '
+        + breakName(hereBk || thereBk), 'error');
+      else toast('Swapped with ' + (other.home || 'TBD') + ' v ' + (other.away || 'TBD'), 'success');
+      renderTab(); return;
+    }
+
+    if (!(await put(id, when, fid))) { toast('Could not move it', 'error'); return; }
     var bk = inBreak({ scheduled_at: when, field_id: fid });
     if (bk) toast('Moved to ' + at + ' on ' + where + ', but that is inside ' + breakName(bk), 'error');
-    else if (also) toast('Moved to ' + at + ' on ' + where + ', where ' + also
-      + (also === 1 ? ' other match is' : ' other matches are') + ' already booked', 'error');
+    else if (sitting.length) toast('Moved to ' + at + ' on ' + where + ', where ' + sitting.length
+      + ' other matches are already booked', 'error');
     else toast('Moved to ' + at + ' on ' + where, 'success');
     renderTab();
   }
@@ -3787,12 +3836,14 @@
       group_stage: (k === 'grp' || k === 'gk' || k === 'tiered'),
       num_groups: +v('tg-ng') || null,
       groups_advance: k === 'gk' ? (+v('tg-adv') || 2) : (k === 'grp' ? 0 : (dv.groups_advance || 2)),
-      third_place: segVal('tg-third') === 'true',
-      side_draws: v('tg-side') || 'none',
       // the most players this division takes, and the shape its draw is built
       // to — it belongs with the rest of the format, not only with the draw
       draw_size: +v('tg-dsize') || null
     };
+    /* Only what was on screen. An absent key leaves the stored value alone,
+       which is the whole point of the presence idiom the RPC implements. */
+    if (document.getElementById('tg-third')) p.third_place = segVal('tg-third') === 'true';
+    if (document.getElementById('tg-side'))  p.side_draws  = v('tg-side') || 'none';
     // only sent when the block is on screen; leaving the keys out leaves the
     // stored values alone, which is how a knockout keeps whatever it had
     if (k === 'grp' || k === 'gk') {
@@ -3807,7 +3858,7 @@
       p.num_groups = tc.g; p.band_size = tc.bs; p.tier_quota = tc.q;
       p.cup_intake = tc.mode;
       p.groups_advance = tc.n || 2;   // everyone is placed, so everyone goes on
-      p.side_draws = 'places';
+      p.side_draws = 'places';        // set deliberately, not read off a field
     } else { p.tier_quota = null; p.band_size = null; p.cup_intake = 'quota'; }
     /* when the finals series plays. Sent on every save of a format that HAS a
        knockout; a pool-only format is put back to asap so a stale rule cannot
@@ -4152,6 +4203,134 @@
       + ic(on ? 'paid' : 'radio_button_unchecked') + (on ? 'Paid' : 'Unpaid') + '</button>';
   }
 
+  /* EMAILING THE PLAYERS. The count shown here comes from the same database
+     function the mailer sends from, so the number on the button is the number
+     of emails that go out - not an estimate of it. */
+  function mailPanel() {
+    var m = S._mail;
+    if (!m || !m.ok) return '';
+    var can = m.with_email || 0, none = m.no_email || 0, go = m.to_send || 0, done = m.sent || 0;
+    return '<div class="tg-mail">'
+      + '<div class="hd">' + ic('mail') + '<b>Tell the players it is in the app</b></div>'
+      + '<div class="nums">'
+      +   '<span><u>' + can + '</u><s>CAN BE EMAILED</s></span>'
+      +   '<span' + (none ? ' class="bad"' : '') + '><u>' + none + '</u><s>NO EMAIL YET</s></span>'
+      +   '<span><u>' + done + '</u><s>ALREADY SENT</s></span>'
+      + '</div>'
+      + (none
+        ? '<div class="note">' + ic('info') + none + (none === 1 ? ' player has' : ' players have')
+          + ' no address, so they cannot be told. Paste them in below or add one on the ' + nouns(null).one + '.</div>'
+        : '')
+      + '<div class="acts">'
+      +   '<button class="lg-btn" onclick="FFPTourn.mailPaste()">' + ic('content_paste') + 'Paste in emails</button>'
+      +   '<button class="lg-btn" onclick="FFPTourn.mailPreview()"' + (can ? '' : ' disabled') + '>'
+      +     ic('visibility') + 'See the email</button>'
+      +   '<button class="lg-btn" onclick="FFPTourn.mailTest()"' + (can ? '' : ' disabled') + '>'
+      +     ic('send') + 'Send one to me</button>'
+      +   '<span class="sp"></span>'
+      +   '<button class="lg-btn gold" onclick="FFPTourn.mailSendAsk()"' + (go ? '' : ' disabled') + '>'
+      +     (go ? 'Email ' + go + (go === 1 ? ' player' : ' players') : 'Nobody left to email') + '</button>'
+      + '</div></div>'
+      + mailPasteSheet() + mailPreviewSheet() + mailSendSheet();
+  }
+  async function mailLoad() {
+    var r; try { r = await sb().rpc('tourn_player_mail_stats', { p_tourn: S.eventId }); }
+    catch (e) { r = null; }
+    S._mail = (r && r.data) || null;
+  }
+  function mailPaste() { S.mailSheet = 'paste'; renderTab(); }
+  function mailClose() { S.mailSheet = null; S._mailHtml = null; renderTab(); }
+  function mailPasteSheet() {
+    if (S.mailSheet !== 'paste') return '';
+    return '<div class="lg-cfm"><div class="lg-cfm-in lg-who">'
+      + '<div class="lg-cfm-t">Paste in their emails</div>'
+      + '<div class="lg-cfm-b">One per line, name then email. A name that is already '
+      + 'in the draw gets the address; anything that does not match is reported back '
+      + 'rather than guessed at.</div>'
+      + '<textarea class="lg-in tg-mailta" id="tg-mailpaste" rows="9" '
+      + 'placeholder="Jon Down, jon@example.com"></textarea>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPTourn.mailClose()">Cancel</button>'
+      + '<button class="lg-btn pri" onclick="FFPTourn.mailPasteApply()">Add these</button></div>'
+      + '</div></div>';
+  }
+  async function mailPasteApply() {
+    var el = document.getElementById('tg-mailpaste');
+    var txt = el ? String(el.value || '') : '';
+    var rows = txt.split(/\n+/).map(function (ln) {
+      var parts = ln.split(/[,\t;]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+      if (!parts.length) return null;
+      var em = '', nm = [];
+      parts.forEach(function (x) { if (!em && x.indexOf('@') > -1) em = x; else nm.push(x); });
+      return { name: nm.join(' '), email: em };
+    }).filter(function (x) { return x && x.name; });
+    if (!rows.length) { toast('Nothing to add', 'error'); return; }
+    var r; try { r = await sb().rpc('tourn_entrant_emails_bulk', { p_tourn: S.eventId, p_rows: rows }); }
+    catch (e) { r = { error: e }; }
+    if (r.error || !(r.data && r.data.ok)) { toast('Could not add those', 'error'); return; }
+    var d = r.data, miss = (d.unmatched || []).length, bad = (d.bad_email || []).length;
+    toast(d.set + (d.set === 1 ? ' email added' : ' emails added')
+      + (miss ? ', ' + miss + ' did not match anyone' : '')
+      + (bad ? ', ' + bad + ' not a valid address' : ''), (miss || bad) ? 'error' : 'success');
+    S.mailSheet = null; await mailLoad(); renderTab();
+  }
+  /* Seen before it is sent, exactly as it will arrive. */
+  async function mailPreview() {
+    var r = await mailFn({ preview: true });
+    if (!r) return;
+    S._mailHtml = r.html || ''; S.mailSheet = 'preview'; renderTab();
+  }
+  function mailPreviewSheet() {
+    if (S.mailSheet !== 'preview') return '';
+    return '<div class="lg-cfm"><div class="tg-mailprev">'
+      + '<div class="bar"><b>This is what they get</b><span class="sp"></span>'
+      + '<button class="lg-btn ghost" onclick="FFPTourn.mailClose()">' + ic('close') + 'Close</button></div>'
+      + '<iframe title="The email" srcdoc="' + esc(S._mailHtml || '') + '"></iframe>'
+      + '</div></div>';
+  }
+  async function mailTest() {
+    var me = (window.FFPAuth && FFPAuth.email && FFPAuth.email()) || '';
+    if (!me) { me = prompt('Send the test to which address?') || ''; }
+    if (!me || me.indexOf('@') < 0) return;
+    var r = await mailFn({ test_to: me });
+    if (r) toast(r.ok ? 'Sent to ' + me : 'Could not send it', r.ok ? 'success' : 'error');
+  }
+  function mailSendAsk() { S.mailSheet = 'send'; renderTab(); }
+  function mailSendSheet() {
+    if (S.mailSheet !== 'send') return '';
+    var go = (S._mail && S._mail.to_send) || 0;
+    return '<div class="lg-cfm"><div class="lg-cfm-in">'
+      + '<span class="ms lg-cfm-ic" style="color:var(--ffp-gold)">mail</span>'
+      + '<div class="lg-cfm-t">Email ' + go + (go === 1 ? ' player?' : ' players?') + '</div>'
+      + '<div class="lg-cfm-b">This sends now, to the address each of them registered with. '
+      + 'Nobody is emailed twice: anyone already sent is left out unless you ask for them again.</div>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPTourn.mailClose()">Cancel</button>'
+      + '<button class="lg-btn pri" onclick="FFPTourn.mailSend()">Yes, send</button></div>'
+      + '</div></div>';
+  }
+  async function mailSend() {
+    S.mailSheet = null; renderTab();
+    toast('Sending\u2026', 'info');
+    var r = await mailFn({});
+    if (!r) return;
+    toast((r.sent || 0) + ' sent' + ((r.failed || []).length ? ', ' + r.failed.length + ' did not go' : ''),
+      (r.failed || []).length ? 'error' : 'success');
+    await mailLoad(); renderTab();
+  }
+  /* One place that calls the mailer, so the guard and the error handling are
+     not written four times. */
+  async function mailFn(extra) {
+    var url = (window.FFP_SUPABASE_URL || 'https://kxzyuofecmtymablnmak.supabase.co')
+      + '/functions/v1/tourn-players-email';
+    var body = Object.assign({ key: 'FFP-TOURN-PLAYERS-2026', tourn_id: S.eventId }, extra || {});
+    var r; try {
+      r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                             body: JSON.stringify(body) });
+    } catch (e) { toast('Could not reach the mailer', 'error'); return null; }
+    var d; try { d = await r.json(); } catch (e) { d = null; }
+    if (!r.ok || !d) { toast((d && d.error) || 'The mailer refused that', 'error'); return null; }
+    return d;
+  }
+
   async function renderEntrants(host) {
     var divs = S.detail.divisions || [];
     if (!divs.length) { host.innerHTML = '<div class="lg-empty">Add a division first.</div>'; return; }
@@ -4164,8 +4343,10 @@
     var inSeries = !!(S.detail && S.detail.event && S.detail.event.series_id);
     var serBtn = (inSeries && S.divId && !S.serEnter)
       ? '<button class="lg-btn" onclick="FFPTourn.serEnterOpen()">' + ic('groups') + 'Add from the series</button>' : '';
-    host.innerHTML = '<div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'entrants\')">' + divOpts() + '</select><span class="sp"></span>' + serBtn + (S.divId ? '<button class="lg-btn" onclick="FFPTourn.bulkAthletes()">' + ic('upload_file') + 'Bulk add</button>' : '') + '</div>' + serEnterHtml() + adder + '<div id="tg-roster"><div class="lg-empty">Loading…</div></div>';
+    host.innerHTML = '<div id="tg-mailwrap"></div><div class="lg-tool"><select class="lg-sel" onchange="FFPTourn.setDiv(this.value,\'entrants\')">' + divOpts() + '</select><span class="sp"></span>' + serBtn + (S.divId ? '<button class="lg-btn" onclick="FFPTourn.bulkAthletes()">' + ic('upload_file') + 'Bulk add</button>' : '') + '</div>' + serEnterHtml() + adder + '<div id="tg-roster"><div class="lg-empty">Loading…</div></div>';
     var f = document.getElementById('tg-entname'); if (f) f.focus();
+    await mailLoad();
+    var mp = document.getElementById('tg-mailwrap'); if (mp) mp.innerHTML = mailPanel();
     var r; try { r = await sb().rpc('tourn_roster', { p_division: S.divId }); } catch (e) { r = { error: e }; }
     try { var sq = await sb().rpc('lt_squad_list', { p_scope: 'tourn', p_event: S.eventId }); S._squad = (sq && sq.data) || []; } catch (e) { S._squad = []; }
     try {
@@ -4251,6 +4432,7 @@
         : '<div class="f gr"><label>Player</label><div class="ro">' + esc(en.name) + (en.nationality ? ', ' + esc(en.nationality) : '') + '</div></div>') +
       '<div class="f"><label>Division</label><select class="lg-sel" id="tg-ee-div">' + opts + '</select></div>' +
       '<div class="f sm"><label>Seed</label><input class="lg-in" id="tg-ee-seed" type="number" min="1" value="' + (en.seed == null ? '' : en.seed) + '"></div>' +
+      '<div class="f gr"><label>Email</label><input class="lg-in" id="tg-ee-email" type="email" placeholder="Where to reach them" value="' + esc(en.invite_email || '') + '"></div>' +
       (isTeam ? '' : '<div class="f"><label>Grade</label><select class="lg-sel" id="tg-ee-grade">' + grOpts + '</select></div>') +
       grpField +
       '<div class="f"><label>Status</label><select class="lg-sel" id="tg-ee-status">' + stOpts + '</select></div>' +
@@ -4309,6 +4491,19 @@
       patch.color2 = g('tg-ee-c2');
       var bad = [patch.color1, patch.color2].filter(function (c) { return c && !/^#[0-9a-fA-F]{6}$/.test(c); });
       if (bad.length) { if (msg) msg.textContent = 'Colours are hex codes like #101820'; return; }
+    }
+    /* the address is written through its own gate, which checks the shape of
+       it, so a typo never becomes a silent dead end */
+    if (document.getElementById('tg-ee-email')) {
+      var em = g('tg-ee-email');
+      if (em !== String(en.invite_email || '')) {
+        var re; try { re = await sb().rpc('tourn_entrant_email', { p_entrant: id, p_email: em || null }); }
+        catch (e) { re = { error: e }; }
+        if (re.error || !(re.data && re.data.ok)) {
+          if (msg) msg.textContent = (re.data && re.data.detail) || 'Could not save the email';
+          return;
+        }
+      }
     }
     var r; try { r = await sb().rpc('tourn_entrant_update', { p_id: id, p: patch }); } catch (e) { r = { error: e }; }
     if (r.error) { if (msg) msg.textContent = (String(r.error.message || '').indexOf('bad_hex') > -1) ? 'Colours are hex codes like #101820' : 'Could not save'; return; }
@@ -5739,6 +5934,8 @@
     dayWhoOpen: dayWhoOpen, dayWhoClose: dayWhoClose, dayWhoTog: dayWhoTog,
     dayWhoApply: dayWhoApply, pinMatch: pinMatch,
     awayAdd: awayAdd, awaySave: awaySave, awayRemove: awayRemove,
+    mailPaste: mailPaste, mailPasteApply: mailPasteApply, mailClose: mailClose,
+    mailPreview: mailPreview, mailTest: mailTest, mailSendAsk: mailSendAsk, mailSend: mailSend,
     mdDrag: mdDrag, mdDragEnd: mdDragEnd, mdOver: mdOver, mdLeave: mdLeave, mdDrop: mdDrop,
     rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
     schedToggle: schedToggle, schedMove: schedMove, setMainCourt: setMainCourt,
