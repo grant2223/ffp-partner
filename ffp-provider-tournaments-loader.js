@@ -292,6 +292,8 @@
       '.sc-ic.pin.on .ms{font-variation-settings:"FILL" 1;}',
       '.sc-m .tm.pin{background:linear-gradient(180deg,#ffd15a,#f2a900);color:#3a2600;}',
       '.tg-oop .lg-vh .g b{display:block;}',
+      '.tg-oop .lg-vh .g span.addr{display:block;margin-top:3px;font-size:15px;font-weight:800;'
+        + 'color:var(--ffp-blue);letter-spacing:.01em;}',
       '.tg-oop .lg-btn,.tg-oop .lg-scrbtn{margin-left:auto;flex:none;margin-right:0;}',
       '.tg-oop .lg-scrbtn{font-size:15px;letter-spacing:.12em;padding:8px 14px;}',
       '.tg-oopdays{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px;}',
@@ -1265,7 +1267,7 @@
   // A scoreboard is set up by typing an address into a TV's browser with a
   // remote, so the court's five-character code is the thing that matters. The
   // full /display/<uuid> link is no use to anyone holding a remote control.
-  var SCREEN_BASE = 'scoreboard.findfitpeople.com';   // the scoreboard address (Vercel, ffp-app)
+  var SCREEN_BASE = 'score.findfitpeople.com';   // the board host: a bare code resolves here
   var GFX_BASE    = 'gfx.findfitpeople.com';     // the broadcast graphics source, same code, all day
   /* THE WHOLE DAY ON ONE TV, the screen people walk up to to find their
      match. Not a court board: that is one court, mounted on it. */
@@ -1293,8 +1295,7 @@
     return '<div class="lg-venue tg-oop"><div class="lg-vh">'
       + '<span class="lg-vpin"><span class="ms">calendar_view_week</span></span>'
       + '<div class="g"><b>Order of play, the whole tournament on one screen</b>'
-      + '<span>' + Surf(true) + ' down the side, times across the top. For the TV people '
-      + 'walk up to, not a ' + surfWord() + "'s own board.</span></div>"
+      + '<span class="addr">' + esc(oopUrl(null)) + '</span></div>'
       + (oopCode()
         ? '<button class="lg-scrbtn perm" title="The address for this board" '
           + 'onclick="FFPTourn.oopPanel()"><span class="ms">connected_tv</span>'
