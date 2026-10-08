@@ -382,6 +382,44 @@
       '.lg-surf .lg-vcnote{font-size:12px;font-weight:700;color:#7c8b97;margin-left:8px;}',
       '/* Open an empty draw: the format decides the shape, not the entry list. */',
       '.tg-opendraw{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--ffp-border);}'
+      /* which FFP account a player is. A sentence, so it sits on its own
+         line rather than squeezed in beside Seed and Status. */
+      + '.tg-acctf{flex:1 1 100% !important;}'
+      + '.tg-acct{display:flex;align-items:center;gap:11px;background:#eaf0f5;border-radius:11px;padding:10px 12px;}'
+      + '.tg-acct>.ms{font-size:21px;color:var(--ffp-text-dim) !important;flex:none;}'
+      + '.tg-acct.on>.ms{color:var(--ffp-green) !important;}'
+      + '.tg-acct .g{flex:1;min-width:0;}'
+      + '.tg-acct .g b{display:block;font-size:13.5px;font-weight:800;color:var(--ffp-text);}'
+      + '.tg-acct .g span{display:block;margin-top:1px;font-size:12px;font-weight:600;'
+        + 'color:var(--ffp-text-muted);line-height:1.45;}'
+      + '.tg-acct .lg-btn.sm{flex:none;padding:7px 12px;font-size:12px;}'
+      + '.tg-find{width:100%;margin-top:22px;}'
+      + '.tg-find .hd{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;'
+        + 'color:var(--ffp-text-dim);margin-bottom:8px;}'
+      + '.tg-find .hd.sp{margin-top:24px;}'
+      + '.tg-find .r{display:flex;align-items:center;gap:12px;padding:12px 0;flex-wrap:wrap;'
+        + 'border-top:1px solid var(--ffp-border-mid);}'
+      + '.tg-find .r:last-of-type{border-bottom:1px solid var(--ffp-border-mid);}'
+      + '.tg-find .r .g{flex:1 1 220px;min-width:0;}'
+      + '.tg-find .r .g b{display:block;font-size:14.5px;font-weight:800;color:var(--ffp-text);}'
+      + '.tg-find .r .g span{display:block;margin-top:2px;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);}'
+      + '.tg-find .r .g span i{font-style:normal;display:block;margin-top:1px;color:var(--ffp-text-dim);font-size:12px;}'
+      + '.tg-find .r .same{display:flex;align-items:center;gap:3px;font-style:normal;font-size:11.5px;'
+        + 'font-weight:800;color:var(--ffp-green);flex:none;}'
+      + '.tg-find .r .same .ms{font-size:15px;color:var(--ffp-green) !important;}'
+      + '.tg-find .r .taken{font-style:normal;font-size:11.5px;font-weight:800;color:var(--ffp-warn);flex:none;}'
+      + '.tg-find .r .lg-btn.sm{flex:none;padding:8px 16px;font-size:13px;}'
+      + '.tg-find .row{display:flex;gap:10px;align-items:center;}'
+      + '.tg-find .row .lg-in{flex:1 1 auto;min-width:0;box-sizing:border-box;}'
+      + '.tg-find .row .lg-btn{flex:none;}'
+      + '.tg-find .note{display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:12px;'
+        + 'font-weight:700;color:var(--ffp-text-dim);line-height:1.5;}'
+      + '.tg-find .note .ms{font-size:16px;color:var(--ffp-text-dim) !important;flex:none;margin-top:1px;}'
+      + '.tg-find .none{font-size:13px;font-weight:700;color:var(--ffp-text-dim);padding:10px 0;}'
+      + '@media (max-width:560px){.tg-find .r .lg-btn.sm{flex:1 1 100%;justify-content:center;}'
+        + '.tg-acct{flex-wrap:wrap;}'
+        + '.tg-acct .g{flex:1 1 calc(100% - 32px);}'
+        + '.tg-acct .lg-btn.sm{flex:1 1 100%;justify-content:center;margin-top:4px;}}'
       /* the organiser's own words for the draws: a label saying what each
          draw IS, then the field, so nobody has to know which one "Shield"
          was. The only tag is on a division that has gone its own way. */
@@ -4723,6 +4761,79 @@
       return row + (isTeam && S.sqOpen === en.id ? '<div class="lg-sq" id="lg-sq-' + en.id + '"><div class="lg-sqsrch">' + ic('search') + '<input id="lg-sqq-' + en.id + '" placeholder="Search FFP or type a name" value="' + esc((S._sqQ || {})[en.id] || '') + '" oninput="FFPTourn.sqSearch(\'' + en.id + '\',this.value)" onkeydown="FFPTourn.sqKey(\'' + en.id + '\',event)"></div><div id="lg-sqres-' + en.id + '">' + sqResHtml(en.id) + '</div></div>' : '');
     }).join('') : '<div class="lg-empty">No ' + N.many + ' yet. Members self-register in the app, or add them here.</div>');
     S._roster = rows;
+    host2.innerHTML += findSheet();
+  }
+
+  function entOf(id) { return (S._roster || []).find(function (x) { return x.id === id; }) || null; }
+  function findRow(c, same) {
+    return '<div class="r"><div class="g"><b>' + esc(c.name || 'Member') + '</b>'
+      + '<span>' + esc(c.email || '') + (c.city ? '<i>' + esc(c.city) + '</i>' : '') + '</span></div>'
+      + (same && !c.taken_by ? '<em class="same">' + ic('done') + 'Same name</em>' : '')
+      + (c.taken_by
+        ? '<em class="taken">Already ' + esc(c.taken_by) + '</em>'
+        : '<button class="lg-btn pri sm" onclick="FFPTourn.entLink(\'' + c.id + '\')">Link</button>')
+      + '</div>';
+  }
+  function findSheet() {
+    if (!S.entFind) return '';
+    var en = entOf(S.entFind); if (!en) return '';
+    var d = S._entAcc || {}, sug = d.suggested || [], got = d.found;
+    return '<div class="lg-cfm"><div class="lg-cfm-in lg-who">'
+      + '<div class="lg-cfm-t">Which account is ' + esc(en.name) + '?</div>'
+      + '<div class="lg-cfm-b">Linking puts the tournament in their app and lets them score their '
+      + 'own matches. Nothing is sent to them.</div>'
+      + '<div class="tg-find">'
+      +   '<div class="hd">Same name on FFP</div>'
+      +   (sug.length ? sug.map(function (c) { return findRow(c, true); }).join('')
+                      : '<div class="none">No account on FFP under that name.</div>')
+      +   '<div class="hd sp">Or type the address their FFP account uses</div>'
+      +   '<div class="row"><input class="lg-in" id="tg-findem" type="email" '
+      +     'placeholder="their.address@example.com" value="' + esc(S._entAccQ || '') + '" '
+      +     'onkeydown="if(event.key===\'Enter\')FFPTourn.entFindEmail()">'
+      +     '<button class="lg-btn" onclick="FFPTourn.entFindEmail()">' + ic('search') + 'Find</button></div>'
+      +   (got === null || got === undefined ? ''
+         : (got ? findRow(got, false)
+                : '<div class="none">No FFP account uses that address.</div>'))
+      +   '<div class="note">' + ic('lock')
+      +     '<div>An exact address only. The member list is not browsable from here.</div></div>'
+      + '</div>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPTourn.entFindClose()">Cancel</button></div>'
+      + '</div></div>';
+  }
+  async function loadAcc(id, email) {
+    var r; try { r = await sb().rpc('tourn_entrant_accounts',
+      { p_entrant: id, p_email: email || null }); } catch (e) { r = { error: e }; }
+    if (r.error || !(r.data && r.data.ok)) {
+      toast((r.data && r.data.detail) || 'Could not look that up', 'error'); return false;
+    }
+    S._entAcc = r.data; return true;
+  }
+  async function entFind(id) {
+    S.entFind = id; S._entAcc = null; S._entAccQ = '';
+    if (await loadAcc(id, null)) renderTab();
+  }
+  function entFindClose() { S.entFind = null; S._entAcc = null; S._entAccQ = ''; renderTab(); }
+  async function entFindEmail() {
+    var el = document.getElementById('tg-findem');
+    S._entAccQ = el ? String(el.value || '').trim() : '';
+    if (!S._entAccQ) { toast('Type the address first', 'error'); return; }
+    if (await loadAcc(S.entFind, S._entAccQ)) renderTab();
+  }
+  async function entLink(memberId) {
+    var id = S.entFind; if (!id) return;
+    var r; try { r = await sb().rpc('tourn_entrant_link',
+      { p_entrant: id, p_member: memberId }); } catch (e) { r = { error: e }; }
+    if (r.error || !(r.data && r.data.ok)) {
+      toast((r.data && r.data.detail) || 'Could not link that account', 'error'); return;
+    }
+    S.entFind = null; S._entAcc = null; S._entAccQ = '';
+    toast('Linked', 'success'); renderTab();
+  }
+  async function entUnlink(id) {
+    var r; try { r = await sb().rpc('tourn_entrant_link',
+      { p_entrant: id, p_member: null }); } catch (e) { r = { error: e }; }
+    if (r.error || !(r.data && r.data.ok)) { toast('Could not unlink', 'error'); return; }
+    toast('Unlinked', 'success'); renderTab();
   }
 
   // ---------- EDIT ONE ENTRANT ----------
@@ -4741,6 +4852,21 @@
     return Object.keys(seen).sort();
   }
 
+  /* WHERE THE PLAYER AND THE PERSON MEET. The copy says plainly that this is
+     usually automatic, so nobody links by hand when they do not need to. */
+  function acctField(en) {
+    return '<div class="f gr tg-acctf"><label>FFP account</label>'
+      + (en.member_id
+        ? '<div class="tg-acct on">' + ic('verified')
+          + '<div class="g"><b>' + esc(en.account_name || en.name || 'Linked') + '</b>'
+          + '<span>' + esc(en.account_email || '') + '</span></div>'
+          + '<button class="lg-btn ghost sm" onclick="FFPTourn.entUnlink(\'' + en.id + '\')">Unlink</button></div>'
+        : '<div class="tg-acct">' + ic('person_search')
+          + '<div class="g"><b>Not linked</b><span>They will link themselves when they sign up with '
+          + 'the email above. Only do this by hand if theirs is different.</span></div>'
+          + '<button class="lg-btn pri sm" onclick="FFPTourn.entFind(\'' + en.id + '\')">Find their account</button></div>')
+      + '</div>';
+  }
   function entEditHtml(en) {
     var isTeam = en.kind !== 'individual';
     var opts = (S.detail.divisions || []).map(function (d) {
@@ -4773,6 +4899,7 @@
       '<div class="f"><label>Division</label><select class="lg-sel" id="tg-ee-div">' + opts + '</select></div>' +
       '<div class="f sm"><label>Seed</label><input class="lg-in" id="tg-ee-seed" type="number" min="1" value="' + (en.seed == null ? '' : en.seed) + '"></div>' +
       '<div class="f gr"><label>Email</label><input class="lg-in" id="tg-ee-email" type="email" placeholder="Where to reach them" value="' + esc(en.invite_email || '') + '"></div>' +
+      acctField(en) +
       (isTeam ? '' : '<div class="f"><label>Grade</label><select class="lg-sel" id="tg-ee-grade">' + grOpts + '</select></div>') +
       grpField +
       '<div class="f"><label>Status</label><select class="lg-sel" id="tg-ee-status">' + stOpts + '</select></div>' +
@@ -6226,6 +6353,8 @@
     serEnterOpen: serEnterOpen, serEnterCancel: serEnterCancel, serEnterToggle: serEnterToggle, serEnterAll: serEnterAll, serEnterDo: serEnterDo,
     tierPreview: tierPreview, tierPools: tierPools, tierIntake: tierIntake,
     refsHint: refsHint, refsInfo: refsInfo,
+    entFind: entFind, entFindClose: entFindClose, entFindEmail: entFindEmail,
+    entLink: entLink, entUnlink: entUnlink,
     dnScope: dnScope, dnSave: dnSave, dnReset: dnReset,
     finalsWhen: finalsWhen, potmVoteSave: potmVoteSave,
     build: BUILD,
