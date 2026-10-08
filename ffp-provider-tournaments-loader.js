@@ -178,7 +178,7 @@
       '.lg-teamstat .hd{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;padding:8px 2px 12px;border-bottom:1px solid var(--ffp-border);} .lg-teamstat .hd span{font-size:13px;font-weight:800;text-align:center;} .lg-teamstat .hd span:first-child{text-align:left;} .lg-teamstat .hd span:last-child{text-align:right;}',
       '.lg-tsrow{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #f0f3f6;} .lg-tsrow .lab{text-align:center;font-size:12.5px;font-weight:700;color:#43525c;} .lg-tsrow .lg-in{padding:8px 10px;text-align:center;}',
       '#tg-root .lg-nav{gap:15px;align-items:center;}#tg-root .lg-nav .tg-phase{padding:0 2px 0 0;}#tg-root .lg-nav .tg-navsep{margin:0 2px;}',
-      '.md-top{padding:2px 0 0;}.md-day{display:flex;align-items:center;gap:8px;padding:2px 0 14px;}.md-day b{font-size:17px;font-weight:900;color:var(--ffp-text);}.md-day .tz{font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);margin-left:6px;}.md-day .sp{flex:1;}.md-cnt{display:flex;align-items:stretch;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);margin-bottom:6px;}.md-cn{padding:12px 22px 11px;border-right:1px solid var(--ffp-border);min-width:104px;}.md-cn:last-child{border-right:0;}.md-cn u{text-decoration:none;display:block;font-size:22px;font-weight:900;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-cn s{text-decoration:none;display:block;font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:6px;}.md-cn.ok u{color:#1F7A5C;}.md-cn.warn u{color:#B87A00;}.md-cn.blue u{color:var(--ffp-blue);}/* THE WHOLE DAY, as approved: surfaces down the side, slots across, the slot   being played bracketed in gold rather than a line struck through the names. */.md-dy{background:#fff;border-radius:12px;overflow:hidden;position:relative;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-dy .sc{overflow-x:auto;}table.md-g{border-collapse:collapse;width:100%;}table.md-g th,table.md-g td{border-right:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);vertical-align:top;}table.md-g th.cl,table.md-g td.cl{width:104px;min-width:104px;border-right:2px solid var(--ffp-border-mid);}table.md-g thead th{background:#F8FAFC;padding:11px 8px;font-size:11.5px;font-weight:900;letter-spacing:.05em;color:var(--ffp-blue);font-variant-numeric:tabular-nums;text-align:center;min-width:132px;}table.md-g thead th.cl{text-align:left;padding-left:14px;font-size:9.5px;letter-spacing:.13em;color:var(--ffp-text-muted);}table.md-g td.cl{padding:11px 14px;background:#FBFCFD;}table.md-g td.cl b{display:block;font-size:13.5px;font-weight:900;color:var(--ffp-text);}table.md-g td.cl s{text-decoration:none;display:block;font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:3px;}table.md-g td{padding:0;}table.md-g td>div{padding:8px 9px 9px;min-height:50px;}table.md-g td.dbl>div:first-child{border-bottom:2px dashed #B87A00;}table.md-g td.dbl>div{min-height:0;}table.md-g th.now,table.md-g td.now{border-left:2px solid #F2A900;border-right:2px solid #F2A900;}table.md-g th.now{border-top:3px solid #F2A900;}table.md-g th.now .nw{display:block;font-size:8.5px;font-weight:900;letter-spacing:.12em;color:#B87A00;margin-top:3px;}table.md-g tr:last-child td.now{border-bottom:3px solid #F2A900;}.md-g .tag{display:block;font-size:8.5px;font-weight:900;letter-spacing:.1em;margin-bottom:5px;}.md-g .who{text-decoration:none;display:block;font-size:11.5px;font-weight:800;line-height:1.3;color:var(--ffp-text);overflow-wrap:anywhere;}.md-g s.who{font-weight:700;color:var(--ffp-text-muted);}.md-g .who .vs{display:block;font-style:normal;font-size:9px;font-weight:900;letter-spacing:.14em;color:#9AA8B4;margin:2px 0;}.md-g s.who.tbd{font-weight:800;color:var(--ffp-text-muted);}.md-g s.who.tbd i{display:block;font-style:normal;font-size:10.5px;font-weight:700;color:#9AA8B4;margin-top:3px;}.md-g .sc2{font-style:normal;display:block;font-size:12px;font-weight:900;margin-top:4px;color:#1F7A5C;font-variant-numeric:tabular-nums;}.md-g .c-done{background:#E8F5EF;}.md-g .c-live{background:#FFF4DC;box-shadow:inset 0 0 0 2px #F2A900;}.md-g .c-late{background:#FDF6E6;}.md-g .c-wait{background:#fff;}.md-g .c-none{background:repeating-linear-gradient(135deg,#EEF2F6 0 6px,#F7F9FB 6px 12px);}table.md-g td.free>s{display:block;padding:20px 9px;font-size:11px;font-weight:700;color:#BCC9D6;text-decoration:none;text-align:center;}.md-nowtag{position:absolute;top:3px;font-size:10.5px;font-weight:900;letter-spacing:.09em;z-index:4;color:#B87A00;white-space:nowrap;transform:translateX(-50%);padding-bottom:7px;}.md-key{display:flex;flex-wrap:wrap;gap:20px;margin:14px 2px 0;font-size:10.5px;font-weight:800;letter-spacing:.07em;color:var(--ffp-text-muted);}.md-key span{display:flex;align-items:center;gap:8px;}.md-key i{width:18px;height:11px;border-radius:3px;display:block;flex:none;}.md-strip{display:flex;align-items:stretch;flex-wrap:wrap;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);margin:0 0 4px;}.md-dbtn{border:0;background:none;font:inherit;cursor:pointer;text-align:left;padding:11px 18px 10px;border-right:1px solid var(--ffp-border);box-shadow:inset 0 3px 0 transparent;}.md-dbtn:hover{background:#f6f9fb;}.md-dbtn b{display:block;font-size:12.5px;font-weight:800;color:var(--ffp-text-muted);}.md-dbtn s{text-decoration:none;display:block;font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--ffp-text-dim);margin-top:4px;font-variant-numeric:tabular-nums;}.md-dbtn.on{box-shadow:inset 0 3px 0 #F2A900;}.md-dbtn.on b{color:var(--ffp-text);font-weight:900;}.md-dbtn.on s{color:var(--ffp-text-muted);}.md-none{display:flex;align-items:flex-start;gap:12px;padding:16px 2px 4px;}.md-none .ms{font-size:21px;color:var(--ffp-text-dim);flex:none;}.md-none .g b{display:block;font-size:14.5px;font-weight:800;color:var(--ffp-text);}.md-none .g p{margin:5px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;}.md-none .g a{display:inline-block;margin-top:10px;}.md-sh{display:flex;align-items:flex-end;gap:13px;margin:30px 0 12px;}.md-sh h3{font-size:12.5px;font-weight:900;letter-spacing:.16em;color:var(--ffp-blue);margin:0;}.md-sh p{font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);margin:0;padding-bottom:1px;}.md-sh .ln{flex:1;height:1px;background:var(--ffp-border);margin-bottom:5px;}.md-clear{display:flex;align-items:center;gap:11px;padding:16px 2px;font-size:14px;font-weight:800;color:#1F7A5C;}.md-clear .ms{font-size:21px;}.md-rail{position:relative;padding-left:100px;}.md-rail:before{content:"";position:absolute;left:88px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,#F2A900,#E4EBF1);}.md-jb{position:relative;display:flex;align-items:center;gap:22px;padding:12px 0 13px;border-bottom:1px solid var(--ffp-border);}.md-jb:last-child{border-bottom:0;}.md-jb .tm{position:absolute;left:-100px;top:13px;width:80px;text-align:right;}.md-jb .tm u{text-decoration:none;display:block;font-size:14.5px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-jb .tm s{text-decoration:none;display:block;font-size:9.5px;font-weight:800;letter-spacing:.1em;color:var(--ffp-text-muted);margin-top:3px;}.md-jb .dot{position:absolute;left:-18px;top:18px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px #9aa8b4;}.md-jb.k-clash .dot,.md-jb.k-finish .dot{box-shadow:0 0 0 3px #B87A00;}.md-jb.k-result .dot{box-shadow:0 0 0 3px #F2A900;}.md-jb.k-official .dot,.md-jb.k-sheet .dot,.md-jb.k-entrants .dot{box-shadow:0 0 0 3px #7FB2D9;}.md-jb .mid{flex:1;min-width:0;max-width:620px;}.md-jb .mid .where{display:inline-block;font-size:10px;font-weight:900;letter-spacing:.12em;color:#B87A00;margin-bottom:5px;}.md-jb .mid b{display:block;font-size:15px;font-weight:800;line-height:1.3;color:var(--ffp-text);overflow-wrap:anywhere;}.md-jb .mid p{margin:4px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.45;overflow-wrap:anywhere;}.md-jb .acts{flex:none;margin-left:auto;display:flex;gap:8px;}.md-board{background:#fff;border-radius:3px 3px 12px 12px;overflow:hidden;position:relative;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-board:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--ffp-blue),#7FB2D9);}.md-bh,.md-row{display:grid;grid-template-columns:134px 292px 1fr 196px;align-items:center;}.md-bh{padding:14px 20px 11px;border-bottom:1px solid var(--ffp-border);margin-top:4px;}.md-bh span{font-size:9.5px;font-weight:900;letter-spacing:.13em;color:var(--ffp-text-muted);}.md-row{padding:14px 20px;border-bottom:1px solid var(--ffp-border);position:relative;}.md-row:last-child{border-bottom:0;}.md-row:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#C3D3E0;}.md-row.e-live:before{background:#F2A900;}.md-row.e-late:before{background:#FFD46B;}.md-row.e-live{background:linear-gradient(90deg,rgba(242,169,0,.10),rgba(242,169,0,0) 62%);}.md-row .c b{display:block;font-size:15.5px;font-weight:900;color:var(--ffp-text);}.md-row .c s{text-decoration:none;display:block;font-size:9.5px;font-weight:700;letter-spacing:.11em;color:var(--ffp-text-muted);margin-top:4px;}.md-row .on u,.md-row .nx u,.md-row .rf u{text-decoration:none;display:block;font-size:13.5px;font-weight:800;line-height:1.25;color:var(--ffp-text);overflow-wrap:anywhere;}.md-row .on u.free,.md-row .nx u.free{color:var(--ffp-text-muted);font-weight:700;}.md-row .rf u.none{color:#B87A00;}.md-row .on s,.md-row .nx s,.md-row .rf s{text-decoration:none;display:block;font-size:11px;font-weight:700;color:var(--ffp-text-muted);margin-top:4px;line-height:1.35;}.md-row .nx s.bad{color:#B87A00;}.md-divs{display:grid;grid-template-columns:repeat(auto-fit,minmax(272px,1fr));background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-dv{padding:17px 20px 19px;background:#fff;box-shadow:inset -1px -1px 0 var(--ffp-border);}.md-dv .r1{display:flex;align-items:baseline;gap:9px;}.md-dv .r1 i{width:10px;height:10px;border-radius:2px;display:block;flex:none;background:var(--dc,var(--ffp-blue));align-self:center;}.md-dv .r1 b{font-size:15px;font-weight:900;color:var(--ffp-text);}.md-dv .r1 span{margin-left:auto;font-size:10px;font-weight:900;letter-spacing:.11em;}.md-dv .r1 span.ok{color:#1F7A5C;}.md-dv .r1 span.no{color:#B87A00;}.md-dv .mt{display:flex;gap:24px;margin-top:13px;}.md-dv .mt u{text-decoration:none;display:block;font-size:24px;font-weight:900;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-dv .mt u.bad{color:#B87A00;}.md-dv .mt s{text-decoration:none;display:block;font-size:9.5px;font-weight:800;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:6px;}.md-dv .pips{display:flex;flex-wrap:wrap;gap:3px;margin-top:16px;}.md-dv .pips i{width:10px;height:14px;border-radius:2px;display:block;background:repeating-linear-gradient(135deg,#E6ECF2 0 4px,#F2F6F9 4px 8px);}.md-dv .pips i.todo{background:#E6ECF2;}.md-dv .pips i.won{background:linear-gradient(180deg,#2E9B77,#1F7A5C);}.md-dv .nt{font-size:12px;font-weight:700;color:var(--ffp-text-muted);margin-top:11px;line-height:1.45;}.md-dv .nt.bad{color:#B87A00;font-weight:800;}.md-sim{margin:28px 0 40px;padding:16px 2px 0;border-top:1px solid var(--ffp-border);display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;}.md-sim>.ms{font-size:21px;color:#B87A00;flex:none;margin-top:1px;}.md-sim .g{flex:1;min-width:260px;}.md-sim .g b{display:block;font-size:14px;font-weight:900;color:var(--ffp-text);}.md-sim .g p{margin:4px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;}.md-sim .acts{display:flex;gap:9px;flex:none;}',
+      '.md-top{padding:2px 0 0;}.md-day{display:flex;align-items:center;gap:8px;padding:2px 0 14px;}.md-day b{font-size:17px;font-weight:900;color:var(--ffp-text);}.md-day .tz{font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);margin-left:6px;}.md-day .sp{flex:1;}.md-cnt{display:flex;align-items:stretch;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);margin-bottom:6px;}.md-cn{padding:12px 22px 11px;border-right:1px solid var(--ffp-border);min-width:104px;}.md-cn:last-child{border-right:0;}.md-cn u{text-decoration:none;display:block;font-size:22px;font-weight:900;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-cn s{text-decoration:none;display:block;font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:6px;}.md-cn.ok u{color:#1F7A5C;}.md-cn.warn u{color:#B87A00;}.md-cn.blue u{color:var(--ffp-blue);}/* THE WHOLE DAY, as approved: surfaces down the side, slots across, the slot   being played bracketed in gold rather than a line struck through the names. */.md-dy{background:#fff;border-radius:12px;overflow:hidden;position:relative;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-dy .sc{overflow-x:auto;}table.md-g{border-collapse:collapse;width:100%;}table.md-g th,table.md-g td{border-right:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);vertical-align:top;}table.md-g th.cl,table.md-g td.cl{width:104px;min-width:104px;border-right:2px solid var(--ffp-border-mid);}table.md-g thead th{background:#F8FAFC;padding:11px 8px;font-size:11.5px;font-weight:900;letter-spacing:.05em;color:var(--ffp-blue);font-variant-numeric:tabular-nums;text-align:center;min-width:132px;}table.md-g thead th.cl{text-align:left;padding-left:14px;font-size:9.5px;letter-spacing:.13em;color:var(--ffp-text-muted);}table.md-g td.cl{padding:11px 14px;background:#FBFCFD;}table.md-g td.cl b{display:block;font-size:13.5px;font-weight:900;color:var(--ffp-text);}table.md-g td.cl s{text-decoration:none;display:block;font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:3px;}table.md-g td{padding:0;}table.md-g td>div{padding:8px 9px 9px;min-height:50px;}table.md-g td.dbl>div:first-child{border-bottom:2px dashed #B87A00;}table.md-g td.dbl>div{min-height:0;}table.md-g th.now,table.md-g td.now{border-left:2px solid #F2A900;border-right:2px solid #F2A900;}table.md-g th.now{border-top:3px solid #F2A900;}table.md-g th.now .nw{display:block;font-size:8.5px;font-weight:900;letter-spacing:.12em;color:#B87A00;margin-top:3px;}table.md-g tr:last-child td.now{border-bottom:3px solid #F2A900;}.md-g .tag{display:block;font-size:8.5px;font-weight:900;letter-spacing:.1em;margin-bottom:5px;}.md-g .who{text-decoration:none;display:block;font-size:11.5px;font-weight:800;line-height:1.3;color:var(--ffp-text);overflow-wrap:anywhere;}.md-g s.who{font-weight:700;color:var(--ffp-text-muted);}.md-g .who .vs{display:block;font-style:normal;font-size:9px;font-weight:900;letter-spacing:.14em;color:#9AA8B4;margin:2px 0;}.md-g s.who.tbd{font-weight:800;color:var(--ffp-text-muted);}.md-g s.who.tbd i{display:block;font-style:normal;font-size:10.5px;font-weight:700;color:#9AA8B4;margin-top:3px;}.md-g .sc2{font-style:normal;display:block;font-size:12px;font-weight:900;margin-top:4px;color:#1F7A5C;font-variant-numeric:tabular-nums;}.md-g .c-done{background:#E8F5EF;}.md-g .c-live{background:#FFF4DC;box-shadow:inset 0 0 0 2px #F2A900;}.md-g .c-late{background:#FDF6E6;}.md-g .c-wait{background:#fff;}.md-g .c-none{background:repeating-linear-gradient(135deg,#EEF2F6 0 6px,#F7F9FB 6px 12px);}table.md-g td.free{min-height:50px;}table.md-g td.free:after{content:"";display:block;min-height:50px;}table.md-g td[data-fid]{transition:background .12s;}table.md-g td.dz{background:#FFF4DC;box-shadow:inset 0 0 0 2px #F2A900;}.md-g td>div[draggable]{cursor:grab;}.md-g td>div[draggable]:active{cursor:grabbing;}.md-g td>div.dragging{opacity:.4;}.md-nowtag{position:absolute;top:3px;font-size:10.5px;font-weight:900;letter-spacing:.09em;z-index:4;color:#B87A00;white-space:nowrap;transform:translateX(-50%);padding-bottom:7px;}.md-key{display:flex;flex-wrap:wrap;gap:20px;margin:14px 2px 0;font-size:10.5px;font-weight:800;letter-spacing:.07em;color:var(--ffp-text-muted);}.md-key span{display:flex;align-items:center;gap:8px;}.md-key i{width:18px;height:11px;border-radius:3px;display:block;flex:none;}.md-strip{display:flex;align-items:stretch;flex-wrap:wrap;border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);margin:0 0 4px;}.md-dbtn{border:0;background:none;font:inherit;cursor:pointer;text-align:left;padding:11px 18px 10px;border-right:1px solid var(--ffp-border);box-shadow:inset 0 3px 0 transparent;}.md-dbtn:hover{background:#f6f9fb;}.md-dbtn b{display:block;font-size:12.5px;font-weight:800;color:var(--ffp-text-muted);}.md-dbtn s{text-decoration:none;display:block;font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--ffp-text-dim);margin-top:4px;font-variant-numeric:tabular-nums;}.md-dbtn.on{box-shadow:inset 0 3px 0 #F2A900;}.md-dbtn.on b{color:var(--ffp-text);font-weight:900;}.md-dbtn.on s{color:var(--ffp-text-muted);}.md-none{display:flex;align-items:flex-start;gap:12px;padding:16px 2px 4px;}.md-none .ms{font-size:21px;color:var(--ffp-text-dim);flex:none;}.md-none .g b{display:block;font-size:14.5px;font-weight:800;color:var(--ffp-text);}.md-none .g p{margin:5px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;}.md-none .g a{display:inline-block;margin-top:10px;}.md-sh{display:flex;align-items:flex-end;gap:13px;margin:30px 0 12px;}.md-sh h3{font-size:12.5px;font-weight:900;letter-spacing:.16em;color:var(--ffp-blue);margin:0;}.md-sh p{font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);margin:0;padding-bottom:1px;}.md-sh .ln{flex:1;height:1px;background:var(--ffp-border);margin-bottom:5px;}.md-clear{display:flex;align-items:center;gap:11px;padding:16px 2px;font-size:14px;font-weight:800;color:#1F7A5C;}.md-clear .ms{font-size:21px;}.md-rail{position:relative;padding-left:100px;}.md-rail:before{content:"";position:absolute;left:88px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,#F2A900,#E4EBF1);}.md-jb{position:relative;display:flex;align-items:center;gap:22px;padding:12px 0 13px;border-bottom:1px solid var(--ffp-border);}.md-jb:last-child{border-bottom:0;}.md-jb .tm{position:absolute;left:-100px;top:13px;width:80px;text-align:right;}.md-jb .tm u{text-decoration:none;display:block;font-size:14.5px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-jb .tm s{text-decoration:none;display:block;font-size:9.5px;font-weight:800;letter-spacing:.1em;color:var(--ffp-text-muted);margin-top:3px;}.md-jb .dot{position:absolute;left:-18px;top:18px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px #9aa8b4;}.md-jb.k-clash .dot,.md-jb.k-finish .dot{box-shadow:0 0 0 3px #B87A00;}.md-jb.k-result .dot{box-shadow:0 0 0 3px #F2A900;}.md-jb.k-official .dot,.md-jb.k-sheet .dot,.md-jb.k-entrants .dot{box-shadow:0 0 0 3px #7FB2D9;}.md-jb .mid{flex:1;min-width:0;max-width:620px;}.md-jb .mid .where{display:inline-block;font-size:10px;font-weight:900;letter-spacing:.12em;color:#B87A00;margin-bottom:5px;}.md-jb .mid b{display:block;font-size:15px;font-weight:800;line-height:1.3;color:var(--ffp-text);overflow-wrap:anywhere;}.md-jb .mid p{margin:4px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.45;overflow-wrap:anywhere;}.md-jb .acts{flex:none;margin-left:auto;display:flex;gap:8px;}.md-board{background:#fff;border-radius:3px 3px 12px 12px;overflow:hidden;position:relative;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-board:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--ffp-blue),#7FB2D9);}.md-bh,.md-row{display:grid;grid-template-columns:134px 292px 1fr 196px;align-items:center;}.md-bh{padding:14px 20px 11px;border-bottom:1px solid var(--ffp-border);margin-top:4px;}.md-bh span{font-size:9.5px;font-weight:900;letter-spacing:.13em;color:var(--ffp-text-muted);}.md-row{padding:14px 20px;border-bottom:1px solid var(--ffp-border);position:relative;}.md-row:last-child{border-bottom:0;}.md-row:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#C3D3E0;}.md-row.e-live:before{background:#F2A900;}.md-row.e-late:before{background:#FFD46B;}.md-row.e-live{background:linear-gradient(90deg,rgba(242,169,0,.10),rgba(242,169,0,0) 62%);}.md-row .c b{display:block;font-size:15.5px;font-weight:900;color:var(--ffp-text);}.md-row .c s{text-decoration:none;display:block;font-size:9.5px;font-weight:700;letter-spacing:.11em;color:var(--ffp-text-muted);margin-top:4px;}.md-row .on u,.md-row .nx u,.md-row .rf u{text-decoration:none;display:block;font-size:13.5px;font-weight:800;line-height:1.25;color:var(--ffp-text);overflow-wrap:anywhere;}.md-row .on u.free,.md-row .nx u.free{color:var(--ffp-text-muted);font-weight:700;}.md-row .rf u.none{color:#B87A00;}.md-row .on s,.md-row .nx s,.md-row .rf s{text-decoration:none;display:block;font-size:11px;font-weight:700;color:var(--ffp-text-muted);margin-top:4px;line-height:1.35;}.md-row .nx s.bad{color:#B87A00;}.md-divs{display:grid;grid-template-columns:repeat(auto-fit,minmax(272px,1fr));background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 0 var(--ffp-border),0 8px 22px rgba(14,40,66,.06);}.md-dv{padding:17px 20px 19px;background:#fff;box-shadow:inset -1px -1px 0 var(--ffp-border);}.md-dv .r1{display:flex;align-items:baseline;gap:9px;}.md-dv .r1 i{width:10px;height:10px;border-radius:2px;display:block;flex:none;background:var(--dc,var(--ffp-blue));align-self:center;}.md-dv .r1 b{font-size:15px;font-weight:900;color:var(--ffp-text);}.md-dv .r1 span{margin-left:auto;font-size:10px;font-weight:900;letter-spacing:.11em;}.md-dv .r1 span.ok{color:#1F7A5C;}.md-dv .r1 span.no{color:#B87A00;}.md-dv .mt{display:flex;gap:24px;margin-top:13px;}.md-dv .mt u{text-decoration:none;display:block;font-size:24px;font-weight:900;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ffp-text);}.md-dv .mt u.bad{color:#B87A00;}.md-dv .mt s{text-decoration:none;display:block;font-size:9.5px;font-weight:800;letter-spacing:.12em;color:var(--ffp-text-muted);margin-top:6px;}.md-dv .pips{display:flex;flex-wrap:wrap;gap:3px;margin-top:16px;}.md-dv .pips i{width:10px;height:14px;border-radius:2px;display:block;background:repeating-linear-gradient(135deg,#E6ECF2 0 4px,#F2F6F9 4px 8px);}.md-dv .pips i.todo{background:#E6ECF2;}.md-dv .pips i.won{background:linear-gradient(180deg,#2E9B77,#1F7A5C);}.md-dv .nt{font-size:12px;font-weight:700;color:var(--ffp-text-muted);margin-top:11px;line-height:1.45;}.md-dv .nt.bad{color:#B87A00;font-weight:800;}.md-sim{margin:28px 0 40px;padding:16px 2px 0;border-top:1px solid var(--ffp-border);display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;}.md-sim>.ms{font-size:21px;color:#B87A00;flex:none;margin-top:1px;}.md-sim .g{flex:1;min-width:260px;}.md-sim .g b{display:block;font-size:14px;font-weight:900;color:var(--ffp-text);}.md-sim .g p{margin:4px 0 0;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.5;}.md-sim .acts{display:flex;gap:9px;flex:none;}',
       '.tg-unit{font-size:12px;color:var(--ffp-text-muted);}.sc-day{font-size:16px;font-weight:900;color:var(--ffp-text);margin:26px 0 2px;}.sc-day:first-child{margin-top:8px;}.sc-ch{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:9px;margin:12px 0 0;background:linear-gradient(92deg,#12242f,#21404f);box-shadow:0 2px 8px rgba(14,37,49,.18);}.sc-ch b{font-size:13.5px;font-weight:900;color:#fff;letter-spacing:.01em;}.sc-ch .mn{font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#f0b736;}.sc-mkm{border:0;background:none;padding:0;font:inherit;font-size:11.5px;font-weight:700;color:#7ec9e8;cursor:pointer;}.sc-mkm:hover{color:#fff;}.sc-ch .ct{margin-left:auto;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.58);}.sc-add{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.12);border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;font-weight:800;color:#fff;cursor:pointer;}.sc-add:hover{background:rgba(255,255,255,.2);}.sc-add .ms{font-size:16px;}.sc-day .tz{margin-left:9px;font-size:11px;font-weight:700;color:#9aa8b4;}.sc-m{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--ffp-border);}.sc-m.open{border-bottom:0;}.sc-m .t{width:136px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-m .tm{display:flex;align-items:center;justify-content:center;height:36px;padding:0;border-radius:10px;background:#eaf0f5;border:none;color:var(--ffp-text);font-size:13.5px;font-weight:800;font-variant-numeric:tabular-nums;}.sc-m .tm.none{color:var(--ffp-text-dim);font-weight:700;font-size:12px;}.sc-plan{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:13px;font-weight:700;color:var(--ffp-text-muted);padding:2px 2px 6px;}.sc-plan .lg-in{width:64px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-plan .lg-in.w{width:136px;}.sc-m .g{flex:1;min-width:0;}.sc-m .g b{display:block;font-size:13.5px;font-weight:800;color:var(--ffp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.sc-m .g span{display:block;font-size:11.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.sc-m .c{width:170px;flex:none;min-width:0;box-sizing:border-box;padding:7px 8px;font-size:13px;}.sc-ic{flex:none;border:0;background:none;padding:4px;cursor:pointer;color:#8a99a8;line-height:0;border-radius:6px;}.sc-ic:hover{background:#eef2f5;color:var(--ffp-text);}.sc-ic:disabled{opacity:.28;cursor:default;background:none;}.sc-ic .ms{font-size:19px;}.sc-more{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:4px 2px 14px 146px;border-bottom:1px solid var(--ffp-border);}.sc-more .lg-in,.sc-more .lg-sel{padding:7px 9px;font-size:13px;width:auto;min-width:0;flex:none;height:36px;box-sizing:border-box;}.sc-more .st-d{width:158px;}.sc-more .st-f{width:196px;}.sc-more .a-role{width:168px;}.sc-more .a-off{width:186px;}#lg-root .sc-more .st-off{width:178px;flex:none;}.sc-more .sp{flex:1;}',
       /* the venue the court belongs to, on the court bar rather than repeated
          down every row underneath it */
@@ -291,6 +291,14 @@
       '.sc-ic.pin.on{color:#b07d08;}',
       '.sc-ic.pin.on .ms{font-variation-settings:"FILL" 1;}',
       '.sc-m .tm.pin{background:linear-gradient(180deg,#ffd15a,#f2a900);color:#3a2600;}',
+      '.tg-dvhd .st.stale{background:#fff1d6;color:#8a5a00;}',
+      '.tg-stale{display:flex;align-items:center;gap:12px;padding:13px 16px;background:#fff8ea;border-top:2px solid #f2a900;}',
+      '.tg-stale>.ms{font-size:21px;color:#b07d08;flex:none;}',
+      '.tg-stale .g{flex:1;min-width:0;}',
+      '.tg-stale .g b{display:block;font-size:13.5px;font-weight:900;color:#12232f;}',
+      '.tg-stale .g span{display:block;margin-top:3px;font-size:12.5px;font-weight:600;color:#6b5a38;line-height:1.45;}',
+      '.tg-stale .lg-btn{flex:none;}',
+      '.dw-note{font-size:12px;font-weight:600;color:#7c8b97;line-height:1.5;margin-top:18px;max-width:430px;text-align:center;}',
       '.dw-c.on{background:linear-gradient(180deg,#ffd15a,#f2a900);color:#3a2600;}',
       '/* A break shown where it falls, so the gap in the day is not a mystery. */',
       '.sc-bar{display:flex;align-items:center;gap:9px;padding:9px 11px;margin:2px 0;border-radius:8px;background:repeating-linear-gradient(135deg,#f1f5f8,#f1f5f8 9px,#e7edf2 9px,#e7edf2 18px);border:1px dashed #c8d4dd;}',
@@ -757,6 +765,70 @@
     host.innerHTML = mdHead(d) + mdDays(d) + mdGrid(d) + mdJobs(d) + mdSurfaces(d) + mdDivisions(d) + mdKey(d) + mdSimStrip(d);
   }
 
+  /* THE MOVE ITSELF. The grid is the organiser's picture of the day, so a
+     match is moved on it the way it would be moved on a whiteboard. Like the
+     arrows on the Schedule tab this is an ACT, not a setting, so it is
+     written when it is dropped. */
+  function mdDrag(e, id) {
+    S.mdDragId = id;
+    try { e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', id); } catch (x) {}
+    if (e.target && e.target.classList) e.target.classList.add('dragging');
+  }
+  function mdDragEnd(e) {
+    S.mdDragId = null;
+    if (e.target && e.target.classList) e.target.classList.remove('dragging');
+    var q = document.querySelectorAll('.md-g td.dz');
+    for (var i = 0; i < q.length; i++) q[i].classList.remove('dz');
+  }
+  function mdCell(e) {
+    var n = e.target;
+    while (n && !(n.tagName === 'TD' && n.hasAttribute('data-fid'))) n = n.parentNode;
+    return n && n.tagName === 'TD' ? n : null;
+  }
+  function mdOver(e) {
+    if (!S.mdDragId) return;
+    e.preventDefault();
+    try { e.dataTransfer.dropEffect = 'move'; } catch (x) {}
+    var td = mdCell(e); if (td) td.classList.add('dz');
+  }
+  function mdLeave(e) { var td = mdCell(e); if (td) td.classList.remove('dz'); }
+  async function mdDrop(e) {
+    e.preventDefault();
+    var td = mdCell(e); if (td) td.classList.remove('dz');
+    var id = S.mdDragId || (function () { try { return e.dataTransfer.getData('text/plain'); } catch (x) { return null; } })();
+    S.mdDragId = null;
+    if (!td || !id) return;
+    var fid = td.getAttribute('data-fid'), at = td.getAttribute('data-at');
+    var day = (S.md && S.md.day) || S.mdDay;
+    if (!fid || !at || !day) return;
+
+    var all = ((S.md && S.md.matches) || []);
+    var me = all.filter(function (x) { return x.match_id === id; })[0];
+    if (!me) return;
+    if ((me.field_id || null) === fid && me.at === at) return;   // put back where it was
+
+    var when = evIso(day, at);
+    var r; try {
+      r = await sb().rpc('lt_match_schedule', { p_scope: 'tourn', p_match: id, p_when: when,
+            p_field: fid, p_court: null, p_official: null });
+    } catch (x) { r = { error: x }; }
+    if (r && r.error) { toast('Could not move it', 'error'); return; }
+
+    var surf = ((S.md && S.md.surfaces) || []).filter(function (x) { return x.field_id === fid; })[0];
+    var where = (surf && surf.name) || Surf();
+    /* A grid that quietly stacks two matches in one slot is how a court gets
+       double-booked, so the move goes through and the clash is said out loud. */
+    var also = all.filter(function (x) {
+      return x.match_id !== id && (x.field_id || null) === fid && x.at === at; }).length;
+    var bk = inBreak({ scheduled_at: when, field_id: fid });
+    if (bk) toast('Moved to ' + at + ' on ' + where + ', but that is inside ' + breakName(bk), 'error');
+    else if (also) toast('Moved to ' + at + ' on ' + where + ', where ' + also
+      + (also === 1 ? ' other match is' : ' other matches are') + ' already booked', 'error');
+    else toast('Moved to ' + at + ' on ' + where, 'success');
+    renderTab();
+  }
+
   async function mdFetch(day) {
     var r; try {
       r = await sb().rpc('tourn_day', { p_event: S.eventId, p_day: day || null, p_now: null });
@@ -793,6 +865,15 @@
      surface, one column per slot, so the organiser sees the shape of the day
      before they read a word. Hatched means that division has nobody entered.
      Two matches in one cell is a clash and is drawn as one. */
+  /* One place that writes the drop attributes, so a cell with a match in it
+     and an empty one behave identically. A null court is not a target. */
+  function drop(fid, at) {
+    if (!fid) return '';
+    return ' data-fid="' + fid + '" data-at="' + at + '"'
+      + ' ondragover="FFPTourn.mdOver(event)"'
+      + ' ondragleave="FFPTourn.mdLeave(event)"'
+      + ' ondrop="FFPTourn.mdDrop(event)"';
+  }
   function mdGrid(d) {
     var ms = (d.matches || []).filter(function (m) { return m.at; });
     if (!ms.length) return '';
@@ -817,15 +898,8 @@
     }
     if (!rows.length || !slots.length) return '';
 
-    var now = d.as_at || '';
-    var nowSlot = null;
-    slots.forEach(function (t) { if (t <= now) nowSlot = t; });
-
     var head = '<tr><th class="cl">' + esc(Surf().toUpperCase()) + '</th>'
-      + slots.map(function (t) {
-          return '<th' + (t === nowSlot ? ' class="now"' : '') + '>' + esc(t)
-            + (t === nowSlot ? '<span class="nw">PLAYING NOW</span>' : '') + '</th>';
-        }).join('') + '</tr>';
+      + slots.map(function (t) { return '<th>' + esc(t) + '</th>'; }).join('') + '</tr>';
 
     var body = rows.map(function (r) {
       return '<tr><td class="cl"><b>' + esc(r.name) + '</b>'
@@ -833,16 +907,18 @@
         + slots.map(function (t) {
             var cell = ms.filter(function (m) {
               return m.at === t && (m.field_id || null) === (r.key || null); });
-            var cls = (t === nowSlot ? 'now' : '');
-            if (!cell.length) return '<td class="free ' + cls + '"><s>free</s></td>';
+            var cls = '';
+            if (!cell.length) return '<td class="free ' + cls + '"' + drop(r.key, t) + '></td>';
             if (cell.length > 1) cls += ' dbl';
-            return '<td class="' + cls + '">' + cell.map(function (m) {
+            return '<td class="' + cls + '"' + drop(r.key, t) + '>' + cell.map(function (m) {
               var k = m.status === 'final' ? 'c-done'
                     : m.status === 'live' ? 'c-live'
                     : (ready[m.division_id] === false ? 'c-none'
                     : (m.late ? 'c-late' : 'c-wait'));
               var named = m.home && m.away && !/^TBD$/.test(m.home) && !/^TBD$/.test(m.away);
-              return '<div class="' + k + '">'
+              return '<div class="' + k + '" draggable="true"'
+                + ' ondragstart="FFPTourn.mdDrag(event,\'' + m.match_id + '\')"'
+                + ' ondragend="FFPTourn.mdDragEnd(event)">'
                 + '<b class="tag" style="color:' + (dcol[m.division_id] || 'var(--ffp-blue)')
                   + '">' + esc(m.label || '') + '</b>'
                 /* TWO NAMES, NOT THREE. They were stacked with a bare line
@@ -1851,10 +1927,11 @@
   /* NOTHING IN THIS TAB SAVES ITSELF. A typed figure, a day's window and a
      break all sit pending until the organiser presses Save, so a half-typed
      number is never written and the schedule never moves behind their back. */
-  function pend() { return (S._pend = S._pend || { plan: false, days: {}, breaks: {} }); }
+  function pend() { return (S._pend = S._pend || { plan: false, days: {}, breaks: {}, away: {} }); }
   function schedDirty() {
     var q = pend();
-    return !!(q.plan || Object.keys(q.days).length || Object.keys(q.breaks).length);
+    return !!(q.plan || Object.keys(q.days).length || Object.keys(q.breaks).length
+              || Object.keys(q.away || {}).length);
   }
   /* Touched straight on the button rather than through a re-render, because a
      re-render on every keystroke takes the focus out of the field. */
@@ -1883,8 +1960,14 @@
       catch (e) { r2 = { error: e }; }
       if (r2 && r2.error) { ok = false; } else { moved = true; }
     }
+    var av = Object.keys(q.away || {});
+    for (var k = 0; k < av.length; k++) {
+      var r3; try { r3 = await sb().from('tourn_unavail').update(q.away[av[k]]).eq('id', av[k]); }
+      catch (e) { r3 = { error: e }; }
+      if (r3 && r3.error) { ok = false; }
+    }
     if (!ok) { toast('Could not save everything', 'error'); return; }
-    S._pend = null; S._dayWin = null; S._breaks = null;
+    S._pend = null; S._dayWin = null; S._breaks = null; S._unavail = null;
     if (moved) await applyBreaks(false);
     toast('Saved', 'success');
     renderTab();
@@ -1976,11 +2059,17 @@
       m._dix = divIx[m.division_id] || 0; m._dnm = divNm[m.division_id] || '';
     });
     S._sched = ms;
+    S._entNames = names;
 
     /* S._days is already the event's match days from lt_event_days - these are
        the organiser's playing windows, which is a different thing. */
-    var dy; try { dy = await sb().from('tourn_days').select('id,on_date,opens,closes,closed,only_divisions,only_rounds').eq('tourn_id', S.eventId); } catch (e) { dy = { error: e }; }
+    var dy; try { dy = await sb().from('tourn_days').select('id,on_date,opens,closes,closed,only_divisions,only_rounds,only_stages').eq('tourn_id', S.eventId); } catch (e) { dy = { error: e }; }
     S._dayWin = (dy && dy.data) || [];
+
+    var un; try { un = await sb().from('tourn_unavail')
+      .select('id,entrant_id,on_date,from_at,to_at').eq('tourn_id', S.eventId); }
+      catch (e) { un = { error: e }; }
+    S._unavail = (un && un.data) || [];
 
     var br; try { br = await sb().from('tourn_breaks').select('id,field_id,on_date,starts_at,ends_at,label,sort').eq('tourn_id', S.eventId); } catch (e) { br = { error: e }; }
     var breaks = ((br && br.data) || []).sort(function (a, b) { return (a.sort - b.sort) || String(a.starts_at).localeCompare(String(b.starts_at)); });
@@ -2012,17 +2101,23 @@
       }
     }
 
-    /* The days a playing window can be set for: the planned run of the event,
-       so a Sunday can be given its times before anything is on it, plus any
-       day that already has matches. */
+    /* THE DAYS A PLAYING WINDOW CAN BE SET FOR ARE THE DAYS THE EVENT RUNS -
+       its start date for as many days as it is given, never further than the
+       end date it was given. A day that merely has a match on it does NOT
+       join this list: that is how a match pushed past the last day used to
+       add a Monday here, and offering to set its hours made the invented day
+       look like part of the tournament. A Sunday with nothing on it yet is
+       still listed, because it IS one of the event's days. */
     var planDays = {};
     var pbase = (S.detail.event && S.detail.event.starts_at) || evDateStr(new Date().toISOString());
     var pa = String(pbase).split('-');
+    var pends = (S.detail.event && S.detail.event.ends_at) || null;
     for (var pk = 0; pk < Math.max(1, P.days); pk++) {
       var pd = new Date(Date.UTC(+pa[0], +pa[1] - 1, +pa[2] + pk, 12, 0, 0));
-      planDays[pd.getUTCFullYear() + '-' + pad2(pd.getUTCMonth() + 1) + '-' + pad2(pd.getUTCDate())] = 1;
+      var pkey = pd.getUTCFullYear() + '-' + pad2(pd.getUTCMonth() + 1) + '-' + pad2(pd.getUTCDate());
+      if (pends && pkey > pends) break;
+      planDays[pkey] = 1;
     }
-    dayList.forEach(function (d) { planDays[d] = 1; });
     S._planDays = Object.keys(planDays).sort();
 
     top.innerHTML = schedTop(built, divs, fields, breaks, dayList, P) + (built ? divKey(divs) : '');
@@ -2132,6 +2227,8 @@
       + '</div>'
       + dayBlock(P)
       + breakBlock(fields, breaks, dayList)
+      + awayBlock(dayList)
+      + fitWarn()
       + dayWhoSheet();
   }
 
@@ -2180,18 +2277,32 @@
     var out = Object.keys(r).map(Number).sort(function (a, b) { return a - b; });
     return out.length ? out : [1];
   }
+  var STAGE_LAB = { group: 'Group stage', monrad: 'Monrad', r64: 'Round of 64',
+                    r32: 'Round of 32', r16: 'Round of 16', quarter: 'Quarter-finals',
+                    semi: 'Semi-finals', final: 'Finals' };
+  var STAGE_ORD = ['group','monrad','r64','r32','r16','quarter','semi','final'];
+  function stagesInEvent() {
+    var seen = {};
+    (S._sched || []).forEach(function (m) { if (m.stage) seen[m.stage] = 1; });
+    var out = STAGE_ORD.filter(function (k) { return seen[k]; });
+    Object.keys(seen).forEach(function (k) { if (out.indexOf(k) < 0) out.push(k); });
+    return out;
+  }
+  function stageLab(k) { return STAGE_LAB[k] || k; }
   function dayWhoLabel(r, divs) {
-    var dv = r.only_divisions, rd = r.only_rounds;
-    if ((!dv || !dv.length) && (!rd || !rd.length)) return 'Everyone';
+    var dv = r.only_divisions, rd = r.only_rounds, st = r.only_stages;
+    if ((!dv || !dv.length) && (!rd || !rd.length) && (!st || !st.length)) return 'Everyone';
     var bits = [];
     if (dv && dv.length) bits.push(dv.map(function (id) {
       return ((divs.filter(function (x) { return x.id === id; })[0] || {}).name || '?');
     }).join(', '));
+    if (st && st.length) bits.push(st.slice().sort(function (a, b) {
+      return STAGE_ORD.indexOf(a) - STAGE_ORD.indexOf(b); }).map(stageLab).join(', '));
     if (rd && rd.length) bits.push(rd.length === 1 ? 'Round ' + rd[0] : 'Rounds ' + rd.join(', '));
     return bits.join(' \u2013 ');
   }
   function dayWhoOpen(d) { S.dayWho = d; renderTab(); }
-  function dayWhoClose() { S.dayWho = null; renderTab(); }
+  function dayWhoClose() { S.dayWho = null; S._whoD = null; S._whoR = null; S._whoS = null; renderTab(); }
   /* The picker is full bleed, like every other sheet in this portal. */
   function dayWhoSheet() {
     var d = S.dayWho; if (!d) return '';
@@ -2200,6 +2311,7 @@
     var cur = held || ((S._dayWin || []).filter(function (r) { return r.on_date === d; })[0]) || {};
     var selD = S._whoD || (S._whoD = (cur.only_divisions || []).slice());
     var selR = S._whoR || (S._whoR = (cur.only_rounds || []).slice());
+    var selS = S._whoS || (S._whoS = (cur.only_stages || []).slice());
     var chip = function (on, label, call) {
       return '<button class="dw-c' + (on ? ' on' : '') + '" onclick="' + call + '">' + esc(label) + '</button>';
     };
@@ -2211,18 +2323,30 @@
             return chip(selD.indexOf(x.id) >= 0, x.name, "FFPTourn.dayWhoTog('d','" + x.id + "')");
           }).join('')
       + '</div>'
+      + '<div class="dw-lab">Stage</div><div class="dw-row">'
+      +   stagesInEvent().map(function (k) {
+            return chip(selS.indexOf(k) >= 0, stageLab(k), "FFPTourn.dayWhoTog('s','" + k + "')");
+          }).join('')
+      + '</div>'
       + '<div class="dw-lab">Rounds</div><div class="dw-row">'
       +   roundsInEvent().map(function (n) {
             return chip(selR.indexOf(n) >= 0, 'Round ' + n, "FFPTourn.dayWhoTog('r','" + n + "')");
           }).join('')
       + '</div>'
+      /* A round number means a different thing in every division, so say so
+         where the choice is made rather than letting an organiser find out
+         from the schedule. */
+      + '<div class="dw-note">Each division counts its own rounds, so round 3 can be a '
+      + 'semi-final in one division and the final in another. Pick a stage for a finals day.</div>'
       + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPTourn.dayWhoClose()">Cancel</button>'
       + '<button class="lg-btn pri" onclick="FFPTourn.dayWhoApply()">Apply</button></div>'
       + '</div></div>';
   }
   function dayWhoTog(kind, v) {
-    var arr = kind === 'd' ? (S._whoD = S._whoD || []) : (S._whoR = S._whoR || []);
-    var val = kind === 'd' ? v : Number(v);
+    var arr = kind === 'd' ? (S._whoD = S._whoD || [])
+            : kind === 's' ? (S._whoS = S._whoS || [])
+            : (S._whoR = S._whoR || []);
+    var val = (kind === 'd' || kind === 's') ? v : Number(v);
     var i = arr.indexOf(val);
     if (i >= 0) arr.splice(i, 1); else arr.push(val);
     renderTab();
@@ -2233,8 +2357,9 @@
     var base = dayBase(d);
     base.only_divisions = (S._whoD && S._whoD.length) ? S._whoD : null;
     base.only_rounds    = (S._whoR && S._whoR.length) ? S._whoR : null;
+    base.only_stages    = (S._whoS && S._whoS.length) ? S._whoS : null;
     pend().days[d] = base;
-    S.dayWho = null; S._whoD = null; S._whoR = null;
+    S.dayWho = null; S._whoD = null; S._whoR = null; S._whoS = null;
     renderTab();
   }
 
@@ -2251,7 +2376,8 @@
              closes: cur.closed ? null : (hm(cur.closes) || P.end || '21:00'),
              closed: !!cur.closed,
              only_divisions: cur.only_divisions || null,
-             only_rounds: cur.only_rounds || null };
+             only_rounds: cur.only_rounds || null,
+             only_stages: cur.only_stages || null };
   }
   /* One row, held until Save. The window is written whole so the row either
      holds both ends or is not there at all. */
@@ -2301,6 +2427,93 @@
         }).join('')
       + '<button class="lg-btn ghostb sc-abk" onclick="FFPTourn.breakAdd()">' + ic('add') + 'Add break</button>'
       + breakWarn() + '</div>';
+  }
+  /* A MATCH WITH NOWHERE TO GO IS SAID ON THE PAGE, not only in a toast that
+     has already gone by the time anyone looks. The planner is bounded by the
+     days the event actually runs and will not invent a fourth day for a
+     three-day tournament, so this is how an organiser finds out the room
+     they have given is too tight - and what to do about it. */
+  function fitWarn() {
+    var all = S._sched || [];
+    var n = all.filter(function (m) { return !m.scheduled_at; }).length;
+    /* nothing planned yet is not the same as nothing fitting */
+    if (!n || n === all.length) return '';
+    return '<div class="sc-brkwarn">' + ic('event_busy')
+      + '<b>' + n + (n === 1 ? ' match does not fit' : ' matches do not fit')
+      + ' in the days this event runs</b>'
+      + '<i>Add a day, open the days for longer, or add ' + aSurf()
+      + ', then rebuild</i></div>';
+  }
+  /* WHO CANNOT BE THERE, AND WHEN. A court closing is a fact about the venue
+     and lives in Breaks; a player who cannot make Friday evening is a fact
+     about the person, and the planner has to keep their matches out of that
+     window or it produces a fixture nobody turns up to. Leaving the times
+     empty means the whole day. */
+  function awayBlock(dayList) {
+    var nm = S._entNames || {};
+    var ents = Object.keys(nm).map(function (id) { return { id: id, name: nm[id] }; })
+      .sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
+    var held = (S._pend && S._pend.away) || {};
+    var rows = (S._unavail || []).map(function (u) {
+      return held[u.id] ? Object.assign({}, u, held[u.id]) : u; });
+    var entOptsFor = function (sel) {
+      return '<option value="">Who\u2026</option>' + ents.map(function (e) {
+        return '<option value="' + e.id + '"' + (sel === e.id ? ' selected' : '') + '>'
+             + esc(e.name) + '</option>'; }).join('');
+    };
+    var dayOptsFor = function (sel) {
+      return '<option value="">Every day</option>' + dayList.map(function (d) {
+        return '<option value="' + d + '"' + (sel === d ? ' selected' : '') + '>'
+             + esc(dayShortYmd(d)) + '</option>'; }).join('');
+    };
+    return '<div class="sc-brk"><span class="lb">Who cannot play, and when</span>'
+      + rows.map(function (u) {
+          return '<span class="b" data-uid="' + u.id + '">'
+            + '<select class="lg-sel av-e" onchange="FFPTourn.awaySave(\'' + u.id + '\')">'
+            +   entOptsFor(u.entrant_id) + '</select>'
+            + '<select class="lg-sel dy av-d" onchange="FFPTourn.awaySave(\'' + u.id + '\')">'
+            +   dayOptsFor(u.on_date) + '</select>'
+            + '<input class="lg-in w av-s" type="time" value="' + esc(hm(u.from_at)) + '"'
+            +   ' onchange="FFPTourn.awaySave(\'' + u.id + '\')"><em>to</em>'
+            + '<input class="lg-in w av-t" type="time" value="' + esc(hm(u.to_at)) + '"'
+            +   ' onchange="FFPTourn.awaySave(\'' + u.id + '\')">'
+            + '<button class="sc-ic" title="Remove" onclick="FFPTourn.awayRemove(\'' + u.id + '\')">'
+            +   ic('close') + '</button></span>';
+        }).join('')
+      + '<button class="lg-btn ghostb sc-abk" onclick="FFPTourn.awayAdd()">'
+      +   ic('add') + 'Someone cannot make it</button>'
+      + '<div class="sc-daynote">Leave the times empty and they are out for the whole day. '
+      + 'Auto-plan keeps their matches clear of it.</div>'
+      + '</div>';
+  }
+  /* Added straight away because a row with nothing in it has nothing to save;
+     what goes IN it waits for Save like everything else on this tab. */
+  async function awayAdd() {
+    var r; try {
+      r = await sb().from('tourn_unavail').insert({ tourn_id: S.eventId,
+            entrant_id: null, on_date: null }).select('id').single();
+    } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not add that', 'error'); return; }
+    S._unavail = null; renderTab();
+  }
+  function awaySave(id) {
+    var row = document.querySelector('.sc-brk .b[data-uid="' + id + '"]'); if (!row) return;
+    var e = row.querySelector('.av-e').value || null;
+    var d = row.querySelector('.av-d').value || null;
+    var a = row.querySelector('.av-s').value || null;
+    var b = row.querySelector('.av-t').value || null;
+    if (a && b && b <= a) { toast('It has to end after it starts', 'error'); return; }
+    if ((a && !b) || (b && !a)) { toast('Give both times, or neither', 'error'); return; }
+    var q = pend(); q.away = q.away || {};
+    q.away[id] = { entrant_id: e, on_date: d, from_at: a, to_at: b };
+    schedBar();
+  }
+  async function awayRemove(id) {
+    var r; try { r = await sb().from('tourn_unavail').delete().eq('id', id); }
+    catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not remove it', 'error'); return; }
+    if (S._pend && S._pend.away) delete S._pend.away[id];
+    S._unavail = null; toast('Removed', 'success'); renderTab();
   }
   /* Said once, where the breaks are edited, so it is read even by an organiser
      who never scrolls down to the court it happened on. */
@@ -2676,7 +2889,10 @@
     S.rbAsk = false;
     if (r.error) { toast(/no_fields/.test(r.error.message || '') ? 'Add ' + aSurf() + ' first (Venues tab)' : 'Could not plan', 'error'); renderTab(); return; }
     var d = r.data || {}, n = d.placed || 0, over = d.over || 0;
-    toast(n + (n === 1 ? ' match planned' : ' matches planned') + (over ? ', ' + over + ' ran past the last day' : ''), over ? 'error' : 'success');
+    toast(n + (n === 1 ? ' match planned' : ' matches planned')
+      + (over ? ', ' + over + (over === 1 ? ' would not fit' : ' would not fit')
+                + ' - add a day, open the days for longer, or add '
+                + aSurf() : ''), over ? 'error' : 'success');
     renderTab();
   }
   async function schedSet(id) {
@@ -2936,6 +3152,37 @@
       + bpBlock(dv);
   }
 
+  /* WHAT THE FORMAT ASKS FOR versus WHAT IS ON THE GROUND. Returns null when
+     they agree, else the plain-English difference. */
+  var SIDE_LAB = { plate: 'Plate', bowl: 'Bowl', shield: 'Shield', places: 'Placings' };
+  function sideDrawsWanted(d) {
+    var v = d.side_draws || 'none';
+    if (v === 'none' || v === 'places') return [];
+    return v.split('_').filter(function (x) { return x && SIDE_LAB[x]; });
+  }
+  function drawStale(d) {
+    var bad = [];
+    var pools = d.built_pools || 0;
+    var have = d.built_draws || [];
+    /* pools on the ground that the format does not ask for */
+    if (!d.group_stage && pools > 0) {
+      bad.push(pools + (pools === 1 ? ' group match' : ' group matches')
+               + ' from a format this division no longer uses');
+    }
+    /* side draws the format asks for that were never built */
+    var missing = sideDrawsWanted(d).filter(function (k) { return have.indexOf(k) < 0; });
+    if (missing.length) {
+      bad.push('no ' + missing.map(function (k) { return SIDE_LAB[k]; }).join(', ') + ' draw');
+    }
+    return bad.length ? bad : null;
+  }
+  function staleBar(d, bad) {
+    return '<div class="tg-stale">' + ic('sync_problem')
+      + '<div class="g"><b>This draw does not match the format</b>'
+      + '<span>' + esc(bad.join(', and ')) + '. The format is saved, the draw was built before it.</span></div>'
+      + '<button class="lg-btn gold" onclick="event.stopPropagation();FFPTourn.setDiv(\'' + d.id + '\',\'setup\')">'
+      + 'Open and rebuild</button></div>';
+  }
   function fmtOfDiv(d) {
     if (d.draw_format === 'tiered') return 'tiered';
     return d.draw_format === 'monrad' ? 'monrad' : (d.group_stage ? (d.groups_advance ? 'gk' : 'grp') : 'ko');
@@ -3172,13 +3419,16 @@
       if (S.divEdit === d.id) return divEditor(d);
       var on = d.id === S.divId;
       var built = (d.match_count || 0) > 0;
+      var stale = built ? drawStale(d) : null;
       var hd = '<div class="tg-dvhd' + (on ? '' : ' off') + '" onclick="FFPTourn.setDiv(\'' + d.id + '\',\'setup\')">'
         + '<span class="ms cv">' + (on ? 'expand_more' : 'chevron_right') + '</span>'
         + '<div class="g"><b>' + esc(d.name) + '</b><span>' + esc(fmtLabel(fmtOfDiv(d))) + ', ' + esc(shapeLine(d)) + '</span></div>'
-        + '<span class="st' + (built ? ' done' : '') + '">' + (built ? 'Drawn' : 'Not drawn') + '</span>'
+        + '<span class="st' + (stale ? ' stale' : built ? ' done' : '') + '">'
+        +   (stale ? 'Out of date' : built ? 'Drawn' : 'Not drawn') + '</span>'
         + '<button class="ed" title="Rename or change who it is for"'
         +   ' onclick="event.stopPropagation();FFPTourn.editDivision(\'' + d.id + '\')">' + ic('edit') + '</button></div>';
-      return '<div class="tg-dv">' + hd + (on ? '<div class="tg-dvbody">' + divFormatEditor(d) + '</div>' : '') + '</div>';
+      return '<div class="tg-dv">' + hd + (stale ? staleBar(d, stale) : '')
+        + (on ? '<div class="tg-dvbody">' + divFormatEditor(d) + '</div>' : '') + '</div>';
     }).join('');
     var adder = S.divEdit === 'new' ? divEditor(null)
       : '<button class="lg-btn" style="margin-top:4px" onclick="FFPTourn.editDivision(\'new\')">'
@@ -5487,6 +5737,8 @@
     daySave: daySave, dayShut: dayShut, scheduleSave: scheduleSave,
     dayWhoOpen: dayWhoOpen, dayWhoClose: dayWhoClose, dayWhoTog: dayWhoTog,
     dayWhoApply: dayWhoApply, pinMatch: pinMatch,
+    awayAdd: awayAdd, awaySave: awaySave, awayRemove: awayRemove,
+    mdDrag: mdDrag, mdDragEnd: mdDragEnd, mdOver: mdOver, mdLeave: mdLeave, mdDrop: mdDrop,
     rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
     schedToggle: schedToggle, schedMove: schedMove, setMainCourt: setMainCourt,
     mdDay: mdDay, mdPick: mdPick, mdRefresh: mdRefresh, mdGo: mdGo, mdSimFill: mdSimFill, mdSimPlay: mdSimPlay,
