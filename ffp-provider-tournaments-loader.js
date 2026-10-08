@@ -291,6 +291,11 @@
       '.sc-ic.pin.on{color:#b07d08;}',
       '.sc-ic.pin.on .ms{font-variation-settings:"FILL" 1;}',
       '.sc-m .tm.pin{background:linear-gradient(180deg,#ffd15a,#f2a900);color:#3a2600;}',
+      '.tg-oop .lg-vh .g b{display:block;}',
+      '.tg-oop .lg-btn,.tg-oop .lg-scrbtn{margin-left:auto;flex:none;margin-right:0;}',
+      '.tg-oop .lg-scrbtn{font-size:15px;letter-spacing:.12em;padding:8px 14px;}',
+      '.tg-oopdays{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px;}',
+      '.lg-scrurl .seg{font-style:normal;white-space:nowrap;}',
       '.tg-mail{background:#fff;border-radius:14px;padding:18px 20px 16px;margin:0 0 18px;box-shadow:0 1px 0 var(--ffp-border),0 6px 18px rgba(14,40,66,.06);}',
       '.tg-mail .hd{display:flex;align-items:center;gap:9px;margin-bottom:14px;}',
       '.tg-mail .hd>.ms{font-size:20px;color:var(--ffp-blue);}',
@@ -1262,6 +1267,101 @@
   // full /display/<uuid> link is no use to anyone holding a remote control.
   var SCREEN_BASE = 'scoreboard.findfitpeople.com';   // the scoreboard address (Vercel, ffp-app)
   var GFX_BASE    = 'gfx.findfitpeople.com';     // the broadcast graphics source, same code, all day
+  /* THE WHOLE DAY ON ONE TV, the screen people walk up to to find their
+     match. Not a court board: that is one court, mounted on it. */
+  function oopCode() {
+    return ((S.detail && S.detail.event && S.detail.event.screen_code) || '').toUpperCase();
+  }
+  function oopUrl(day) {
+    if (!day && oopCode()) return SCREEN_BASE + '/' + oopCode();
+    return SCREEN_BASE + '/display/schedule/' + S.eventId + (day ? '?day=' + day : '');
+  }
+  function oopNote(day) {
+    return day
+      ? 'Held on that one day, whatever the date is. It brings itself up to '
+        + 'date every twenty seconds and nobody has to sign in.'
+      : (oopCode()
+        ? 'Five characters, typed straight in with the remote. It shows the day '
+          + 'it is on, keeps itself up to date, and turns between morning and '
+          + 'afternoon on its own. Nobody has to sign in.'
+        : 'It shows the day it is on, brings itself up to date every twenty '
+          + 'seconds, and turns between morning and afternoon on its own. '
+          + 'Nobody has to sign in.');
+  }
+  function oopCard() {
+    if (!S.eventId) return '';
+    return '<div class="lg-venue tg-oop"><div class="lg-vh">'
+      + '<span class="lg-vpin"><span class="ms">calendar_view_week</span></span>'
+      + '<div class="g"><b>Order of play, the whole tournament on one screen</b>'
+      + '<span>' + Surf(true) + ' down the side, times across the top. For the TV people '
+      + 'walk up to, not a ' + surfWord() + "'s own board.</span></div>"
+      + (oopCode()
+        ? '<button class="lg-scrbtn perm" title="The address for this board" '
+          + 'onclick="FFPTourn.oopPanel()"><span class="ms">connected_tv</span>'
+          + esc(oopCode()) + '</button>'
+        : '<button class="lg-btn" onclick="FFPTourn.oopPanel()">' + ic('connected_tv')
+          + 'Get the address</button>')
+      + '</div></div>';
+  }
+  /* Same sheet as a court board, so the two read as one thing. */
+  function oopPanel() {
+    var old = document.getElementById('tg-scr'); if (old) old.remove();
+    var days = eventDays();
+    var bk = document.createElement('div');
+    bk.id = 'tg-scr'; bk.className = 'lg-cfm';
+    bk.innerHTML = '<div class="lg-cfm-in lg-scr">'
+      + '<span class="ms lg-cfm-ic" style="color:var(--ffp-blue)">calendar_view_week</span>'
+      + '<div class="lg-cfm-t">Order of play</div>'
+      + '<div class="lg-scrlab">On the TV, open a browser and go to</div>'
+      + '<div class="lg-scrurl" id="tg-scrurl">' + urlHtml(oopUrl(null)) + '</div>'
+      + '<div class="lg-scrnote" id="tg-oopnote">' + esc(oopNote(null)) + '</div>'
+      + (days.length > 1
+        ? '<div class="lg-scrlab">Which day it shows</div>'
+          + '<div class="tg-oopdays" id="tg-oopdays">'
+          + '<button class="lg-btn sm gold" data-d="" onclick="FFPTourn.oopDay(\'\')">'
+          +   'Today, whichever it is</button>'
+          + days.map(function (d) {
+              return '<button class="lg-btn sm" data-d="' + d + '" onclick="FFPTourn.oopDay(\''
+                   + d + '\')">' + esc(dayShortYmd(d)) + '</button>'; }).join('')
+          + '</div>'
+        : '')
+      + '<div class="lg-scrsteps">'
+      +   '<div><b>1</b><span>Open the browser on the TV, or on a stick plugged into it.</span></div>'
+      +   '<div><b>2</b><span>Type that address and leave it. The board keeps its own screen awake.</span></div>'
+      +   '<div><b>3</b><span>' + Surf(true) + ' run down the side and the times across the top, '
+      +     'so anyone can find their match from across the room.</span></div>'
+      + '</div>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" id="tg-oop-x">Close</button>'
+      +   '<button class="lg-btn" id="tg-oop-c">' + ic('content_copy') + 'Copy the address</button>'
+      +   '<button class="lg-btn pri" id="tg-oop-o">' + ic('open_in_new') + 'Open it here</button>'
+      + '</div></div>';
+    document.body.appendChild(bk);
+    bk.querySelector('#tg-oop-x').onclick = function () { bk.remove(); };
+    bk.querySelector('#tg-oop-c').onclick = function () { copyScreen('tg-scrurl'); };
+    bk.querySelector('#tg-oop-o').onclick = function () { openScreen('tg-scrurl'); };
+  }
+  /* The address is shown without its scheme, the way it gets typed into a
+     TV. Opening it needs the scheme back, or the browser reads it as a path
+     off the portal and lands on a 404. */
+  function openScreen(id) {
+    var el = document.getElementById(id); if (!el) return;
+    var t = String(el.textContent || '').trim(); if (!t) return;
+    window.open(/^https?:/.test(t) ? t : 'https://' + t, '_blank', 'noopener');
+  }
+  function oopDay(d) {
+    var el = document.getElementById('tg-scrurl'); if (!el) return;
+    el.innerHTML = urlHtml(oopUrl(d));
+    /* the address is a different SHAPE for a pinned day, so what is said
+       under it has to change with it rather than describe the other one */
+    el.className = 'lg-scrurl' + (d ? ' gfx' : '');
+    var nt = document.getElementById('tg-oopnote');
+    if (nt) nt.textContent = oopNote(d);
+    var row = document.getElementById('tg-oopdays'); if (!row) return;
+    Array.prototype.forEach.call(row.children, function (b) {
+      if (b.getAttribute('data-d') === (d || '')) b.classList.add('gold');
+      else b.classList.remove('gold');
+    });
+  }
   function screenPanel(code, court, permanent) {
     var url = SCREEN_BASE + '/' + code;
     var old = document.getElementById('tg-scr'); if (old) old.remove();
@@ -1270,10 +1370,10 @@
       + '<span class="ms lg-cfm-ic" style="color:var(--ffp-blue)">cast</span>'
       + '<div class="lg-cfm-t">Scoreboard, ' + esc(court) + '</div>'
       + '<div class="lg-scrlab">On the TV, open a browser and go to</div>'
-      + '<div class="lg-scrurl" id="tg-scrurl">' + esc(url) + '</div>'
+      + '<div class="lg-scrurl" id="tg-scrurl">' + urlHtml(url) + '</div>'
       + '<div class="lg-scrnote">' + (permanent ? 'This is the ' + surfWord() + '\'s own screen. The code never changes, and it shows every match played on this ' + surfWord() + '.' : 'This screen is for this event only.') + '</div>'
       + '<div class="lg-scrlab">Streaming this ' + surfWord() + '? The graphics source is</div>'
-      + '<div class="lg-scrurl gfx" id="tg-gfxurl">' + esc(GFX_BASE + '/f/' + code) + '</div>'
+      + '<div class="lg-scrurl gfx" id="tg-gfxurl">' + urlHtml(GFX_BASE + '/f/' + code) + '</div>'
       + '<div class="lg-scrnote">Paste that into OBS, vMix or a YoloBox once, at 1920x1080. It follows the '
       +   surfWord() + ' all day on its own, so it picks up each match as it starts.</div>'
       + '<div class="lg-scrsteps">'
@@ -1291,7 +1391,14 @@
     bk.querySelector('#tg-scr-c').onclick = function () { copyScreen('tg-scrurl'); };
     bk.querySelector('#tg-gfx-c').onclick = function () { copyScreen('tg-gfxurl'); };
     // look at the board yourself, without setting up a TV first
-    bk.querySelector('#tg-scr-o').onclick = function () { window.open(url, '_blank', 'noopener'); };
+    bk.querySelector('#tg-scr-o').onclick = function () { openScreen('tg-scrurl'); };
+  }
+  function urlHtml(u) {
+    u = String(u || '');
+    var i = u.lastIndexOf('/');
+    var tail = i < 0 ? '' : u.slice(i + 1);
+    if (!tail || tail.length > 12) return esc(u);
+    return esc(u.slice(0, i + 1)) + '<em class="seg">' + esc(tail) + '</em>';
   }
   function copyScreen(id) {
     var el = document.getElementById(id); if (!el) return;
@@ -1667,6 +1774,7 @@
         return '<button class="lg-btn" onclick="FFPTourn.useMyCourts(\'' + p.id + '\')">' + ic('connected_tv') + 'Add ' + surfWord(true) + ' from ' + esc(p.name) + '</button>';
       }).join('') + '</div>' : '';
     if (useBar) h2.insertAdjacentHTML('beforebegin', '<div id="tg-vcbar">' + useBar + '</div>');
+    h2.insertAdjacentHTML('beforebegin', '<div id="tg-oopbar">' + oopCard() + '</div>');
     var claimed = {};
     vs.forEach(function (v2) { (v2.surfaces || []).forEach(function (x) { claimed[x.id] = true; }); });
     var orphans = allFields.filter(function (f2) { return !claimed[f2.id]; });
@@ -1925,6 +2033,25 @@
      and thrown away on reload, so nobody could rely on it and the schedule could
      never lay itself out. It lives on the event now and is saved as it is
      changed. */
+  /* THE DAYS THE EVENT RUNS. Its start date, for as many days as it was
+     given, and never past the end date it was given. A day that merely has
+     a match on it is not one of them - that is how a match pushed past the
+     last day used to invent a Monday. */
+  function eventDays() {
+    var ev = (S.detail && S.detail.event) || {};
+    var base = ev.starts_at || evDateStr(new Date().toISOString());
+    var a = String(base).split('-');
+    var ends = ev.ends_at || null;
+    var n = +ev.plan_days || (S.plan && S.plan.days) || 1;
+    var out = [];
+    for (var k = 0; k < Math.max(1, n); k++) {
+      var d = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2] + k, 12, 0, 0));
+      var key = d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate());
+      if (ends && key > ends) break;
+      out.push(key);
+    }
+    return out;
+  }
   function planFromEvent(ev, defDays) {
     ev = ev || {};
     return { len:   matchMins(),
@@ -2158,17 +2285,7 @@
        add a Monday here, and offering to set its hours made the invented day
        look like part of the tournament. A Sunday with nothing on it yet is
        still listed, because it IS one of the event's days. */
-    var planDays = {};
-    var pbase = (S.detail.event && S.detail.event.starts_at) || evDateStr(new Date().toISOString());
-    var pa = String(pbase).split('-');
-    var pends = (S.detail.event && S.detail.event.ends_at) || null;
-    for (var pk = 0; pk < Math.max(1, P.days); pk++) {
-      var pd = new Date(Date.UTC(+pa[0], +pa[1] - 1, +pa[2] + pk, 12, 0, 0));
-      var pkey = pd.getUTCFullYear() + '-' + pad2(pd.getUTCMonth() + 1) + '-' + pad2(pd.getUTCDate());
-      if (pends && pkey > pends) break;
-      planDays[pkey] = 1;
-    }
-    S._planDays = Object.keys(planDays).sort();
+    S._planDays = eventDays();
 
     top.innerHTML = schedTop(built, divs, fields, breaks, dayList, P) + (built ? divKey(divs) : '');
 
@@ -5934,6 +6051,7 @@
     dayWhoOpen: dayWhoOpen, dayWhoClose: dayWhoClose, dayWhoTog: dayWhoTog,
     dayWhoApply: dayWhoApply, pinMatch: pinMatch,
     awayAdd: awayAdd, awaySave: awaySave, awayRemove: awayRemove,
+    oopPanel: oopPanel, oopDay: oopDay,
     mailPaste: mailPaste, mailPasteApply: mailPasteApply, mailClose: mailClose,
     mailPreview: mailPreview, mailTest: mailTest, mailSendAsk: mailSendAsk, mailSend: mailSend,
     mdDrag: mdDrag, mdDragEnd: mdDragEnd, mdOver: mdOver, mdLeave: mdLeave, mdDrop: mdDrop,
