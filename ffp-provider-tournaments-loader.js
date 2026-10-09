@@ -1224,22 +1224,43 @@
       dnm[x.division_id] = x.division || '';
     });
 
-    var slots = [];
-    ms.forEach(function (m) { if (slots.indexOf(m.at) < 0) slots.push(m.at); });
-    slots.sort();
+    /* EVERY SLOT IN THE DAY, NOT ONLY THE BUSY ONES. The columns were the
+       distinct times matches happened to sit on, so a day running 08:00 to
+       11:00 with nothing booked at 09:30 or 10:00 drew 08:00, 08:30, 09:00,
+       10:30, 11:00 -- the two empty slots simply vanished, the day looked as
+       though it jumped an hour and a half, and there was nowhere to drop a
+       match into the gap. The ladder runs from the first slot to the last at
+       the day's own step. */
+    var booked = [];
+    ms.forEach(function (m) { if (booked.indexOf(m.at) < 0) booked.push(m.at); });
+    booked.sort();
 
-    /* ONE SPARE SLOT ON THE END. The grid only ever drew columns that already
-       had a match in them, so there was no cell for a time later than anything
-       booked and a match could not be moved later in the day. The step is the
-       smallest gap the day already uses, so it matches how this event is run
-       rather than a number we picked. */
+    /* the step is the smallest gap the day already uses, so it matches how
+       this event is run rather than a number we picked */
     var step = 30;
-    for (var si = 1; si < slots.length; si++) {
-      var g = mdMins(slots[si]) - mdMins(slots[si - 1]);
+    for (var si = 1; si < booked.length; si++) {
+      var g = mdMins(booked[si]) - mdMins(booked[si - 1]);
       if (g > 0 && g < step) step = g;
     }
-    var spare = slots.length ? mdHhmm(mdMins(slots[slots.length - 1]) + step) : null;
-    if (spare) slots.push(spare);
+
+    var slots = booked.slice();
+    if (booked.length > 1 && step > 0) {
+      var t0 = mdMins(booked[0]), t1 = mdMins(booked[booked.length - 1]);
+      /* A five-minute step across a twelve-hour day is 145 columns and no use
+         to anybody. Past the cap the grid keeps the times that are booked,
+         which is what it did before, rather than drawing something unusable. */
+      if ((t1 - t0) / step <= 40) {
+        for (var t = t0; t <= t1; t += step) {
+          var lab = mdHhmm(t);
+          if (slots.indexOf(lab) < 0) slots.push(lab);
+        }
+      }
+    }
+    /* ONE SPARE SLOT ON THE END, so a match can be moved later than anything
+       booked. */
+    var spare = slots.length ? mdHhmm(mdMins(booked[booked.length - 1]) + step) : null;
+    if (spare && slots.indexOf(spare) < 0) slots.push(spare);
+    slots.sort(function (x, y) { return mdMins(x) - mdMins(y); });
 
     /* a match with no surface now lives in TO PLACE, not in a row of its own */
     var rows = (d.surfaces || []).map(function (x) {
