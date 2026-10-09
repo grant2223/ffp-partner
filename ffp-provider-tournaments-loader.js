@@ -1302,9 +1302,16 @@
       if (g > 0 && g < step) step = g;
     }
 
+    /* THE DAY STARTS WHEN THE COURTS OPEN, not when the first match happens
+       to be booked. Moving the 08:00 ties later used to make the day "start"
+       at 09:00, and there was then no earlier cell to move them back into.
+       day_start is the earliest opening time the event's courts carry. */
+    var opens = d.day_start && /^\d\d:\d\d$/.test(d.day_start) ? d.day_start : null;
+
     var slots = booked.slice();
-    if (booked.length > 1 && step > 0) {
+    if (booked.length && step > 0) {
       var t0 = mdMins(booked[0]), t1 = mdMins(booked[booked.length - 1]);
+      if (opens && mdMins(opens) < t0) t0 = mdMins(opens);
       /* A five-minute step across a twelve-hour day is 145 columns and no use
          to anybody. Past the cap the grid keeps the times that are booked,
          which is what it did before, rather than drawing something unusable. */
@@ -1317,7 +1324,7 @@
     }
     /* ONE SPARE SLOT ON THE END, so a match can be moved later than anything
        booked. */
-    var spare = slots.length ? mdHhmm(mdMins(booked[booked.length - 1]) + step) : null;
+    var spare = booked.length ? mdHhmm(mdMins(booked[booked.length - 1]) + step) : null;
     if (spare && slots.indexOf(spare) < 0) slots.push(spare);
     slots.sort(function (x, y) { return mdMins(x) - mdMins(y); });
 
