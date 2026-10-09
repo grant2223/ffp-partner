@@ -374,6 +374,16 @@
       '.tg-mail .nums s{text-decoration:none;display:block;margin-top:6px;font-size:9.5px;font-weight:900;letter-spacing:.12em;color:var(--ffp-text-muted);}',
       '.tg-mail .note{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;font-weight:600;color:#6b5a38;line-height:1.5;margin-bottom:14px;}',
       '.tg-mail .note .ms{font-size:17px;color:#b07d08;flex:none;}',
+      '.tg-mail .tg-chg{border-top:1px solid var(--ffp-border);border-bottom:1px solid var(--ffp-border);'
+        + 'padding:14px 0;margin:0 0 15px;}',
+      '.tg-mail .tg-chg .g{display:flex;align-items:flex-start;gap:10px;}',
+      '.tg-mail .tg-chg .g>.ms{font-size:20px;color:#b07d08;flex:none;margin-top:1px;}',
+      '.tg-mail .tg-chg b{display:block;font-size:14px;font-weight:900;color:var(--ffp-text);line-height:1.35;}',
+      '.tg-mail .tg-chg span{display:block;margin-top:4px;font-size:12.5px;font-weight:600;'
+        + 'color:var(--ffp-text-muted);line-height:1.5;}',
+      '.tg-mail .tg-chg .a{display:flex;gap:9px;flex-wrap:wrap;margin:13px 0 0 30px;}',
+      '@media (max-width:560px){.tg-mail .tg-chg .a{margin-left:0;}'
+        + '.tg-mail .tg-chg .a .lg-btn{flex:1 1 100%;justify-content:center;}}',
       '.tg-mail .acts{display:flex;gap:9px;flex-wrap:wrap;align-items:center;}',
       '.tg-mail .acts .sp{flex:1;}',
       '#tg-root .tg-mailta{width:100%;min-width:0;height:auto;padding:12px 14px;font-size:14px;line-height:1.6;resize:vertical;margin-top:18px;}',
@@ -4780,6 +4790,7 @@
     var m = S._mail;
     if (!m || !m.ok) return '';
     var can = m.with_email || 0, none = m.no_email || 0, go = m.to_send || 0, done = m.sent || 0;
+    var chg = m.changed || 0;
     return '<div class="tg-mail">'
       + '<div class="hd">' + ic('mail') + '<b>Tell the players it is in the app</b></div>'
       + '<div class="nums">'
@@ -4791,6 +4802,23 @@
         ? '<div class="note">' + ic('info') + none + (none === 1 ? ' player has' : ' players have')
           + ' no address, so they cannot be told. Paste them in below or add one on the ' + nouns(null).one + '.</div>'
         : '')
+      + (chg
+        ? '<div class="tg-chg">'
+          +   '<div class="g">' + ic('schedule') + '<div>'
+          +     '<b>' + chg + (chg === 1 ? ' player is' : ' players are')
+          +       ' holding a time that has changed</b>'
+          +     '<span>Their match moved after they were emailed. Nothing is sent on its own, '
+          +       'so they do not know yet.</span></div></div>'
+          +   '<div class="a">'
+          +     '<button class="lg-btn sm" onclick="FFPTourn.updPreview()">'
+          +       ic('visibility') + 'See it</button>'
+          +     '<button class="lg-btn sm" onclick="FFPTourn.updTest()">'
+          +       ic('send') + 'Send one to me</button>'
+          +     '<button class="lg-btn gold sm" onclick="FFPTourn.updAsk()">'
+          +       ic('notifications_active') + 'Notify ' + chg
+          +       (chg === 1 ? ' player' : ' players') + '</button>'
+          +   '</div></div>'
+        : '')
       + '<div class="acts">'
       +   '<button class="lg-btn" onclick="FFPTourn.mailPaste()">' + ic('content_paste') + 'Paste in emails</button>'
       +   '<button class="lg-btn" onclick="FFPTourn.mailPreview()"' + (can ? '' : ' disabled') + '>'
@@ -4801,7 +4829,7 @@
       +   '<button class="lg-btn gold" onclick="FFPTourn.mailSendAsk()"' + (go ? '' : ' disabled') + '>'
       +     (go ? 'Email ' + go + (go === 1 ? ' player' : ' players') : 'Nobody left to email') + '</button>'
       + '</div></div>'
-      + mailPasteSheet() + mailPreviewSheet() + mailSendSheet();
+      + mailPasteSheet() + mailPreviewSheet() + mailSendSheet() + updAskSheet();
   }
   async function mailLoad() {
     var r; try { r = await sb().rpc('tourn_player_mail_stats', { p_tourn: S.eventId }); }
@@ -4886,6 +4914,48 @@
       (r.failed || []).length ? 'error' : 'success');
     await mailLoad(); renderTab();
   }
+  /* THE UPDATE, WHICH ONLY EVER GOES WHEN IT IS ASKED FOR. Same mailer, same
+     guard; the updates flag swaps the list for the players whose first match
+     has moved since they were told about it. */
+  async function updPreview() {
+    var r = await mailFn({ updates: true, preview: true });
+    if (!r) return;
+    if (!r.to_send) { toast('Nobody is holding a changed time', 'info'); return; }
+    S._mailHtml = r.html || ''; S.mailSheet = 'preview'; renderTab();
+  }
+  async function updTest() {
+    var me = (window.FFPAuth && FFPAuth.email && FFPAuth.email()) || '';
+    if (!me) { me = prompt('Send the test to which address?') || ''; }
+    if (!me || me.indexOf('@') < 0) return;
+    var r = await mailFn({ updates: true, test_to: me });
+    if (r) toast(r.ok ? 'Sent to ' + me : 'Could not send it', r.ok ? 'success' : 'error');
+  }
+  function updAsk() { S.mailSheet = 'upd'; renderTab(); }
+  function updAskSheet() {
+    if (S.mailSheet !== 'upd') return '';
+    var chg = (S._mail && S._mail.changed) || 0;
+    return '<div class="lg-cfm"><div class="lg-cfm-in">'
+      + '<span class="ms lg-cfm-ic" style="color:var(--ffp-gold)">notifications_active</span>'
+      + '<div class="lg-cfm-t">Tell ' + chg + (chg === 1 ? ' player?' : ' players?') + '</div>'
+      + '<div class="lg-cfm-b">Only the ones whose match has moved since they were emailed. '
+      + 'They get the new time and a notification in the app, and the old time struck through. '
+      + 'Nobody else hears anything.</div>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" onclick="FFPTourn.mailClose()">Cancel</button>'
+      + '<button class="lg-btn pri" onclick="FFPTourn.updSend()">Yes, tell them</button></div>'
+      + '</div></div>';
+  }
+  async function updSend() {
+    S.mailSheet = null; renderTab();
+    toast('Telling them\u2026', 'info');
+    var r = await mailFn({ updates: true });
+    if (!r) return;
+    toast((r.sent || 0) + ' told'
+      + ((r.notified || 0) ? ', ' + r.notified + ' also in the app' : '')
+      + ((r.failed || []).length ? ', ' + r.failed.length + ' did not go' : ''),
+      (r.failed || []).length ? 'error' : 'success');
+    await mailLoad(); renderTab();
+  }
+
   /* One place that calls the mailer, so the guard and the error handling are
      not written four times. */
   async function mailFn(extra) {
@@ -6603,6 +6673,7 @@
     oopPanel: oopPanel, oopDay: oopDay,
     mailPaste: mailPaste, mailPasteApply: mailPasteApply, mailClose: mailClose,
     mailPreview: mailPreview, mailTest: mailTest, mailSendAsk: mailSendAsk, mailSend: mailSend,
+    updPreview: updPreview, updTest: updTest, updAsk: updAsk, updSend: updSend,
     mdDrag: mdDrag, mdDragEnd: mdDragEnd, mdOver: mdOver, mdLeave: mdLeave, mdDrop: mdDrop,
     rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
     schedToggle: schedToggle, schedMove: schedMove, setMainCourt: setMainCourt,
