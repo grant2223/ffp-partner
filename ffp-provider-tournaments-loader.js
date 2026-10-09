@@ -1529,7 +1529,8 @@
   // A scoreboard is set up by typing an address into a TV's browser with a
   // remote, so the court's five-character code is the thing that matters. The
   // full /display/<uuid> link is no use to anyone holding a remote control.
-  var SCREEN_BASE = 'score.findfitpeople.com';   // the board host: a bare code resolves here
+  var SCREEN_BASE = 'scoreboard.findfitpeople.com';  // the ONE board host, as the courts
+                                                     // and leagues panels already use
   var GFX_BASE    = 'gfx.findfitpeople.com';     // the broadcast graphics source, same code, all day
   /* THE WHOLE DAY ON ONE TV, the screen people walk up to to find their
      match. Not a court board: that is one court, mounted on it. */
