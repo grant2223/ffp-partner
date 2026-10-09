@@ -871,8 +871,67 @@
   function snapFormats() { S._fmtSaved = {}; ((S.detail && S.detail.divisions) || []).forEach(function (d) { S._fmtSaved[d.id] = fmtOfDiv(d); }); }
   function anyGroups() { return (S.detail && S.detail.divisions || []).some(function (d) { return !!d.group_stage; }) || !!(S.detail && S.detail.event && S.detail.event.group_stage); }
   function tabBtn(id, label) { return '<button class="' + (S.tab === id ? 'on' : '') + '" onclick="FFPTourn.tab(\'' + id + '\')">' + label + '</button>'; }
+  /* ══════════════════════════════════════════════════════════════════════
+     KEEP THE ORGANISER WHERE THEY WERE
+
+     Every tab here redraws itself by replacing the whole panel, so after a
+     drag, a save, a toggle or a refresh the page sprang back to the top and
+     the grid back to the left -- and the organiser had to scroll down and
+     across again to find the match they had just moved. Four moves in a row
+     is four trips back down the page.
+
+     This is the one place every tab re-renders through, so it is the one
+     place that has to remember. It restores only when the SAME tab is drawn
+     again: moving to a different tab should land at the top, which is what
+     anyone expects.
+
+     The panel is held at its old height while the new one is built, because
+     a panel that empties to "Loading..." collapses the page, the browser
+     clamps the scroll to zero, and nothing can be restored afterwards.
+     ══════════════════════════════════════════════════════════════════════ */
   function renderTab() {
     var host = document.getElementById('tg-tab'); if (!host) return;
+
+    var same = S._drawnTab === S.tab;
+    var sc = document.scrollingElement || document.documentElement;
+    var keepY = same ? (window.pageYOffset || sc.scrollTop || 0) : 0;
+    var keepX = [];
+    if (same) {
+      try {
+        Array.prototype.forEach.call(host.querySelectorAll('.sc'), function (el) { keepX.push(el.scrollLeft); });
+        var h = host.offsetHeight;
+        if (h > 0) host.style.minHeight = h + 'px';
+      } catch (e) { /* a redraw must never fail over this */ }
+    }
+    S._drawnTab = S.tab;
+
+    var restore = function () {
+      try {
+        /* A DIFFERENT TAB LANDS AT THE TOP. It used to get there by accident,
+           because the old panel emptied and the page collapsed under the
+           scroll; now that the height is held, it has to be said. */
+        if (!same) window.scrollTo(0, 0);
+        if (same && keepY > 0) window.scrollTo(0, keepY);
+        if (same && keepX.length) {
+          Array.prototype.forEach.call(host.querySelectorAll('.sc'), function (el, i) {
+            if (keepX[i]) el.scrollLeft = keepX[i];
+          });
+        }
+      } catch (e) { /* noop */ }
+      host.style.minHeight = '';
+    };
+    /* after the browser has laid the new panel out, not before */
+    var settle = function () {
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function () { requestAnimationFrame(restore); });
+      else setTimeout(restore, 0);
+    };
+
+    var out = drawTab(host);
+    if (out && typeof out.then === 'function') out.then(settle, settle); else settle();
+    return out;
+  }
+
+  function drawTab(host) {
     if (S.tab === 'information' || S.tab === 'details') return renderInformation(host);
     if (S.tab === 'setup') return renderSetup(host);
     if (S.tab === 'matchday') return renderMatchDay(host);
