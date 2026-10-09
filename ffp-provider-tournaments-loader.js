@@ -243,6 +243,24 @@
       '.sc-m .v.none b{color:var(--ffp-text-dim);font-weight:700;}',
       /* the main field, chosen on the Venues tab */
       '.lg-mainb{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--ffp-border-mid);background:#fff;color:var(--ffp-text-muted);border-radius:9px;padding:5px 10px;font:inherit;font-size:11.5px;font-weight:800;cursor:pointer;margin-right:10px;}',
+      /* A SPARE SURFACE is allocated to the event and deliberately kept out of
+         the plan: there to move a match onto when one runs long or a surface
+         goes down. Held back is not active, so it takes the light blue and the
+         gold stays for the main surface. */
+      '.lg-spareb{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--ffp-border-mid);background:#fff;color:var(--ffp-text-muted);border-radius:9px;padding:5px 10px;font:inherit;font-size:11.5px;font-weight:800;cursor:pointer;margin-right:10px;}',
+      '.lg-spareb .ms{font-size:15px;}',
+      '.lg-spareb.on{border-color:#9FD2E8;background:#eef7fb;color:#135c7d;}',
+      '.lg-surf.sp{background:linear-gradient(90deg,#f4fafd,rgba(244,250,253,0) 70%);}',
+      'table.md-g tr.sp td.cl{background:#F2F8FC;}',
+      'table.md-g tr.sp td.cl b{color:#135c7d;}',
+      'table.md-g tr.sp td.cl s.spt{color:#135c7d;font-weight:900;}',
+      'table.md-g tr.sp td{background:#FBFDFE;}',
+      '.md-sparehint{display:flex;align-items:center;gap:9px;padding:11px 2px 0;font-size:12px;font-weight:700;color:var(--ffp-text-muted);}',
+      '.md-sparehint .ms{font-size:17px;color:#7FB2D9;}',
+      '.ap-courts{display:flex;align-items:baseline;gap:18px;padding:10px 0 2px;}',
+      '.ap-courts u{text-decoration:none;font-size:22px;font-weight:900;color:var(--ffp-text);font-variant-numeric:tabular-nums;}',
+      '.ap-courts u.sp{color:#135c7d;}',
+      '.ap-courts s{text-decoration:none;font-size:9.5px;font-weight:900;letter-spacing:.12em;color:var(--ffp-text-muted);margin-left:7px;}',
       '.lg-mainb .ms{font-size:15px;}',
       '.lg-mainb.on{border-color:var(--ffp-gold);background:#fdf6e6;color:#8a6200;}',
       '.tg-sec{padding:2px 0 22px;}.tg-sec+.tg-sec{border-top:none;padding-top:22px;}.tg-sech{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:linear-gradient(92deg,#12242f,#21404f);padding:7px 13px;border-radius:7px;margin:0 0 16px;}.tg-hint{font-size:12px;font-weight:700;color:#6a7c8a;margin-top:7px;}.tg-dvrow{display:flex;align-items:center;gap:12px;padding:13px 2px;border-top:1px solid var(--ffp-border);cursor:pointer;}.tg-dvrow:last-of-type{border-bottom:1px solid var(--ffp-border);}.tg-dvrow .g{flex:1;min-width:0;}.tg-dvrow .g b{display:block;font-size:14px;font-weight:800;color:var(--ffp-text);}.tg-dvrow .g span{display:block;font-size:12px;font-weight:600;color:var(--ffp-text-muted);margin-top:2px;}.tg-dvrow .st{font-size:11px;font-weight:800;color:#8a99a8;white-space:nowrap;}.tg-dvrow .st.done{color:var(--ffp-green);}.tg-dvrow.on{box-shadow:inset 3px 0 0 var(--ffp-blue);padding-left:12px;}.tg-dvrow.on .g b{color:var(--ffp-blue);}.tg-fmts{margin-top:18px;}.tg-dvrow .cv{font-size:20px;color:#9aa8b4;}.tg-dvrow.on .cv{color:var(--ffp-blue);}.tg-dvedit{padding:4px 0 22px 32px;border-bottom:1px solid var(--ffp-border);}.tg-dvedit .tg-fmts{margin-top:4px;}.tg-fmtnow{display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:800;color:var(--ffp-text);}.tg-fmtnow a{font-size:12px;font-weight:700;color:var(--ffp-blue);cursor:pointer;}.tg-shape{font-size:12.5px;font-weight:700;color:#6a7c8a;margin:14px 0 0;}.tg-acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}',
@@ -1227,6 +1245,13 @@
     var rows = (d.surfaces || []).map(function (x) {
       return { key: x.field_id, name: x.name, code: x.screen_code };
     });
+    /* THE SPARES COME SEPARATELY AND SIT LAST. The list above is built from
+       the matches, and a spare has none -- that is the whole point of it -- so
+       it would never appear as a row and there would be nothing to drag onto. */
+    (d.spare_surfaces || []).forEach(function (x) {
+      if (rows.some(function (r) { return r.key === x.field_id; })) return;
+      rows.push({ key: x.field_id, name: x.name, code: x.screen_code, spare: true });
+    });
     if (!rows.length || !slots.length) return '';
 
     var head = '<tr><th class="cl">' + esc(Surf().toUpperCase()) + '</th>'
@@ -1236,7 +1261,8 @@
         }).join('') + '</tr>';
 
     var body = rows.map(function (r) {
-      return '<tr><td class="cl"><b>' + esc(r.name) + '</b>'
+      return '<tr' + (r.spare ? ' class="sp"' : '') + '><td class="cl"><b>' + esc(r.name) + '</b>'
+        + (r.spare ? '<s class="spt">SPARE</s>' : '')
         + (r.code ? '<s>' + esc(r.code) + '</s>' : '') + '</td>'
         + slots.map(function (t) {
             var cell = ms.filter(function (m) {
@@ -1259,7 +1285,12 @@
       + rows.length + ' ' + esc(rows.length === 1 ? surfWord() : surfWord(true))
       + ' down, ' + slots.length + ' slots across</p><span class="ln"></span></div>'
       + '<div class="md-dy"><div class="sc"><table class="md-g"><thead>' + head
-      + '</thead><tbody>' + body + '</tbody></table></div></div>';
+      + '</thead><tbody>' + body + '</tbody></table></div></div>'
+      + (rows.some(function (r) { return r.spare; })
+          ? '<div class="md-sparehint">' + ic('drag_indicator')
+            + 'Drag any match onto a spare ' + surfWord() + ' to put it on there. '
+            + 'Nothing is ever planned onto one.</div>'
+          : '');
   }
 
   /* the key, at the foot of the panel as approved */
@@ -2069,12 +2100,16 @@
             + '<option value="">Event-only screen</option>'
             + S._vcMine.map(function (c) { var one = S._vcMine.every(function (x) { return x.provider_id === c.provider_id; }); return '<option value="' + c.id + '"' + (c.id === s.venue_court_id ? ' selected' : '') + '>' + esc(one ? c.name + ' screen' : c.name + ', ' + c.venue) + '</option>'; }).join('')
             + '</select>' : '';
-        return '<div class="lg-surf"><span class="ms">sports_score</span>' + esc(s.name)
+        return '<div class="lg-surf' + (s.is_spare ? ' sp' : '') + '"><span class="ms">sports_score</span>' + esc(s.name)
           + '<span class="sp"></span>'
           + '<button class="lg-mainb' + (s.is_main ? ' on' : '') + '"'
           +   ' title="' + (s.is_main ? 'The final is played here' : 'Make this the main ' + surfWord() + ', where the final is played') + '"'
           +   ' onclick="FFPTourn.setMainCourt(\'' + s.id + '\',' + (s.is_main ? 'false' : 'true') + ')">'
-          +   ic('stadium') + (s.is_main ? 'Main ' + surfWord() : 'Set as main') + '</button>' + link
+          +   ic('stadium') + (s.is_main ? 'Main ' + surfWord() : 'Set as main') + '</button>'
+          + '<button class="lg-spareb' + (s.is_spare ? ' on' : '') + '"'
+          +   ' title="' + (s.is_spare ? 'Held back: Auto-plan never puts a match here' : 'Keep this ' + surfWord() + ' out of the plan, for a match that runs long or a ' + surfWord() + ' that goes down') + '"'
+          +   ' onclick="FFPTourn.setSpareCourt(\'' + s.id + '\',' + (s.is_spare ? 'false' : 'true') + ')">'
+          +   ic('bookmark') + (s.is_spare ? 'Spare ' + surfWord() : 'Mark as spare') + '</button>' + link
           // The code a TV is set up with — see screenPanel().
           + (s.screen_code ? '<button class="lg-scrbtn' + (s.permanent ? ' perm' : '') + '" title="Scoreboard for this ' + surfWord() + '" onclick="FFPTourn.screenPanel(\'' + esc(s.screen_code) + '\',\'' + esc(s.name) + '\',' + (s.permanent ? 'true' : 'false') + ')"><span class="ms">' + (s.permanent ? 'connected_tv' : 'cast') + '</span>' + esc(s.screen_code) + '</button>' : '')
           + '<button class="lg-btn sm" title="Connect a scoring tablet to this ' + surfWord() + '" onclick="FFPTourn.pinPanel(\'' + s.id + '\',\'' + esc(s.name) + '\')"><span class="ms">tablet_android</span>Connect a tablet</button>'
@@ -2084,7 +2119,7 @@
       var vmeta = [v2.city, (v2.maps_url ? '<a class="lg-maplink" href="' + esc(v2.maps_url) + '" target="_blank" rel="noopener">' + ic('map') + 'Map</a>' : '')].filter(Boolean).join(', ');
       var addS = (S.surfAdd === v2.id)
         ? '<div class="lg-edit" style="margin-left:44px;border:none;padding-top:8px"><input class="lg-in" id="tg-sfname" placeholder="' + Surf() + ' name" style="max-width:260px" onkeydown="if(event.key===\'Enter\')FFPTourn.saveSurface(\'' + v2.id + '\')"><button class="lg-btn pri" onclick="FFPTourn.saveSurface(\'' + v2.id + '\')">' + ic('check') + 'Add</button><button class="lg-btn ghost" onclick="FFPTourn.cancelSurface()">Cancel</button></div>'
-        : '<div class="lg-addsurf"><button class="lg-btn ghostb" onclick="FFPTourn.addSurface(\'' + v2.id + '\')">' + ic('add') + 'Add surface</button></div>';
+        : '<div class="lg-addsurf"><button class="lg-btn ghostb" onclick="FFPTourn.addSurface(\'' + v2.id + '\')">' + ic('add') + 'Add ' + surfWord() + '</button></div>';
       return '<div class="lg-venue"><div class="lg-vh"><span class="lg-vpin"><span class="ms">location_on</span></span><div class="g"><b>' + esc(v2.name) + '</b><span>' + vmeta + '</span></div><span class="ms act" onclick="FFPTourn.editVenue(\'' + v2.id + '\')">edit</span><span class="ms act" onclick="FFPTourn.removeVenue(\'' + v2.id + '\')">delete</span></div>'
         + (surfaces ? '<div class="lg-surfs">' + surfaces + '</div>' : '') + addS + '</div>';
     }).join('') + orphanCard();
@@ -2590,6 +2625,7 @@
         + '<div class="sc-ch warn"><b>' + loose.length + (loose.length === 1 ? ' match has' : ' matches have') + ' no ' + surfWord() + ' and no time</b>'
         + '<span class="ct">Auto-plan gives them one</span>'
         + '<button class="sc-add" onclick="FFPTourn.autoplan()">' + ic('auto_awesome') + 'Auto-plan now</button></div>'
+        + planCourts()
         + loose.map(function (m) { return schedRow(m, null, true, true); }).join('')
         + (S.addMatch === 'loose' ? matchEditor() : '');
     }
@@ -3292,6 +3328,34 @@
   /* The main field is a property of the venue, not of a day's grid, and the
      plan needs to know it BEFORE the draw is made so the final is sent there.
      So it is set on the Venues tab and only reported on the schedule. */
+  /* A SPARE IS NEVER GIVEN A MATCH BY AUTO-PLAN. It still takes a tablet and
+     still has its own screen, so it is ready the moment it is needed -- it is
+     simply never planned onto. Setting one as spare clears Main, because the
+     final is not played on a surface you are holding back. */
+  /* WHAT AUTO-PLAN WILL AND WILL NOT FILL, said before it is pressed rather
+     than discovered afterwards. Draws nothing at all when no spare is set. */
+  function planCourts() {
+    var all = (S._fields || []);
+    var sp = all.filter(function (f) { return f.is_spare; }).length;
+    if (!sp) return '';
+    var inplay = all.length - sp;
+    return '<div class="ap-courts">'
+      + '<span><u>' + inplay + '</u><s>IN PLAY</s></span>'
+      + '<span><u class="sp">' + sp + '</u><s>SPARE, NOT PLANNED</s></span></div>'
+      + '<div class="md-sparehint">' + ic('info')
+      + 'Auto-plan fills the ' + inplay + ' ' + (inplay === 1 ? surfWord() : surfWord(true))
+      + ' in play. A spare ' + surfWord() + ' is never given a match automatically, '
+      + 'move one onto it on Match Day when you need it.</div>';
+  }
+
+  async function setSpareCourt(fieldId, on) {
+    try { await sb().rpc('lt_field_set_spare', { p_id: fieldId, p_on: on !== false }); }
+    catch (e) { toast('Could not change the ' + surfWord(), 'error'); return; }
+    toast(on === false
+      ? Surf() + ' back in play, Auto-plan will use it'
+      : 'Spare ' + Surf() + ' set, Auto-plan will leave it empty', 'success');
+    renderTab();
+  }
   async function setMainCourt(fieldId, on) {
     try { await sb().rpc('lt_field_set_main', { p_id: fieldId, p_on: on !== false }); }
     catch (e) { toast('Could not set the main ' + surfWord(), 'error'); return; }
@@ -6678,6 +6742,7 @@
     mdDrag: mdDrag, mdDragEnd: mdDragEnd, mdOver: mdOver, mdLeave: mdLeave, mdDrop: mdDrop,
     rebuildAsk: rebuildAsk, rebuildCancel: rebuildCancel,
     schedToggle: schedToggle, schedMove: schedMove, setMainCourt: setMainCourt,
+    setSpareCourt: setSpareCourt,
     mdDay: mdDay, mdPick: mdPick, mdRefresh: mdRefresh, mdGo: mdGo, mdSimFill: mdSimFill, mdSimPlay: mdSimPlay,
     mdSimAsk: mdSimAsk, mdSimCancel: mdSimCancel, mdSimClear: mdSimClear,
     togRound: togRound, addMatch: addMatch, cancelMatch: cancelMatch, saveMatch: saveMatch,
