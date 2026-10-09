@@ -1306,12 +1306,18 @@
        to be booked. Moving the 08:00 ties later used to make the day "start"
        at 09:00, and there was then no earlier cell to move them back into.
        day_start is the earliest opening time the event's courts carry. */
+    /* THE DAY RUNS FOR AS LONG AS THE ORGANISER SAID IT RUNS. Friday is
+       18:00 to 20:00 and Saturday 08:30 to 15:30; taken from the courts'
+       opening time instead, Friday drew from 08:00 and put twenty-two empty
+       morning columns on a two-hour evening session. */
     var opens = d.day_start && /^\d\d:\d\d$/.test(d.day_start) ? d.day_start : null;
+    var shuts = d.day_end   && /^\d\d:\d\d$/.test(d.day_end)   ? d.day_end   : null;
 
     var slots = booked.slice();
     if (booked.length && step > 0) {
       var t0 = mdMins(booked[0]), t1 = mdMins(booked[booked.length - 1]);
       if (opens && mdMins(opens) < t0) t0 = mdMins(opens);
+      if (shuts && mdMins(shuts) > t1) t1 = mdMins(shuts);
       /* A five-minute step across a twelve-hour day is 145 columns and no use
          to anybody. Past the cap the grid keeps the times that are booked,
          which is what it did before, rather than drawing something unusable. */
@@ -1324,7 +1330,10 @@
     }
     /* ONE SPARE SLOT ON THE END, so a match can be moved later than anything
        booked. */
-    var spare = booked.length ? mdHhmm(mdMins(booked[booked.length - 1]) + step) : null;
+    /* ONE SPARE SLOT ON THE END only when the day has no closing time. With
+       one, the window itself is the room to move a match later. */
+    var spare = (!shuts && booked.length)
+      ? mdHhmm(mdMins(booked[booked.length - 1]) + step) : null;
     if (spare && slots.indexOf(spare) < 0) slots.push(spare);
     slots.sort(function (x, y) { return mdMins(x) - mdMins(y); });
 
