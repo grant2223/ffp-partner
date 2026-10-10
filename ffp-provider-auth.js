@@ -1,4 +1,26 @@
-/* FFP Provider Auth Gate — v6 (STANDALONE-ORIGIN SAFE)
+/* FFP Provider Auth Gate — v7 (RENEWS THE SESSION INSTEAD OF SIGNING OUT)
+   v7 (2026-10-10): THE PARTNER PORTAL WAS IN AN INFINITE REDIRECT LOOP.
+       Measured live on partner.findfitpeople.com with a JWT that had expired
+       44 hours earlier: the providers lookup came back 401 PGRST303 'JWT
+       expired', v6 read any lookup error as "not signed in" and bounced to
+       '/login', and login.html treats a merely PRESENT token string as a live
+       session and sent the browser straight back to '/'. The two pages then
+       ping-ponged — 4,000+ requests, an empty body, and no way out but
+       clearing site data.
+       The refresh token was in localStorage the whole time, unused.
+       ffp-api-integration v12 does fire refreshSession() on boot, but it never
+       awaits it, and this guard only waited for window.supabase to EXIST before
+       querying — so every loop killed its own in-flight refresh.
+       Three changes, all in this file:
+         (a) an expired stored JWT is renewed BEFORE the first query, so the
+             guard no longer races the boot refresh;
+         (b) a session error FROM PostgREST triggers one refresh and one retry,
+             instead of a sign-out;
+         (c) every exit goes to '/login?switch=1'. The '?switch=1' flag already
+             exists in login.html and makes it SHOW the sign-in form rather than
+             bounce a stale session back here, so the loop cannot re-form.
+       login.html needs no change. Its weak session test is only reachable with
+       a dead token, and nothing sends one there any more.
    v6 (2026-07-02): Wrong-role redirects now point at absolute ffppassport.com
        URLs instead of same-origin '/ffp-*-dashboard.html' paths. The provider
        dashboard now runs on its own origin (partner.findfitpeople.com) where
@@ -52,13 +74,13 @@
     var raw = localStorage.getItem('ffp_member');
     if (raw) member = JSON.parse(raw);
   } catch (e) {
-    console.warn('[FFP Provider Auth v4] Could not parse ffp_member:', e);
+    console.warn('[FFP Provider Auth v7] Could not parse ffp_member:', e);
   }
 
   // ─── No signed-in member at all → bounce to /login ───
   if (!member || !member.id) {
-    console.warn('[FFP Provider Auth v4] No signed-in member — redirecting to /login');
-    location.href = '/login';
+    console.warn('[FFP Provider Auth v7] No signed-in member — showing the partner sign-in form');
+    location.replace('/login?switch=1');
     return;
   }
 
@@ -87,29 +109,102 @@
   // resolves correctly. Wait for window.supabase to be JWT-rebuilt
   // (ffp-api-integration v8 autoInit fires on DOMContentLoaded) before
   // querying, so RLS sees auth.uid() = member.id and the policy passes.
-  async function bootProvider() {
-    var supabase = window.supabase;
-    if (!supabase || !supabase.from) {
-      console.warn('[FFP Provider Auth v5] window.supabase not ready — waiting 200ms');
-      setTimeout(bootProvider, 200);
-      return;
+  // ─── v7: session helpers ───
+  function auth() { return window.FFPAuth || null; }
+
+  // True ONLY when the token's own exp says it is spent. An unreadable token
+  // returns false on purpose — then the server decides, and (b) below covers it.
+  function jwtExpired(tok) {
+    if (!tok) return false;
+    try {
+      var seg = String(tok).split('.')[1];
+      if (!seg) return false;
+      seg = seg.replace(/-/g, '+').replace(/_/g, '/');
+      while (seg.length % 4) { seg += '='; }
+      var exp = JSON.parse(atob(seg)).exp;
+      if (!exp) return false;
+      return (exp - 60) * 1000 <= Date.now();   // 60s of clock skew
+    } catch (e) { return false; }
+  }
+
+  // PostgREST says PGRST303 for an expired JWT and PGRST301 for an invalid one.
+  function isSessionError(err) {
+    if (!err) return false;
+    var code = String(err.code || '');
+    var msg  = String(err.message || '').toLowerCase();
+    return code === 'PGRST301' || code === 'PGRST303' ||
+           String(err.status || '') === '401' ||
+           msg.indexOf('jwt') !== -1 || msg.indexOf('token') !== -1;
+  }
+
+  // One refresh per page load, never more — a refresh that fails must not spin.
+  var refreshTried = false;
+  function refreshOnce() {
+    var A = auth();
+    if (refreshTried || !A || !A.refreshSession || !A.getRefresh || !A.getRefresh()) {
+      return Promise.resolve(null);
     }
-    var lookup = await supabase
+    refreshTried = true;
+    return A.refreshSession();
+  }
+
+  // Every exit from this guard lands on the partner sign-in FORM.
+  // 'replace' rather than 'href' so the dead page is not left in history.
+  function toLogin(why) {
+    console.warn('[FFP Provider Auth v7] ' + why + ' — showing the partner sign-in form');
+    location.replace('/login?switch=1');
+  }
+
+  function lookupProvider(supabase) {
+    return supabase
       .from('providers')
       .select('id, business_name, status, owner_user_id, timezone, currency, payments_status, stripe_account_id')
       .eq('owner_user_id', member.id)
       .maybeSingle();
+  }
+
+  async function bootProvider() {
+    var supabase = window.supabase;
+    if (!supabase || !supabase.from) {
+      console.warn('[FFP Provider Auth v7] window.supabase not ready, waiting 200ms');
+      setTimeout(bootProvider, 200);
+      return;
+    }
+    // (a) v7: the stored JWT is already spent — renew it before asking
+    // PostgREST anything, so this guard never races the boot refresh.
+    var A = auth();
+    if (A && A.getJwt && jwtExpired(A.getJwt())) {
+      var renewed = await refreshOnce();
+      if (!renewed) {
+        toLogin('the stored session had expired and could not be renewed');
+        return;
+      }
+      console.log('[FFP Provider Auth v7] stored JWT had expired, session renewed before lookup');
+    }
+
+    var lookup = await lookupProvider(supabase);
+
+    // (b) v7: PostgREST rejected the token — one refresh, one retry. The single
+    // client injects the stored JWT per request, so the retry carries the new one.
+    if (lookup.error && isSessionError(lookup.error)) {
+      var again = await refreshOnce();
+      if (again) {
+        console.log('[FFP Provider Auth v7] session renewed after ' + (lookup.error.code || '401') + ', retrying the lookup');
+        lookup = await lookupProvider(supabase);
+      }
+    }
 
     if (lookup.error) {
-      console.error('[FFP Provider Auth v5] providers lookup failed:', lookup.error);
-      location.href = '/login';
+      console.error('[FFP Provider Auth v7] providers lookup failed:', lookup.error);
+      toLogin('the partner record could not be read (' + (lookup.error.code || 'error') + ')');
       return;
     }
     if (!lookup.data) {
-      console.warn('[FFP Provider Auth v5] No providers row for member.id=' + member.id + ' — provider has signed up but no provider record exists yet. Bouncing to /login. Admin or onboarding flow must create the providers row.');
-      // TODO post-launch: redirect to a "provider application pending"
-      // page instead of /login, so the user gets context not a sign-in screen.
-      location.href = '/login';
+      console.warn('[FFP Provider Auth v7] No providers row for member.id=' + member.id + ' — the account exists but no provider record is attached to it. Admin or the onboarding flow must create the providers row.');
+      // STILL OWED: a "partner application pending" page. A sign-in form is not an
+      // answer to "your account has no business attached". Every live partner has a
+      // providers row today, so this branch is unreachable in production.
+      toLogin('no partner record is attached to this account yet');
       return;
     }
 
@@ -125,12 +220,12 @@
       payments_status:   lookup.data.payments_status || 'not_connected',  // Stripe Connect state — gates publishing PAID listings
       stripe_account_id: lookup.data.stripe_account_id || null
     };
-    console.log('[FFP Provider Auth v5] Access granted ✓ ' + member.email + ' · provider_id=' + lookup.data.id);
+    console.log('[FFP Provider Auth v7] Access granted ✓ ' + member.email + ', provider_id=' + lookup.data.id);
 
     // Call dashboard's enterDashboard() if available (existing v3-era function).
     if (typeof window.enterDashboard === 'function') {
       try { window.enterDashboard(); } catch (e) {
-        console.warn('[FFP Provider Auth v5] enterDashboard() threw:', e);
+        console.warn('[FFP Provider Auth v7] enterDashboard() threw:', e);
       }
     }
     document.dispatchEvent(new CustomEvent('ffp-provider-ready', { detail: window.FFP_PROVIDER }));
