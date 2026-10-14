@@ -164,11 +164,39 @@
       '.lg-srow2{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-srow2 .s-match b{font-size:15px;font-weight:800;} .lg-srow2 .s-match small{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;margin-top:3px;} .lg-srow2 .s-when{display:flex;gap:8px;margin-top:11px;} .lg-srow2 .s-when .lg-in{padding:8px 9px;font-size:13px;} .lg-srow2 .s-right{display:flex;flex-direction:column;gap:9px;} .lg-srow2 .fl{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9aa8b4;} .lg-srow2 .st-f{padding:9px 10px;font-size:13px;}',
       '.lg-offlist{display:flex;flex-direction:column;gap:6px;} .lg-offtag{display:flex;align-items:center;gap:9px;font-size:13px;padding:7px 10px;border:1px solid var(--ffp-border-mid);border-radius:9px;background:#fbfcfd;} .lg-offtag .role{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--ffp-blue);} .lg-offtag .nm{font-weight:700;} .lg-offtag .sp{flex:1;} .lg-offtag .x{color:#c0cad2;cursor:pointer;font-size:16px;} .lg-assign{display:flex;gap:7px;align-items:center;} .lg-assign .lg-sel{padding:7px 9px;font-size:12.5px;flex:1;} .lg-btn.sm{padding:7px 11px;font-size:12px;}',
       '.lg-scpill{display:inline-block;font-size:9px;font-weight:900;letter-spacing:.05em;color:#0a8f5f;background:#e3f6ec;padding:2px 7px;border-radius:20px;vertical-align:middle;margin-left:6px;} .lg-scpill.inv{color:#8a6d00;background:#fff4d6;} .lg-scpill.txt{color:#5b6b75;background:#eef2f5;} .lg-ocap{max-width:180px;padding:7px 9px;font-size:12.5px;}',
-      '.lg-sq{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px 14px;margin:0 0 12px 46px;} .lg-sqsrch{display:flex;align-items:center;gap:8px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:9px 12px;} .lg-sqsrch .ms{color:#9aa8b4;font-size:19px;} .lg-sqsrch input{border:none;outline:none;font:inherit;font-weight:600;font-size:13.5px;flex:1;background:none;} .lg-sqres{background:#fff;border:1px solid #eef2f5;border-radius:10px;margin-top:8px;padding:2px 12px;} .lg-sqres .row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid #f2f5f7;} .lg-sqres .row:last-child{border-bottom:none;} .lg-sqres .av{width:32px;height:32px;border-radius:50%;background:#dfe7ec center/cover no-repeat;flex:none;} .lg-sqres .g{flex:1;min-width:0;} .lg-sqres .g b{font-size:13.5px;font-weight:800;display:block;} .lg-sqres .g span{font-size:11px;color:#8a99a6;font-weight:600;} .lg-sqhint{margin-top:10px;font-size:10.5px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#8a99a6;} .lg-sqadd2{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;} .lg-sqlist{margin-top:8px;} .lg-sqrow{display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid #f0f3f6;font-size:13.5px;font-weight:700;} .lg-sqrow:last-child{border-bottom:none;} .lg-sqrow .sp{flex:1;} .lg-sqrow .x{color:#c0cad2;cursor:pointer;font-size:17px;} .lg-sqno{width:62px;padding:5px 6px;font-size:12.5px;flex:none;} .lg-sqpos{max-width:168px;padding:5px 7px;font-size:12px;} .lg-sqpos.fixed{border:none;background:none;color:#5b6b75;font-size:11.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:0 4px;} .lg-sqcap{width:26px;height:26px;border-radius:50%;border:1.5px solid #d7dee5;color:#9aa8b4;font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;} .lg-sqcap.on{background:#F2A900;border-color:#F2A900;color:#12212c;} .lg-sqph{position:relative;width:34px;height:44px;border-radius:7px 7px 3px 3px;background:#e6edf2 center/cover no-repeat;border:1.5px solid #d7dee5;flex:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;} .lg-sqph .ms{font-size:16px;color:#9aa8b4;} .lg-sqph.own{border-color:#F2A900;} .lg-sqph .x{position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#0b2136;color:#fff;font-size:12px;font-style:normal;line-height:17px;text-align:center;} .lg-gfx{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0 0;max-width:660px;padding:12px 14px;border:1px solid #e4edf3;border-radius:12px;background:#f7fafc;} .lg-gfx > .ms{color:#F2A900;font-size:22px;} .lg-gfx .g{flex:1;min-width:200px;} .lg-gfx .g b{display:block;font-size:13.5px;font-weight:800;} .lg-gfx .g span{font-size:11.5px;color:#8a99a6;font-weight:600;} .lg-tsheet .tabs{display:flex;gap:8px;align-items:center;margin:4px 0 0;} .lg-tsheet .tabs button{padding:9px 14px;border:1.5px solid #d7dee5;border-radius:9px;background:#fff;font:inherit;font-size:12.5px;font-weight:800;color:#0b2136;cursor:pointer;} .lg-tsheet .tabs button.on{background:#0b2136;border-color:#0b2136;color:#fff;} .lg-tsheet .tabs .count{margin-left:auto;font-size:11.5px;font-weight:800;color:#8a99a6;} .lg-tsheet .grid{margin-top:8px;border:1px solid #e4edf3;border-radius:12px;overflow:hidden;} .lg-tsheet .hd{padding:9px 14px;background:#f2f6fa;font-size:10.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#5b6b75;border-bottom:1px solid #e4edf3;} .lg-tsheet .row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #f0f3f6;} .lg-tsheet .row:last-child{border-bottom:none;} .lg-tsheet .row .no{width:30px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:7px;background:#eef2f5;color:#5b6b75;font-size:13px;font-weight:900;} .lg-tsheet .row.on .no{background:#0b2136;color:#fff;} .lg-tsheet .row .pos{width:150px;flex:none;font-size:11.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#5b6b75;} .lg-tsheet .row .pl{flex:1;min-width:0;padding:7px 9px;font-size:13px;} .lg-tsheet .row .cov{width:150px;flex:none;padding:7px 9px;font-size:11.5px;} .lg-tsheet .row .cap{width:26px;height:26px;flex:none;border-radius:50%;border:1.5px solid #d7dee5;color:#9aa8b4;font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;} .lg-tsheet .row .cap.on{background:#F2A900;border-color:#F2A900;color:#12212c;} .lg-hex{display:flex;gap:6px;align-items:center;} .lg-hex .sw{width:38px;height:38px;flex:none;padding:2px;border:1.5px solid #d7dee5;border-radius:8px;background:#fff;cursor:pointer;} .lg-hex .lg-in{flex:1;min-width:0;text-transform:uppercase;} .lg-info{margin:10px 0 0;} .lg-info summary{display:inline-flex;align-items:center;gap:7px;padding:6px 12px 6px 9px;border:1px solid #dbe3ea;border-radius:20px;background:#fff;font-size:12.5px;font-weight:800;color:#41637f;cursor:pointer;list-style:none;} .lg-info summary::-webkit-details-marker{display:none;} .lg-info summary .ms{font-size:17px;color:#1980AD;} .lg-info[open] summary{background:#eaf4fa;border-color:#bcdcec;} .lg-info p{margin:8px 0 0;padding:12px 14px;border-radius:12px;background:#eaf4fa;font-size:12.5px;line-height:1.55;font-weight:600;color:#2c5570;} .lg-tsheet .coach{display:flex;align-items:center;gap:10px;margin:10px 0 0;} .lg-tsheet .coach label{font-size:10.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#5b6b75;width:56px;flex:none;} .lg-tsheet .coach .lg-in{flex:1;max-width:320px;}',
+      '.lg-sq{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:12px 14px;margin:0 0 12px 46px;} .lg-sqsrch{display:flex;align-items:center;gap:8px;border:1.5px solid #d7dee5;background:#fff;border-radius:10px;padding:9px 12px;} .lg-sqsrch .ms{color:#9aa8b4;font-size:19px;} .lg-sqsrch input{border:none;outline:none;font:inherit;font-weight:600;font-size:13.5px;flex:1;background:none;} .lg-sqres{background:#fff;border:1px solid #eef2f5;border-radius:10px;margin-top:8px;padding:2px 12px;} .lg-sqres .row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid #f2f5f7;} .lg-sqres .row:last-child{border-bottom:none;} .lg-sqres .av{width:32px;height:32px;border-radius:50%;background:#dfe7ec center/cover no-repeat;flex:none;} .lg-sqres .g{flex:1;min-width:0;} .lg-sqres .g b{font-size:13.5px;font-weight:800;display:block;} .lg-sqres .g span{font-size:11px;color:#8a99a6;font-weight:600;} .lg-sqhint{margin-top:10px;font-size:10.5px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#8a99a6;} .lg-sqadd2{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;} .lg-sqlist{margin-top:8px;} .lg-sqrow{display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid #f0f3f6;font-size:13.5px;font-weight:700;} .lg-sqrow:last-child{border-bottom:none;} .lg-sqrow .sp{flex:1;} .lg-sqrow .x{color:#c0cad2;cursor:pointer;font-size:17px;} .lg-sqno{width:62px;padding:5px 6px;font-size:12.5px;flex:none;} .lg-sqpos{max-width:168px;padding:5px 7px;font-size:12px;} .lg-sqpos.fixed{border:none;background:none;color:#5b6b75;font-size:11.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:0 4px;} .lg-sqcap{width:26px;height:26px;border-radius:50%;border:1.5px solid #d7dee5;color:#9aa8b4;font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;} .lg-sqcap.on{background:#F2A900;border-color:#F2A900;color:#12212c;} .lg-sqph{position:relative;width:34px;height:44px;border-radius:7px 7px 3px 3px;background:#e6edf2 center/cover no-repeat;border:1.5px solid #d7dee5;flex:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;} .lg-sqph .ms{font-size:16px;color:#9aa8b4;} .lg-sqph.own{border-color:#F2A900;} .lg-sqph .x{position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#0b2136;color:#fff;font-size:12px;font-style:normal;line-height:17px;text-align:center;} .lg-tsheet .tabs{display:flex;gap:8px;align-items:center;margin:4px 0 0;} .lg-tsheet .tabs button{padding:9px 14px;border:1.5px solid #d7dee5;border-radius:9px;background:#fff;font:inherit;font-size:12.5px;font-weight:800;color:#0b2136;cursor:pointer;} .lg-tsheet .tabs button.on{background:#0b2136;border-color:#0b2136;color:#fff;} .lg-tsheet .tabs .count{margin-left:auto;font-size:11.5px;font-weight:800;color:#8a99a6;} .lg-tsheet .grid{margin-top:8px;border:1px solid #e4edf3;border-radius:12px;overflow:hidden;} .lg-tsheet .hd{padding:9px 14px;background:#f2f6fa;font-size:10.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#5b6b75;border-bottom:1px solid #e4edf3;} .lg-tsheet .row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #f0f3f6;} .lg-tsheet .row:last-child{border-bottom:none;} .lg-tsheet .row .no{width:30px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:7px;background:#eef2f5;color:#5b6b75;font-size:13px;font-weight:900;} .lg-tsheet .row.on .no{background:#0b2136;color:#fff;} .lg-tsheet .row .pos{width:150px;flex:none;font-size:11.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#5b6b75;} .lg-tsheet .row .pl{flex:1;min-width:0;padding:7px 9px;font-size:13px;} .lg-tsheet .row .cov{width:150px;flex:none;padding:7px 9px;font-size:11.5px;} .lg-tsheet .row .cap{width:26px;height:26px;flex:none;border-radius:50%;border:1.5px solid #d7dee5;color:#9aa8b4;font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;} .lg-tsheet .row .cap.on{background:#F2A900;border-color:#F2A900;color:#12212c;} .lg-hex{display:flex;gap:6px;align-items:center;} .lg-hex .sw{width:38px;height:38px;flex:none;padding:2px;border:1.5px solid #d7dee5;border-radius:8px;background:#fff;cursor:pointer;} .lg-hex .lg-in{flex:1;min-width:0;text-transform:uppercase;} .lg-info{margin:10px 0 0;} .lg-info summary{display:inline-flex;align-items:center;gap:7px;padding:6px 12px 6px 9px;border:1px solid #dbe3ea;border-radius:20px;background:#fff;font-size:12.5px;font-weight:800;color:#41637f;cursor:pointer;list-style:none;} .lg-info summary::-webkit-details-marker{display:none;} .lg-info summary .ms{font-size:17px;color:#1980AD;} .lg-info[open] summary{background:#eaf4fa;border-color:#bcdcec;} .lg-info p{margin:8px 0 0;padding:12px 14px;border-radius:12px;background:#eaf4fa;font-size:12.5px;line-height:1.55;font-weight:600;color:#2c5570;} .lg-tsheet .coach{display:flex;align-items:center;gap:10px;margin:10px 0 0;} .lg-tsheet .coach label{font-size:10.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#5b6b75;width:56px;flex:none;} .lg-tsheet .coach .lg-in{flex:1;max-width:320px;}',
       '.lg-maed{background:#f7fafc;border:1px solid #e4edf3;border-radius:12px;padding:14px 16px;margin-bottom:14px;} .lg-maed .ttl{font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:#8a99a6;margin-bottom:12px;} .lg-maed .fe-byetog{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#43525c;cursor:pointer;} .lg-maed .fe-byetog input{width:16px;height:16px;}',
       '.edrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;} .edrow .lg-sel{flex:1;min-width:150px;} .edrow .vv{font-weight:800;color:#8a99a6;} .edrow2{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:11px;} .edrow2 .f{display:flex;flex-direction:column;gap:5px;} .edrow2 .f label{font-size:11px;font-weight:800;color:#43525c;} .edrow2 .f .lg-in,.edrow2 .f .lg-sel{padding:8px 10px;font-size:13px;} .edfoot{display:flex;align-items:center;gap:10px;margin-top:14px;} .edfoot .sp{flex:1;}',
       /* match centre + per-fixture actions */
       '.lg-fx2{grid-template-columns:1fr auto 1fr auto;} .lg-fx2 .acts{display:flex;align-items:center;gap:0;} .lg-mcbtn{border:none;background:none;color:#9aa8b4;cursor:pointer;padding:4px;border-radius:8px;} .lg-mcbtn:hover{color:var(--ffp-blue);background:#f4f7f9;} .lg-mcbtn.del:hover{color:var(--ffp-red);background:#fdeff0;} .lg-mcbtn .ms{font-size:20px;} .lg-bye .acts{margin-left:auto;display:flex;align-items:center;}',
+      /* BROADCAST. Two addresses, set up twice in a match's life, so they get
+         one compact band: filled slabs with the action welded to the end, no
+         outlines on white and no card wrapping it. */
+      '.lg-bc{margin:18px 0 6px;}',
+      '.lg-bc .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;}',
+      '.lg-bc .col{min-width:0;} .lg-bc .cl{display:flex;align-items:baseline;gap:8px;margin:0 0 6px;}',
+      '.lg-bc .cl b{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7c8b97;}',
+      '.lg-bc .cl em{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#9aa8b4;}',
+      '.lg-bc .fld{display:flex;align-items:stretch;height:46px;border-radius:12px;overflow:hidden;background:#e8eef3;}',
+      '#lg-root .lg-bc .fld input{flex:1;min-width:0;width:100%;height:46px;border:0;background:none;padding:0 14px;font:inherit;font-size:13.5px!important;font-weight:500;color:#12232f;box-sizing:border-box;}',
+      '#lg-root .lg-bc .fld input::placeholder{color:#8da0ae;font-weight:500;}',
+      '.lg-bc .fld .addr{flex:1;min-width:0;display:flex;align-items:center;padding:0 14px;font-size:13px;font-weight:500;color:#12232f;letter-spacing:-.1px;}',
+      '.lg-bc .fld .addr .mid{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      '#lg-root .lg-bc .fld button{flex:none;border:0;border-radius:0;height:46px;padding:0 17px;font:inherit;font-size:13px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:7px;background:var(--ffp-blue);color:#fff;}',
+      '#lg-root .lg-bc .fld button.alt{background:#cfe0ec;color:#16688c;padding:0 14px;} #lg-root .lg-bc .fld button.ico{padding:0 15px;}',
+      '#lg-root .lg-bc .fld button .ms{font-size:18px;} #lg-root .lg-bc .fld button:active{filter:brightness(1.08);}',
+      '#lg-root .lg-bc .lg-info{margin:12px 0 0;}',
+      '#lg-root .lg-bc .lg-info summary{border:0;background:none;padding:0;border-radius:0;font-size:12px;font-weight:600;color:#41637f;}',
+      '#lg-root .lg-bc .lg-info[open] summary{background:none;}',
+      '#lg-root .lg-bc .lg-info .pts{margin:11px 0 0;padding:14px 16px;border-radius:12px;background:#eaf4fa;max-width:760px;}',
+      '#lg-root .lg-bc .lg-info .pts div{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;font-weight:600;color:#2c5570;line-height:1.5;}',
+      '#lg-root .lg-bc .lg-info .pts div+div{margin-top:7px;} #lg-root .lg-bc .lg-info .pts span{min-width:0;}',
+      '#lg-root .lg-bc .lg-info .pts .ms{font-size:16px;flex:none;color:#1980AD;opacity:.8;margin-top:1px;}',
+      '@media(max-width:900px){.lg-bc .grid{grid-template-columns:minmax(0,1fr);gap:14px;}}',
+      /* GUEST PLAYER. Named in the row itself -- never a browser prompt box. */
+      '#lg-root .lg-mcadd .mc-guest{flex:1;min-width:150px;box-sizing:border-box;height:38px;padding:0 11px;border:0;border-radius:10px;background:#e8eef3;font:inherit;font-size:13px!important;font-weight:500;color:#12232f;}',
+      '#lg-root .lg-mcadd .mc-guest::placeholder{color:#8da0ae;font-weight:500;}',
+      '.lg-mcrow .gst{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9aa8b4;}',
       '.lg-mchd{display:flex;align-items:center;justify-content:center;gap:16px;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-mchd .tm{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800;} .lg-mchd .tm.a{flex-direction:row-reverse;} .lg-mchd .scr{font-size:26px;font-weight:900;color:var(--ffp-text);min-width:80px;text-align:center;}',
       '.lg-mcadd{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px 2px;border-bottom:1px solid var(--ffp-border);} .lg-mcadd .lg-sel{width:auto;flex:1;min-width:120px;padding:8px 10px;font-size:13px;} .lg-mcadd .lg-in{padding:8px 10px;font-size:13px;}',
       '.lg-mcrow{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid #f0f3f6;font-size:13px;} .lg-mcrow .mn{width:34px;font-weight:800;color:#9aa8b4;} .lg-mcrow .kd{font-size:10px;font-weight:900;letter-spacing:.04em;padding:3px 8px;border-radius:6px;background:#eef2f5;color:#5b6b75;} .lg-mcrow .kd.try{background:#e3f0ff;color:#0b4a8f;} .lg-mcrow .kd.penalty,.lg-mcrow .kd.drop_goal{background:#fff1e3;color:#b45309;} .lg-mcrow .kd.yellow_card{background:#fff7d6;color:#8a6d00;} .lg-mcrow .kd.red_card{background:#ffe0e0;color:#a11111;} .lg-mcrow .pl{font-weight:700;} .lg-mcrow .tn{color:#8a99a6;font-weight:600;} .lg-mcrow .rs{margin-left:auto;font-weight:900;} .lg-mcrow .x{color:#c0cad2;cursor:pointer;font-size:17px;}',
@@ -889,7 +917,13 @@
   // remote, so the court's five-character code is the thing that matters. The
   // full /display/<uuid> link is no use to anyone holding a remote control.
   var SCREEN_BASE = 'scoreboard.findfitpeople.com';   // the scoreboard address (Vercel, ffp-app)
-  var GFX_BASE    = 'gfx.findfitpeople.com';     // the broadcast graphics source, same code, all day
+  /* ONE broadcast host for everything an encoder is pointed at: a field all
+     day (/f/<code>) and a single match's overlay (/gfx/<id>). This was
+     declared TWICE in this module -- here, and again at the graphics row as
+     'https://app.findfitpeople.com/gfx/'. Same function scope, so the second
+     assignment won at load and this panel handed an operator
+     app.findfitpeople.com/gfx//f/<code>, which is not a route. */
+  var GFX_HOST = 'gfx.findfitpeople.com';
   function screenPanel(code, court, permanent) {
     var url = SCREEN_BASE + '/' + code;
     var old = document.getElementById('lg-scr'); if (old) old.remove();
@@ -901,7 +935,7 @@
       + '<div class="lg-scrurl" id="lg-scrurl">' + esc(url) + '</div>'
       + '<div class="lg-scrnote">' + (permanent ? 'This is the ' + surfWord() + '\'s own screen. The code never changes, and it shows every match played on this ' + surfWord() + '.' : 'This screen is for this event only.') + '</div>'
       + '<div class="lg-scrlab">Streaming this ' + surfWord() + '? The graphics source is</div>'
-      + '<div class="lg-scrurl gfx" id="lg-gfxurl">' + esc(GFX_BASE + '/f/' + code) + '</div>'
+      + '<div class="lg-scrurl gfx" id="lg-gfxurl">' + esc(GFX_HOST + '/f/' + code) + '</div>'
       + '<div class="lg-scrnote">Paste that into OBS, vMix or a YoloBox once, at 1920x1080. It follows the '
       +   surfWord() + ' all day on its own, so it picks up each match as it starts.</div>'
       + '<div class="lg-scrsteps">'
@@ -3264,7 +3298,7 @@
     host.innerHTML =
       '<div class="lg-tool"><button class="lg-btn" onclick="FFPLeague.closeMatch()">' + ic('arrow_back') + 'Back to fixtures</button><span class="sp"></span>' + liveBtn + '<button class="lg-btn pri" onclick="FFPLeague.saveResultFromEvents()">' + ic('check') + 'Save result</button></div>'
       + '<div class="lg-mchd"><div class="tm">' + crest(m.home) + '<b>' + esc(m.home.name) + '</b></div><div class="scr">' + esc(score) + '</div><div class="tm a"><b>' + esc(m.away.name) + '</b>' + crest(m.away) + '</div></div>'
-      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:10px 0"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPLeague.saveStream()">' + ic('live_tv') + 'Save stream</button></div>' + gfxRow(m)
+      + bcastRow(m)
       + '<div class="lg-mctabs"><button class="' + (tab === 'timeline' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'timeline\')">Scoring timeline</button><button class="' + (tab === 'subs' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'subs\')">Substitutions</button><button class="' + (tab === 'stats' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'stats\')">Player stats</button><button class="' + (tab === 'team' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'team\')">Team stats</button><button class="' + (tab === 'sheet' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'sheet\')">Team sheet</button></div>'
       + (tab === 'sheet' ? tsSheet(m)
         : tab === 'timeline'
@@ -3273,6 +3307,7 @@
           + '<select class="lg-sel" id="mc-kind">' + kindOpts + '</select>'
           + '<select class="lg-sel" id="mc-team">' + teamOpts + '</select>'
           + '<select class="lg-sel" id="mc-player"></select>'
+          + '<input class="mc-guest" id="mc-guest" placeholder="Guest name" hidden>'
           + '<button class="lg-btn pri" onclick="FFPLeague.addEvent()">' + ic('add') + 'Add</button></div>'
           + '<div class="lg-sub" style="margin:6px 0 0">Order: time, action, team, player</div><div id="mc-list"></div>')
         : tab === 'subs'
@@ -3289,6 +3324,7 @@
       mcFillPlayers();
       document.getElementById('mc-team').addEventListener('change', mcFillPlayers);
       document.getElementById('mc-kind').addEventListener('change', mcFillPlayers);
+      document.getElementById('mc-player').addEventListener('change', mcGuestToggle);
       renderMcList();
     } else if (tab === 'subs') {
       mcFillSubPlayers();
@@ -3366,7 +3402,7 @@
       + '<button class="pbp-pb home" ' + (t.done ? 'disabled' : '') + ' onclick="FFPLeague.pbpAward(\'home\')"><span class="pl">' + ic('add') + 'Point</span><span class="nm">' + esc(m.home.name) + '</span></button></div>'
       + decide
       + '<div class="pbp-srow"><button onclick="FFPLeague.pbpUndo()">' + ic('undo') + 'Undo</button><button onclick="FFPLeague.pbpServer()">' + ic('swap_horiz') + 'Change server</button></div>'
-      + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:14px 0 0;max-width:660px"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPLeague.saveStream()">' + ic('live_tv') + 'Save stream</button></div>' + gfxRow(m)
+      + bcastRow(m)
       + '<div class="lg-sub" style="margin:10px 0 0">Point-by-point — every tap streams live to followers. Same board as the FFP App scorer.</div>';
   }
 
@@ -3374,37 +3410,36 @@
   // ── broadcast graphics. The overlay URL goes into the encoder once (YoloBox
   //    Web URL, or an OBS/vMix browser source); the control page is what the
   //    operator drives during the match. ────────────────────────────────────
-  var GFX_BASE = 'https://app.findfitpeople.com/gfx/';
-  function gfxRow(m) {
+  function gfxUrl(id) { return 'https://' + GFX_HOST + '/gfx/' + id; }
+  /* Two addresses, set up twice in a match's life, so they get one compact
+     band rather than a card and a paragraph. The control page is NOT opened
+     from the dashboard (Grant, 2026-10-14) -- it belongs to the operator. */
+  function bcastRow(m) {
     if (!m || !m.id) return '';
-    return '<div class="lg-gfx">'
-      + '<span class="ms">smart_display</span>'
-      + '<div class="g"><b>Broadcast graphics</b><span>Overlay URL goes in the encoder once, at 1920\u00d71080 (16:9 HD). Tries, cards and substitutions show themselves as the scorer records them \u2014 the control link is only needed when someone is running the graphics by hand.</span></div>'
-      + '<button class="lg-btn" onclick="FFPLeague.gfxCopy(\'' + m.id + '\')">' + ic('content_copy') + 'Copy overlay URL</button>'
-      + '<button class="lg-btn" onclick="FFPLeague.gfxLink(\'' + m.id + '\')">' + ic('link') + 'Copy control link</button>'
-      + '<button class="lg-btn pri" onclick="FFPLeague.gfxOpen(\'' + m.id + '\')">' + ic('tune') + 'Open control</button>'
-      + '</div>';
+    return '<div class="lg-bc"><div class="grid">'
+      + '<div class="col"><div class="cl"><b>Watch link</b></div>'
+      +   '<div class="fld"><input id="mc-stream" placeholder="YouTube, Twitch or Facebook" value="' + esc(m.stream_url || '') + '">'
+      +     '<button onclick="FFPLeague.saveStream()">' + ic('check') + 'Save</button>'
+      +     (m.stream_url ? '<button class="alt" title="Open the stream" onclick="FFPLeague.streamOpen()">' + ic('open_in_new') + '</button>' : '')
+      +   '</div></div>'
+      + '<div class="col"><div class="cl"><b>Graphics overlay</b><em>1920 \u00d7 1080</em></div>'
+      +   '<div class="fld"><span class="addr"><span class="mid">' + esc(GFX_HOST + '/gfx/' + m.id) + '</span></span>'
+      +     '<button class="ico" title="Copy the overlay URL" onclick="FFPLeague.gfxCopy(\'' + m.id + '\')">' + ic('content_copy') + '</button>'
+      +   '</div></div>'
+      + '</div>'
+      + '<details class="lg-info"><summary>' + ic('info') + 'How this works</summary><div class="pts">'
+      +   '<div>' + ic('cast') + '<span>The graphics overlay goes into YoloBox, OBS or vMix once, as a browser source at 1920 \u00d7 1080.</span></div>'
+      +   '<div>' + ic('sports_rugby') + '<span>Scores, cards and substitutions appear on the overlay as the scorer records them.</span></div>'
+      + '</div></details></div>';
   }
-  // The control page is run by a livestream operator who is not an FFP member,
-  // so the organiser mints a key for this match and it travels in the link.
-  async function gfxOpen(id) {
-    var w = window.open('', '_blank');           // opened on the click, or the popup is blocked
-    var r; try { r = await sb().rpc('gfx_key', { p_match: id }); } catch (e) { r = null; }
-    var key = r && r.data;
-    if (!key) { if (w) w.close(); toast((r && r.error && r.error.message) || 'Could not open the control page', 'error'); return; }
-    var url = GFX_BASE + id + '/control?k=' + encodeURIComponent(key);
-    if (w) { w.location = url; } else { window.open(url, '_blank', 'noopener'); }
-  }
-  async function gfxLink(id) {
-    var r; try { r = await sb().rpc('gfx_key', { p_match: id }); } catch (e) { r = null; }
-    var key = r && r.data;
-    if (!key) { toast('Could not make the control link', 'error'); return; }
-    var url = GFX_BASE + id + '/control?k=' + encodeURIComponent(key);
-    try { navigator.clipboard.writeText(url); toast('Control link copied \u2014 send it to your operator', 'check'); }
-    catch (e) { prompt('Control link', url); }
+  function streamOpen() {
+    var el = document.getElementById('mc-stream'); var u = ((el && el.value) || '').trim();
+    if (!u) return;
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    window.open(u, '_blank', 'noopener');
   }
   function gfxCopy(id) {
-    var url = GFX_BASE + id;
+    var url = gfxUrl(id);
     try { navigator.clipboard.writeText(url); toast('Overlay URL copied \u2014 add it at 1920\u00d71080 in YoloBox, OBS or vMix', 'check'); }
     catch (e) { prompt('Overlay URL', url); }
   }
@@ -3749,14 +3784,39 @@
   }
   function mcSquadFor(entrantId) { var m = S._mc || {}; return (m.home && m.home.id === entrantId) ? (m.home_squad || []) : (m.away_squad || []); }
   function mcKindTeamOnly(k) { var f = mcScoringKinds().find(function (x) { return x.key === k; }); return !!(f && f.team_only); }
+  /* Everyone who has already been named as a guest on THIS match, for that
+     team. An event with a name and no member id is a guest -- a team-only
+     score (penalty try, own goal) has neither, so it cannot land here. */
+  function mcGuestsOnMatch(tid) {
+    var ev = ((S._mc || {}).events) || [], seen = {}, out = [];
+    ev.forEach(function (e) {
+      if (e.player_id || !e.player) return;
+      if (tid && e.entrant_id && e.entrant_id !== tid) return;
+      var k = e.player.toLowerCase();
+      if (seen[k]) return; seen[k] = 1; out.push(e.player);
+    });
+    return out;
+  }
+  function mcGuestToggle() {
+    var sel = document.getElementById('mc-player'), gi = document.getElementById('mc-guest');
+    if (!gi) return;
+    var on = !!sel && !sel.disabled && sel.value === '__guest';
+    gi.hidden = !on;
+    if (!on) gi.value = '';
+  }
   function mcFillPlayers() {
     var sel = document.getElementById('mc-player'); if (!sel) return;
     var kEl = document.getElementById('mc-kind');
-    if (kEl && mcKindTeamOnly(kEl.value)) { sel.innerHTML = '<option value="">Team score — no scorer</option>'; sel.disabled = true; return; }
+    if (kEl && mcKindTeamOnly(kEl.value)) { sel.innerHTML = '<option value="">Team score — no scorer</option>'; sel.disabled = true; mcGuestToggle(); return; }
     sel.disabled = false;
     var tid = document.getElementById('mc-team').value;
     var sq = mcSquadFor(tid);
-    sel.innerHTML = sq.map(function (p) { return '<option value="' + p.player_id + '">' + esc(p.name) + '</option>'; }).join('') + '<option value="__other">Other (type name)…</option>';
+    var guests = mcGuestsOnMatch(tid);
+    sel.innerHTML =
+      '<optgroup label="Squad">' + sq.map(function (p) { return '<option value="' + p.player_id + '">' + esc(p.name) + '</option>'; }).join('') + '</optgroup>'
+      + (guests.length ? '<optgroup label="Guests">' + guests.map(function (n) { return '<option value="__g:' + esc(n) + '">' + esc(n) + '</option>'; }).join('') + '</optgroup>' : '')
+      + '<option value="__guest">Guest player…</option>';
+    mcGuestToggle();
   }
   function mcFillSubPlayers() {
     var offSel = document.getElementById('sub-off'), onSel = document.getElementById('sub-on'); if (!offSel || !onSel) return;
@@ -3795,16 +3855,23 @@
     if (!ev.length) { host.innerHTML = '<div class="lg-empty">No scores yet — add them above. The app timeline and player stats update from these.</div>'; return; }
     host.innerHTML = ev.map(function (e) {
       var sideName = e.side === 'home' ? m.home.name : m.away.name;
-      return '<div class="lg-mcrow"><span class="mn">' + (e.minute != null ? e.minute + "'" : '') + '</span><span class="kd ' + esc(e.kind) + '">' + esc(mcKindLabel(e.kind)) + '</span><span class="pl">' + esc(e.player) + '</span><span class="tn">' + esc(sideName) + '</span><span class="rs">' + esc(e.rs) + '</span><span class="ms x" onclick="FFPLeague.removeEvent(\'' + e.id + '\')">close</span></div>';
+      return '<div class="lg-mcrow"><span class="mn">' + (e.minute != null ? e.minute + "'" : '') + '</span><span class="kd ' + esc(e.kind) + '">' + esc(mcKindLabel(e.kind)) + '</span><span class="pl">' + esc(e.player) + '</span>' + ((!e.player_id && e.player) ? '<span class="gst">Guest</span>' : '') + '<span class="tn">' + esc(sideName) + '</span><span class="rs">' + esc(e.rs) + '</span><span class="ms x" onclick="FFPLeague.removeEvent(\'' + e.id + '\')">close</span></div>';
     }).join('');
   }
   async function addEvent() {
     var team = document.getElementById('mc-team').value;
-    var psel = document.getElementById('mc-player'); var pv = psel.value;
-    var pid = (pv && pv !== '__other') ? pv : null;
-    var pname = null;
-    if (pv === '__other') { pname = prompt('Player name'); if (!pname) return; }
-    else { pname = psel.options[psel.selectedIndex] ? psel.options[psel.selectedIndex].text : null; }
+    var psel = document.getElementById('mc-player'); var pv = psel.value || '';
+    var pid = null, pname = null;
+    if (pv === '__guest') {
+      var gi = document.getElementById('mc-guest');
+      pname = ((gi && gi.value) || '').replace(/\s+/g, ' ').trim();
+      if (!pname) { toast('Type the guest\u2019s name', 'error'); if (gi) gi.focus(); return; }
+    } else if (pv.indexOf('__g:') === 0) {
+      pname = pv.slice(4);                       // a guest already named on this match
+    } else {
+      pid = pv || null;
+      pname = psel.options[psel.selectedIndex] ? psel.options[psel.selectedIndex].text : null;
+    }
     var ksel = document.getElementById('mc-kind'); var kind = ksel.value;
     var pts = parseInt(ksel.options[ksel.selectedIndex] ? ksel.options[ksel.selectedIndex].getAttribute('data-pts') : '0', 10); if (isNaN(pts)) pts = 0;
     if (mcKindTeamOnly(kind)) { pid = null; pname = null; }   // penalty try / own goal — team score, no named scorer
@@ -3978,7 +4045,7 @@
     sqToggle: sqToggle, sqSearch: sqSearch, sqKey: sqKey, sqAddMember: sqAddMember, sqNameOnly: sqNameOnly, sqInvite: sqInvite, sqRemove: sqRemove,
     sqPhoto: sqPhoto, sqPhotoClear: sqPhotoClear,
     tsPut: tsPut, tsCovers: tsCovers, tsCap: tsCap, tsTeam: tsTeam, tsSaveCoach: tsSaveCoach, hexSync: hexSync,
-    gfxOpen: gfxOpen, gfxCopy: gfxCopy, gfxLink: gfxLink,
+    gfxCopy: gfxCopy, streamOpen: streamOpen,
     doGen: doGen, saveResults: saveResults,
     ofSearch: ofSearch, ofPick: ofPick, removeOfficial: removeOfficial, ofPhoto: ofPhoto,
     openAdd: openAdd, addPoolOfficial: addPoolOfficial,
