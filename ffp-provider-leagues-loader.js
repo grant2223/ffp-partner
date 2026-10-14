@@ -3782,6 +3782,10 @@
     }
     toast(n + ' stats saved for ' + (pl.name || 'player'), 'success'); renderMcStats();
   }
+  /* THE LINE-UP IS THE TEAM SHEET AND NOTHING ELSE. A club's SQUAD is its
+     registered pool; the TEAM SHEET is who is playing THIS match. They are not
+     the same list, and only the sheet may name a scorer. Until the side is
+     named this is empty, and mcFillPlayers says so rather than going quiet. */
   function mcSquadFor(entrantId) { var m = S._mc || {}; return (m.home && m.home.id === entrantId) ? (m.home_squad || []) : (m.away_squad || []); }
   function mcKindTeamOnly(k) { var f = mcScoringKinds().find(function (x) { return x.key === k; }); return !!(f && f.team_only); }
   /* Everyone who has already been named as a guest on THIS match, for that
@@ -3812,8 +3816,12 @@
     var tid = document.getElementById('mc-team').value;
     var sq = mcSquadFor(tid);
     var guests = mcGuestsOnMatch(tid);
+    /* NO SIDE NAMED YET. An empty box reads as a broken dropdown, so it says
+       where the players come from instead. The hint cannot be chosen. */
     sel.innerHTML =
-      '<optgroup label="Squad">' + sq.map(function (p) { return '<option value="' + p.player_id + '">' + esc(p.name) + '</option>'; }).join('') + '</optgroup>'
+      (sq.length
+        ? '<optgroup label="Team sheet">' + sq.map(function (p) { return '<option value="' + esc(p.player_id || '') + '">' + esc(p.name) + '</option>'; }).join('') + '</optgroup>'
+        : '<option value="" disabled selected>No team sheet — name the side on the Team sheet tab</option>')
       + (guests.length ? '<optgroup label="Guests">' + guests.map(function (n) { return '<option value="__g:' + esc(n) + '">' + esc(n) + '</option>'; }).join('') + '</optgroup>' : '')
       + '<option value="__guest">Guest player…</option>';
     mcGuestToggle();
@@ -3860,21 +3868,24 @@
   }
   async function addEvent() {
     var team = document.getElementById('mc-team').value;
+    var ksel = document.getElementById('mc-kind'); var kind = ksel.value;
+    var pts = parseInt(ksel.options[ksel.selectedIndex] ? ksel.options[ksel.selectedIndex].getAttribute('data-pts') : '0', 10); if (isNaN(pts)) pts = 0;
     var psel = document.getElementById('mc-player'); var pv = psel.value || '';
     var pid = null, pname = null;
-    if (pv === '__guest') {
+    if (mcKindTeamOnly(kind)) {
+      pid = null; pname = null;                  // penalty try / own goal — team score, no named scorer
+    } else if (pv === '__guest') {
       var gi = document.getElementById('mc-guest');
       pname = ((gi && gi.value) || '').replace(/\s+/g, ' ').trim();
       if (!pname) { toast('Type the guest\u2019s name', 'error'); if (gi) gi.focus(); return; }
     } else if (pv.indexOf('__g:') === 0) {
       pname = pv.slice(4);                       // a guest already named on this match
+    } else if (!pv) {
+      toast('No team sheet — name the side on the Team sheet tab', 'error'); return;
     } else {
-      pid = pv || null;
+      pid = pv;
       pname = psel.options[psel.selectedIndex] ? psel.options[psel.selectedIndex].text : null;
     }
-    var ksel = document.getElementById('mc-kind'); var kind = ksel.value;
-    var pts = parseInt(ksel.options[ksel.selectedIndex] ? ksel.options[ksel.selectedIndex].getAttribute('data-pts') : '0', 10); if (isNaN(pts)) pts = 0;
-    if (mcKindTeamOnly(kind)) { pid = null; pname = null; }   // penalty try / own goal — team score, no named scorer
     var minute = parseInt((document.getElementById('mc-min') || {}).value, 10); if (isNaN(minute)) minute = null;
     var r; try { r = await sb().rpc('lt_event_add', { p_scope: 'league', p_match: S.matchOpen, p_entrant: team, p_player: pid, p_player_name: pname, p_minute: minute, p_kind: kind, p_points: pts }); } catch (e) { r = { error: e }; }
     if (r.error) { toast('Could not add', 'error'); return; }
