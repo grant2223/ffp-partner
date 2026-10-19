@@ -3296,7 +3296,7 @@
       : (m.status === 'live' ? '<button class="lg-btn lg-livebtn" onclick="FFPLeague.setLive(\'scheduled\')">● LIVE</button>'
         : '<button class="lg-btn" onclick="FFPLeague.setLive(\'live\')">' + ic('sensors') + 'Go live</button>');
     host.innerHTML =
-      '<div class="lg-tool"><button class="lg-btn" onclick="FFPLeague.closeMatch()">' + ic('arrow_back') + 'Back to fixtures</button><span class="sp"></span>' + liveBtn + '<button class="lg-btn pri" onclick="FFPLeague.saveResultFromEvents()">' + ic('check') + 'Save result</button></div>'
+      '<div class="lg-tool"><button class="lg-btn" onclick="FFPLeague.closeMatch()">' + ic('arrow_back') + 'Back to fixtures</button><span class="sp"></span>' + '<button class="lg-btn" onclick="FFPLeague.printSheets()">' + ic('print') + 'Team sheets</button>' + liveBtn + '<button class="lg-btn pri" onclick="FFPLeague.saveResultFromEvents()">' + ic('check') + 'Save result</button></div>'
       + '<div class="lg-mchd"><div class="tm">' + crest(m.home) + '<b>' + esc(m.home.name) + '</b></div><div class="scr">' + esc(score) + '</div><div class="tm a"><b>' + esc(m.away.name) + '</b>' + crest(m.away) + '</div></div>'
       + bcastRow(m)
       + '<div class="lg-mctabs"><button class="' + (tab === 'timeline' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'timeline\')">Scoring timeline</button><button class="' + (tab === 'subs' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'subs\')">Substitutions</button><button class="' + (tab === 'stats' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'stats\')">Player stats</button><button class="' + (tab === 'team' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'team\')">Team stats</button><button class="' + (tab === 'sheet' ? 'on' : '') + '" onclick="FFPLeague.mcTab(\'sheet\')">Team sheet</button></div>'
@@ -3392,7 +3392,7 @@
     function row(side, d, nm, sv) { var cells = d.c.map(function (v, i) { return '<span class="' + (i === d.c.length - 1 ? 'w' : '') + '">' + v + '</span>'; }).join(''); return '<div class="pbp-r ' + side + '"><span class="clr"></span><span class="who"><b>' + esc(nm) + '</b>' + (sv ? '<span class="srv">● Serving</span>' : '') + '</span><span class="cells">' + cells + '</span><span class="gm">' + d.gm + '</span><span class="pt">' + d.pt + '</span></div>'; }
     var decide = cfg.squash ? '<div class="pbp-decide"><button class="let" onclick="FFPLeague.pbpDecide(\'let\')">Let</button><button class="stroke" onclick="FFPLeague.pbpDecide(\'stroke\')">Stroke</button><button class="nolet" onclick="FFPLeague.pbpDecide(\'nolet\')">No let</button></div>' : '';
     host.innerHTML =
-      '<div class="lg-tool"><button class="lg-btn" onclick="FFPLeague.closeMatch()">' + ic('arrow_back') + 'Back</button><span class="sp"></span>' + liveBtn + '<button class="lg-btn pri" onclick="FFPLeague.pbpFinish()">' + ic('check') + 'Finish and save result</button></div>'
+      '<div class="lg-tool"><button class="lg-btn" onclick="FFPLeague.closeMatch()">' + ic('arrow_back') + 'Back</button><span class="sp"></span>' + '<button class="lg-btn" onclick="FFPLeague.printSheets()">' + ic('print') + 'Team sheets</button>' + liveBtn + '<button class="lg-btn pri" onclick="FFPLeague.pbpFinish()">' + ic('check') + 'Finish and save result</button></div>'
       + '<div class="pbp-board"><div class="pbp-hd"><span class="sp"></span><span class="lb">Sets</span><span class="lb g">' + (rally ? 'Games' : 'Gm') + '</span><span class="lb p">Pts</span></div>'
       + row('away', dA, m.away.name, t.server === 'away') + row('home', dH, m.home.name, t.server === 'home')
       + (flag ? '<div class="pbp-flags"><span class="pbp-tag">' + flag + '</span></div>' : '')
@@ -3406,6 +3406,313 @@
       + '<div class="lg-sub" style="margin:10px 0 0">Point-by-point — every tap streams live to followers. Same board as the FFP App scorer.</div>';
   }
 
+
+
+  // ── THE REFEREE'S TEAM SHEET, ON PAPER ──────────────────────────────────
+  //    An organiser prints these and puts them pitch-side before kick-off.
+  //
+  //    THE DOCUMENT IS PER SPORT AND COMES FROM THE DATABASE, not from here.
+  //    lt_sport_schemas.sheet_print says what the sheet is: both sides on one
+  //    landscape page for football, a portrait page per team for rugby, and a
+  //    working default for every other sport so none of them is left with
+  //    nothing. Nothing below knows the name of a sport. A competition that
+  //    wants its own form is one row of configuration, not a code change.
+  //
+  //    It opens as a real document in its own tab and calls print(), so the
+  //    organiser gets their own print dialog: straight to the printer, or
+  //    Save as PDF, with A4 and the orientation already set by @page.
+  //    (Grant, 2026-10-19)
+  var PRINT_MARK = 'https://kxzyuofecmtymablnmak.supabase.co/storage/v1/object/public/site-images/ffp-logo-black-with-blue-orbit.png';
+
+  function psDate(iso, tz, withTime) {
+    if (!iso) return '';
+    try {
+      var o = { timeZone: tz || 'Asia/Dubai', day: '2-digit', month: '2-digit', year: 'numeric' };
+      var d = new Date(iso), day = new Intl.DateTimeFormat('en-GB', o).format(d);
+      if (!withTime) return day;
+      var t = new Intl.DateTimeFormat('en-GB', { timeZone: o.timeZone, hour: 'numeric', minute: '2-digit', hour12: true }).format(d);
+      return day + ' — ' + t.replace(' ', '').toLowerCase();
+    } catch (e) { return ''; }
+  }
+  function psTime(iso, tz) {
+    if (!iso) return '';
+    try { return new Intl.DateTimeFormat('en-GB', { timeZone: tz || 'Asia/Dubai', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(iso)).replace(' ', '').toLowerCase(); }
+    catch (e) { return ''; }
+  }
+
+  /* one header line of the form: a label cell and what goes in it */
+  function psField(key, d, team) {
+    var g = d || {}, t = team || {};
+    if (key === 'field') return ['Pitch', g.field || g.venue || ''];
+    if (key === 'venue') return ['Venue', [g.venue, g.field].filter(Boolean).join(', ')];
+    if (key === 'datetime') return ['Date / Time', psDate(g.kickoff, g.timezone, true)];
+    if (key === 'date') return ['Date', psDate(g.kickoff, g.timezone, false)];
+    if (key === 'kickoff') return ['Kick off', psTime(g.kickoff, g.timezone)];
+    if (key === 'referee') return ['Referee', g.referee || ''];
+    if (key === 'competition') return ['Competition', g.competition || ''];
+    if (key === 'division_round') return ['Division / Round', [g.division, g.round ? 'Round ' + g.round : ''].filter(Boolean).join(', ')];
+    if (key === 'club') return ['Club', t.club || t.name || ''];
+    if (key === 'team') return ['Team', t.name || ''];
+    return null;
+  }
+
+  function psHeadRows(keys, d, team) {
+    var pairs = [], out = '', i;
+    (keys || []).forEach(function (k) {
+      if (k === 'teams' || k === 'score_tries' || k === 'captain') return;
+      var f = psField(k, d, team); if (f) pairs.push(f);
+    });
+    for (i = 0; i < pairs.length; i += 2) {
+      var a = pairs[i], b = pairs[i + 1];
+      /* an odd number of fields used to leave a labelled cell with no label
+         in it, which reads as a field somebody forgot to name. The last one
+         takes the rest of the row instead. */
+      out += '<tr><td class="lbl">' + esc(a[0]) + '</td>'
+          + (b ? '<td class="val">' + esc(a[1]) + '</td>'
+                 + '<td class="lbl">' + esc(b[0]) + '</td><td class="val">' + esc(b[1]) + '</td>'
+               : '<td class="val" colspan="3">' + esc(a[1]) + '</td>') + '</tr>';
+    }
+    return out;
+  }
+
+  /* THE SIDES. A sheet that cannot say who is at home is no use to a referee,
+     so both names always print, whether or not anybody has been named. */
+  function psTeamsRow(d) {
+    var h = (d.teams && d.teams.home) || {}, a = (d.teams && d.teams.away) || {};
+    return '<tr><td class="lbl">Home team</td><td class="wide">' + esc(h.name || '') + '</td>'
+         + '<td class="lbl">Away team</td><td class="wide">' + esc(a.name || '') + '</td></tr>';
+  }
+
+  function psCell(row, col) {
+    if (!row) return '';
+    if (col.k === 'name') return esc(row.name || '');
+    if (col.k === 'number') return row.name == null && row.number == null ? '' : esc(row.number == null ? '' : row.number);
+    return '';
+  }
+
+  /* BOTH SIDES ON ONE PAGE. Whoever has been named prints with their number;
+     the rest of the form is ruled blank lines, because most sides are named
+     on the night and the referee writes them in. */
+  function psBothTable(d, tpl) {
+    var cols = tpl.cols || [], want = Number(tpl.rows || 16);
+    var named = function (side) {
+      return ((d.teams && d.teams[side] && d.teams[side].rows) || []).filter(function (r) { return r && r.name; });
+    };
+    var H = named('home'), A = named('away');
+    var n = Math.max(want, H.length, A.length);
+    var th = function (gap) {
+      return cols.map(function (c, i) {
+        return '<th class="' + (i === 0 && gap ? 'gap ' : '') + (c.align === 'c' ? 'c' : '') + '"'
+          + (c.w ? ' style="width:' + c.w + '%"' : '') + '>' + esc(c.l || '') + '</th>';
+      }).join('');
+    };
+    var body = '';
+    for (var i = 0; i < n; i++) {
+      body += '<tr class="row">'
+        + cols.map(function (c, ci) {
+            return '<td class="' + (ci === 0 ? '' : '') + (c.align === 'c' ? ' c' : '') + '">' + psCell(H[i], c) + '</td>';
+          }).join('')
+        + cols.map(function (c, ci) {
+            return '<td class="' + (ci === 0 ? 'gap' : '') + (c.align === 'c' ? ' c' : '') + '">' + psCell(A[i], c) + '</td>';
+          }).join('')
+        + '</tr>';
+    }
+    return '<table class="t sheet"><tr>' + th(false) + th(true) + '</tr>' + body + '</table>';
+  }
+
+  /* ONE PAGE PER TEAM. Every shirt the sport defines prints, filled or not,
+     in two columns the way a referee reads a front row. */
+  function psTeamTable(rows, tpl) {
+    var cols = tpl.cols || [], split = Number(tpl.split || Math.ceil(rows.length / 2));
+    /* A COLUMN NOBODY CAN NAME IS A COLUMN NOBODY FILLS IN. The front-row
+       tick had no heading, so the narrow box beside each name meant nothing
+       to the referee holding the sheet. Any column the template gives a
+       label to now prints it. */
+    var hasHead = cols.some(function (c) { return !!c.l; });
+    var head = !hasHead ? '' : '<tr>' + cols.map(function (c) {
+      return '<th class="' + (c.align === 'c' ? 'c' : '') + '"'
+        + (c.w ? ' style="width:' + c.w + 'px"' : '') + '>' + esc(c.l || '') + '</th>';
+    }).join('') + '</tr>';
+    var col = function (list) {
+      return '<table class="t">' + head + '<tbody>' + list.map(function (r) {
+        return '<tr class="row' + (r.name ? '' : ' blank') + '">'
+          + cols.map(function (c) {
+              var w = c.w ? ' style="width:' + c.w + 'px"' : '';
+              var cls = (c.align === 'c' ? ' c' : '') + (c.k === 'name' ? ' pl' : '');
+              if (c.k === 'name') {
+                return '<td class="' + cls + '"' + w + '>' + esc(r.name || '')
+                     + '<span class="pos">' + esc(r.position || '') + '</span></td>';
+              }
+              return '<td class="' + cls + '"' + w + '>' + psCell(r, c) + '</td>';
+            }).join('')
+          + '</tr>';
+      }).join('') + '</tbody></table>';
+    };
+    return '<div class="two"><div>' + col(rows.slice(0, split)) + '</div><div>' + col(rows.slice(split)) + '</div></div>';
+  }
+
+  function psBlocks(list, d, perTeam, team) {
+    var out = '', has = function (k) { return (list || []).indexOf(k) >= 0; };
+    var pair = function (label) {
+      return perTeam
+        ? '<tr class="ft"><td class="lbl">' + label + '</td><td></td><td class="lbl"></td><td></td></tr>'
+        : '<tr class="ft"><td class="lbl">' + label + '</td><td></td><td class="lbl gap">' + label + '</td><td></td></tr>';
+    };
+    var rows = '';
+    if (has('halftime')) rows += pair('Half-time score');
+    if (has('fulltime')) rows += pair('Full-time score');
+    if (has('motm')) rows += pair('Man of the match');
+    if (has('captain_sig')) rows += pair('Captain signature');
+    if (rows) out += '<table class="t" style="margin-top:4px">' + rows + '</table>';
+
+    if (has('discipline')) {
+      out += '<table class="t" style="margin-top:4px">'
+        + '<tr><th class="lbl l" colspan="6">Discipline — red or yellow cards, this team only, with timings and half</th></tr>'
+        + '<tr><th class="lbl" style="width:9%">Half</th><th class="lbl" style="width:11%">Time</th>'
+        + '<th class="lbl" style="width:9%">R / Y</th><th class="lbl" style="width:9%">No.</th>'
+        + '<th class="lbl" style="width:30%">Full name</th><th class="lbl">Reason</th></tr>'
+        + '<tr class="disc"><td></td><td></td><td></td><td></td><td></td><td></td></tr>'
+        + '<tr class="disc"><td></td><td></td><td></td><td></td><td></td><td></td></tr>'
+        + '<tr class="disc"><td></td><td></td><td></td><td></td><td></td><td></td></tr></table>';
+    }
+    if (has('medical')) {
+      out += '<table class="t" style="margin-top:4px">'
+        + '<tr><th class="lbl l">Medical — concussion, serious injury, or anything else of note</th></tr>'
+        + '<tr class="med"><td></td></tr><tr class="med"><td></td></tr><tr class="med"><td></td></tr></table>';
+    }
+    if (has('manager_sig')) {
+      out += '<table class="t" style="margin-top:4px"><tr class="ft">'
+        + '<td class="lbl" style="width:22%">Team manager / coach</td><td style="width:38%">'
+        + esc((team && team.manager) || '') + '</td>'
+        + '<td class="lbl" style="width:16%">Signature</td><td></td></tr></table>';
+    }
+    return out;
+  }
+
+  function psPage(d, tpl, team, side) {
+    var perTeam = tpl.layout === 'per_team';
+    var head = '<div class="hdbar"><img src="' + PRINT_MARK + '" alt=""><span class="ti">'
+      + esc(d.competition || '') + (d.division ? ' — ' + esc(d.division) : '') + '</span>'
+      + '<span class="rt">' + esc(tpl.title || 'Team sheet')
+      + (d.round ? '  |  Round ' + esc(d.round) : '') + '</span></div>';
+    var keys = tpl.header || [];
+    var rows = psHeadRows(keys, d, team);
+    if (keys.indexOf('teams') >= 0) rows += psTeamsRow(d);
+    if (keys.indexOf('score_tries') >= 0)
+      rows += '<tr><td class="lbl">Final score</td><td></td><td class="lbl">Tries</td><td></td></tr>';
+    if (keys.indexOf('captain') >= 0)
+      rows += '<tr><td class="lbl">Team captain</td><td colspan="3"></td></tr>';
+    var body = perTeam
+      ? psTeamTable((team && team.rows) || [], tpl)
+      : psBothTable(d, tpl);
+    var stamp = 'Printed ' + psDate(new Date().toISOString(), d.timezone, true)
+      + ' — names as submitted at that moment';
+    return '<div class="page">' + head
+      + '<table class="t">' + rows + '</table>'
+      + '<div style="margin-top:4px">' + body + '</div>'
+      + psBlocks(tpl.blocks, d, perTeam, team)
+      + '<div class="foot"><span>Find Fit People</span><span>' + esc(stamp) + '</span></div>'
+      + '</div>';
+  }
+
+  function psDoc(d) {
+    var tpl = d.template && d.template.layout ? d.template
+      : { layout: 'both', orient: 'portrait', title: 'Team sheet', rows: 15,
+          cols: [{ k: 'name', l: 'Player name', w: 32 }, { k: 'number', l: 'No.', w: 9, align: 'c' }],
+          header: ['field', 'datetime', 'referee', 'teams'], blocks: ['fulltime', 'captain_sig'] };
+    var land = tpl.orient === 'landscape';
+    var pages = tpl.layout === 'per_team'
+      ? ['home', 'away'].map(function (sd) { return psPage(d, tpl, (d.teams || {})[sd], sd); }).join('')
+      : psPage(d, tpl, null, null);
+    var title = [d.competition, d.teams && d.teams.home && d.teams.home.name,
+                 'v', d.teams && d.teams.away && d.teams.away.name].filter(Boolean).join(' ');
+    return '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title>'
+      + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800;900&display=swap">'
+      + '<style>'
+      + '@page{size:A4 ' + (land ? 'landscape' : 'portrait') + ';margin:10mm}'
+      + 'html,body{margin:0;padding:0;background:#fff;color:#000;'
+      + 'font-family:Montserrat,system-ui,sans-serif;font-size:10px;line-height:1.2}'
+      // A4 LESS THE MARGIN, IN MILLIMETRES. Sized in mm rather than left to
+      // flow, so what the browser lays out on screen is exactly what the
+      // printer puts on the sheet, and so the fitter below has a real box to
+      // measure against. 297-20 by 210-20 landscape, 210-20 by 297-20 portrait.
+      + '.page{box-sizing:border-box;page-break-after:always;break-after:page;'
+      + 'width:' + (land ? '277mm' : '190mm') + ';height:' + (land ? '190mm' : '277mm') + '}'
+      + '.page:last-child{page-break-after:auto;break-after:auto}'
+      + '.t{width:100%;border-collapse:collapse;table-layout:fixed}'
+      // BORDER-BOX, OR THE FITTER CANNOT WIN. A cell left on content-box adds
+      // its 6px of padding and 2px of border on top of whatever height is set,
+      // so a row told to be 19px rendered at 27px and a sheet 11px too long
+      // could never be made to fit. With border-box the height asked for is
+      // the height drawn.
+      + '.t th,.t td{box-sizing:border-box;border:1px solid #111;padding:3px 6px;vertical-align:middle}'
+      + '.t th{font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:#f1f4f7}'
+      + '.lbl{font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:#f1f4f7}'
+      + '.lbl.l{text-align:left}.val{font-weight:700}.c{text-align:center}'
+      + '.wide{font-weight:800;font-size:13px;color:#0b2136}'
+      + '.hdbar{display:flex;align-items:center;gap:10px;border:2px solid #111;border-bottom:none;'
+      + 'padding:6px 10px;background:#e9eef4}'
+      + '.hdbar img{height:22px;width:auto;flex:none}'
+      + '.hdbar .ti{flex:1;min-width:0;text-align:center;font-size:12px;font-weight:900;'
+      + 'letter-spacing:.04em;text-transform:uppercase}'
+      + '.hdbar .rt{font-size:9px;font-weight:800;letter-spacing:.06em;color:#333;white-space:nowrap}'
+      + '.sheet .row td{height:26px}.gap{border-left:2px solid #111}'
+      + '.row td{height:22px}.pl{font-weight:700}'
+      + '.pos{display:block;font-size:8px;color:#555;font-weight:400;margin-top:1px}'
+      + '.ft td{height:30px}.disc td{height:22px}.med td{height:17px}'
+      + '.two{display:flex;gap:6px}.two>div{flex:1;min-width:0}'
+      + '.foot{display:flex;justify-content:space-between;gap:12px;margin-top:5px;'
+      + 'font-size:8px;color:#444;font-weight:400}'
+      + '</style></head><body>' + pages
+      // ── THE SHEET IS ONE SHEET ──────────────────────────────────────
+      // A form with 17 player rows, a header and four footer blocks came out
+      // 848px tall on a landscape page that can hold 718, so it printed on
+      // two pieces of paper and the second carried four lines. Row height is
+      // not something to guess at per sport: the page knows how much room is
+      // left once everything fixed is laid out, so the player rows take what
+      // is there and no more. They never go below 5mm, because a referee
+      // writes on this with a pen; if a form is so long that even 5mm will
+      // not fit, it is allowed to run to a second page rather than squeeze a
+      // name out of existence.
+      + '<script>(function(){'
+      + 'function fit(){'
+      + 'var pages=document.querySelectorAll(".page");'
+      + 'for(var i=0;i<pages.length;i++){var pg=pages[i];'
+      + 'var rows=pg.querySelectorAll("tr.row");if(!rows.length)continue;'
+      + 'var MIN=19,MAX=34;' /* 5mm to 9mm at 96dpi */
+      + 'function setH(h){for(var r=0;r<rows.length;r++){var tds=rows[r].children;'
+      + 'for(var c=0;c<tds.length;c++){tds[c].style.height=h+"px";}}}'
+      + 'var cur=Math.round(rows[0].getBoundingClientRect().height);'
+      /* shrink until it fits */
+      + 'for(var g=0;g<24;g++){var over=pg.scrollHeight-pg.clientHeight;'
+      + 'if(over<=0)break;'
+      + 'var nx=Math.max(MIN,Math.floor(cur-Math.max(1,over/rows.length)));'
+      + 'if(nx>=cur)break;cur=nx;setH(cur);}'
+      /* THEN TAKE THE ROOM THAT IS LEFT. A rugby sheet with 23 slots left a
+         third of the page empty while the referee wrote in 5mm boxes. Grow
+         the rows one millimetre at a time until the next step would spill,
+         and never past 9mm, which is already generous for a biro. */
+      + 'for(var g2=0;g2<40&&cur<MAX;g2++){'
+      + 'setH(cur+1);'
+      + 'if(pg.scrollHeight>pg.clientHeight){setH(cur);break;}'
+      + 'cur=cur+1;}'
+      + '}}'
+      + 'function go(){try{fit();}catch(e){}try{window.print();}catch(e){}}'
+      + 'if(document.fonts&&document.fonts.ready){document.fonts.ready.then(function(){setTimeout(go,120);});}'
+      + 'else{window.addEventListener("load",function(){setTimeout(go,300);});}})();<\/script>'
+      + '</body></html>';
+  }
+
+  async function printSheets() {
+    var r; try { r = await sb().rpc('lt_print_sheet', { p_scope: 'league', p_match: S.matchOpen }); }
+    catch (e) { r = { error: e }; }
+    var d = r && r.data;
+    if (!d || !d.ok) { toast((r && r.error && r.error.message) || 'Could not build the team sheets'); return; }
+    /* opened from the click, so it is not treated as a pop-up */
+    var w = window.open('', '_blank');
+    if (!w) { toast('Allow pop-ups for this site to print the team sheets'); return; }
+    w.document.open(); w.document.write(psDoc(d)); w.document.close(); w.focus();
+  }
 
   // ── broadcast graphics. The overlay URL goes into the encoder once (YoloBox
   //    Web URL, or an OBS/vMix browser source); the control page is what the
@@ -4028,6 +4335,7 @@
   function divOpts() { return (S.detail.divisions || []).map(function (d) { return '<option value="' + d.id + '"' + (d.id === S.divId ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join(''); }
 
   window.FFPLeague = {
+    printSheets: printSheets,
     mgOpen: mgOpen, mgSearch: mgSearch, mgPick: mgPick, mgTeam: mgTeam, mgAssign: mgAssign, mgRemove: mgRemove,
     rulesHint: rulesHint,
     open: open, startCreate: startCreate, cancelCreate: cancelCreate, doCreate: doCreate,
