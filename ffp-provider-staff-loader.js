@@ -138,11 +138,18 @@ function staffRow(s) {
   if (s.phone) contact.push(escHtml(s.phone));
   var inactive = s.status && s.status !== 'active';
   var accessLbl = ACCESS_LEVELS[s.access_level] || 'Classes only';
+  /* A staff row is only a record until an FFP account exists on the same address.
+     Until then this person cannot sign in, and the owner has no way of knowing. */
+  var noAccount = (s.has_account === false);
   return '<div style="background:var(--ffp-bg-2,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-radius:12px;padding:11px 13px;margin-bottom:9px;display:flex;align-items:flex-start;gap:11px;' + (inactive ? 'opacity:.6;' : '') + '">' +
       '<div style="width:38px;height:38px;border-radius:10px;background:rgba(25,128,173,.16);color:#6fc6ef;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">' + escHtml(initials) + '</div>' +
       '<div style="min-width:0;flex:1;">' +
         '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + escHtml(s.full_name || '—') + (inactive ? ' <span class="psub">(inactive)</span>' : '') + '</div>' +
         (contact.length ? '<div class="psub" style="margin:2px 0 0;">' + contact.join(', ') + '</div>' : '') +
+        (noAccount ? '<div style="margin:6px 0 0;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:#b06a00;">' +
+            '<span class="ms" style="font-size:16px;">person_alert</span>' +
+            'No FFP account on this address yet, so they cannot sign in. They join at ffppassport.com using ' + escHtml(s.email || 'their email') +
+          '</div>' : '') +
       '</div>' +
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex-shrink:0;">' +
         '<span style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ffp-warn);white-space:nowrap;">' + accessLbl + '</span>' +
