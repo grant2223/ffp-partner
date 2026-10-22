@@ -16,7 +16,96 @@
 // ════════════════════════════════════════════════════════════════════════
 var _staff = [];
 var STAFF_ROLES = ['Coach', 'Manager', 'Front desk', 'Owner', 'Other'];
-var ACCESS_LEVELS = { full: 'Full access', manage: 'Manager', coach: 'Classes only', view: 'View only' };
+var ACCESS_LEVELS = { full: 'Full access', manage: 'Manager', organiser: 'Organiser',
+                      coach: 'Classes only', view: 'View only' };
+
+/* WHICH SECTIONS THIS PERSON CAN OPEN. The level picks a starting set out of
+   provider_sections; ticking boxes here overrides it for this person only, so
+   an owner can shape access without waiting on a new level being invented.
+   Nothing is saved until Save — the ticks are read off the form. */
+(function () {
+  if (document.getElementById('st-sec-css')) return;
+  var st = document.createElement('style'); st.id = 'st-sec-css';
+  st.textContent =
+    '#st-sections{display:flex;flex-direction:column;gap:16px;margin-top:2px}' +
+    '.st-secgrp-h{display:flex;align-items:baseline;gap:10px;padding-bottom:7px;margin-bottom:10px;' +
+      'border-bottom:2px solid #e3eaf0;font:800 11px/1 Montserrat,sans-serif;letter-spacing:.1em;' +
+      'text-transform:uppercase;color:#6b7f8c}' +
+    '.st-secgrp-h b{flex:1 1 auto;min-width:0;font-weight:800}' +
+    '.st-secgrp-h button{background:none;border:none;padding:2px 0;cursor:pointer;' +
+      'font:800 11px/1 Montserrat,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#1980AD}' +
+    '.st-secrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}' +
+    '.st-sec{display:flex;align-items:center;gap:10px;min-width:0;min-height:48px;padding:9px 12px;' +
+      'border:2px solid #d4e9f5;background:#eaf6fc;border-radius:12px;cursor:pointer;user-select:none;' +
+      'font:700 12.5px/1.3 Montserrat,sans-serif;color:#3d6577}' +
+    '.st-sec input{display:none}' +
+    '.st-sec span.lbl{min-width:0;overflow-wrap:anywhere}' +
+    '.st-sec>.ms{width:20px;flex:0 0 auto;font-size:20px;opacity:0;' +
+      'font-variation-settings:\'FILL\' 0,\'wght\' 700,\'GRAD\' 0,\'opsz\' 24}' +
+    '.st-sec.on{border-color:#F2A900;background:linear-gradient(180deg,#ffd868,#f2a900);color:#33230a}' +
+    '.st-sec.on>.ms{opacity:1;color:#33230a}';
+  document.head.appendChild(st);
+})();
+
+var _secCat = null;
+async function _loadSectionCatalogue() {
+  if (_secCat) return _secCat;
+  try {
+    var r = await window.supabase.from('provider_sections').select('key,label,grp,sort,levels').order('sort');
+    _secCat = (r && !r.error && r.data) ? r.data : [];
+  } catch (e) { _secCat = []; }
+  return _secCat;
+}
+function _defaultSections(level) {
+  return (_secCat || []).filter(function (x) { return (x.levels || []).indexOf(level) >= 0; })
+                        .map(function (x) { return x.key; });
+}
+function sectionsHtml(s) {
+  var cat = _secCat || [];
+  if (!cat.length) return '';
+  var lvl = (s.access_level || 'coach');
+  var picked = Array.isArray(s.sections) && s.sections.length ? s.sections : _defaultSections(lvl);
+  var grps = [], by = {};
+  cat.forEach(function (x) { if (!by[x.grp]) { by[x.grp] = []; grps.push(x.grp); } by[x.grp].push(x); });
+  return '<div class="field full"><div class="label">Sections they can open' +
+    ' <span class="label-hint">&mdash; the access level sets these; change any of them for this person</span></div>' +
+    '<div id="st-sections">' + grps.map(function (g) {
+      return '<div class="st-secgrp"><div class="st-secgrp-h"><b>' + escHtml(g) + '</b>' +
+        '<button type="button" onclick="staffSecSet(this, true)">All</button>' +
+        '<button type="button" onclick="staffSecSet(this, false)">None</button></div><div class="st-secrow">' +
+        by[g].map(function (x) {
+          var on = picked.indexOf(x.key) >= 0;
+          return '<label class="st-sec' + (on ? ' on' : '') + '">' +
+            '<input type="checkbox" value="' + escHtml(x.key) + '"' + (on ? ' checked' : '') +
+            ' onchange="this.closest(\'.st-sec\').classList.toggle(\'on\', this.checked)">' +
+            '<span class="ms">check</span>' +
+            '<span class="lbl">' + escHtml(x.label) + '</span></label>';
+        }).join('') + '</div></div>';
+    }).join('') + '</div></div>';
+}
+function staffSecSet(btn, on) {
+  var grp = btn.closest('.st-secgrp'); if (!grp) return;
+  [].slice.call(grp.querySelectorAll('input[type=checkbox]')).forEach(function (c) {
+    c.checked = on; c.closest('.st-sec').classList.toggle('on', on);
+  });
+}
+function _readSections() {
+  var host = document.getElementById('st-sections');
+  if (!host) return null;
+  var on = [].slice.call(host.querySelectorAll('input[type=checkbox]'))
+             .filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+  return on;
+}
+/* changing the level re-ticks the boxes to that level's set */
+function staffLevelChanged(sel) {
+  var host = document.getElementById('st-sections');
+  if (!host) return;
+  var def = _defaultSections(sel.value);
+  [].slice.call(host.querySelectorAll('input[type=checkbox]')).forEach(function (c) {
+    c.checked = def.indexOf(c.value) >= 0;
+    c.closest('.st-sec').classList.toggle('on', c.checked);
+  });
+}
 
 function _staffProvId() {
   return (window.FFP_PROVIDER && window.FFP_PROVIDER.id) ||
@@ -29,6 +118,7 @@ async function renderStaff() {
   var pid = _staffProvId();
   if (!pid) { host.innerHTML = '<div class="empty-sub" style="text-align:left;">Sign in to manage staff.</div>'; return; }
   host.innerHTML = '<div class="psub" style="margin:10px 0;">Loading…</div>';
+  await _loadSectionCatalogue();   // the editor reads this synchronously
   try {
     var r = await window.supabase.rpc('provider_list_staff', { p_provider: pid });
     _staff = (r && r.data) ? r.data : [];
@@ -52,10 +142,10 @@ function staffRow(s) {
       '<div style="width:38px;height:38px;border-radius:10px;background:rgba(25,128,173,.16);color:#6fc6ef;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">' + escHtml(initials) + '</div>' +
       '<div style="min-width:0;flex:1;">' +
         '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + escHtml(s.full_name || '—') + (inactive ? ' <span class="psub">(inactive)</span>' : '') + '</div>' +
-        (contact.length ? '<div class="psub" style="margin:2px 0 0;">' + contact.join(' · ') + '</div>' : '') +
+        (contact.length ? '<div class="psub" style="margin:2px 0 0;">' + contact.join(', ') + '</div>' : '') +
       '</div>' +
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex-shrink:0;">' +
-        '<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:rgba(15,37,49,.14);color:var(--ffp-warn);">' + accessLbl + '</span>' +
+        '<span style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ffp-warn);white-space:nowrap;">' + accessLbl + '</span>' +
         '<div style="display:flex;gap:6px;">' +
           '<button class="btn btn-sec btn-sm" onclick="openStaffModal(\'' + s.id + '\')"><span class="ms">edit</span></button>' +
           '<button class="btn btn-ghost btn-sm" onclick="confirmDeleteStaff(\'' + s.id + '\')"><span class="ms">delete</span></button>' +
@@ -85,7 +175,7 @@ function openStaffModal(id) {
       <div class="form-grid">
         <div class="field full" style="display:flex;align-items:center;gap:14px;">
           <input type="hidden" id="st-photo_url" value="${escHtml(s.photo_url || '')}">
-          <div id="st-photo" onclick="pickStaffPhoto()" style="width:72px;height:72px;border-radius:50%;flex:0 0 auto;cursor:pointer;background:${s.photo_url ? ("url('" + escHtml(s.photo_url) + "') center/cover no-repeat") : 'var(--ffp-bg-card,#0f1f2c)'};border:1px solid var(--ffp-border,#1d3346);display:flex;align-items:center;justify-content:center;color:var(--ffp-text-dim,#6c7f90);overflow:hidden;">${s.photo_url ? '' : '<span class="ms" style="font-size:24px;">add_a_photo</span>'}</div>
+          <div id="st-photo" onclick="pickStaffPhoto()" style="width:72px;height:72px;border-radius:18px;flex:0 0 auto;cursor:pointer;background:${s.photo_url ? ("url('" + escHtml(s.photo_url) + "') center/cover no-repeat") : 'var(--ffp-bg-card,#0f1f2c)'};border:1px solid var(--ffp-border,#1d3346);display:flex;align-items:center;justify-content:center;color:var(--ffp-text-dim,#6c7f90);overflow:hidden;">${s.photo_url ? '' : '<span class="ms" style="font-size:24px;">add_a_photo</span>'}</div>
           <div><button class="btn btn-sec btn-sm" type="button" onclick="pickStaffPhoto()"><span class="ms">photo_camera</span> ${s.photo_url ? 'Change photo' : 'Add photo'}</button><div style="font-size:11px;color:var(--ffp-text-dim,#6c7f90);margin-top:6px;">Shown to members on this coach's sessions. Square works best.</div></div>
         </div>
         <div class="field full"><div class="label">Full name <span class="req">*</span></div><input class="input" id="st-full_name" value="${escHtml(s.full_name)}" placeholder="e.g. Lee Carter"></div>
@@ -97,8 +187,9 @@ function openStaffModal(id) {
       <div class="form-section-title">Role &amp; access</div>
       <div class="form-grid">
         <div class="field"><div class="label">Role</div><select class="select" id="st-role">${roleOpts}</select></div>
-        <div class="field"><div class="label">Access level</div><select class="select" id="st-access_level">${accessOpts}</select></div>
+        <div class="field"><div class="label">Access level</div><select class="select" id="st-access_level" onchange="staffLevelChanged(this)">${accessOpts}</select></div>
         <div class="field"><div class="label">Status</div><select class="select" id="st-status"><option value="active"${s.status === 'active' ? ' selected' : ''}>Active</option><option value="inactive"${s.status !== 'active' ? ' selected' : ''}>Inactive</option></select></div>
+        ${sectionsHtml(s)}
         <div class="field full"><div class="label">Notes <span style="color:var(--ffp-text-dim,#6c7f90);">(internal — not shown to members)</span></div><textarea class="textarea" id="st-notes" rows="2" placeholder="Optional">${escHtml(s.notes || '')}</textarea></div>
       </div>
     </div>
@@ -141,6 +232,14 @@ async function saveStaff(id) {
   var ccEl = document.getElementById('st-phone-cc'), numEl = document.getElementById('st-phone-num');
   var phone = (numEl && numEl.value.trim()) ? ((ccEl ? ccEl.value : '+971') + ' ' + numEl.value.trim()) : '';
   var payload = { full_name: name, email: g('email'), phone: phone, role: g('role'), access_level: g('access_level') || 'coach', status: g('status') || 'active', notes: g('notes'), bio: g('bio'), photo_url: g('photo_url') };
+  var secs = _readSections();
+  /* every box ticked means "the level decides", so the row stays on its default
+     and follows the level if the level is changed later */
+  if (secs) {
+    var def = _defaultSections(payload.access_level);
+    var same = secs.length === def.length && secs.every(function (k) { return def.indexOf(k) >= 0; });
+    payload.sections = same ? null : secs;
+  }
   try {
     var r = await window.supabase.rpc('provider_save_staff', { p_provider: pid, p_id: id || null, p: payload });
     if (r && r.error) throw r.error;
