@@ -3472,12 +3472,40 @@ async function requestBusinessAccess() {
   if (typeof closeModal === 'function') closeModal();
 }
 
+/* ══ WHAT THIS PERSON CAN OPEN ════════════════════════════════════════════
+   access_level was written by the Staff editor and read by nothing, so every
+   staff member saw all 25 sections. provider_my_sections() answers with the
+   keys this signed-in person is allowed: the owner gets everything, a staff
+   member gets their level's default set from the provider_sections table, and
+   a per-person tick list on their staff row overrides that. Null means "not
+   loaded yet" and shows the full nav, so the owner never sees it flicker. */
+window.FFP_SECTIONS = null;
+async function loadMySections() {
+  try {
+    var pid = window.FFP_PROVIDER && window.FFP_PROVIDER.id;
+    if (!pid || !window.supabase) return;
+    var r = await window.supabase.rpc('provider_my_sections', { p_provider: pid });
+    if (r && !r.error && Array.isArray(r.data)) {
+      window.FFP_SECTIONS = r.data;
+      if (typeof renderNav === 'function') renderNav();
+      /* if they are standing on a section they may not open, move them home */
+      var cur = window.__ffpPanel;
+      if (cur && !ffpCanOpen(cur)) showPanel(window.FFP_SECTIONS[0] || 'overview');
+    }
+  } catch (e) { console.error('[sections]', e); }
+}
+function ffpCanOpen(id) {
+  if (!Array.isArray(window.FFP_SECTIONS)) return true;
+  return window.FFP_SECTIONS.indexOf(id) >= 0;
+}
+
 function renderNav() {
   const nav = document.getElementById('sb-nav');
   // group items by section, preserving NAV order
   const order = [];
   const groups = {};
   NAV.forEach(item => {
+    if (!ffpCanOpen(item.id)) return;          // not theirs to open
     if (!groups[item.section]) { groups[item.section] = []; order.push(item.section); }
     groups[item.section].push(item);
   });
@@ -3707,6 +3735,10 @@ async function connectStripe() {
 function showPanel(id) {
   // Business section is gated behind admin-granted access ($99/mo). Block direct opens too (not just nav clicks).
   if (ffpIsBusinessPanel(id) && !ffpHasBusinessAccess()) { showBusinessUpgrade(); return; }
+  /* A hidden nav item is not a lock: a bookmark, a deep link or a stray call
+     would still open the panel. Staff only ever reach what their level allows. */
+  if (!ffpCanOpen(id)) { id = (Array.isArray(window.FFP_SECTIONS) && window.FFP_SECTIONS[0]) || 'overview'; }
+  window.__ffpPanel = id;
   ensureProviderLoader(id);
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   const el = document.getElementById('panel-' + id);
@@ -6806,6 +6838,7 @@ function enterDashboard() {
   document.getElementById('app').style.display = 'flex';
   if (!window._dashboardInited) {
     renderNav();
+    loadMySections();          // which sections this person may open, then renderNav() again
     showPanel('overview');
     try { loadFeatureMap(); } catch (e) {}   // featured-listing state for the "Feature" buttons
     window._dashboardInited = true;
