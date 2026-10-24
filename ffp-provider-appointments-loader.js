@@ -82,13 +82,13 @@ async function _apLoadConfig() {
 // helper option builders
 function _apStaffOpts(sel) {
   return '<option value="">Select a coach…</option>' + _apStaff.map(function (s) {
-    return '<option value="' + s.id + '"' + (sel === s.id ? ' selected' : '') + '>' + apEsc(s.full_name || 'Coach') + (s.role ? ' · ' + apEsc(s.role) : '') + '</option>';
+    return '<option value="' + s.id + '"' + (sel === s.id ? ' selected' : '') + '>' + apEsc(s.full_name || 'Coach') + (s.role ? ', ' + apEsc(s.role) : '') + '</option>';
   }).join('');
 }
 function _apServiceOpts(sel, withAny) {
   return (withAny ? '<option value="">Any service</option>' : '<option value="">Select a service…</option>') +
     _apServices.map(function (s) {
-      return '<option value="' + s.id + '"' + (sel === s.id ? ' selected' : '') + '>' + apEsc(s.name) + ' · ' + apMoney(s.price_aed) + '</option>';
+      return '<option value="' + s.id + '"' + (sel === s.id ? ' selected' : '') + '>' + apEsc(s.name) + ', ' + apMoney(s.price_aed) + '</option>';
     }).join('');
 }
 function _apMemberOpts(sel) {
@@ -250,7 +250,7 @@ function _apOpenSlots(day, apptsForDay) {
 }
 function _apSlotChip(s) {
   return '<button class="btn btn-ghost btn-sm" style="border-style:dashed;" onclick="apBookFromSlot(\'' + s.staff_id + '\',\'' + (s.service_id || '') + '\',\'' + s.dateStr + '\',\'' + s.time + '\',' + s.duration + ')">' +
-    '<span class="ms">add</span> ' + s.time + ' · ' + apEsc(s.coach_name || 'Coach') + (s.service_name ? ' · ' + apEsc(s.service_name) : '') + '</button>';
+    '<span class="ms">add</span> ' + s.time + ', ' + apEsc(s.coach_name || 'Coach') + (s.service_name ? ', ' + apEsc(s.service_name) : '') + '</button>';
 }
 function apBookFromSlot(staffId, serviceId, dateStr, time, duration) {
   apBookModal({ start: dateStr + 'T' + time, staff_id: staffId, service_id: serviceId || '', duration: duration });
@@ -258,7 +258,7 @@ function apBookFromSlot(staffId, serviceId, dateStr, time, duration) {
 
 // ── TIME GRID (Day / Week): time down Y, days across X ──
 var _AP_HH = 44; // px per hour row
-// Calendar legend (solid, high-contrast): AVAILABLE = yellow · BOOKED = green · BLOCKED = dark grey.
+// Calendar legend (solid, high-contrast): AVAILABLE = yellow, BOOKED = green, BLOCKED = dark grey.
 var AP_AVAIL  = { bg: '#FFE08A', bd: '#E3A700', fg: '#5a4500' };   // available / free to book
 var AP_BLOCK  = { bg: '#3b4750', bd: '#2b343b', fg: '#dfe6ea' };   // blocked off
 function _apBlockColor(st) {
@@ -319,7 +319,7 @@ function _apGridBlock(it, top, hgt, leftPct, wPct) {
   var base = 'position:absolute;top:' + top + 'px;height:' + hgt + 'px;left:calc(' + leftPct + '% + 2px);width:calc(' + wPct + '% - 4px);border-radius:7px;padding:3px 6px;overflow:hidden;font-size:11px;line-height:1.2;cursor:pointer;box-sizing:border-box;';
   if (it.kind === 'open') {
     var s = it.s;
-    return '<div onclick="event.stopPropagation(); apBookFromSlot(\'' + s.staff_id + '\',\'' + (s.service_id || '') + '\',\'' + s.dateStr + '\',\'' + s.time + '\',' + s.duration + ')" title="Available — book ' + s.time + ' · ' + apEsc(s.coach_name || '') + '" style="' + base + 'border:1px solid ' + AP_AVAIL.bd + ';background:' + AP_AVAIL.bg + ';color:' + AP_AVAIL.fg + ';font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px;"><span class="ms" style="font-size:13px;">add</span>' + s.time + (it.lanes < 2 ? (' · ' + apEsc(s.coach_name || '')) : '') + '</div>';
+    return '<div onclick="event.stopPropagation(); apBookFromSlot(\'' + s.staff_id + '\',\'' + (s.service_id || '') + '\',\'' + s.dateStr + '\',\'' + s.time + '\',' + s.duration + ')" title="Available — book ' + s.time + ', ' + apEsc(s.coach_name || '') + '" style="' + base + 'border:1px solid ' + AP_AVAIL.bd + ';background:' + AP_AVAIL.bg + ';color:' + AP_AVAIL.fg + ';font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px;"><span class="ms" style="font-size:13px;">add</span>' + s.time + (it.lanes < 2 ? (', ' + apEsc(s.coach_name || '')) : '') + '</div>';
   }
   var a = it.a, col = _apBlockColor(a.status), name = apEsc(a.member_name || a.member_email || 'Client');
   return '<div onclick="event.stopPropagation(); apApptDetail(\'' + a.id + '\')" title="' + name + '" style="' + base + 'border:1px solid ' + col.bd + ';background:' + col.bg + ';color:' + col.fg + ';font-weight:700;">' +
@@ -465,7 +465,7 @@ function _apRenderDay(host, day) {
     '<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:13px;height:13px;border-radius:3px;background:#FFE8A3;border:1px solid ' + AP_AVAIL.bd + ';"></span>Available</span>' +
     '<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:13px;height:13px;border-radius:3px;background:#1f9d57;"></span>Booked</span>' +
     '<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:13px;height:13px;border-radius:3px;background:' + AP_BLOCK.bg + ';"></span>Blocked</span>' +
-    '<span style="opacity:.8;">· tap an available (yellow) slot to book</span></div>';
+    '<span style="opacity:.8;">, tap an available (yellow) slot to book</span></div>';
   host.innerHTML = html;
   var _sc = document.getElementById('ap-day-scroll'); if (_sc) _sc.scrollTop = 6 * _AP_HH; // open on the morning, not midnight
 }
@@ -492,7 +492,7 @@ function apDayColClick(ev, el, coachId, dateStr, startH) {
 function apApptDetail(id) {
   var a = (_apAppts || []).find(function (x) { return x.id === id; }); if (!a) return;
   var lp = _apLocalParts(a.start_at); var dp = lp.dateStr.split('-'); var dd = new Date(+dp[0], +dp[1] - 1, +dp[2]);
-  var when = dd.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' }) + ' · ' + _apHHMM(lp.min);
+  var when = dd.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' }) + ', ' + _apHHMM(lp.min);
   var _nm = apEsc(a.member_name || a.member_email || 'Client');
   var body = '<div class="form-section">' +
     '<div style="display:flex;gap:6px;margin-bottom:12px;">' + _apStatusChip(a.status) + _apPayChip(a) + '</div>' +
@@ -500,9 +500,9 @@ function apApptDetail(id) {
       (a.member_id && window.openClientProfile
         ? '<div onclick="openClientProfile(\'' + a.member_id + '\')" style="font-size:17px;font-weight:800;color:#1980AD;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="Open client profile">' + _nm + '<span class="ms" style="font-size:16px;">chevron_right</span></div>'
         : '<div style="font-size:17px;font-weight:800;color:var(--ffp-text,#0f2327);">' + _nm + '</div>') +
-      '<div style="font-size:13.5px;font-weight:700;color:var(--ffp-text,#0f2327);margin-top:7px;">' + apEsc(a.service_name || 'Service') + ' · ' + apEsc(a.coach_name || 'Coach') + '</div>' +
-      '<div style="font-size:13.5px;font-weight:600;color:var(--ffp-text-muted,#5a6b6e);margin-top:3px;">' + when + ' · ' + (a.duration_min || 60) + ' min</div>' +
-      (a.status === 'completed' ? '<div style="font-size:13px;font-weight:600;color:var(--ffp-text,#0f2327);margin-top:9px;">Value ' + apMoney(a.price_aed) + ' · tax ' + apMoney(a.tax_aed) + ' · coach ' + apMoney(a.commission_aed) + ' · facility net <b style="color:#15833f;">' + apMoney(a.payout_aed) + '</b></div>' : '') +
+      '<div style="font-size:13.5px;font-weight:700;color:var(--ffp-text,#0f2327);margin-top:7px;">' + apEsc(a.service_name || 'Service') + ', ' + apEsc(a.coach_name || 'Coach') + '</div>' +
+      '<div style="font-size:13.5px;font-weight:600;color:var(--ffp-text-muted,#5a6b6e);margin-top:3px;">' + when + ', ' + (a.duration_min || 60) + ' min</div>' +
+      (a.status === 'completed' ? '<div style="font-size:13px;font-weight:600;color:var(--ffp-text,#0f2327);margin-top:9px;">Value ' + apMoney(a.price_aed) + ', tax ' + apMoney(a.tax_aed) + ', coach ' + apMoney(a.commission_aed) + ', facility net <b style="color:#15833f;">' + apMoney(a.payout_aed) + '</b></div>' : '') +
       (a.notes ? '<div style="font-size:13px;font-style:italic;color:var(--ffp-text-muted,#5a6b6e);margin-top:9px;">“' + apEsc(a.notes) + '”</div>' : '') +
     '</div></div>';
   var B = function (fn, label, cls, icon) { return '<button class="btn ' + (cls || 'btn-ghost') + ' btn-sm" onclick="closeModal(); ' + fn + '(\'' + a.id + '\')"><span class="ms">' + icon + '</span> ' + label + '</button>'; };
@@ -561,7 +561,7 @@ function apApptCard(a) {
   var payoutLine = '';
   if (a.status === 'completed') {
     payoutLine = '<div class="psub" style="margin:6px 0 0;font-size:12px;">Value ' + apMoney(a.price_aed) +
-      ' · tax ' + apMoney(a.tax_aed) + ' · coach ' + apMoney(a.commission_aed) + ' · facility net <b style="color:#7ee0a8;">' + apMoney(a.payout_aed) + '</b></div>';
+      ', tax ' + apMoney(a.tax_aed) + ', coach ' + apMoney(a.commission_aed) + ', facility net <b style="color:#7ee0a8;">' + apMoney(a.payout_aed) + '</b></div>';
   } else if (a.status === 'completed_pending') {
     payoutLine = '<div class="psub" style="margin:6px 0 0;font-size:12px;">Trainer marked done — confirm to release coach commission.</div>';
   }
@@ -570,7 +570,7 @@ function apApptCard(a) {
         '<div style="min-width:54px;font-weight:800;color:var(--ffp-text,#eaf2f8);">' + t + '</div>' +
         '<div style="flex:1;min-width:160px;">' +
           '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + apEsc(a.member_name || a.member_email || 'Client') + '</div>' +
-          '<div class="psub" style="margin:2px 0 0;">' + apEsc(a.service_name || 'Service') + ' · ' + apEsc(a.coach_name || 'Coach') + ' · ' + (a.duration_min || 60) + ' min</div>' +
+          '<div class="psub" style="margin:2px 0 0;">' + apEsc(a.service_name || 'Service') + ', ' + apEsc(a.coach_name || 'Coach') + ', ' + (a.duration_min || 60) + ' min</div>' +
           payoutLine +
         '</div>' +
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">' +
@@ -645,7 +645,7 @@ function apReschedule(id) {
       '<div class="field"><div class="label">Coach</div><select class="select" id="ap-rs-coach">' + _apStaffOpts(a.staff_id) + '</select></div>' +
     '</div></div>';
   openModalShell('', 'Reschedule appointment',
-    '<div class="psub" style="margin:0 0 10px;">' + apEsc(a.member_name || 'Client') + ' · ' + apEsc(a.service_name || '') + '</div>' + body,
+    '<div class="psub" style="margin:0 0 10px;">' + apEsc(a.member_name || 'Client') + ', ' + apEsc(a.service_name || '') + '</div>' + body,
     '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-pri" onclick="apSaveReschedule(\'' + id + '\')">Save</button>');
   apEnhance(['ap-rs-coach']);
 }
@@ -744,7 +744,7 @@ async function apRefreshBkPackages() {
   if (!list.length) { sel.innerHTML = '<option value="">No active package — choose another payment</option>'; }
   else {
     sel.innerHTML = list.map(function (p) {
-      return '<option value="' + p.id + '">' + apEsc(p.name || 'Package') + ' · ' + p.sessions_remaining + '/' + p.sessions_total + ' left</option>';
+      return '<option value="' + p.id + '">' + apEsc(p.name || 'Package') + ', ' + p.sessions_remaining + '/' + p.sessions_total + ' left</option>';
     }).join('');
   }
   if (window.FFPSelect) { try { window.FFPSelect.enhance(sel); } catch (e) {} }
@@ -787,14 +787,14 @@ function apRenderServices() {
     var coaches = (s.coaches || []).map(function (c) {
       var comm = c.commission_type === 'flat' ? (apMoney(c.commission_value) + ' flat') : (c.commission_value + '%');
       return '<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;color:#cbd6df;background:rgba(255,255,255,.06);margin:3px 4px 0 0;">' +
-        apEsc(c.coach_name) + ' · ' + comm +
+        apEsc(c.coach_name) + ', ' + comm +
         '<button class="lk-x" title="Remove" onclick="apRemoveCoach(\'' + c.link_id + '\')" style="background:none;border:none;color:#ff9b9b;cursor:pointer;font-weight:800;">×</button></span>';
     }).join('');
     return '<div style="background:var(--ffp-bg-2,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-radius:12px;padding:13px 15px;margin-bottom:10px;">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">' +
         '<div style="min-width:180px;">' +
           '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + apEsc(s.name) + (s.status !== 'active' ? ' <span class="psub">(inactive)</span>' : '') + '</div>' +
-          '<div class="psub" style="margin:2px 0 0;">' + apMoney(s.price_aed) + ' · ' + (s.duration_min || 60) + ' min · tax ' + (s.tax_rate || 0) + '%' + (s.capacity > 1 ? ' · up to ' + s.capacity : '') + '</div>' +
+          '<div class="psub" style="margin:2px 0 0;">' + apMoney(s.price_aed) + ', ' + (s.duration_min || 60) + ' min, tax ' + (s.tax_rate || 0) + '%' + (s.capacity > 1 ? ', up to ' + s.capacity : '') + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:6px;">' +
           '<button class="btn btn-sec btn-sm" onclick="apServiceModal(\'' + s.id + '\')"><span class="ms">edit</span></button>' +
@@ -898,7 +898,7 @@ function apRenderAvailability() {
       var rng = s.end_time ? (s.start_time + '–' + s.end_time) : s.start_time;
       var label = s.slot_date ? (s.slot_date + ' (one-off)') : ('Every ' + DOW_AP[s.day_of_week]);
       return '<span style="' + _AP_CHIP + '"><b style="color:var(--ffp-text,#eaf2f8);">' + label + ' ' + rng + '</b>' +
-        '<span class="psub">' + (s.service_name ? apEsc(s.service_name) : 'Any') + ' · ' + (s.duration_min || 60) + 'm</span>' +
+        '<span class="psub">' + (s.service_name ? apEsc(s.service_name) : 'Any') + ', ' + (s.duration_min || 60) + 'm</span>' +
         '<button class="btn btn-ghost btn-sm" onclick="apSlotModal(\'' + s.id + '\')"><span class="ms">edit</span></button>' +
         '<button class="btn btn-ghost btn-sm" onclick="apDeleteSlot(\'' + s.id + '\')"><span class="ms">delete</span></button></span>';
     }).join('') + '</div>';
@@ -909,7 +909,7 @@ function apRenderAvailability() {
         var time = (b.start_time && b.end_time) ? (b.start_time + '–' + b.end_time) : 'All day';
         return '<span style="' + _AP_CHIP + 'border-color:rgba(243,156,18,.4);">' +
           '<span class="ms" style="color:#ffcf8f;font-size:16px;">block</span>' +
-          '<b style="color:#ffcf8f;">' + when + ' · ' + time + '</b>' +
+          '<b style="color:#ffcf8f;">' + when + ', ' + time + '</b>' +
           (b.reason ? '<span class="psub">' + apEsc(b.reason) + '</span>' : '') +
           '<button class="btn btn-ghost btn-sm" onclick="apBlockModal(\'' + b.id + '\')"><span class="ms">edit</span></button>' +
           '<button class="btn btn-ghost btn-sm" onclick="apDeleteBlock(\'' + b.id + '\')"><span class="ms">delete</span></button></span>';
@@ -1051,7 +1051,7 @@ async function apRenderPackages() {
       host.innerHTML = _apPackages.map(function (p) {
         return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--ffp-bg-2,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-radius:12px;padding:12px 14px;margin-bottom:9px;flex-wrap:wrap;">' +
           '<div style="min-width:180px;"><div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + apEsc(p.name) + (p.status !== 'active' ? ' <span class="psub">(inactive)</span>' : '') + '</div>' +
-          '<div class="psub" style="margin:2px 0 0;">' + p.sessions_count + ' sessions · ' + apMoney(p.price_aed) + ' · tax ' + (p.tax_rate || 0) + '%' + (p.service_name ? ' · ' + apEsc(p.service_name) : ' · any service') + (p.validity_days ? ' · valid ' + p.validity_days + 'd' : '') + '</div></div>' +
+          '<div class="psub" style="margin:2px 0 0;">' + p.sessions_count + ' sessions, ' + apMoney(p.price_aed) + ', tax ' + (p.tax_rate || 0) + '%' + (p.service_name ? ', ' + apEsc(p.service_name) : ', any service') + (p.validity_days ? ', valid ' + p.validity_days + 'd' : '') + '</div></div>' +
           '<div style="display:flex;gap:6px;">' +
             '<button class="btn btn-sec btn-sm" onclick="apSellModal(\'' + p.id + '\')"><span class="ms">sell</span> Sell</button>' +
             '<button class="btn btn-ghost btn-sm" onclick="apPackageModal(\'' + p.id + '\')"><span class="ms">edit</span></button>' +
@@ -1069,10 +1069,10 @@ async function apRenderPackages() {
       chost.innerHTML = list.map(function (cp) {
         var pct = cp.sessions_total ? Math.round(100 * cp.sessions_remaining / cp.sessions_total) : 0;
         var low = cp.sessions_remaining <= 1;
-        var statusTxt = cp.status === 'active' ? '' : ' · ' + cp.status;
+        var statusTxt = cp.status === 'active' ? '' : ', ' + cp.status;
         return '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--ffp-bg-2,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-radius:12px;padding:11px 14px;margin-bottom:8px;flex-wrap:wrap;">' +
           '<div style="min-width:170px;"><div style="font-weight:700;color:var(--ffp-text,#eaf2f8);">' + apEsc(cp.member_name || cp.member_email || '—') + '</div>' +
-          '<div class="psub" style="margin:2px 0 0;">' + apEsc(cp.name || 'Package') + (cp.expiry_date ? ' · exp ' + cp.expiry_date : '') + statusTxt + '</div></div>' +
+          '<div class="psub" style="margin:2px 0 0;">' + apEsc(cp.name || 'Package') + (cp.expiry_date ? ', exp ' + cp.expiry_date : '') + statusTxt + '</div></div>' +
           '<div style="display:flex;align-items:center;gap:10px;">' +
             '<div style="width:120px;height:7px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + (low ? '#f39c12' : '#1980AD') + ';"></div></div>' +
             '<b style="color:' + (low ? '#ffcf8f' : 'var(--ffp-text,#eaf2f8)') + ';min-width:54px;text-align:right;">' + cp.sessions_remaining + ' / ' + cp.sessions_total + '</b>' +
@@ -1122,7 +1122,7 @@ async function apDeletePackage(id) {
 function apSellModal(packageId) {
   if (!_apPackages.length) { apToast('Create a package first', 'error'); return; }
   var pkgOpts = _apPackages.filter(function (p) { return p.status === 'active'; }).map(function (p) {
-    return '<option value="' + p.id + '"' + (packageId === p.id ? ' selected' : '') + '>' + apEsc(p.name) + ' · ' + p.sessions_count + ' sessions · ' + apMoney(p.price_aed) + '</option>';
+    return '<option value="' + p.id + '"' + (packageId === p.id ? ' selected' : '') + '>' + apEsc(p.name) + ', ' + p.sessions_count + ' sessions, ' + apMoney(p.price_aed) + '</option>';
   }).join('');
   var body =
     '<div class="form-section"><div class="form-grid">' +
@@ -1190,7 +1190,7 @@ async function apRenderReports() {
     kpi('Awaiting confirm', s.completed_pending || 0, '#ffcf8f') +
     kpi('No-shows', s.no_show || 0, '#ff9b9b') +
     kpi('Cancelled', s.cancelled || 0) +
-    kpi('Unpaid', (s.unpaid_count || 0) + ' · ' + money(s.unpaid_aed), (s.unpaid_count ? '#ff9b9b' : null)) +
+    kpi('Unpaid', (s.unpaid_count || 0) + ', ' + money(s.unpaid_aed), (s.unpaid_count ? '#ff9b9b' : null)) +
   '</div>';
   // by coach
   html += '<div class="form-section-title" style="margin-top:18px;">By coach</div>';
