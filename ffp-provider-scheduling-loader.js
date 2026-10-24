@@ -44,7 +44,7 @@ async function _loadSchedStaff() {
 }
 function _coachOpts(selected) {
   return '<option value="">' + (_schedStaff.length ? 'No coach' : 'No staff yet') + '</option>' +
-    _schedStaff.map(function (c) { var nm = c.full_name || ''; return '<option value="' + escHtml(nm) + '"' + (selected === nm ? ' selected' : '') + '>' + escHtml(nm) + (c.role ? ' · ' + escHtml(c.role) : '') + '</option>'; }).join('');
+    _schedStaff.map(function (c) { var nm = c.full_name || ''; return '<option value="' + escHtml(nm) + '"' + (selected === nm ? ' selected' : '') + '>' + escHtml(nm) + (c.role ? ', ' + escHtml(c.role) : '') + '</option>'; }).join('');
 }
 
 // ── LIST: one card per class (template) ──
@@ -73,7 +73,7 @@ async function renderScheduling() {
 function templateCard(t) {
   var slots = (t.slots || []).map(function (sl) {
     var tm = (sl.slot_time || '').slice(0, 5);
-    return DOW_SHORT[sl.day_of_week] + ' ' + tm + (sl.coach ? ' · ' + escHtml(sl.coach) : '');
+    return DOW_SHORT[sl.day_of_week] + ' ' + tm + (sl.coach ? ', ' + escHtml(sl.coach) : '');
   });
   var meta = [];
   if (t.capacity) meta.push(t.capacity + ' spots');
@@ -84,9 +84,9 @@ function templateCard(t) {
       '<div style="display:flex;gap:11px;min-width:0;align-items:flex-start;">' +
         (t.hero_image_url ? '<div style="width:46px;height:46px;border-radius:8px;flex:0 0 auto;background:#ffffff url(\'' + escHtml(t.hero_image_url) + '\') center/cover no-repeat;"></div>' : '') +
         '<div style="min-width:0;">' +
-          '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + escHtml(t.title || 'Untitled session') + (t.activity ? ' <span class="psub" style="font-weight:600;">· ' + escHtml(t.activity) + '</span>' : '') + '</div>' +
-          '<div class="psub" style="margin:3px 0 0;">' + (slots.length ? slots.join('  ·  ') : '<span style="color:var(--ffp-warn);">No weekly times yet — edit to add</span>') + '</div>' +
-          (meta.length ? '<div class="psub" style="margin:3px 0 0;">' + meta.join(' · ') + '</div>' : '') +
+          '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + escHtml(t.title || 'Untitled session') + (t.activity ? ' <span class="psub" style="font-weight:600;">, ' + escHtml(t.activity) + '</span>' : '') + '</div>' +
+          '<div class="psub" style="margin:3px 0 0;">' + (slots.length ? slots.join(' ,  ') : '<span style="color:var(--ffp-warn);">No weekly times yet — edit to add</span>') + '</div>' +
+          (meta.length ? '<div class="psub" style="margin:3px 0 0;">' + meta.join(', ') + '</div>' : '') +
         '</div>' +
       '</div>' +
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex-shrink:0;">' +
@@ -133,7 +133,7 @@ function renderTimetable() {
       return '<div onclick="openOccurrence(\'' + s.id + '\')" title="' + present + (cap != null ? ' of ' + cap : '') + ' attending" style="cursor:pointer;background:var(--ffp-bg-3,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-left:3px solid #1980AD;border-radius:8px;padding:7px 8px;margin-bottom:6px;">' +
         '<div style="font-weight:700;font-size:12px;color:var(--ffp-text,#eaf2f8);">' + escHtml(t) + badge + '</div>' +
         '<div style="font-size:12px;font-weight:700;color:#1a1a1a;line-height:1.25;">' + escHtml(s.title) + '</div>' +
-        (s.recurrence === 'once' ? '<div style="margin:2px 0 0;font-size:10px;font-weight:800;color:var(--ffp-warn);">one-off · ' + escHtml(new Date(s.start_at).toLocaleDateString([], { day: 'numeric', month: 'short' })) + '</div>' : '') +
+        (s.recurrence === 'once' ? '<div style="margin:2px 0 0;font-size:10px;font-weight:800;color:var(--ffp-warn);">one-off, ' + escHtml(new Date(s.start_at).toLocaleDateString([], { day: 'numeric', month: 'short' })) + '</div>' : '') +
         (s.coach ? '<div class="psub" style="margin:2px 0 0;font-size:11px;">' + escHtml(s.coach) + '</div>' : '') +
       '</div>';
     };
@@ -154,8 +154,8 @@ function renderTimetable() {
       return g;
     };
     var html = '<div class="psub" style="margin:0 0 8px;font-size:11px;"><span class="ms" style="font-size:13px;vertical-align:-2px;">schedule</span> Times shown in ' + escHtml(tzName.replace(/_/g, ' ')) + '</div>';
-    html += gridHtml('Morning · AM', true);
-    html += gridHtml('Afternoon &amp; evening · PM', false);
+    html += gridHtml('Morning, AM', true);
+    html += gridHtml('Afternoon &amp; evening, PM', false);
     host.innerHTML = html;
   };
   if (!pid) { go(); return; }
@@ -250,7 +250,7 @@ function showCoachBio(enc) {
   var body = '<div style="display:flex;gap:14px;align-items:flex-start;">' + avatar +
       '<div style="min-width:0;display:flex;flex-direction:column;gap:6px;">' +
         '<div style="font-weight:800;font-size:16px;color:var(--ffp-text,#eaf2f8);">' + escHtml(name) +
-          (c.role ? ' <span class="psub" style="font-weight:600;">· ' + escHtml(c.role) + '</span>' : '') + '</div>' +
+          (c.role ? ' <span class="psub" style="font-weight:600;">, ' + escHtml(c.role) + '</span>' : '') + '</div>' +
         '<div class="psub" style="margin:0;line-height:1.55;">' + (c.bio ? escHtml(c.bio) : 'No bio added yet — add one for this coach in the Staff tab.') + '</div>' +
       '</div>' +
     '</div>';
@@ -419,7 +419,7 @@ async function openOccurrence(id) {
   var s = (_schedSessions || []).find(function (x) { return x.id === id; }) || {};
   _occCur = id;
   var d = new Date(s.start_at);
-  var when = d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' }) + ' · ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  var when = d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   var body =
     '<div class="psub" style="margin:0 0 12px;"><b style="color:var(--ffp-text,#eaf2f8);">' + escHtml(s.title || 'Session') + '</b> — ' + when + '.</div>' +
     '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 6px;">' +
@@ -449,7 +449,7 @@ async function occLoadRoster() {
     var r = await window.supabase.rpc('provider_session_roster', { p_provider: pid, p_occurrence: _occCur });
     _occRoster = (r && r.data) ? r.data : [];
   } catch (e) { _occRoster = []; }
-  var cnt = document.getElementById('occ-count'); if (cnt) cnt.textContent = '· ' + _occRoster.length;
+  var cnt = document.getElementById('occ-count'); if (cnt) cnt.textContent = ', ' + _occRoster.length;
   if (!_occRoster.length) {
     host.innerHTML = '<div class="psub" style="margin:4px 0 2px;padding:14px;border:1px dashed var(--ffp-border,#1d3346);border-radius:10px;text-align:center;">No one booked into this date yet. Use <b>Add member</b> to book someone in.</div>';
     return;
@@ -467,7 +467,7 @@ function occPayChip(p) {
   return _occChip('Unpaid', '#ff9b9b', 'rgba(255,107,107,.15)');
 }
 function occMemChip(m, credits) {
-  if (m === 'active')  return _occChip('Membership active' + (credits != null ? ' · ' + credits + ' credits' : ''), '#7ee0a8', 'rgba(46,204,113,.15)');
+  if (m === 'active')  return _occChip('Membership active' + (credits != null ? ', ' + credits + ' credits' : ''), '#7ee0a8', 'rgba(46,204,113,.15)');
   if (m === 'expired') return _occChip('Membership expired', '#ffcf8f', 'rgba(243,156,18,.16)');
   return _occChip('No membership', '#cbd6df', 'rgba(255,255,255,.08)');
 }
@@ -488,8 +488,8 @@ function _ffpBookingIntake(d) {
     if (g.gender) meta.push(pretty(g.gender));
     if (g.age != null && g.age !== '') meta.push('age ' + g.age);
     var ans = (g.answers && typeof g.answers === 'object') ? Object.keys(g.answers).filter(function (k) { return g.answers[k] != null && g.answers[k] !== ''; }).map(function (k) { return pretty(k) + ': ' + g.answers[k]; }) : [];
-    var line = '<b>Guest ' + (i + 1) + '</b>' + (nm ? ' · ' + escHtml(nm) : '') + (meta.length ? ' (' + escHtml(meta.join(', ')) + ')' : '');
-    if (ans.length) line += ' — ' + escHtml(ans.join(' · '));
+    var line = '<b>Guest ' + (i + 1) + '</b>' + (nm ? ', ' + escHtml(nm) : '') + (meta.length ? ' (' + escHtml(meta.join(', ')) + ')' : '');
+    if (ans.length) line += ' — ' + escHtml(ans.join(', '));
     rows.push('<div>' + line + '</div>');
   });
   var ba = (d.booking_answers && typeof d.booking_answers === 'object') ? d.booking_answers : null;
@@ -693,14 +693,14 @@ async function renderAttendance() {
 
 function attRow(s) {
   var d = new Date(s.start_at);
-  var when = d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' +
+  var when = d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }) + ', ' +
              d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   var present = _attCounts[s.id] || 0;
   var taken = present > 0;
   return '<div style="background:var(--ffp-bg-2,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-radius:12px;padding:11px 13px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
       '<div style="min-width:0;">' +
         '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + escHtml(s.title) + '</div>' +
-        '<div class="psub" style="margin:2px 0 0;">' + when + (taken ? ' · ' + present + ' present' : '') + '</div>' +
+        '<div class="psub" style="margin:2px 0 0;">' + when + (taken ? ', ' + present + ' present' : '') + '</div>' +
       '</div>' +
       '<button class="btn ' + (taken ? 'btn-sec' : 'btn-pri') + ' btn-sm" onclick="openRegister(\'' + s.id + '\')"><span class="ms">how_to_reg</span> ' + (taken ? 'Edit' : 'Register') + '</button>' +
   '</div>';
@@ -726,7 +726,7 @@ async function openRegister(sessionId) {
            '<div id="reg-rows">' + members.map(attMemberRow).join('') + '</div>';
     foot = '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-pri" onclick="saveRegister()">Save register</button>';
   }
-  openModalShell('lg', 'Register · ' + escHtml(s.title || 'Session'), body, foot);
+  openModalShell('lg', 'Register, ' + escHtml(s.title || 'Session'), body, foot);
 }
 
 function attMemberRow(m) {
