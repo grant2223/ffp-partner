@@ -162,7 +162,7 @@ function payRow(p, mode) {
   return '<div style="background:var(--ffp-bg-2,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-radius:12px;padding:11px 13px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
       '<div style="min-width:0;">' +
         '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + escHtml(p.description || 'Payment') + '</div>' +
-        (sub.length ? '<div class="psub" style="margin:2px 0 0;">' + sub.join(' · ') + '</div>' : '') +
+        (sub.length ? '<div class="psub" style="margin:2px 0 0;">' + sub.join(', ') + '</div>' : '') +
       '</div>' +
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex-shrink:0;">' +
         '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + _money(p.amount_aed) + '</div>' +
@@ -191,7 +191,7 @@ async function openPaymentModal(id, mode) {
     '<div class="field full"><div class="label">Plan purchased <span style="color:var(--ffp-text-dim,#6c7f90);font-weight:600;">(optional — grants the membership/credits to the member)</span></div>' +
     '<select class="select" id="pm-plan_id" onchange="_payPlanPick()">' +
       '<option value="">Other / one-off (no plan)</option>' +
-      _billPlans.map(function (pl) { return '<option value="' + pl.id + '" data-price="' + (pl.price_aed != null ? pl.price_aed : '') + '" data-name="' + escHtml(pl.name || 'Plan') + '"' + ((editing && editing.plan_id === pl.id) ? ' selected' : '') + '>' + escHtml(pl.name || 'Plan') + (pl.price_aed != null ? (' · ' + _money(pl.price_aed)) : '') + '</option>'; }).join('') +
+      _billPlans.map(function (pl) { return '<option value="' + pl.id + '" data-price="' + (pl.price_aed != null ? pl.price_aed : '') + '" data-name="' + escHtml(pl.name || 'Plan') + '"' + ((editing && editing.plan_id === pl.id) ? ' selected' : '') + '>' + escHtml(pl.name || 'Plan') + (pl.price_aed != null ? (', ' + _money(pl.price_aed)) : '') + '</option>'; }).join('') +
     '</select></div>'
   );
   openModalShell('lg', (editing ? 'Edit ' : '') + (mode === 'invoice' ? 'Invoice' : 'Payment'), `
@@ -245,7 +245,7 @@ async function savePayment(id, mode) {
       } catch (e2) { granted_ok = false; }
     }
     showToast(
-      granted_ok ? (id ? 'Saved' : (mode === 'invoice' ? 'Invoice created' : (planId ? 'Payment recorded · plan granted' : 'Payment recorded')))
+      granted_ok ? (id ? 'Saved' : (mode === 'invoice' ? 'Invoice created' : (planId ? 'Payment recorded, plan granted' : 'Payment recorded')))
                  : 'Payment saved — but the plan could not be granted',
       granted_ok ? 'success' : 'error');
     closeModal();
