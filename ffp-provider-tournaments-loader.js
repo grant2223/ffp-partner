@@ -6094,6 +6094,47 @@
     catch (e) { return ''; }
   }
 
+
+  /* WHAT THE LEAGUE TYPED IS NOT WHAT THE REFEREE READS. The appointments
+     carry 'referee', 'ar1', 'ar2', and some leagues have typed 'Referee' and
+     'Assistant referee' by hand. The sheet prints a word, not a key, and
+     anything unrecognised is printed as it was entered rather than dropped. */
+  var PS_ROLE = { referee: 'Referee', ar1: 'Assistant referee 1', ar2: 'Assistant referee 2',
+    ar: 'Assistant referee', tj1: 'Touch judge 1', tj2: 'Touch judge 2',
+    fourth: 'Fourth official', '4th': 'Fourth official', tmo: 'TMO', timekeeper: 'Timekeeper' };
+  function psRole(r) {
+    var k = String(r == null ? '' : r).trim();
+    if (!k) return 'Official';
+    var hit = PS_ROLE[k.toLowerCase()];
+    if (hit) return hit;
+    return k.charAt(0).toUpperCase() + k.slice(1);
+  }
+
+  /* THE MATCH OFFICIALS, ALL OF THEM. Two to a line, in the header where a
+     referee looks, rather than one named at the top and the rest nowhere. */
+  function psOfficialRows(d) {
+    var list = (d && d.officials) || [], out = '', i;
+    if (!list.length) {
+      return '<tr><td class="lbl">Referee</td><td class="val" colspan="3"></td></tr>';
+    }
+    for (i = 0; i < list.length; i += 2) {
+      var a = list[i], b = list[i + 1];
+      out += '<tr><td class="lbl">' + esc(psRole(a.role)) + '</td>'
+        + (b ? '<td class="val">' + esc(a.name || '') + '</td>'
+               + '<td class="lbl">' + esc(psRole(b.role)) + '</td><td class="val">' + esc(b.name || '') + '</td>'
+             : '<td class="val" colspan="3">' + esc(a.name || '') + '</td>') + '</tr>';
+    }
+    return out;
+  }
+
+  /* EACH SIDE'S HEAD COACH, side by side, for a sheet that carries both
+     teams. A per-team sheet already signs its manager at the foot. */
+  function psStaffRow(d) {
+    var h = (d.teams && d.teams.home) || {}, a = (d.teams && d.teams.away) || {};
+    return '<tr><td class="lbl">Head coach</td><td class="val">' + esc(h.manager || '') + '</td>'
+         + '<td class="lbl">Head coach</td><td class="val">' + esc(a.manager || '') + '</td></tr>';
+  }
+
   /* one header line of the form: a label cell and what goes in it */
   function psField(key, d, team) {
     var g = d || {}, t = team || {};
@@ -6113,7 +6154,8 @@
   function psHeadRows(keys, d, team) {
     var pairs = [], out = '', i;
     (keys || []).forEach(function (k) {
-      if (k === 'teams' || k === 'score_tries' || k === 'captain') return;
+      if (k === 'teams' || k === 'score_tries' || k === 'captain'
+          || k === 'officials' || k === 'staff') return;
       var f = psField(k, d, team); if (f) pairs.push(f);
     });
     for (i = 0; i < pairs.length; i += 2) {
@@ -6252,6 +6294,8 @@
     var keys = tpl.header || [];
     var rows = psHeadRows(keys, d, team);
     if (keys.indexOf('teams') >= 0) rows += psTeamsRow(d);
+    if (keys.indexOf('officials') >= 0) rows += psOfficialRows(d);
+    if (keys.indexOf('staff') >= 0) rows += psStaffRow(d);
     if (keys.indexOf('score_tries') >= 0)
       rows += '<tr><td class="lbl">Final score</td><td></td><td class="lbl">Tries</td><td></td></tr>';
     if (keys.indexOf('captain') >= 0)
