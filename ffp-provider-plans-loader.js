@@ -40,7 +40,7 @@ function planRow(p) {
   return '<div style="background:var(--ffp-bg-2,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-radius:12px;padding:11px 13px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
       '<div style="min-width:0;">' +
         '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + escHtml(p.name) + '</div>' +
-        '<div class="psub" style="margin:2px 0 0;">' + meta.join(' · ') + '</div>' +
+        '<div class="psub" style="margin:2px 0 0;">' + meta.join(', ') + '</div>' +
         '<div class="psub" style="margin:2px 0 0;">' + n + ' on this plan</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px;flex-shrink:0;">' +
