@@ -31,7 +31,7 @@ function _memInjectCss() {
     '.mem-bd{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 2px 12px;font-size:13px;font-weight:700;color:#5b6b75;}'
     + '.mem-bd .mem-bd-c{font-weight:900;color:#12232f;}'
     + '.mem-bd .mem-bd-seg{position:relative;padding-left:14px;}'
-    + '.mem-bd .mem-bd-seg::before{content:"·";position:absolute;left:4px;color:#c4ced5;}'
+    + '.mem-bd .mem-bd-seg::before{content:",";position:absolute;left:4px;color:#c4ced5;}'
     + '.mem-bd .mem-export{margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:#1980AD;color:#fff;border:none;border-radius:9px;padding:8px 14px;font:inherit;font-weight:800;font-size:13px;cursor:pointer;}'
     + '.mem-bd .mem-export .ms{font-size:17px;}';
   document.head.appendChild(s);
@@ -82,7 +82,7 @@ function renderMembersList() {
   if (by.lapsed) seg.push(by.lapsed + ' lapsed');
   if (by.prospect) seg.push(by.prospect + ' prospect' + (by.prospect === 1 ? '' : 's'));
   var bd = '<div class="mem-bd"><span class="mem-bd-c">' + _members.length + ' member' + (_members.length === 1 ? '' : 's') + '</span>'
-    + (seg.length ? '<span class="mem-bd-seg">' + seg.join(' · ') + '</span>' : '')
+    + (seg.length ? '<span class="mem-bd-seg">' + seg.join(', ') + '</span>' : '')
     + '<span class="mem-bd-seg">' + withEmail + ' with email</span>'
     + '<button class="mem-export" onclick="exportMembers()"><span class="ms">download</span> Export CSV</button></div>';
   host.innerHTML = bd + items.map(memberRow).join('');
@@ -126,7 +126,7 @@ function memberRow(m) {
   var initials = (nm || '?').trim().split(/\s+/).map(function (w) { return w[0] || ''; }).join('').slice(0, 2).toUpperCase();
   var st = m.member_status || 'active';
   var stStyle = _memStatusStyle[st] || _memStatusStyle.active;
-  var sub = [m.email, m.phone].filter(Boolean).map(escHtml).join('  ·  ');
+  var sub = [m.email, m.phone].filter(Boolean).map(escHtml).join(' ,  ');
   var avatar = m.photo_url
     ? '<div style="width:34px;height:34px;border-radius:50%;flex:0 0 auto;background:#fff url(\'' + escHtml(m.photo_url) + '\') center/cover no-repeat;"></div>'
     : '<div style="width:34px;height:34px;border-radius:50%;flex:0 0 auto;background:rgba(25,128,173,.14);color:var(--ffp-blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">' + escHtml(initials) + '</div>';
@@ -343,7 +343,7 @@ function teamRow(t) {
   return '<div style="background:var(--ffp-bg-2,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-radius:12px;padding:11px 13px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
       '<div style="min-width:0;">' +
         '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + escHtml(t.name) + '</div>' +
-        (meta.length ? '<div class="psub" style="margin:2px 0 0;">' + meta.join(' · ') + '</div>' : '') +
+        (meta.length ? '<div class="psub" style="margin:2px 0 0;">' + meta.join(', ') + '</div>' : '') +
         '<div class="psub" style="margin:2px 0 0;">' + n + ' member' + (n === 1 ? '' : 's') + '</div>' +
       '</div>' +
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex-shrink:0;">' +
@@ -428,7 +428,7 @@ async function openRoster(teamId) {
            '<div id="ros-rows">' + members.map(rosterRow).join('') + '</div>';
     foot = '<button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-pri" onclick="saveRoster()">Save roster</button>';
   }
-  openModalShell('lg', 'Roster · ' + escHtml(t.name || 'Team'), body, foot);
+  openModalShell('lg', 'Roster, ' + escHtml(t.name || 'Team'), body, foot);
 }
 
 function rosterRow(m) {
@@ -506,7 +506,7 @@ async function openMembership(memberId) {
   } else {
     assignForm = '<div class="psub" style="margin:8px 0;">Create a plan first in the Memberships &amp; Packages tab, then assign it here.</div>';
   }
-  openModalShell('lg', 'Membership · ' + escHtml(m.full_name || 'Member'),
+  openModalShell('lg', 'Membership, ' + escHtml(m.full_name || 'Member'),
     '<div class="form-section"><div class="form-section-title">Current</div>' + current + '</div>' + assignForm,
     '<button class="btn btn-ghost" onclick="closeModal()">Close</button>');
 }
@@ -521,7 +521,7 @@ function membershipRow(a) {
   return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--ffp-border,#1d3346);">' +
       '<div style="min-width:0;">' +
         '<div style="font-weight:700;color:var(--ffp-text,#eaf2f8);">' + escHtml(a.plan_name || 'Plan') + '</div>' +
-        (bits.length ? '<div class="psub" style="margin:2px 0 0;">' + bits.join(' · ') + '</div>' : '') +
+        (bits.length ? '<div class="psub" style="margin:2px 0 0;">' + bits.join(', ') + '</div>' : '') +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">' +
         '<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:' + stColor + '">' + (a.status || 'active') + '</span>' +
