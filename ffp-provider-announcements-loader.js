@@ -44,7 +44,7 @@ function broadcastRow(b) {
   return '<div style="background:var(--ffp-bg-2,#0f1f2c);border:1px solid var(--ffp-border,#1d3346);border-radius:12px;padding:11px 13px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
       '<div style="min-width:0;">' +
         '<div style="font-weight:800;color:var(--ffp-text,#eaf2f8);">' + escHtml(b.subject || '(no subject)') + '</div>' +
-        '<div class="psub" style="margin:2px 0 0;">' + sub.map(escHtml).join(' · ') + '</div>' +
+        '<div class="psub" style="margin:2px 0 0;">' + sub.map(escHtml).join(', ') + '</div>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:7px;flex-shrink:0;">' +
         '<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.08);color:#9fb0bf;">Logged</span>' +
