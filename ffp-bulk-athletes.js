@@ -101,7 +101,7 @@
     var nBad = rows.filter(function (r) { return r.st === 'bad'; }).length;
     var stLbl = { ready: ['ready', 'Ready to add'], dupe: ['dupe', 'Duplicate in list'], bad: ['bad', 'Check name / email'] };
     box.innerHTML =
-      '<div class="fba-sec mt">Preview · ' + rows.length + ' rows</div>' +
+      '<div class="fba-sec mt">Preview, ' + rows.length + ' rows</div>' +
       '<div class="fba-counts">' +
       '<span class="fba-pill g">' + nReady + ' ready</span>' +
       (nDupe ? '<span class="fba-pill a">' + nDupe + ' duplicate</span>' : '') +
@@ -192,7 +192,7 @@
     if (nAdded) bits.push(nAdded + ' added by name');
     if (nDupe) bits.push(nDupe + ' already in');
     if (nBad) bits.push(nBad + ' skipped');
-    wrap.innerHTML = '<div class="fba-done"><span class="ms ic">task_alt</span><h2>' + (S.mode === 'team' ? 'Players added' : 'Athletes added') + '</h2><p>' + (bits.join(' · ') || 'Nothing to add') + '</p></div>';
+    wrap.innerHTML = '<div class="fba-done"><span class="ms ic">task_alt</span><h2>' + (S.mode === 'team' ? 'Players added' : 'Athletes added') + '</h2><p>' + (bits.join(', ') || 'Nothing to add') + '</p></div>';
     var foot = document.getElementById('fba-foot');
     if (foot) foot.innerHTML = '<button class="fba-btn go" onclick="FFPBulkAthletes.close()">Done</button>';
   }
