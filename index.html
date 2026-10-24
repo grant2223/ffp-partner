@@ -227,7 +227,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>FFP Passport — Partners Portal</title>
 <link rel="manifest" href="/manifest.webmanifest?v=2">
 <meta name="application-name" content="FFP Partner">
@@ -359,7 +359,7 @@
   console.log('[FFPPicker] ready (dashboard-owned, decoupled) ✓');
 })();
 </script>
-<script src="ffp-provider-events-loader.js?v=11"></script>
+<script src="ffp-provider-events-loader.js?v=12"></script>
 <!-- Experiences loader is lazy-loaded on demand via _provLoaderSrc['experiences'] (ensureProviderLoader) — was double-loaded here, removed -->
 <script src="ffp-provider-challenges-loader.js?v=3"></script>
 <!-- v29 (2026-06-03): Taxonomy audit fixes — "Provider type" (pf-type) reads the unified provider_type
@@ -493,7 +493,7 @@ a { color: var(--ffp-blue); text-decoration: none; }
 /* ════════════════════════════════════════════════
    APP SHELL
    ════════════════════════════════════════════════ */
-.app { display: flex; height: 100vh; overflow: hidden; }
+.app { display: flex; height: 100vh; height: 100dvh; overflow: hidden; } /* dvh: 100vh put the bottom of the page (and the Save bar) under Safari's toolbar */
 
 /* SIDEBAR */
 .sidebar {
@@ -619,6 +619,13 @@ a { color: var(--ffp-blue); text-decoration: none; }
   padding: 0 28px; height: 62px;
   display: flex; align-items: center; gap: 14px;
   flex: 0 0 auto; z-index: 20;
+  /* SAFE ZONES (23 Oct audit): with viewport-fit=cover the page runs under the
+     notch / Dynamic Island on an installed phone, so the bar grows by the inset
+     and keeps Menu and the bell below it. 0 on a desktop browser. */
+  box-sizing: content-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: max(28px, env(safe-area-inset-left, 0px));
+  padding-right: max(28px, env(safe-area-inset-right, 0px));
 }
 /* Big green save banner — fixed under the topbar (part of the frozen header), shown on Profile when there are unsaved changes */
 .ffp-save-banner{display:none;flex:0 0 auto;z-index:19;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(90deg,#15a34a,#22c55e);color:#fff;padding:13px 28px;box-shadow:0 10px 26px rgba(0,0,0,.30);}
@@ -685,7 +692,7 @@ a { color: var(--ffp-blue); text-decoration: none; }
   cursor: pointer;
 }
 
-.panel-wrap { flex: 1; min-height: 0; overflow-y: auto; width: 100%; padding: 28px 32px 80px; max-width: 1280px; margin: 0 auto; }
+.panel-wrap { flex: 1; min-height: 0; overflow-y: auto; width: 100%; padding: 28px 32px calc(80px + env(safe-area-inset-bottom, 0px)); max-width: 1280px; margin: 0 auto; }
 .panel { display: none; }
 .panel.active { display: block; }
 
@@ -1096,8 +1103,8 @@ a { color: var(--ffp-blue); text-decoration: none; }
   background: rgba(255, 255, 255, .94);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--ffp-border-mid);
-  margin: 28px -32px -80px;
-  padding: 14px 32px;
+  margin: 28px -32px calc(-80px - env(safe-area-inset-bottom, 0px));
+  padding: 14px 32px calc(14px + env(safe-area-inset-bottom, 0px));
   display: flex; justify-content: flex-end; gap: 10px;
   z-index: 5;
 }
@@ -1667,14 +1674,14 @@ a { color: var(--ffp-blue); text-decoration: none; }
 }
 @media (max-width: 768px) {
   .sidebar { display: none; }
-  .panel-wrap { padding: 22px 18px 80px; }
+  .panel-wrap { padding: 22px 18px calc(80px + env(safe-area-inset-bottom, 0px)); }
   .form-grid { grid-template-columns: 1fr; }
   .hours-row { grid-template-columns: 90px 1fr 1fr; }
   .hours-row .hours-closed { grid-column: 1 / -1; padding-top: 4px; }
-  .topbar { padding: 0 18px; }
+  .topbar { padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px)); }
   .tb-btn span { display: none; }
   .modal-foot { flex-wrap: wrap; }
-  .save-bar { margin-left: -18px; margin-right: -18px; padding: 12px 18px; }
+  .save-bar { margin-left: -18px; margin-right: -18px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ════════════════════════════════════════════════
@@ -3771,7 +3778,7 @@ function showPanel(id) {
   if (id === 'reviews') renderReviews();
   if (id === 'profile') loadProfile();
   if (id === 'events') renderEvents();
-  if (id === 'trips') renderExperiences();
+  if (id === 'trips') { renderExperiences(); loadTrips(); }
   if (id === 'experiences' && typeof renderClasses === 'function') renderClasses();
   if (id === 'challenges') { renderChallenges(); if (window.FFPQuestCheckins) FFPQuestCheckins.reload(); }
   if (id === 'quests' && window.FFPQuestCheckins) FFPQuestCheckins.reload();
@@ -5041,7 +5048,7 @@ function confirmDeleteEvent(id) {
 
 function openEventModal(id) {
   const editing = id ? events.find(e => e.id === id) : null;
-  const e = editing || { title: '', description: '', about: '', category: '', activity: '', event_date: '', event_time: '', end_date: '', end_time: '', country: (providerProfile.country || 'United Arab Emirates'), city: (providerProfile.city || ''), area: (providerProfile.area || ''), venue: '', capacity: '', price_aed: '', intensity: 'Social', parking: '', facilities: '', bring: '', hero_url: null };
+  const e = editing || { title: '', description: '', about: '', category: '', activity: '', event_date: '', event_time: '', end_date: '', end_time: '', country: (providerProfile.country || 'United Arab Emirates'), city: (providerProfile.city || ''), area: (providerProfile.area || ''), venue: '', capacity: '', price_aed: '', intensity: '', parking: '', facilities: '', bring: '', hero_url: null };
   openModalShell('full', (editing ? 'Edit event' : 'New event'), `
     <div id="ev-stepbar" style="font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--ffp-purple,#8b5cf6);margin:0 0 12px;">Step 1 of 2, Details</div>
     <div id="ev-step1">
@@ -5064,7 +5071,7 @@ function openEventModal(id) {
         <div class="field">
           <div class="label">Level</div>
           <select class="select" id="em-intensity">
-            ${((window.FFP_TAX&&FFP_TAX.attendeeLevels&&FFP_TAX.attendeeLevels.length?FFP_TAX.attendeeLevels:['All Levels','Not Tried','Social','Competitive','Representative','Professional'])).map(l => `<option ${e.intensity===l?'selected':''}>${l}</option>`).join('')}
+            ${((window.FFP_TAX&&FFP_TAX.attendeeLevels&&FFP_TAX.attendeeLevels.length?FFP_TAX.attendeeLevels:['All Levels','Just started','Recreational','Skilled','Highly skilled','Professional'])).map(l => `<option ${e.intensity===l?'selected':''}>${l}</option>`).join('')}
           </select>
         </div>
         <div class="field full">
@@ -5319,9 +5326,14 @@ function experienceCard(e) {
 }
 
 function confirmDeleteExperience(id) {
-  openConfirm('Delete this experience?', 'All applicants will be notified by email. This cannot be undone.', () => {
-    experiences = experiences.filter(x => x.id !== id);
-    renderExperiences(); renderNav(); showToast('Experience deleted', 'success');
+  openConfirm('Delete this trip?', 'It comes off the platform straight away. This cannot be undone.', async () => {
+    try {
+      const r = await window.supabase.rpc('provider_delete_listing', { p_kind: 'experience', p_provider: (window.FFP_PROVIDER || {}).id, p_id: id });
+      if (r.error) throw r.error;
+      if (r.data !== 'deleted') throw new Error(r.data || 'not deleted');
+      showToast('Trip deleted', 'success');
+    } catch (e) { console.error('[FFP Trips] delete:', e); showToast('Could not delete the trip', 'error'); }
+    await loadTrips();
   });
 }
 
@@ -5337,7 +5349,7 @@ function openExperienceModal(id) {
     country: '', destination: '', price_aed: '',
     price_includes: [], price_excludes: [],
     accommodation: '', flights: '', travel_reqs: '',
-    fitness_reqs: '', fitness_level: 'Social',
+    fitness_reqs: '', fitness_level: '',
     itinerary: [], hero_url: null, capacity: ''
   };
   modalItinerary = JSON.parse(JSON.stringify(e.itinerary || []));
@@ -5372,7 +5384,7 @@ function openExperienceModal(id) {
         <div class="field">
           <div class="label">Fitness level required</div>
           <select class="select" id="xm-fitness-level">
-            ${((window.FFP_TAX&&FFP_TAX.attendeeLevels&&FFP_TAX.attendeeLevels.length?FFP_TAX.attendeeLevels:['All Levels','Not Tried','Social','Competitive','Representative','Professional'])).map(l => `<option ${e.fitness_level===l?'selected':''}>${l}</option>`).join('')}
+            ${((window.FFP_TAX&&FFP_TAX.attendeeLevels&&FFP_TAX.attendeeLevels.length?FFP_TAX.attendeeLevels:['All Levels','Just started','Recreational','Skilled','Highly skilled','Professional'])).map(l => `<option ${e.fitness_level===l?'selected':''}>${l}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -5514,74 +5526,125 @@ function removeChip(kind, i) {
   if (kind === 'excludes') { modalExcludes.splice(i, 1); renderChips('xm-excludes-wrap', modalExcludes, 'excludes'); }
 }
 
-function saveExperience(id) {
-  const get = i => document.getElementById('xm-' + i).value.trim();
+/* ════════════════════════════════════════════════
+   TRIPS — REAL DATA (23 Oct audit: "Submit for review" showed success but
+   nothing reached the database; the list was an in-memory mock, so a
+   partner's live trips never appeared here either). Trips live in the `trips`
+   table and are written through provider_save_listing / provider_delete_listing
+   with p_kind 'experience' (the RPC's name for trips). New trips go in as
+   'pending' and the admin is notified for review; an edit keeps the status.
+   ════════════════════════════════════════════════ */
+function _tripLines(t) { return String(t || '').split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean); }
+function _tripToUi(r) {
+  var today = new Date().toISOString().slice(0, 10);
+  var end = r.ends_at || r.starts_at || '';
+  var st = r.status || 'pending';
+  if (st === 'live' && end && end < today) st = 'past';
+  return {
+    id: r.id, title: r.title || '', description: r.description || '', overview: r.overview || '',
+    experience_type: r.exp_type || '', start_date: r.starts_at || '', end_date: r.ends_at || '',
+    duration_days: r.duration_days || '', country: r.country || '', destination: r.destination || '',
+    price_aed: r.price_aed != null ? r.price_aed : '', capacity: r.capacity != null ? r.capacity : '',
+    price_includes: _tripLines(r.what_included), price_excludes: _tripLines(r.what_not_included),
+    accommodation: r.accommodation || '', flights: r.flights_info || '',
+    travel_reqs: r.travel_reqs || '', fitness_reqs: r.fitness_reqs || '', fitness_level: r.fitness_level || '',
+    itinerary: Array.isArray(r.itinerary) ? r.itinerary : [], hero_url: r.hero_image_url || null,
+    status: st, featured: !!r.featured, applications: 0,
+    created_at: r.created_at ? String(r.created_at).slice(0, 10) : ''
+  };
+}
+async function loadTrips() {
+  var pid = (window.FFP_PROVIDER || {}).id;
+  if (!pid || !window.supabase || !window.supabase.from) return;
+  try {
+    var res = await window.supabase.from('trips')
+      .select('id,title,description,overview,exp_type,starts_at,ends_at,duration_days,country,destination,price_aed,capacity,what_included,what_not_included,accommodation,flights_info,travel_reqs,fitness_reqs,fitness_level,itinerary,hero_image_url,status,featured,created_at')
+      .eq('provider_id', pid).order('starts_at', { ascending: true });
+    if (res.error) throw res.error;
+    var rows = (res.data || []).map(_tripToUi);
+    var ids = rows.map(function (r) { return r.id; });
+    if (ids.length) {
+      var b = await window.supabase.from('bookings').select('item_id,status').eq('item_type', 'experience').in('item_id', ids);
+      (b.data || []).forEach(function (x) {
+        if (x.status === 'cancelled') return;
+        var t = rows.find(function (r) { return r.id === x.item_id; }); if (t) t.applications++;
+      });
+    }
+    experiences = rows;
+  } catch (e) {
+    console.error('[FFP Trips] load:', e);
+    showToast('Could not load your trips', 'error');
+  }
+  try { renderExperiences(); } catch (e) {}
+  try { renderNav(); } catch (e) {}
+}
+async function saveExperience(id) {
+  const get = i => { const el = document.getElementById('xm-' + i); return el ? el.value.trim() : ''; };
   const title = get('title');
   if (!title) { showToast('Title is required', 'error'); return; }
   const start = get('start'), end = get('end');
   if (!start || !end) { showToast('Start and end dates are required', 'error'); return; }
+  if (end < start) { showToast('The end date is before the start date', 'error'); return; }
+  const pid = (window.FFP_PROVIDER || {}).id;
+  if (!pid) { showToast('Your account is still loading, try again in a moment', 'error'); return; }
   const photo = document.getElementById('listing-photo-slot').dataset.url || null;
   const days = Math.max(1, Math.round((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)) + 1);
-  const data = {
-    title, description: get('description'), overview: get('overview'),
-    experience_type: get('type'),
-    start_date: start, end_date: end, duration_days: days,
+  const payload = {
+    title: title, description: get('description'), overview: get('overview'),
+    exp_type: get('type'), fitness_level: get('fitness-level'),
+    starts_at: start, ends_at: end, duration_days: days,
     country: get('country'), destination: get('destination'),
-    price_aed: parseFloat(get('price')) || 0,
-    capacity: parseInt(get('capacity'), 10) || 0,
-    price_includes: modalIncludes.slice(),
-    price_excludes: modalExcludes.slice(),
-    accommodation: get('accommodation'), flights: get('flights'),
+    price_aed: get('price'), capacity: get('capacity'),
+    what_included: modalIncludes.join('\n'), what_not_included: modalExcludes.join('\n'),
+    accommodation: get('accommodation'), flights_info: get('flights'),
     travel_reqs: get('travel-reqs'), fitness_reqs: get('fitness-reqs'),
-    fitness_level: get('fitness-level'),
     itinerary: JSON.parse(JSON.stringify(modalItinerary)),
-    hero_url: photo
+    hero_image_url: photo
   };
-  if (id) {
-    const e = experiences.find(x => x.id === id);
-    Object.assign(e, data);
-    showToast('Experience updated', 'success');
+  const btns = document.querySelectorAll('.modal-foot .btn-pri');
+  btns.forEach(b => { b.disabled = true; });
+  try {
+    const r = await window.supabase.rpc('provider_save_listing', { p_kind: 'experience', p_provider: pid, p_id: id || null, p: payload });
+    if (r.error) throw r.error;
+    if (!r.data) throw new Error('not saved');
     closeModal();
-  } else {
-    experiences.unshift(Object.assign({
-      id: uid(), status: 'pending', applications: 0,
-      created_at: new Date().toISOString().slice(0,10)
-    }, data));
-    closeModal();
-    showSubmittedModal('experience');
+    if (id) showToast('Trip saved', 'success'); else showSubmittedModal('experience');
+    await loadTrips();
+    renderOverview();
+  } catch (e) {
+    console.error('[FFP Trips] save:', e);
+    showToast('Could not save the trip. Nothing was changed, please try again.', 'error');
+    btns.forEach(b => { b.disabled = false; });
   }
-  renderExperiences(); renderNav(); renderOverview();
 }
 
-function viewApplications(id) {
+async function viewApplications(id) {
   const e = experiences.find(x => x.id === id);
   if (!e) return;
-  const list = sampleRsvps.slice(0, e.applications || 0).map(m =>
-    `<div class="member-row">
-      <div class="member-avatar">${m.letter}</div>
+  openModalShell('', escHtml(e.title) + ', bookings', '<div class="empty-sub" style="text-align:left;">Loading…</div>',
+    '<button class="btn btn-ghost" onclick="closeModal()">Close</button>');
+  let rows = [];
+  try {
+    const b = await window.supabase.from('bookings').select('id,member_id,status,quantity,created_at')
+      .eq('item_type', 'experience').eq('item_id', id).order('created_at', { ascending: false });
+    rows = (b.data || []).filter(x => x.status !== 'cancelled');
+    const mids = [...new Set(rows.map(x => x.member_id).filter(Boolean))];
+    if (mids.length) {
+      const m = await window.supabase.from('members').select('id,full_name,given_names,surname').in('id', mids);
+      const by = {}; (m.data || []).forEach(x => { by[x.id] = x.full_name || [x.given_names, x.surname].filter(Boolean).join(' '); });
+      rows.forEach(x => { x._name = by[x.member_id] || 'Member'; });
+    }
+  } catch (err) { console.error('[FFP Trips] bookings:', err); }
+  const list = rows.map(m => `<div class="member-row">
+      <div class="member-avatar">${escHtml(String(m._name || 'M').charAt(0).toUpperCase())}</div>
       <div class="member-info">
-        <div class="member-name">${escHtml(m.name)}</div>
-        <div class="member-sub">Applied ${escHtml(m.joined)}</div>
+        <div class="member-name">${escHtml(m._name || 'Member')}</div>
+        <div class="member-sub">${escHtml(m.status || '')}${m.quantity > 1 ? ', ' + m.quantity + ' places' : ''}, booked ${fmtDate(String(m.created_at).slice(0, 10))}</div>
       </div>
-      <div class="member-actions">
-        <button class="btn btn-blue btn-xs" onclick="showToast('Deposit details sent to ${escHtml(m.name)}', 'success')"><span class="ms">check</span> Approve</button>
-        <button class="btn btn-sec btn-xs" onclick="showToast('Message sent to ${escHtml(m.name)}', 'success')"><span class="ms">chat_bubble</span></button>
-        <button class="btn btn-ghost btn-xs" onclick="showToast('${escHtml(m.name)} declined', 'success')"><span class="ms">close</span></button>
-      </div>
-    </div>`
-  ).join('');
-  openModalShell('', escHtml(e.title) + ' — Applications', `
-    <div class="psub" style="margin-bottom: 14px;">${e.applications || 0} of ${e.capacity || '∞'} spots requested for ${fmtDate(e.start_date)} — ${fmtDate(e.end_date)}.</div>
-    <div class="help-strip" style="margin-bottom: 14px;">
-      <span class="ms">info</span>
-      <div>Approve an applicant to send them your deposit details. Members are notified by email automatically.</div>
-    </div>
-    <div class="member-list">${list || '<div class="empty-sub" style="text-align:left;">No applications yet.</div>'}</div>
-  `, `
-    <button class="btn btn-ghost" onclick="closeModal()">Close</button>
-    <button class="btn btn-sec" onclick="showToast('CSV export started', 'success')"><span class="ms">download</span> Export CSV</button>
-    <button class="btn btn-blue" onclick="showToast('Broadcast email sent to all applicants', 'success')"><span class="ms">mail</span> Email all</button>
-  `);
+    </div>`).join('');
+  const body = document.querySelector('.modal .modal-body');
+  if (body) body.innerHTML = `<div class="psub" style="margin-bottom: 14px;">${rows.length} of ${e.capacity || 'unlimited'} places booked for ${fmtDate(e.start_date)} to ${fmtDate(e.end_date)}.</div>
+    <div class="member-list">${list || '<div class="empty-sub" style="text-align:left;">No bookings yet.</div>'}</div>`;
 }
 
 // ════════════════════════════════════════════════
@@ -6901,5 +6964,15 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 <script>window.ffpOpenMap=function(id){var el=document.getElementById(id);var v=el?(el.value||'').trim():'';if(v)window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v),'_blank');};</script>
 <!-- Floating "Ask Grant" chat assistant removed (Grant, 2026-09-09 — pointless + gave wrong info). <script defer src="assets/ffp-agent.js?v=5"></script> -->
+<script>
+/* Trips: load the partner's real trips once the account is known, so the nav count and the panel are right from the start. */
+(function () {
+  var n = 0, t = setInterval(function () {
+    n++;
+    if (window.FFP_PROVIDER && window.FFP_PROVIDER.id && window.supabase && window.supabase.from) { clearInterval(t); if (typeof loadTrips === 'function') loadTrips(); }
+    else if (n > 120) clearInterval(t);
+  }, 250);
+})();
+</script>
 </body>
 </html>
