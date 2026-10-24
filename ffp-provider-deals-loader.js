@@ -142,7 +142,7 @@
         '<div class="form-grid">' +
           '<div class="field full">' +
             '<div class="label">Headline perk <span class="req">*</span> <span class="label-hint">— what gets a member to come in</span></div>' +
-            '<input class="input" id="dm-perk" value="' + escHtml(d.perk) + '" placeholder="e.g. Bring a friend free · First class free · 20% off monthly">' +
+            '<input class="input" id="dm-perk" value="' + escHtml(d.perk) + '" placeholder="e.g. Bring a friend free, First class free, 20% off monthly">' +
           '</div>' +
           '<div class="field full">' +
             '<div class="label">Details</div>' +
