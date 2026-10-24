@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   FFP PROVIDER CHECK-INS LOADER · CURRENT VERSION: v3
+   FFP PROVIDER CHECK-INS LOADER, CURRENT VERSION: v3
    File path: ffp-provider-checkins-loader.js (repo root)
    On-load log: [FFP Check-ins v3] Loaded ✓
    v3: SESSION check-in added — pick today's session, scan QR / type member code (FFP Passport access_code or
@@ -282,7 +282,7 @@
     sel.innerHTML = _ciSessions.map(function (s) {
       var d = new Date(s.start_at); var t = d.toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
       var cap = (s.capacity != null) ? '/' + s.capacity : '';
-      return '<option value="' + s.id + '">' + escHtml(t + ' · ' + (s.title || 'Session') + ' (' + (s.present || 0) + cap + ')') + '</option>';
+      return '<option value="' + s.id + '">' + escHtml(t + ', ' + (s.title || 'Session') + ' (' + (s.present || 0) + cap + ')') + '</option>';
     }).join('');
     ffpSessionRoster();
   }
