@@ -15,7 +15,7 @@
        activity_types.subcategory. No live behaviour change; dead-code + comment cleanup only.
    v7: GUEST LIST inside the event modal — injectEventRoster() calls provider_event_roster(p_me,p_event)
        (owner-gated SECURITY DEFINER RPC) and shows each RSVP'd member (photo + name + city) with a
-       "Going" / "Checked in" badge + a "N going · M checked in" header. Lets providers see who's coming
+       "Going" / "Checked in" badge + a "N going, M checked in" header. Lets providers see who's coming
        and who actually showed up (via venue-QR check-in). node-checked.
    v6 (rebuilt form: Country/City taxonomy cascade required, Area+Venue optional,
    Location pin, End date/time, numeric Price (AED); flow Basics→When→Where→Pricing→Good-to-know; save via provider_save_listing RPC)
@@ -231,10 +231,15 @@
         .order('sort_order', { ascending: true });
       var items = (r && Array.isArray(r.data)) ? r.data : [];
       if (!items.length) return;                       // leave the placeholder rather than empty it
-      var keep = sel.value;
+      /* The saved type is parked on data-want by patchModalAfterOpen, because the
+         options arrive after the modal opens: setting .value on a select that only
+         has the placeholder does nothing, so every edit saved the type as empty
+         (23 Oct audit: editing an event wiped its Event type). */
+      var keep = sel.value || sel.dataset.want || '';
+      var known = items.some(function (it) { return it.value === keep; });
       sel.innerHTML = '<option value="">Choose type…</option>' + items.map(function (it) {
         return '<option value="' + escHtmlSafe(it.value) + '">' + escHtmlSafe(it.label) + '</option>';
-      }).join('');
+      }).join('') + (keep && !known ? '<option value="' + escHtmlSafe(keep) + '">' + escHtmlSafe(keep) + '</option>' : '');
       if (keep) sel.value = keep;
       if (window.FFPSelect) { var m = document.querySelector('.modal'); if (m) window.FFPSelect.enhance(m); }
     } catch (e) { console.error('[FFP Provider Events] event_type taxonomy:', e); }
@@ -387,7 +392,7 @@
     // carry the saved type back into the field when editing
     (function () {
       var t = document.getElementById('em-event-type');
-      if (t && existing && existing.event_type) t.value = existing.event_type;
+      if (t && existing && existing.event_type) { t.dataset.want = existing.event_type; t.value = existing.event_type; }
     })();
 
     // Remove "Who is this for?" field — every event is for FFP members anyway
@@ -663,7 +668,7 @@
           return;
         }
         var inCount = rows.filter(function (r) { return r.checked_in; }).length;
-        body.innerHTML = '<div style="margin-bottom:8px;font-weight:700;color:#cfe0ee;">' + rows.length + ' going · ' + inCount + ' checked in</div>' + rows.map(function (p) {
+        body.innerHTML = '<div style="margin-bottom:8px;font-weight:700;color:#cfe0ee;">' + rows.length + ' going, ' + inCount + ' checked in</div>' + rows.map(function (p) {
           var nm = p.full_name || ((p.given_names || '') + ' ' + (p.surname || '')).trim() || 'Member';
           var av = p.photo_url
             ? '<span style="width:36px;height:36px;border-radius:50%;flex-shrink:0;background:#ffffff url(\'' + p.photo_url + '\') center/cover;"></span>'
