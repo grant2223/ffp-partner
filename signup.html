@@ -354,8 +354,9 @@ h2.step{font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.14;mar
         <div id="type-rows"></div>
         <div class="lab" id="cat-lab">What kind of place?</div>
         <div class="chips" id="cat-chips"></div>
-        <div class="lab">What can people do with you?</div>
-        <div class="chips" id="act-chips"></div>
+        <div class="lab">What can people do with you? <span id="act-count" style="text-transform:none;letter-spacing:0;font-weight:700;color:#1980AD"></span></div>
+        <div class="field" style="margin-bottom:12px"><input type="search" id="act-q" placeholder="Search all activities, e.g. padel, yoga, running" autocomplete="off"></div>
+        <div id="act-chips"></div>
         <div class="lab">Where</div>
         <div class="field"><label>Area</label><input type="text" id="area" placeholder="e.g. Al Quoz" maxlength="80"></div>
         <div class="err" id="err2"></div>
@@ -606,12 +607,33 @@ h2.step{font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.14;mar
       return '<button type="button" class="chip' + (P.categories.indexOf(c) >= 0 ? ' on' : '') + '" data-cat="'
         + esc(c) + '">' + esc(c) + '</button>'; }).join('');
   }
+  /* EVERY ACTIVITY, FINDABLE. The list used to stop at the first 26 names
+     alphabetically, so Padel, Running, Yoga and 150+ others could not be picked
+     (23 Oct audit). Now: a search box over the whole taxonomy list, picks shown
+     first, then every activity grouped by its category. */
   function paintActs() {
     var T = window.FFP_TAX || {};
-    var acts = (T.activities || []).map(function (a) { return a && a.n ? a.n : a; }).filter(Boolean);
-    $('act-chips').innerHTML = acts.slice(0, 26).map(function (a) {
+    var all = (T.activities || []).map(function (a) {
+      return a && a.n ? { n: a.n, c: a.c || '' } : { n: String(a || ''), c: '' }; }).filter(function (a) { return a.n; });
+    var q = (($('act-q') && $('act-q').value) || '').trim().toLowerCase();
+    var chip = function (a) {
       return '<button type="button" class="chip' + (P.activities.indexOf(a) >= 0 ? ' on' : '') + '" data-act="'
-        + esc(a) + '">' + esc(a) + '</button>'; }).join('');
+        + esc(a) + '">' + esc(a) + '</button>'; };
+    var cap = function (c) { return c ? c.charAt(0).toUpperCase() + c.slice(1) : 'Other'; };
+    var h = '';
+    if (P.activities.length) {
+      h += '<div class="lab" style="margin:4px 0 8px">Your picks</div><div class="chips">' + P.activities.map(chip).join('') + '</div>';
+    }
+    var shown = all.filter(function (a) { return P.activities.indexOf(a.n) < 0 && (!q || a.n.toLowerCase().indexOf(q) >= 0 || a.c.toLowerCase().indexOf(q) >= 0); });
+    var groups = {}, order = [];
+    shown.forEach(function (a) { var k = cap(a.c); if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(a.n); });
+    order.sort(function (x, y) { return x === 'Other' ? 1 : y === 'Other' ? -1 : x.localeCompare(y); });
+    order.forEach(function (k) {
+      h += '<div class="lab" style="margin:16px 0 8px">' + esc(k) + '</div><div class="chips">' + groups[k].map(chip).join('') + '</div>';
+    });
+    if (!shown.length && q) h += '<div style="color:#5d7180;font-weight:600;font-size:13.5px;margin:10px 0">No activity matches "' + esc(q) + '". Try another word.</div>';
+    $('act-chips').innerHTML = h;
+    if ($('act-count')) $('act-count').textContent = P.activities.length ? '(' + P.activities.length + ' picked)' : '';
   }
   function paintPlaces() {
     var T = window.FFP_TAX || {};
@@ -866,6 +888,7 @@ h2.step{font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.14;mar
   $('no-perk').addEventListener('click', function () { finish(false); });
   $('btn-resume').addEventListener('click', function () { go(P.step || 2); });
   $('tagline').addEventListener('input', function () { P.tagline = this.value; paintSides(); });
+  if ($('act-q')) $('act-q').addEventListener('input', paintActs);
   $('about').addEventListener('input',   function () { P.about   = this.value; paintSides(); });
   $('perk').addEventListener('input',    function () {
     P.perk = parseInt(String(this.value).replace(/\D/g, ''), 10) || 0; paintSides(); });
