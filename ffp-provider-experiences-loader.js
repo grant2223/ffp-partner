@@ -133,7 +133,7 @@
     if (countries.length && countries.indexOf(selCountry) === -1) selCountry = countries[0];
 
     var body =
-      '<div id="cl-stepbar" style="font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--ffp-purple,#8b5cf6);margin:0 0 12px;">Step 1 of 3 · Details</div>' +
+      '<div id="cl-stepbar" style="font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--ffp-purple,#8b5cf6);margin:0 0 12px;">Step 1 of 3, Details</div>' +
       '<div id="cl-step1">' +
       '<div class="form-section"><div class="form-section-title">Photos <span class="label-hint" style="text-transform:none;letter-spacing:0;font-weight:600;">— drag to reorder; the first photo is the cover shown on the card</span></div>' +
         '<div id="cm-gallery" style="display:flex;flex-wrap:wrap;gap:10px;"></div>' +
@@ -487,7 +487,7 @@
         groups[k].forEach(function (s) {
           var cancelled = s.status === 'cancelled';
           html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--ffp-border);' + (cancelled ? 'opacity:.55;' : '') + '">' +
-            '<span style="font-size:13px;">' + esc(ti(s.starts_at)) + ' · ' + (s.spots_taken || 0) + '/' + (s.capacity || 0) + (cancelled ? ' · <b style="color:#e0556b;">Cancelled</b>' : '') + '</span>' +
+            '<span style="font-size:13px;">' + esc(ti(s.starts_at)) + ', ' + (s.spots_taken || 0) + '/' + (s.capacity || 0) + (cancelled ? ', <b style="color:#e0556b;">Cancelled</b>' : '') + '</span>' +
             '<span style="display:flex;gap:6px;flex-shrink:0;">' +
               (cancelled
                 ? '<button type="button" class="btn btn-ghost btn-sm" onclick="cmReopenDeparture(\'' + s.id + '\')">Reopen</button>'
@@ -512,7 +512,7 @@
     Promise.all(ids.map(function (idv) { return sb().rpc('provider_set_class_session_status', { p_provider: provId(), p_id: idv, p_status: 'cancelled' }); })).then(_cmReload);
   };
 
-  var _clTitles = ['Step 1 of 3 · Details', 'Step 2 of 3 · Good to know', 'Step 3 of 3 · Schedule'];
+  var _clTitles = ['Step 1 of 3, Details', 'Step 2 of 3, Good to know', 'Step 3 of 3, Schedule'];
   function _clShow(id, on) { var x = document.getElementById(id); if (x) x.style.display = on ? '' : 'none'; }
   window.clStep = function (n) {
     n = Math.min(3, Math.max(1, n || 1));
@@ -607,8 +607,8 @@
       var nm = [g.first_name || g.given_names, g.last_name || g.surname].filter(Boolean).join(' ').trim();
       var meta = []; if (g.gender) meta.push(pretty(g.gender)); if (g.age != null && g.age !== '') meta.push('age ' + g.age);
       var ans = (g.answers && typeof g.answers === 'object') ? Object.keys(g.answers).filter(function (k) { return g.answers[k] != null && g.answers[k] !== ''; }).map(function (k) { return pretty(k) + ': ' + g.answers[k]; }) : [];
-      var line = '<b>Guest ' + (i + 1) + '</b>' + (nm ? ' · ' + esc(nm) : '') + (meta.length ? ' (' + esc(meta.join(', ')) + ')' : '');
-      if (ans.length) line += ' — ' + esc(ans.join(' · '));
+      var line = '<b>Guest ' + (i + 1) + '</b>' + (nm ? ', ' + esc(nm) : '') + (meta.length ? ' (' + esc(meta.join(', ')) + ')' : '');
+      if (ans.length) line += ' — ' + esc(ans.join(', '));
       rows.push('<div>' + line + '</div>');
     });
     var ba = (d.booking_answers && typeof d.booking_answers === 'object') ? d.booking_answers : null;
@@ -629,7 +629,7 @@
       host.innerHTML = order.map(function (k) {
         var g = groups[k];
         var when = g.starts_at ? new Date(g.starts_at).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Date TBC';
-        return '<div style="margin:0 0 16px;"><div style="font-weight:800;color:var(--ffp-text);border-bottom:1px solid var(--ffp-border-mid);padding-bottom:6px;margin-bottom:8px;">' + esc(when) + ' · ' + g.rows.length + ' booked</div>' +
+        return '<div style="margin:0 0 16px;"><div style="font-weight:800;color:var(--ffp-text);border-bottom:1px solid var(--ffp-border-mid);padding-bottom:6px;margin-bottom:8px;">' + esc(when) + ', ' + g.rows.length + ' booked</div>' +
           g.rows.map(function (b) {
             return '<div style="padding:8px 2px;border-bottom:1px solid var(--ffp-border);">' +
               '<div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;"><span style="font-weight:700;color:var(--ffp-text);">' + esc(b.member_name || 'Member') + (b.quantity > 1 ? ' ×' + b.quantity : '') + '</span>' +
