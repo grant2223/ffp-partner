@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   FFP PROVIDER VENUE QR LOADER · v3
+   FFP PROVIDER VENUE QR LOADER, v3
    File path: ffp-provider-venue-qr-loader.js (repo root)
    On-load log: [FFP Venue QR v3] Loaded ✓
    v3: Two-column Check-ins layout — QR now injects at the top of the left
