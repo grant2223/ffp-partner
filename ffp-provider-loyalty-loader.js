@@ -1,4 +1,4 @@
-/*  FFP PROVIDER LOYALTY LOADER · v3 (world-class .pc-* layout: card setup + live member-pass preview + at-the-till code)
+/*  FFP PROVIDER LOYALTY LOADER, v3 (world-class .pc-* layout: card setup + live member-pass preview + at-the-till code)
     Desktop panel: set up a stamp OR points loyalty card + a live 6-digit staff code
     that rotates every 60 seconds (authenticator-style). Members enter the code at the
     till to earn a stamp/points; they can't add their own. Renders into #loy-root.
