@@ -202,12 +202,28 @@
       '.spx-ok{color:#1c7a47}.spx-warn{color:#8a5a00}' +
       '.spx-link{font-size:11.5px;color:#8a99a8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px;margin-top:4px}' +
       '.spx-del{background:none;border:none;color:#c0392b;font-weight:800;font-size:13px;cursor:pointer;flex:none}' +
+      /* MANAGE. A sponsor opens IN PLACE rather than in a modal: the shell
+         renders modals into #modal, outside #panel-*, so modal CSS has to be
+         written twice and silently renders unstyled when it is not. */
+      '.spx-edit{background:none;border:none;color:#1980AD;font-weight:800;font-size:13px;cursor:pointer;flex:none}' +
+      '.spx-row.ed{background:#fbfdff}' +
+      '.spx-row.ed .spx-lg{cursor:pointer}' +
+      '.spx-eg{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}' +
+      '.spx-ea{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}' +
+      '.spx-eh{font-size:12px;color:#8aa0b4;font-weight:700}' +
+      '.spx-move{font-size:12.5px;font-weight:800;color:#a8620a}' +
       '.spx-empty{padding:16px 0;color:#8a99a8;font-size:13px;font-weight:600}' +
       '.spx-add{margin-top:18px;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}' +
       '.spx-fld{display:flex;flex-direction:column;gap:6px;min-width:0}' +
       '.spx-fld.gr{flex:1 1 200px}.spx-fld.sm{flex:0 0 210px}' +
+      /* A TEAM NAME IS NOT TRUNCATED. "Abu Dhabi Harlequins 2nd" does not fit a
+         210px select, and a half-read club name is how a sponsor ends up on the
+         wrong board. */
+      '.spx-fld.bd{flex:0 0 310px}' +
       '.spx-add label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:#8a99a8}' +
-      '.spx-add input,.spx-add select{border:1px solid #dbe3ea;border-radius:10px;height:44px;padding:0 12px;font-family:inherit;font-size:14px;color:#12232f;background:#fff;box-sizing:border-box;min-width:0}' +
+      /* The edit row reuses .spx-fld, so it has to be named here too: scoped to
+         .spx-add alone it left the edit fields as unstyled 21px natives. */
+      '.spx-add input,.spx-add select,.spx-row.ed input,.spx-row.ed select{border:1px solid #dbe3ea;border-radius:10px;height:44px;padding:0 12px;font-family:inherit;font-size:14px;color:#12232f;background:#fff;box-sizing:border-box;min-width:0}' +
       '.spx-up{flex:0 0 160px;height:92px;border:1.5px dashed #cfd9e2;border-radius:12px;cursor:pointer;background:#fafcfe;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#8a99a8}' +
       '.spx-up .pv{width:100%;height:100%;border-radius:10px;background:center/contain no-repeat;display:flex;align-items:center;justify-content:center;font-size:24px}' +
       '.spx-up b{font-size:12px;color:#12232f;font-weight:800}' +
@@ -224,6 +240,23 @@
       var n = (e.sponsors != null) ? e.sponsors : null;
       o += '<option value="' + esc(e.id) + '"' + (e.id === cur ? ' selected' : '') + '>'
         + esc(e.team_name || e.name || 'Team') + (n ? ' (' + n + ')' : '') + '</option>';
+    });
+    return o;
+  }
+
+  function boardName(id) {
+    if (!id) return 'the event board';
+    for (var i = 0; i < (W._entrants || []).length; i++)
+      if (W._entrants[i].id === id)
+        return W._entrants[i].team_name || W._entrants[i].name || 'that team';
+    return 'that team';
+  }
+  function boardOptsPlain(cur) {
+    var o = '<option value=""' + (!cur ? ' selected' : '') + '>Event board</option>';
+    (W._entrants || []).forEach(function (e) {
+      var nm = e.team_name || e.name || 'Team';
+      o += '<option value="' + esc(e.id) + '"' + (e.id === cur ? ' selected' : '') + '>'
+        + esc(nm) + '</option>';
     });
     return o;
   }
@@ -293,6 +326,34 @@
         : 'the event';
 
       var rowsHtml = list.length ? list.map(function (s) {
+        /* THE ROW OPENS IN PLACE. Everything about a sponsor is editable here --
+           name, tier, link, logo, and WHICH BOARD IT IS ON. Moving it was the
+           one that mattered: there was no way to do it at all, so a sponsor put
+           on the wrong club could only be removed and uploaded again. */
+        if (W._edit === s.id) {
+          var curLogo = W._editLogo || s.logo_url;
+          return '<div class="spx-row ed">'
+            + '<span class="spx-lg" style="--u:url(&quot;' + esc(safeUrl(curLogo)) + '&quot;)" '
+              + 'title="Click to replace this logo" onclick="FFPSponsors.editLogo()"></span>'
+            + '<div class="spx-m">'
+              + '<div class="spx-eg">'
+                + '<div class="spx-fld gr"><label>Sponsor name</label>'
+                  + '<input id="spx-en" value="' + esc(s.name || '') + '"></div>'
+                + '<div class="spx-fld sm"><label>Tier</label>'
+                  + '<select id="spx-et">' + tierOpts(s.tier) + '</select></div>'
+                + '<div class="spx-fld bd"><label>On board</label>'
+                  + '<select id="spx-eb">' + boardOptsPlain(s.entrant_id || null) + '</select></div>'
+                + '<div class="spx-fld gr"><label>Link (optional)</label>'
+                  + '<input id="spx-el" value="' + esc(s.link_url || '') + '"></div>'
+              + '</div>'
+              + '<div class="spx-ea">'
+                + '<button class="spx-btn" onclick="FFPSponsors.editSave()">Save changes</button>'
+                + '<button class="spx-gh" style="height:44px" onclick="FFPSponsors.editCancel()">Cancel</button>'
+                + '<span class="spx-eh">Click the logo to replace it.</span>'
+                + (W._editLogo ? '<span class="spx-move">New logo ready to save.</span>' : '')
+              + '</div>'
+            + '</div></div>';
+        }
         var opaque = s.has_alpha === false;
         var treat = opaque
           ? '<div class="spx-tr spx-warn"><span class="ms">info</span><span class="tx">'
@@ -311,6 +372,7 @@
           + '<div class="spx-tier t-' + esc(tier) + '">' + esc(tierName(tier).toUpperCase()) + '</div>'
           + (s.link_url ? '<div class="spx-link">' + esc(s.link_url) + '</div>' : '')
           + treat + '</div>'
+          + '<button class="spx-edit" onclick="FFPSponsors.editOpen(\'' + s.id + '\')">Edit</button>'
           + '<button class="spx-del" onclick="FFPSponsors.remove(\'' + s.id + '\')">Remove</button>'
           + '</div>';
       }).join('') : '<div class="spx-empty">No sponsors on this board yet.</div>';
@@ -749,6 +811,66 @@
       } catch (e) { r = { error: e }; }
       if (r && r.error) { toast(r.error.message || 'Could not save the sponsor', 'error'); return; }
       toast('Sponsor added', 'success');
+      W.render();
+    },
+
+    /* ── MANAGE A SPONSOR ──────────────────────────────────────────────── */
+    editOpen: function (id) {
+      W._edit = id; W._editLogo = null; W._editAlpha = null; W._editScale = null;
+      W.render();
+    },
+    editCancel: function () {
+      W._edit = null; W._editLogo = null; W._editAlpha = null; W._editScale = null;
+      W.render();
+    },
+    editLogo: function () {
+      if (!window.FFPUpload || !FFPUpload.pick) { toast('Upload unavailable', 'error'); return; }
+      FFPUpload.pick({
+        bucket: 'event-sponsors', key: 'spon-' + W._event + '-' + Date.now(),
+        title: 'Replace sponsor logo',
+        onDone: async function (url) {
+          W._editLogo = url;
+          /* decided once, here, exactly as the add path does it: the broadcast
+             board cannot inspect an image at play-out */
+          W._editAlpha = await detectAlpha(url);
+          W._editScale = await opticalScale(url);
+          W.render();
+        },
+        onError: function () { toast('Upload failed', 'error'); }
+      });
+    },
+    editSave: async function () {
+      if (!W._edit || W._editBusy) return;
+      function v(id) { var e = document.getElementById(id); return e ? e.value : ''; }
+      var name = (v('spx-en') || '').trim();
+      var toBoard = v('spx-eb') || null;
+      var fromBoard = W._board || null;
+      var p = { name: name || null, link_url: (v('spx-el') || '').trim() || null,
+                tier: v('spx-et') || 'supporting', entrant_id: toBoard };
+      if (W._editLogo) {
+        p.logo_url = W._editLogo;
+        p.has_alpha = W._editAlpha === null ? null : W._editAlpha;
+        p.logo_scale = W._editScale;
+      }
+      W._editBusy = true;
+      var r;
+      try {
+        r = await sb().rpc('event_sponsor_save',
+          { p_scope: W._scope, p_event: W._event, p_id: W._edit, p: p });
+      } catch (e) { r = { error: e }; }
+      W._editBusy = false;
+      if (r && r.error) { toast(r.error.message || 'Could not save the sponsor', 'error'); return; }
+      var moved = (toBoard || null) !== (fromBoard || null);
+      /* FOLLOW IT. A sponsor moved to another club leaves THIS board, and a row
+         vanishing with no explanation is exactly what made sponsors look lost.
+         The view switches to where it went and says so. */
+      if (moved) {
+        W._board = toBoard || null;
+        toast('Moved to ' + (toBoard ? boardName(toBoard) : 'the event board'), 'success');
+      } else {
+        toast('Sponsor updated', 'success');
+      }
+      W._edit = null; W._editLogo = null; W._editAlpha = null; W._editScale = null;
       W.render();
     },
 
