@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   FFP PROVIDER CHECK-IN CONSOLE LOADER · v4
+   FFP PROVIDER CHECK-IN CONSOLE LOADER, v4
    File path: ffp-provider-quests-loader.js (repo root)
    On-load log: [FFP Provider Check-ins v4] Loaded ✓
 
@@ -106,7 +106,7 @@
         avatarHtml(r.member_name, r.member_photo) +
         '<div class="checkin-info">' +
           '<div class="checkin-name">' + esc(r.member_name || 'Member') + '</div>' +
-          '<div class="checkin-listing">' + esc(r.quest_title || 'Quest') + ' · ' + relTime(r.requested_at) + '</div>' +
+          '<div class="checkin-listing">' + esc(r.quest_title || 'Quest') + ', ' + relTime(r.requested_at) + '</div>' +
         '</div>' +
         '<div class="qc-actions">' +
           '<button class="btn btn-ghost" onclick="FFPQuestCheckins.decline(\'' + r.id + '\')">Decline</button>' +
@@ -122,7 +122,7 @@
         avatarHtml(r.member_name, r.member_photo) +
         '<div class="checkin-info">' +
           '<div class="checkin-name">' + esc(r.member_name || 'Member') + '</div>' +
-          '<div class="checkin-listing">' + esc(r.challenge_title || 'Challenge') + ' · ' + relTime(r.submitted_at) + '</div>' +
+          '<div class="checkin-listing">' + esc(r.challenge_title || 'Challenge') + ', ' + relTime(r.submitted_at) + '</div>' +
         '</div>' +
         (score ? '<span class="qc-score">' + esc(score) + (r.metric ? (' ' + esc(r.metric)) : '') + '</span>' : '') +
         '<div class="qc-actions">' +
@@ -136,7 +136,7 @@
         avatarHtml(r.member_name, r.member_photo) +
         '<div class="checkin-info">' +
           '<div class="checkin-name">' + esc(r.member_name || 'Member') + '</div>' +
-          '<div class="checkin-listing">' + esc(r.event_title || 'Event') + ' · ' + relTime(r.checked_in_at) + '</div>' +
+          '<div class="checkin-listing">' + esc(r.event_title || 'Event') + ', ' + relTime(r.checked_in_at) + '</div>' +
         '</div>' +
         (r.verified ? '<span class="qc-badge">on-site</span>' : '') +
       '</div>';
