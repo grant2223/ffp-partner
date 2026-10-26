@@ -575,7 +575,7 @@
       return '<div class="cx-row" style="gap:9px;flex-wrap:wrap">' +
         '<span style="flex:none;width:20px;font-weight:900;color:#8a97a2">' + (i + 1) + '</span>' +
         '<select class="cx-sel" style="flex:2 1 150px;min-width:0" onchange="FFPComp.mvSet(\'' + m.id + '\',\'movement\',this.value)">' +
-          opts.map(function (o) { return '<option value="' + o.id + '"' + (o.id === m.movement_id ? ' selected' : '') + '>' + esc(o.value) + '</option>'; }).join('') +
+          mvOptionsHtml(m.movement_id) +
         '</select>' +
         '<input class="cx-in" style="flex:0 0 76px;min-width:0" value="' + esc('' + amount) + '" placeholder="Amount" onchange="FFPComp.mvSet(\'' + m.id + '\',\'amount\',this.value)">' +
         '<select class="cx-sel" style="flex:0 0 86px;min-width:0" onchange="FFPComp.mvSet(\'' + m.id + '\',\'unit\',this.value)">' +
@@ -599,12 +599,59 @@
     return (rows || '<div class="cx-empty" style="padding:18px 8px">No movements yet.</div>') +
       '<button class="cx-btn sm" style="margin-top:10px" onclick="FFPComp.mvAdd()"><span class="ms">add</span> Add movement</button>';
   }
+  /* The list is grouped so a long list stays scannable, and ends with the one
+     escape hatch: a movement this event needs that nobody has used before. It
+     is ADDED TO THE TAXONOMY, not typed onto the workout, so it is spelled the
+     same next time and admin can edit it like any other list. */
+  function mvOptionsHtml(sel) {
+    var groups = {}, order = [];
+    (S.mvOpts || []).forEach(function (o) {
+      var g = o.parent || 'other';
+      if (!groups[g]) { groups[g] = []; order.push(g); }
+      groups[g].push(o);
+    });
+    var label = { machine: 'Machines and running', barbell: 'Barbell',
+                  dumbbell: 'Dumbbell', kettlebell: 'Kettlebell',
+                  gymnastics: 'Gymnastics and bodyweight', conditioning: 'Conditioning',
+                  plyo: 'Jumping', strongman: 'Strongman and odd object',
+                  hyrox: 'Hyrox stations', deka: 'DEKA stations', ocr: 'Obstacle racing',
+                  team: 'Team and synchro', grip: 'Grip', accessory: 'Accessory',
+                  other: 'Other' };
+    var rank = ['machine','barbell','dumbbell','kettlebell','gymnastics','conditioning','plyo',
+                'strongman','hyrox','deka','ocr','team','grip','accessory','other'];
+    order.sort(function (a, b) {
+      var ia = rank.indexOf(a), ib = rank.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    });
+    return order.map(function (g) {
+      return '<optgroup label="' + esc(label[g] || g) + '">' +
+        groups[g].map(function (o) {
+          return '<option value="' + o.id + '"' + (o.id === sel ? ' selected' : '') + '>' + esc(o.value) + '</option>';
+        }).join('') + '</optgroup>';
+    }).join('') + '<option value="__new">+ Add a new movement…</option>';
+  }
+  async function mvNew(mid) {
+    var nm = window.prompt('New movement name'); if (nm === null) return false;
+    nm = nm.trim(); if (!nm) return false;
+    var r; try { r = await sb().rpc('comp_movement_create', { p_name: nm, p_category: null }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast((r && r.error && r.error.message) || 'Could not add movement', 'error'); return false; }
+    var row = r.data || {};
+    S.mvOpts = null; await movementOptions();
+    toast(row.existed ? 'Already in the list' : 'Movement added', 'check');
+    return row.id || false;
+  }
   function mvAdd() {
     var opts = S.mvOpts || []; if (!opts.length) { toast('No movements in the taxonomy', 'error'); return; }
     mvSave(null, { movement: opts[0].id, unit: 'reps', count_mode: 'every_rep' });
   }
-  function mvSet(mid, field, val) {
+  async function mvSet(mid, field, val) {
     var m = (S.mv || []).find(function (x) { return x.id === mid; }); if (!m) return;
+    if (field === 'movement' && val === '__new') {
+      var nid = await mvNew(mid);
+      if (!nid) { loadMovements(S.mvWod); return; }
+      m.movement_id = nid;
+      await mvSave(mid, m); loadMovements(S.mvWod); return;
+    }
     if (field === 'movement') m.movement_id = val;
     else if (field === 'amount') { if ((m.unit || 'reps') === 'reps') { m.reps = val === '' ? null : parseInt(val, 10); m.amount = null; } else { m.amount = val === '' ? null : parseFloat(val); m.reps = null; } }
     else if (field === 'unit') { m.unit = val; if (val === 'reps') { m.reps = m.reps != null ? m.reps : (m.amount != null ? Math.round(m.amount) : null); m.amount = null; } else { m.amount = m.amount != null ? m.amount : (m.reps != null ? m.reps : null); m.reps = null; } }
@@ -1276,7 +1323,7 @@
   function tab(t) { S.tab = t; document.querySelectorAll('.cx-editnav button').forEach(function (b) { b.classList.remove('on'); }); var el = document.querySelector('.cx-editnav button[onclick*="\'' + t + '\'"]'); if (el) el.classList.add('on'); renderTab(); }
 
   window.FFPComp = {
-    loadMovements: loadMovements, mvAdd: mvAdd, mvSet: mvSet, mvRemove: mvRemove, list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
+    loadMovements: loadMovements, mvAdd: mvAdd, mvSet: mvSet, mvRemove: mvRemove, mvNew: mvNew, list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
     saveDetails: saveDetails, seriesPick: seriesPick, saveSetup: saveSetup, suSeriesPick: suSeriesPick, uploadDoc: uploadDoc, sponPick: sponPick, sponAdd: sponAdd, sponRemove: sponRemove, inviteJudge: inviteJudge, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision, mixHint: mixHint,
     editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
