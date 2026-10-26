@@ -54,7 +54,11 @@
       '.cx-jchip .x{cursor:pointer;color:#8aa0b2;font-size:14px;line-height:1;}',
       '.cx-jchip .cx-jpos-t{font-size:11px;font-weight:900;color:var(--ffp-blue);cursor:pointer;padding:0 2px;}',
       '.cx-jaddbtn{display:inline-flex;align-items:center;gap:5px;border:1px dashed #c4ced5;background:#fff;border-radius:20px;padding:6px 12px;font:inherit;font-size:12.5px;font-weight:800;color:var(--ffp-blue);cursor:pointer;} .cx-jaddbtn .ms{font-size:16px;}',
-      '.cx-pop{position:fixed;z-index:1000;width:270px;max-height:320px;overflow-y:auto;background:#fff;border:1px solid var(--ffp-border);border-radius:13px;box-shadow:0 14px 34px rgba(15,34,48,.20);}',
+      '.cx-pophd{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;border-bottom:1px solid var(--ffp-border);flex:none;} .cx-pophd b{font-size:17px;font-weight:800;}',
+      '.cx-popx{width:44px;height:44px;border-radius:50%;border:none;background:#eef1f4;color:#12232f;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;} .cx-popx .ms{font-size:24px;}',
+      '.cx-popbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px);max-width:720px;width:100%;margin:0 auto;}',
+      '.cx-pop{position:fixed;inset:0;display:flex;flex-direction:column;z-index:100000;width:auto;max-height:none;overflow:hidden;background:#fff;border:none;border-radius:0;box-shadow:none;}',
+      '.cx-pop-legacy{position:fixed;z-index:1000;width:270px;max-height:320px;overflow-y:auto;background:#fff;border:1px solid var(--ffp-border);border-radius:13px;box-shadow:0 14px 34px rgba(15,34,48,.20);}',
       '.cx-popsearch{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--ffp-border);} .cx-popsearch .ms{color:#9aa8b4;} .cx-popsearch input{border:none;outline:none;font:inherit;font-size:14px;flex:1;background:transparent;}',
       '.cx-popr{display:flex;align-items:center;gap:9px;padding:10px 13px;border-bottom:1px solid #f0f3f6;cursor:pointer;font-size:13.5px;} .cx-popr:last-child{border-bottom:none;} .cx-popr:hover{background:#f6f9fb;} .cx-popr b{font-weight:800;}',
       '.cx-popav{width:26px;height:26px;border-radius:50%;background:#dfeaf2;display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--ffp-blue);font-size:12px;}',
@@ -519,6 +523,10 @@
     openModal((id ? 'Edit' : 'Add') + ' event — ' + esc(div.name),
       '<div class="cx-fld"><div class="cx-lab">Name</div><input id="cw-name" class="cx-in" value="' + esc(w.name || '') + '" placeholder="e.g. Fran"></div>' +
       '<div class="cx-fld"><div class="cx-lab">Description (optional)</div><textarea id="cw-desc" class="cx-in" rows="3" placeholder="Movements, reps, standards…">' + esc(w.description || '') + '</textarea></div>' +
+      (id ? '<div class="cx-fld"><div class="cx-lab">Movements</div><div id="cw-mv"><div class="cx-sub">Loading…</div></div>' +
+            '<div class="cx-sub" style="margin-top:6px">What the judge counts, in order. The scorer builds itself from these.</div></div>' : '') +
+      '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Rounds (optional)</div><input id="cw-rounds" type="number" class="cx-in" value="' + (w.rounds || '') + '" placeholder="1" style="max-width:160px"><div class="cx-sub" style="margin-top:6px">Identical rounds. Leave blank for a chipper.</div></div>' +
+      '<div class="cx-fld"><div class="cx-lab">Every minute, seconds (optional)</div><input id="cw-interval" type="number" class="cx-in" value="' + (w.interval_seconds || '') + '" placeholder="60" style="max-width:160px"><div class="cx-sub" style="margin-top:6px">EMOM: the clock restarts on this interval.</div></div></div>' +
       '<div class="cx-2"><div class="cx-fld"><div class="cx-lab">Scored in</div><select id="cw-type" class="cx-sel" onchange="FFPComp.typeHint(this.value)">' +
         types.map(function (t) { return '<option value="' + t + '"' + ((w.score_type || 'time') === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></div>' +
       '<div class="cx-fld"><div class="cx-lab">Winner</div><select id="cw-dir" class="cx-sel">' +
@@ -533,6 +541,98 @@
         '<input id="cw-spon-url" class="cx-in" value="' + esc(w.sponsor_url || '') + '" placeholder="Sponsor link (optional)" style="margin-top:8px"></div>' +
       multi + copy,
       '<button class="cx-btn" onclick="FFPComp.closeModal()">Cancel</button><button class="cx-btn pri" onclick="FFPComp.saveWorkout(\'' + (id || '') + '\')">Save</button>');
+
+    if (id) { S.mvWod = id; loadMovements(id); }
+  }
+
+  /* ── MOVEMENTS ────────────────────────────────────────────────────────────
+     A workout's movements, in order. Everything the judge's scorer shows is
+     built from these rows: count_mode picks the panel, reps/amount the target,
+     load and height the standard. Movement names come from the taxonomy's
+     'movement' list, never typed -- and the database enforces that too, so a
+     stale cached list cannot write an off-list value. */
+  async function movementOptions() {
+    if (S.mvOpts) return S.mvOpts;
+    var r; try {
+      r = await sb().from('taxonomy_items').select('id,value')
+             .eq('list_key', 'movement').eq('active', true).order('sort_order');
+    } catch (e) { r = { error: e }; }
+    S.mvOpts = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
+    return S.mvOpts;
+  }
+  async function loadMovements(wid) {
+    var host = document.getElementById('cw-mv'); if (!host) return;
+    var opts = await movementOptions();
+    var r; try { r = await sb().rpc('comp_movements_list', { p_workout: wid }); } catch (e) { r = { error: e }; }
+    if (!document.getElementById('cw-mv')) return;
+    if (!opts.length) { host.innerHTML = '<div class="cx-sub" style="color:#c0392b">No movements in the taxonomy yet — add them in Admin → Taxonomies.</div>'; return; }
+    S.mv = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
+    host.innerHTML = mvHtml(wid, opts);
+  }
+  function mvHtml(wid, opts) {
+    var rows = (S.mv || []).map(function (m, i) {
+      var amount = (m.unit && m.unit !== 'reps') ? (m.amount == null ? '' : m.amount) : (m.reps == null ? '' : m.reps);
+      return '<div class="cx-row" style="gap:9px;flex-wrap:wrap">' +
+        '<span style="flex:none;width:20px;font-weight:900;color:#8a97a2">' + (i + 1) + '</span>' +
+        '<select class="cx-sel" style="flex:2 1 150px;min-width:0" onchange="FFPComp.mvSet(\'' + m.id + '\',\'movement\',this.value)">' +
+          opts.map(function (o) { return '<option value="' + o.id + '"' + (o.id === m.movement_id ? ' selected' : '') + '>' + esc(o.value) + '</option>'; }).join('') +
+        '</select>' +
+        '<input class="cx-in" style="flex:0 0 76px;min-width:0" value="' + esc('' + amount) + '" placeholder="Amount" onchange="FFPComp.mvSet(\'' + m.id + '\',\'amount\',this.value)">' +
+        '<select class="cx-sel" style="flex:0 0 86px;min-width:0" onchange="FFPComp.mvSet(\'' + m.id + '\',\'unit\',this.value)">' +
+          ['reps','m','km','cal','sec'].map(function (u) { return '<option value="' + u + '"' + ((m.unit || 'reps') === u ? ' selected' : '') + '>' + u + '</option>'; }).join('') +
+        '</select>' +
+        '<input class="cx-in" style="flex:0 0 72px;min-width:0" value="' + (m.load == null ? '' : esc('' + m.load)) + '" placeholder="Load" onchange="FFPComp.mvSet(\'' + m.id + '\',\'load\',this.value)">' +
+        '<select class="cx-sel" style="flex:0 0 72px;min-width:0" onchange="FFPComp.mvSet(\'' + m.id + '\',\'load_unit\',this.value)">' +
+          ['kg','lb','pood'].map(function (u) { return '<option value="' + u + '"' + ((m.load_unit || 'kg') === u ? ' selected' : '') + '>' + u + '</option>'; }).join('') +
+        '</select>' +
+        '<input class="cx-in" style="flex:0 0 72px;min-width:0" value="' + (m.height == null ? '' : esc('' + m.height)) + '" placeholder="Height" onchange="FFPComp.mvSet(\'' + m.id + '\',\'height\',this.value)">' +
+        '<select class="cx-sel" style="flex:0 0 66px;min-width:0" onchange="FFPComp.mvSet(\'' + m.id + '\',\'height_unit\',this.value)">' +
+          ['cm','in'].map(function (u) { return '<option value="' + u + '"' + ((m.height_unit || 'cm') === u ? ' selected' : '') + '>' + u + '</option>'; }).join('') +
+        '</select>' +
+        '<select class="cx-sel" style="flex:1 1 150px;min-width:0" onchange="FFPComp.mvSet(\'' + m.id + '\',\'count_mode\',this.value)">' +
+          [['every_rep','Judge counts every rep'],['every_100m','Judge counts every 100 m'],['show_only','Not counted']].map(function (o) {
+            return '<option value="' + o[0] + '"' + ((m.count_mode || 'every_rep') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+        '</select>' +
+        '<input class="cx-in" style="flex:1 1 130px;min-width:0" value="' + esc(m.standard_note || '') + '" placeholder="Standard, e.g. damper 5" onchange="FFPComp.mvSet(\'' + m.id + '\',\'standard_note\',this.value)">' +
+        '<button class="cx-btn sm" onclick="FFPComp.mvRemove(\'' + m.id + '\')">Remove</button></div>';
+    }).join('');
+    return (rows || '<div class="cx-empty" style="padding:18px 8px">No movements yet.</div>') +
+      '<button class="cx-btn sm" style="margin-top:10px" onclick="FFPComp.mvAdd()"><span class="ms">add</span> Add movement</button>';
+  }
+  function mvAdd() {
+    var opts = S.mvOpts || []; if (!opts.length) { toast('No movements in the taxonomy', 'error'); return; }
+    mvSave(null, { movement: opts[0].id, unit: 'reps', count_mode: 'every_rep' });
+  }
+  function mvSet(mid, field, val) {
+    var m = (S.mv || []).find(function (x) { return x.id === mid; }); if (!m) return;
+    if (field === 'movement') m.movement_id = val;
+    else if (field === 'amount') { if ((m.unit || 'reps') === 'reps') { m.reps = val === '' ? null : parseInt(val, 10); m.amount = null; } else { m.amount = val === '' ? null : parseFloat(val); m.reps = null; } }
+    else if (field === 'unit') { m.unit = val; if (val === 'reps') { m.reps = m.reps != null ? m.reps : (m.amount != null ? Math.round(m.amount) : null); m.amount = null; } else { m.amount = m.amount != null ? m.amount : (m.reps != null ? m.reps : null); m.reps = null; } }
+    else if (field === 'load') m.load = val === '' ? null : parseFloat(val);
+    else if (field === 'height') m.height = val === '' ? null : parseFloat(val);
+    else m[field] = val === '' ? null : val;
+    mvSave(mid, m);
+  }
+  async function mvSave(mid, m) {
+    var wid = S.mvWod; if (!wid) return;
+    var p = {
+      p_id: mid, p_workout: wid, p_movement: m.movement || m.movement_id,
+      p_reps: m.reps == null ? null : m.reps,
+      p_amount: m.amount == null ? null : m.amount,
+      p_unit: m.unit || 'reps',
+      p_load: m.load == null ? null : m.load, p_load_unit: m.load_unit || null,
+      p_height: m.height == null ? null : m.height, p_height_unit: m.height_unit || null,
+      p_load_steps: m.load_steps || null, p_standard_note: m.standard_note || null,
+      p_count_mode: m.count_mode || 'every_rep', p_ord: m.ord == null ? null : m.ord
+    };
+    var r; try { r = await sb().rpc('comp_movement_save', p); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast((r && r.error && r.error.message) || 'Save failed', 'error'); return; }
+    if (!mid) loadMovements(wid);
+  }
+  async function mvRemove(mid) {
+    var r; try { r = await sb().rpc('comp_movement_remove', { p_id: mid }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast('Remove failed', 'error'); return; }
+    loadMovements(S.mvWod);
   }
   // ---- event media (banner + gallery) + sponsor logo, rendered from S.cw ----
   function cwMediaHtml() {
@@ -604,7 +704,8 @@
     var capMin = parseInt(g('cw-cap'), 10);
     var pwv = parseFloat(g('cw-pw'));
     var cw = S.cw || {};
-    var p = { name: g('cw-name'), description: g('cw-desc') || null, score_type: g('cw-type'), direction: g('cw-dir'), cap_seconds: isNaN(capMin) ? null : capMin * 60,
+    var rnds = parseInt(g('cw-rounds'), 10); var ivl = parseInt(g('cw-interval'), 10);
+    var p = { name: g('cw-name'), description: g('cw-desc') || null, score_type: g('cw-type'), direction: g('cw-dir'), rounds: isNaN(rnds) ? null : rnds, interval_seconds: isNaN(ivl) ? null : ivl, cap_seconds: isNaN(capMin) ? null : capMin * 60,
       points_weight: (isNaN(pwv) || pwv <= 0) ? 1 : pwv,
       banner_url: cw.banner || null, image_urls: (cw.imgs || []), video_url: g('cw-video') || null,
       sponsor_name: g('cw-spon-name') || null, sponsor_logo_url: cw.sponLogo || null, sponsor_url: g('cw-spon-url') || null };
@@ -940,13 +1041,13 @@
   // ---- add-judge / position popovers (search + tap; NO dropdowns) ----
   function _closePop() { var p = document.getElementById('cx-pop'); if (p) p.remove(); document.removeEventListener('mousedown', _popOutside, true); }
   function _popOutside(e) { var p = document.getElementById('cx-pop'); if (p && !p.contains(e.target)) _closePop(); }
-  function _pop(ev, html) {
+  /* FULL BLEED (Grant's rule; 23 Oct audit): the judge / position pickers open as
+     a full screen with a back button, not a small floating list by the pointer. */
+  function _pop(ev, html, title) {
     _closePop();
-    var p = document.createElement('div'); p.id = 'cx-pop'; p.className = 'cx-pop'; p.innerHTML = html; document.body.appendChild(p);
-    var x = (ev && ev.clientX) || 200, y = (ev && ev.clientY) || 200;
-    p.style.left = Math.max(10, Math.min(x, window.innerWidth - p.offsetWidth - 12)) + 'px';
-    p.style.top = Math.min(y + 8, window.innerHeight - p.offsetHeight - 12) + 'px';
-    setTimeout(function () { document.addEventListener('mousedown', _popOutside, true); }, 0);
+    var p = document.createElement('div'); p.id = 'cx-pop'; p.className = 'cx-pop';
+    p.innerHTML = '<div class="cx-pophd"><button type="button" class="cx-popx" aria-label="Back" onclick="document.getElementById(\'cx-pop\').remove()"><span class="ms">arrow_back</span></button><b>' + esc(title || 'Choose') + '</b></div><div class="cx-popbody">' + html + '</div>';
+    document.body.appendChild(p);
   }
   function laneJudgeOpen(heat, lane, ev) {
     if (ev) ev.stopPropagation();
@@ -957,7 +1058,7 @@
     var rows = addable.length ? addable.map(function (j) {
       return '<div class="cx-popr" data-nm="' + esc((j.name || '').toLowerCase()) + '" onclick="FFPComp.laneJudgePick(\'' + heat + '\',' + lane + ',\'' + j.member_id + '\')"><span class="cx-popav">' + esc((j.name || '?').slice(0, 1)) + '</span><b>' + esc(j.name) + '</b><span class="ms" style="margin-left:auto;color:#1980AD">add_circle</span></div>';
     }).join('') : '<div class="cx-popnote">All your judges are on this lane. Add more in the Judges tab.</div>';
-    _pop(ev, '<div class="cx-popsearch"><span class="ms">search</span><input id="cx-popq" placeholder="Search judges…" oninput="FFPComp.judgePickFilter(this.value)"></div><div id="cx-poprows">' + rows + '</div>');
+    _pop(ev, '<div class="cx-popsearch"><span class="ms">search</span><input id="cx-popq" placeholder="Search judges…" oninput="FFPComp.judgePickFilter(this.value)"></div><div id="cx-poprows">' + rows + '</div>', 'Add a judge');
     var q = document.getElementById('cx-popq'); if (q) q.focus();
   }
   function judgePickFilter(v) {
@@ -976,7 +1077,7 @@
       return '<div class="cx-popr" onclick="FFPComp.lanePosPick(\'' + heat + '\',' + lane + ',\'' + jid + '\',\'' + esc(p) + '\')"><b' + (on ? ' style="color:#1980AD"' : '') + '>' + esc(p) + '</b><span class="ms" style="margin-left:auto;color:' + (on ? '#1980AD' : '#c4ced5') + '">' + (on ? 'check_circle' : 'radio_button_unchecked') + '</span></div>';
     }).join('');
     rows += '<div class="cx-popr" onclick="FFPComp.lanePosPick(\'' + heat + '\',' + lane + ',\'' + jid + '\',\'\')"><b style="color:#8a99a8">No position</b></div>';
-    _pop(ev, '<div class="cx-popsearch" style="font-weight:800;color:#12232f">Position on the lane</div><div>' + rows + '</div>');
+    _pop(ev, '<div class="cx-popsearch" style="font-weight:800;color:#12232f">Position on the lane</div><div>' + rows + '</div>', 'Position on the lane');
   }
   async function lanePosPick(heat, lane, jid, pos) { _closePop(); await sb().rpc('comp_lane_judge_add', { p_heat: heat, p_lane: +lane, p_judge: jid, p_position: pos || null }); renderTab(); }
   function hmode(btn) { document.querySelectorAll('#cx-hmode button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); S._heatMode = btn.getAttribute('data-v'); }
@@ -1174,7 +1275,8 @@
   }
   function tab(t) { S.tab = t; document.querySelectorAll('.cx-editnav button').forEach(function (b) { b.classList.remove('on'); }); var el = document.querySelector('.cx-editnav button[onclick*="\'' + t + '\'"]'); if (el) el.classList.add('on'); renderTab(); }
 
-  window.FFPComp = { list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
+  window.FFPComp = {
+    loadMovements: loadMovements, mvAdd: mvAdd, mvSet: mvSet, mvRemove: mvRemove, list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
     saveDetails: saveDetails, seriesPick: seriesPick, saveSetup: saveSetup, suSeriesPick: suSeriesPick, uploadDoc: uploadDoc, sponPick: sponPick, sponAdd: sponAdd, sponRemove: sponRemove, inviteJudge: inviteJudge, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision, mixHint: mixHint,
     editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
