@@ -71,7 +71,7 @@
       '.cx-massmt{padding:16px 8px;color:var(--ffp-text-muted);font-weight:700;font-size:13px;text-align:center;}',
       '.cx-massjudges{display:flex;align-items:center;gap:10px;padding:10px 4px 16px;flex-wrap:wrap;} .cx-massjudges .cx-slab{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ffp-text-muted);}',
       '.cx-jadd{width:auto;min-width:96px;}',
-      '.cx-av{width:32px;height:32px;border-radius:50%;background:#e7ecef center/cover;flex:none;display:flex;align-items:center;justify-content:center;font-weight:900;color:#6a7681;font-size:12px;} .cx-row .g{flex:1;} .cx-row .g b{font-size:14px;font-weight:800;} .cx-row .g span{display:block;font-size:12px;color:var(--ffp-text-muted);font-weight:700;}',
+      '.cx-av{width:32px;height:32px;border-radius:9px;background:#e7ecef center top/cover;flex:none;display:flex;align-items:center;justify-content:center;font-weight:900;color:#6a7681;font-size:12px;} .cx-row .g{flex:1;} .cx-row .g b{font-size:14px;font-weight:800;} .cx-row .g span{display:block;font-size:12px;color:var(--ffp-text-muted);font-weight:700;}',
       '.cx-pill{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;}',
       '.cx-pill.live{background:#fdeaea;color:#d6353b;} .cx-pill.open{background:#e3f6ec;color:#0a8f5f;} .cx-pill.draft{background:#eef2f5;color:#5b6b75;} .cx-pill.final{background:#eef2f5;color:#5b6b75;}',
       '.cx-lab{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#8a97a2;margin:0 0 7px;}',
@@ -103,9 +103,24 @@
       '.cx-drow.dragging{opacity:.4;}',
       '.cx-drow.dragover{background:#eaf3fa;box-shadow:inset 0 2px 0 #1980AD;}',
       '.cx-row .g{flex:1;min-width:0;} .cx-row .g b{font-size:14px;font-weight:800;color:var(--ffp-text);} .cx-row .g span{display:block;font-size:12px;color:var(--ffp-text-muted);font-weight:700;margin-top:1px;text-transform:capitalize;}',
-      '.cx-av{width:32px;height:32px;border-radius:50%;flex:none;background:#e7ecef center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#6a7681;}',
+      '.cx-av{width:32px;height:32px;border-radius:9px;flex:none;background:#e7ecef center top/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#6a7681;}',
       '.cx-empty{padding:34px 16px;text-align:center;color:var(--ffp-text-muted);font-weight:600;font-size:13.5px;}',
       '.cx-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}',
+      /* THE JUDGE PICKER -- a judge in a competition is an OFFICIAL in a league
+         or tournament, so this is that control: an Add toggle, a search over
+         real FFP accounts, whole-row results, one tap adds. Rounded-square
+         avatars, never circles. */
+      '.cx-jadd{padding:4px 0 18px;border-bottom:1px solid var(--ffp-border);margin-bottom:14px;}',
+      '.cx-jav{width:38px;height:38px;border-radius:10px;flex:none;background:#e7ecef center top/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#6a7681;}',
+      '.cx-jopt{display:flex;align-items:center;gap:12px;width:100%;max-width:420px;text-align:left;font:inherit;padding:10px 12px;margin-top:8px;background:#fff;border:1px solid #d7dee5;border-radius:10px;cursor:pointer;}',
+      '.cx-jopt:hover{border-color:var(--ffp-blue);background:#f6fbfe;}',
+      '.cx-jopt.is{cursor:default;background:#f4f7f9;border-style:dashed;}',
+      '.cx-jopt.is:hover{border-color:#d7dee5;background:#f4f7f9;}',
+      '.cx-jopt .g{flex:1;min-width:0;}',
+      '.cx-jopt .g b{display:block;font-size:14px;font-weight:800;color:var(--ffp-text);}',
+      '.cx-jopt .g span{display:block;font-size:11.5px;font-weight:700;color:var(--ffp-text-muted);margin-top:2px;}',
+      '.cx-jopt .pk{flex:none;font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--ffp-blue);}',
+      '.cx-jopt.is .pk{color:var(--ffp-text-muted);}',
       '.cx-toolbar .cx-sel{width:auto;min-width:180px;}',
       '.cx-sc{display:grid;grid-template-columns:26px 1fr 120px 70px 60px;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid var(--ffp-border);}',
       '.cx-sc.head{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--ffp-text-muted);}',
@@ -1247,11 +1262,20 @@
 
   // ---------- JUDGES ----------
   async function renderJudges(c) {
-    c.innerHTML = '<div class="cx-sub" style="margin-bottom:6px">Add your judges &amp; officials. They need an <b>FFP App account</b> — add them by their FFP email, or send an invite to join (shares your referral link).</div>'
-      + '<div class="cx-sub" style="margin-bottom:12px;color:#8a99a8">Scoring is done by the head scorer in the Scores tab. Judges scoring from their own app is coming soon.</div>'
-      + '<div class="cx-toolbar"><input class="cx-in" id="cx-jemail" placeholder="Judge\'s FFP email" style="flex:1;min-width:180px"><button class="cx-btn pri sm" onclick="FFPComp.addJudge()"><span class="ms">person_add</span> Add</button><button class="cx-btn sm" onclick="FFPComp.inviteJudge()"><span class="ms">mail</span> Invite</button></div><div id="cx-judges"><div class="cx-empty">Loading…</div></div>';
+    var jopen = !!S.jAdd;
+    c.innerHTML = '<div class="cx-sub" style="margin-bottom:6px">Your judges and officials. A judge scores their own lane from the FFP Scorer app, so they must be a real FFP account.</div>'
+      + '<div class="cx-toolbar" style="margin-bottom:10px"><b style="flex:1;font-size:15px;font-weight:900;color:var(--ffp-text)">Judges</b>'
+      + '<button class="cx-btn' + (jopen ? '' : ' pri') + ' sm" onclick="FFPComp.judgeAddOpen(' + (jopen ? 'false' : 'true') + ')"><span class="ms">' + (jopen ? 'close' : 'person_add') + '</span> ' + (jopen ? 'Cancel' : 'Add a judge') + '</button>'
+      + '<button class="cx-btn sm" onclick="FFPComp.inviteJudge()"><span class="ms">mail</span> Invite someone new</button></div>'
+      + (jopen
+          ? '<div class="cx-jadd"><input class="cx-in" id="cx-jq" autocomplete="off" placeholder="Search FFP members by name or email" oninput="FFPComp.searchJudge(this.value)" style="width:100%;max-width:420px">'
+            + '<div id="cx-jres"></div>'
+            + '<div class="cx-sub" style="margin-top:8px"><span class="ms" style="font-size:15px;vertical-align:-3px">info</span> They must already have an FFP account. Someone without one registers at findfitpeople.com first — use Invite.</div></div>'
+          : '')
+      + '<div id="cx-judges"><div class="cx-empty">Loading…</div></div>';
     var r; try { r = await sb().rpc('comp_judges_list', { p_event: S.eventId }); } catch (e) { r = { error: e }; }
     var rows = (r && r.data) || []; var host = document.getElementById('cx-judges');
+    S._judgeIds = rows.map(function (j) { return j.member_id; });
     host.innerHTML = rows.length ? rows.map(function (j) {
       var av = '<span class="cx-av" style="' + (j.photo ? 'background-image:url(\'' + esc(j.photo) + '\')' : '') + '">' + (j.photo ? '' : esc((j.name || '?').slice(0, 1))) + '</span>';
       if (j.status === 'applied') {
@@ -1295,10 +1319,39 @@
     if (r && !r.error) { if (S.detail && S.detail.event) S.detail.event.judge_positions = list; toast('Positions saved', 'check'); }
     else toast('Save failed', 'error');
   }
-  async function addJudge() {
-    var em = (document.getElementById('cx-jemail') || {}).value; if (!em) return;
-    var r; try { r = await sb().rpc('comp_judge_add', { p_event: S.eventId, p_email: em, p_name: null }); } catch (e) { r = { error: e }; }
-    if (r.error || (r.data && r.data.error)) { toast('No FFP account with that email — send them an invite to join first', 'error'); return; } toast('Judge added', 'success'); renderTab();
+  /* A JUDGE IS AN OFFICIAL. This is the Officials control from Leagues and
+     Tournaments (openAdd / ofSearch / ofPick in the leagues loader), in this
+     screen's own .cx-* markup: an Add toggle, a search over real FFP accounts,
+     whole-row results with the member's photo, one tap adds. A judge is never
+     a typed-in name — they sign in to the Scorer app as themselves. */
+  function judgeAddOpen(on) { S.jAdd = !!on; renderTab(); }
+  var _cjT;
+  function searchJudge(q) {
+    var box = document.getElementById('cx-jres'); if (!box) return;
+    clearTimeout(_cjT);
+    q = (q || '').trim();
+    if (q.length < 2) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="cx-empty" style="padding:14px">Searching…</div>';
+    _cjT = setTimeout(async function () {
+      var r; try { r = await sb().rpc('comp_member_search', { p_event: S.eventId, p_q: q }); } catch (e) { r = { error: e }; }
+      var rows = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
+      if (!rows.length) { box.innerHTML = '<div class="cx-empty" style="padding:14px">No FFP account for that name. They register at findfitpeople.com first.</div>'; return; }
+      var have = {}; (S._judgeIds || []).forEach(function (id) { have[id] = 1; });
+      box.innerHTML = rows.map(function (m) {
+        var av = '<span class="cx-jav"' + (m.photo ? ' style="background-image:url(\'' + esc(m.photo) + '\')"' : '') + '>' + (m.photo ? '' : esc((m.name || '?').slice(0, 1).toUpperCase())) + '</span>';
+        var sub = [m.city, m.email_hint].filter(Boolean).join(', ');
+        if (have[m.id]) {
+          return '<div class="cx-jopt is">' + av + '<span class="g"><b>' + esc(m.name) + '</b><span>' + esc(sub) + '</span></span><span class="pk">Already a judge</span></div>';
+        }
+        return '<button type="button" class="cx-jopt" onclick="FFPComp.addJudgeMember(\'' + m.id + '\',this)">' + av + '<span class="g"><b>' + esc(m.name) + '</b><span>' + esc(sub) + '</span></span><span class="pk">Add</span></button>';
+      }).join('');
+    }, 300);
+  }
+  async function addJudgeMember(memberId, btn) {
+    if (btn) { btn.disabled = true; var pk = btn.querySelector('.pk'); if (pk) pk.textContent = 'Adding…'; }
+    var r; try { r = await sb().rpc('comp_judge_add_member', { p_event: S.eventId, p_member: memberId }); } catch (e) { r = { error: e }; }
+    if (r && !r.error && !(r.data && r.data.error)) { S.jAdd = false; toast('Judge added', 'check'); renderTab(); }
+    else { toast('Could not add that judge', 'error'); if (btn) { btn.disabled = false; var p2 = btn.querySelector('.pk'); if (p2) p2.textContent = 'Add'; } }
   }
   function inviteJudge() {
     var pid = ((S.detail && S.detail.event) || {}).organizer_provider_id || prov().id;
@@ -1324,12 +1377,12 @@
 
   window.FFPComp = {
     loadMovements: loadMovements, mvAdd: mvAdd, mvSet: mvSet, mvRemove: mvRemove, mvNew: mvNew, list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
-    saveDetails: saveDetails, seriesPick: seriesPick, saveSetup: saveSetup, suSeriesPick: suSeriesPick, uploadDoc: uploadDoc, sponPick: sponPick, sponAdd: sponAdd, sponRemove: sponRemove, inviteJudge: inviteJudge, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
+    saveDetails: saveDetails, seriesPick: seriesPick, saveSetup: saveSetup, suSeriesPick: suSeriesPick, uploadDoc: uploadDoc, sponPick: sponPick, sponAdd: sponAdd, sponRemove: sponRemove, inviteJudge: inviteJudge, judgeAddOpen: judgeAddOpen, searchJudge: searchJudge, addJudgeMember: addJudgeMember, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision, mixHint: mixHint,
     editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
     addAthlete: addAthlete, bulkAthletes: bulkAthletes, searchAthlete: searchAthlete, linkAthlete: linkAthlete, inviteAthlete: inviteAthlete, saveScores: saveScores,
-    hmode: hmode, fmtPick: fmtPick, heatPickSet: heatPickSet, hDragStart: hDragStart, hDragOver: hDragOver, hDragLeave: hDragLeave, hDrop: hDrop, genHeats: genHeats, heatSet: heatSet, laneAssign: laneAssign, laneJudgeRemove: laneJudgeRemove, laneJudgeOpen: laneJudgeOpen, judgePickFilter: judgePickFilter, laneJudgePick: laneJudgePick, lanePosOpen: lanePosOpen, lanePosPick: lanePosPick, addJudge: addJudge, removeJudge: removeJudge, judgeDecide: judgeDecide, saveJudgePositions: saveJudgePositions,
+    hmode: hmode, fmtPick: fmtPick, heatPickSet: heatPickSet, hDragStart: hDragStart, hDragOver: hDragOver, hDragLeave: hDragLeave, hDrop: hDrop, genHeats: genHeats, heatSet: heatSet, laneAssign: laneAssign, laneJudgeRemove: laneJudgeRemove, laneJudgeOpen: laneJudgeOpen, judgePickFilter: judgePickFilter, laneJudgePick: laneJudgePick, lanePosOpen: lanePosOpen, lanePosPick: lanePosPick,  removeJudge: removeJudge, judgeDecide: judgeDecide, saveJudgePositions: saveJudgePositions,
     schedEvent: schedEvent, schedHeat: schedHeat,
     publish: publish, finalise: finalise, closeModal: closeModal };
   window.ffpRenderCompetitions = renderList;
