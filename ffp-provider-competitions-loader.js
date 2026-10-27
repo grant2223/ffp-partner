@@ -111,6 +111,9 @@
          real FFP accounts, whole-row results, one tap adds. Rounded-square
          avatars, never circles. */
       '.cx-jadd{padding:4px 0 18px;border-bottom:1px solid var(--ffp-border);margin-bottom:14px;}',
+      '.cx-jrole{flex:none;padding:7px 10px;border:1px solid #d7dee5;border-radius:9px;background:#fff;font:inherit;font-size:12px;font-weight:800;color:var(--ffp-text);height:34px;min-width:0;box-sizing:border-box;}',
+      '.cx-row .g b .cx-hj{display:inline;margin-left:8px;font-size:9.5px;font-weight:900;letter-spacing:.12em;color:#8a5a00;}',
+      '.cx-row .g span.cx-em{text-transform:none;}',
       '.cx-jav{width:38px;height:38px;border-radius:10px;flex:none;background:#e7ecef center top/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#6a7681;}',
       '.cx-jopt{display:flex;align-items:center;gap:12px;width:100%;max-width:420px;text-align:left;font:inherit;padding:10px 12px;margin-top:8px;background:#fff;border:1px solid #d7dee5;border-radius:10px;cursor:pointer;}',
       '.cx-jopt:hover{border-color:var(--ffp-blue);background:#f6fbfe;}',
@@ -1283,7 +1286,16 @@
           + '<button class="cx-btn pri sm" onclick="FFPComp.judgeDecide(\'' + j.member_id + '\',true)">Approve</button>'
           + '<button class="cx-btn sm" style="margin-left:6px" onclick="FFPComp.judgeDecide(\'' + j.member_id + '\',false)">Decline</button></div>';
       }
-      return '<div class="cx-row">' + av + '<div class="g"><b>' + esc(j.name) + '</b><span>' + esc(j.email || '') + ', official</span></div><span class="ms" style="color:#9aa8b4;cursor:pointer" onclick="FFPComp.removeJudge(\'' + j.member_id + '\')">close</span></div>';
+      /* A HEAD JUDGE IS APPOINTED BEFORE THE COMPETITION AND HOLDS THE ROLE FOR
+         ALL OF IT, and there can be more than one -- 059 Classic runs one per
+         competition field, HYROX one per station. No rulebook anywhere names a
+         head judge per heat, so the role sits on the judge, not on the heat. */
+      var hj = (j.role === 'head_judge');
+      return '<div class="cx-row">' + av + '<div class="g"><b>' + esc(j.name) + (hj ? '<span class="cx-hj">HEAD JUDGE</span>' : '') + '</b><span class="cx-em">' + esc(j.email || '') + '</span></div>'
+        + '<select class="cx-jrole" onchange="FFPComp.judgeRole(\'' + j.member_id + '\',this.value)">'
+        + '<option value="judge"' + (hj ? '' : ' selected') + '>Judge</option>'
+        + '<option value="head_judge"' + (hj ? ' selected' : '') + '>Head judge</option></select>'
+        + '<span class="ms" style="color:#9aa8b4;cursor:pointer" onclick="FFPComp.removeJudge(\'' + j.member_id + '\')">close</span></div>';
     }).join('') : '<div class="cx-empty">No judges yet.</div>';
     // Judge positions the organiser defines (used per lane in Heats & lanes)
     var pos = (S.detail.event && Array.isArray(S.detail.event.judge_positions)) ? S.detail.event.judge_positions : [];
@@ -1360,6 +1372,11 @@
     try { navigator.clipboard.writeText(msg); toast('Invite link copied — send it to your judge', 'check'); }
     catch (e) { window.prompt('Copy this invite link for your judge:', link); }
   }
+  async function judgeRole(mid, role) {
+    var r; try { r = await sb().rpc('comp_judge_set_role', { p_event: S.eventId, p_member: mid, p_role: role }); } catch (e) { r = { error: e }; }
+    if (r && !r.error && !(r.data && r.data.error)) { toast(role === 'head_judge' ? 'Head judge set' : 'Set to judge', 'check'); renderTab(); }
+    else toast('Could not change that role', 'error');
+  }
   async function removeJudge(mid) { await sb().rpc('comp_judge_remove', { p_event: S.eventId, p_member: mid }); renderTab(); }
   async function judgeDecide(mid, accept) { await sb().rpc('comp_judge_decide', { p_event: S.eventId, p_member: mid, p_accept: !!accept }); toast(accept ? 'Judge approved' : 'Application declined', 'check'); renderTab(); }
 
@@ -1377,7 +1394,7 @@
 
   window.FFPComp = {
     loadMovements: loadMovements, mvAdd: mvAdd, mvSet: mvSet, mvRemove: mvRemove, mvNew: mvNew, list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
-    saveDetails: saveDetails, seriesPick: seriesPick, saveSetup: saveSetup, suSeriesPick: suSeriesPick, uploadDoc: uploadDoc, sponPick: sponPick, sponAdd: sponAdd, sponRemove: sponRemove, inviteJudge: inviteJudge, judgeAddOpen: judgeAddOpen, searchJudge: searchJudge, addJudgeMember: addJudgeMember, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
+    saveDetails: saveDetails, seriesPick: seriesPick, saveSetup: saveSetup, suSeriesPick: suSeriesPick, uploadDoc: uploadDoc, sponPick: sponPick, sponAdd: sponAdd, sponRemove: sponRemove, inviteJudge: inviteJudge, judgeRole: judgeRole, judgeAddOpen: judgeAddOpen, searchJudge: searchJudge, addJudgeMember: addJudgeMember, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision, mixHint: mixHint,
     editWorkout: editWorkout, saveWorkout: saveWorkout, wDragStart: wDragStart, wDragOver: wDragOver, wDragLeave: wDragLeave, wDrop: wDrop, wDragEnd: wDragEnd, typeHint: typeHint,
     cwBanner: cwBanner, cwAddImg: cwAddImg, cwRmImg: cwRmImg, cwSpon: cwSpon, cwRmSpon: cwRmSpon,
