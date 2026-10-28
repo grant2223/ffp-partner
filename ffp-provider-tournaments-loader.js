@@ -452,6 +452,38 @@
       '.lg-end .g span{display:block;font-size:12px;font-weight:600;color:var(--ffp-text-muted);margin-top:3px;line-height:1.55;}',
       '.lg-end .lg-btn{flex:none;margin-top:1px;}',
       '.lg-end .lg-btn:disabled{opacity:.38;cursor:default;}',
+      /* RUN THIS AGAIN. The sheet is appended to document.body, the same as
+         lg-cfm, so nothing here is scoped to #tg-root or #panel-*. Full
+         bleed, with the safe area honoured top and bottom. */
+      '.td-sheet,.td-sheet *{box-sizing:border-box;}',
+      '.td-sheet{position:fixed;inset:0;z-index:9999;background:#fff;display:flex;flex-direction:column;}',
+      '.td-top{flex:none;display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 20px) 22px 16px;border-bottom:1px solid var(--ffp-border);}',
+      '.td-top .x{width:36px;height:36px;flex:none;border:none;background:#eef2f5;border-radius:10px;font:inherit;font-size:20px;color:#5a6b78;cursor:pointer;line-height:1;}',
+      '.td-top b{font-size:18px;font-weight:900;color:var(--ffp-text);}',
+      '.td-top span{display:block;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:2px;}',
+      '.td-body{flex:1;min-height:0;overflow-y:auto;padding:22px;max-width:720px;width:100%;margin:0 auto;}',
+      '.td-sec{font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--ffp-text-dim,#8a99a8);margin:26px 0 10px;}',
+      '.td-sec:first-child{margin-top:0;}',
+      '.td-note{font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.55;margin-top:8px;}',
+      '.td-when{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}',
+      '.td-when>div{flex:1 1 150px;min-width:0;}',
+      '.td-pick{border:1px solid var(--ffp-border-mid);border-radius:12px;overflow:hidden;}',
+      '.td-row{display:flex;align-items:center;gap:13px;padding:13px 15px;border-bottom:1px solid var(--ffp-border);background:#fff;}',
+      '.td-row:last-child{border-bottom:0;}',
+      '.td-row .g{flex:1;min-width:0;}',
+      '.td-row .g b{display:block;font-size:14px;font-weight:800;color:var(--ffp-text);}',
+      '.td-row .g span{display:block;font-size:12px;font-weight:600;color:var(--ffp-text-muted);margin-top:2px;line-height:1.45;}',
+      '.td-row .n{flex:none;font-size:12px;font-weight:800;color:var(--ffp-text-dim,#8a99a8);font-variant-numeric:tabular-nums;}',
+      '.td-tog{flex:none;width:50px;height:30px;border:none;border-radius:16px;background:#cdd7df;position:relative;cursor:pointer;transition:background .14s;}',
+      '.td-tog:after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .14s;box-shadow:0 1px 3px rgba(0,0,0,.25);}',
+      '.td-tog.on{background:#1c9d54;}',
+      '.td-tog.on:after{transform:translateX(20px);}',
+      '.td-always{flex:none;width:50px;text-align:center;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#1c9d54;}',
+      '.td-never{background:#f4f7f9;border:1px dashed var(--ffp-border-mid);border-radius:12px;padding:14px 16px;}',
+      '.td-never b{display:block;font-size:13.5px;font-weight:900;color:var(--ffp-text);}',
+      '.td-never span{display:block;font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);margin-top:5px;line-height:1.5;}',
+      '.td-sheet .td-foot{flex:none;border-top:1px solid var(--ffp-border);padding:16px 22px calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;gap:12px;justify-content:flex-end;max-width:720px;width:100%;margin:0 auto;box-sizing:border-box;}',
+      '@media(max-width:560px){.td-sheet .td-foot{flex-direction:column-reverse;} .td-sheet .td-foot .lg-btn{justify-content:center;}}',
       '.lg-cover .bd.archived,.lg-cover .bd.cancelled{color:#8a99a8;}',
       '.lg-pill.archived{background:#eef2f5;color:#8a99a8;}',
       '.lg-pill.cancelled{background:#fdeaea;color:#d6353b;}',
@@ -3695,6 +3727,7 @@
       +   '<div id="tg-pdfwrap">' + rulesPdfHtml(ev) + '</div></div>'
       + '<div class="lg-fld"><div class="lg-lab">Live stream URL <span style="font-weight:500;color:#8a99a8;">— the tournament\'s main channel, YouTube, Twitch or Facebook</span></div><input class="lg-in" id="tg-stream" value="' + esc(ev.stream_url || '') + '" placeholder="https://…"></div>'
       + '<button class="lg-btn pri" onclick="FFPTourn.saveDetails()">' + ic('check') + 'Save</button>'
+      + dupBlock(ev)
       + endBlock(ev);
   }
 
@@ -4851,6 +4884,186 @@
        DELETE    is the mistake case only: a draft with nobody in it. The
                  database refuses anything else, so this cannot destroy a
                  member's record even if the button were reached another way. */
+  /* ── RUN IT AGAIN ──────────────────────────────────────────────────────
+     A tournament that has been run is the fullest description of how this
+     organiser wants to run it: the divisions, the draw format, the days and
+     session times, the courts, the fee, the rules. So running it again
+     copies the SETUP and nothing that came out of PLAYING, and the copy
+     lands as a draft nobody can see until it is published.
+
+     Entrants are off by default. An organiser re-running an open event
+     opens entries again; carrying last year's field over is the exception,
+     which is why it is a choice and why they come across unseeded with no
+     standing, no payment and no check-in.
+
+     Every count on this sheet comes from tourn_duplicate_preview, so the
+     sheet states what is actually there rather than guessing. A section
+     with nothing in it is not shown at all. */
+  var DUP = null;
+
+  function dupPlusYear(s, n) {
+    if (!s) return '';
+    var d = new Date(String(s).slice(0, 10) + 'T12:00:00');
+    if (isNaN(d)) return '';
+    d.setFullYear(d.getFullYear() + (n || 1));
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+  // "Cairns Winter Open 2026" becomes "… 2027". A name with no year gets one.
+  function dupNextName(nm, yr) {
+    nm = String(nm || '').trim();
+    var all = nm.match(/(19|20)\d{2}/g);
+    if (all && all.length) {
+      var last = all[all.length - 1], i = nm.lastIndexOf(last);
+      return nm.slice(0, i) + yr + nm.slice(i + 4);
+    }
+    return (nm + ' ' + yr).trim();
+  }
+  function dupDay(s) {
+    if (!s) return '';
+    var d = new Date(String(s).slice(0, 10) + 'T12:00:00');
+    if (isNaN(d)) return '';
+    return d.getDate() + ' ' + ['January','February','March','April','May','June','July',
+      'August','September','October','November','December'][d.getMonth()] + ' ' + d.getFullYear();
+  }
+  function dupWas(p) {
+    var bits = [];
+    if (p.divisions) bits.push(p.divisions + (p.divisions === 1 ? ' division' : ' divisions'));
+    if (p.entrants) bits.push(p.entrants + (p.entrants === 1 ? ' entrant' : ' entrants'));
+    var when = p.starts_at ? dupDay(p.starts_at) : '';
+    if (when) bits.push(when);
+    return bits.join(', ');
+  }
+
+  function dupBlock(ev) {
+    var st = ev.status || 'draft';
+    if (st === 'archived' || st === 'cancelled') return '';
+    return '<div class="lg-end"><div class="hd">Running it again</div>'
+      + '<div class="row"><div class="g"><b>Make a copy for the next one</b>'
+      +   '<span>The divisions, draw format, days, ' + surfWord(true) + ', rules and fee come across on new dates. The draw and every result stay here. The copy opens as a draft.</span></div>'
+      +   '<button class="lg-btn" onclick="FFPTourn.dupOpen()">' + ic('content_copy') + 'Run this again</button></div></div>';
+  }
+
+  async function dupOpen() {
+    var r; try { r = await sb().rpc('tourn_duplicate_preview', { p_event: S.eventId }); } catch (e) { r = { error: e }; }
+    var p = (r && r.data) || null;
+    if (r.error || !p || p.error) {
+      toast(p && p.error === 'not_owner' ? 'Not your tournament' : 'Could not read this tournament', 'error');
+      return;
+    }
+    var yr = (new Date(String(p.starts_at || '').slice(0, 10) + 'T12:00:00')).getFullYear() + 1;
+    DUP = {
+      p: p,
+      name: dupNextName(p.name, isNaN(yr) ? (new Date()).getFullYear() + 1 : yr),
+      starts: dupPlusYear(p.starts_at) || '',
+      ends: dupPlusYear(p.ends_at) || '',
+      on: { days: true, courts: true, extras: true, sponsors: true, officials: false, entrants: false }
+    };
+    dupRender();
+  }
+  function dupClose() {
+    var el = document.getElementById('tg-dup'); if (el) el.remove();
+    DUP = null;
+  }
+  function dupTog(k) {
+    if (!DUP) return;
+    DUP.on[k] = !DUP.on[k];
+    var b = document.querySelector('#tg-dup .td-tog[data-k="' + k + '"]');
+    if (b) b.classList.toggle('on', !!DUP.on[k]);
+  }
+  function dupRow(k, title, note, n, state) {
+    return '<div class="td-row"><div class="g"><b>' + title + '</b>'
+      + (note ? '<span>' + note + '</span>' : '') + '</div>'
+      + (n != null ? '<span class="n">' + n + '</span>' : '')
+      + (state === 'always'
+          ? '<span class="td-always">Always</span>'
+          : '<button class="td-tog' + (state ? ' on' : '') + '" data-k="' + k + '"'
+            + ' aria-label="' + title + '" onclick="FFPTourn.dupTog(\'' + k + '\')"></button>')
+      + '</div>';
+  }
+  function dupRender() {
+    if (!DUP) return;
+    var p = DUP.p, rows = '';
+    rows += dupRow('divisions', 'Divisions and format',
+      'Draw type, seeding, scoring, group stage and entry limits', p.divisions, 'always');
+    if (p.days) rows += dupRow('days', 'Days and session times',
+      'The shape of the schedule, moved to the new dates', p.days, DUP.on.days);
+    if (p.fields) rows += dupRow('courts', Surf(true) + ' and venues',
+      'Including any hold you had put on one', p.fields, DUP.on.courts);
+    if (p.has_extras) rows += dupRow('extras', 'Rules, waiver and entry fee', '', null, DUP.on.extras);
+    if (p.sponsors) rows += dupRow('sponsors', 'Sponsors', '', p.sponsors, DUP.on.sponsors);
+    if (p.officials) rows += dupRow('officials', 'Officials',
+      'They keep the access they had. Days and matches are assigned again.', p.officials, DUP.on.officials);
+    if (p.entrants) rows += dupRow('entrants', 'Entrants',
+      'Entered again, unseeded, unpaid and not checked in. Most organisers start empty and let people enter.',
+      p.entrants, DUP.on.entrants);
+
+    var old = document.getElementById('tg-dup'); if (old) old.remove();
+    var bk = document.createElement('div');
+    bk.id = 'tg-dup'; bk.className = 'td-sheet';
+    bk.innerHTML =
+      '<div class="td-top"><button class="x" id="tg-dup-x" aria-label="Close">&times;</button>'
+      + '<div><b>Run this again</b><span>' + esc(p.name || '') + (dupWas(p) ? ' — ' + esc(dupWas(p)) : '') + '</span></div></div>'
+      + '<div class="td-body">'
+      +   '<div class="td-sec">The new tournament</div>'
+      +   '<label class="lg-lab" for="tg-dup-n">Name</label>'
+      +   '<input class="lg-in" id="tg-dup-n" value="' + esc(DUP.name) + '">'
+      +   '<div class="td-when" style="margin-top:14px">'
+      +     '<div><label class="lg-lab" for="tg-dup-s">Starts</label><input class="lg-in" id="tg-dup-s" type="date" value="' + esc(DUP.starts) + '"></div>'
+      +     '<div><label class="lg-lab" for="tg-dup-e">Ends</label><input class="lg-in" id="tg-dup-e" type="date" value="' + esc(DUP.ends) + '"></div>'
+      +   '</div>'
+      +   '<div class="td-note">Everything else with a date moves by the same amount, so a sign-up deadline that was two weeks before the start is still two weeks before the start.</div>'
+      +   '<div class="td-sec">Carry over</div><div class="td-pick">' + rows + '</div>'
+      +   (p.matches
+            ? '<div class="td-sec">Not carried over</div><div class="td-never">'
+              + '<b>The draw and every result</b><span>' + p.matches
+              + (p.matches === 1 ? ' match' : ' matches') + ', the scores and the standings stay with '
+              + esc(p.name || 'the original') + '. The new draw is made when you are ready, from whoever has entered by then.</span></div>'
+            : '')
+      +   '<div class="td-note" style="margin-top:18px">The copy opens as a <b>draft</b> and nobody sees it until you publish it. This tournament is not touched.</div>'
+      + '</div>'
+      + '<div class="td-foot"><button class="lg-btn ghost" id="tg-dup-c">Cancel</button>'
+      +   '<button class="lg-btn pri" id="tg-dup-go">' + ic('content_copy') + 'Create the draft</button></div>';
+    document.body.appendChild(bk);
+    bk.querySelector('#tg-dup-x').onclick = dupClose;
+    bk.querySelector('#tg-dup-c').onclick = dupClose;
+    bk.querySelector('#tg-dup-go').onclick = dupGo;
+  }
+  /* The button is never disabled and never silent: it says what is missing.
+     A dead end on a form is a job abandoned. */
+  async function dupGo() {
+    if (!DUP) return;
+    var btn = document.getElementById('tg-dup-go');
+    var nm = (v('tg-dup-n') || '').trim(), sd = v('tg-dup-s'), ed = v('tg-dup-e');
+    var miss = [];
+    if (!nm) miss.push('a name');
+    if (!sd) miss.push('a start date');
+    if (miss.length) { toast('This needs ' + miss.join(' and '), 'error'); return; }
+    if (ed && sd && ed < sd) { toast('The end date is before the start date', 'error'); return; }
+    DUP.name = nm; DUP.starts = sd; DUP.ends = ed;
+    if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
+    var r;
+    try {
+      r = await sb().rpc('tourn_duplicate', {
+        p_event: S.eventId, p_name: nm,
+        p_starts: sd, p_ends: ed || null, p_copy: DUP.on
+      });
+    } catch (e) { r = { error: e }; }
+    if (r.error || !r.data || !r.data.id) {
+      var m = String((r.error && r.error.message) || '');
+      toast(/not_owner/.test(m) ? 'Not your tournament'
+          : /name_required/.test(m) ? 'This needs a name'
+          : 'Could not make the copy', 'error');
+      if (btn) { btn.disabled = false; btn.innerHTML = ic('content_copy') + 'Create the draft'; }
+      return;
+    }
+    var d = r.data, made = [];
+    if (d.divisions) made.push(d.divisions + (d.divisions === 1 ? ' division' : ' divisions'));
+    if (d.entrants) made.push(d.entrants + (d.entrants === 1 ? ' entrant' : ' entrants'));
+    dupClose();
+    toast('Draft created' + (made.length ? ' with ' + made.join(' and ') : ''), 'success');
+    open(d.id);
+  }
+
   function endBlock(ev) {
     var st = ev.status || 'draft';
     if (st === 'archived' || st === 'cancelled') {
@@ -6804,7 +7017,7 @@
 
   // Printed on load so a deploy can be confirmed in one look, without
   // guessing from the screen: open the console and read this line.
-  var BUILD = '2026-09-30.2';
+  var BUILD = '2026-10-28.1';
   console.log('[FFP Tournaments] build ' + BUILD);
   // ══════════════════════════════════════════════════════════════════════
   // SERIES — a run of tournaments that share their teams.
@@ -7258,6 +7471,7 @@
     setDiv: function (val, tab) { if (S.divId !== val) S.drawKey = null; S.divId = val; S.tab = tab; S.entEdit = null; S.entDel = null; S.sqOpen = null; renderTab(); },
     seg: function (btn, id) { document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.remove('on'); }); btn.classList.add('on'); },
     statusPick: statusPick, eventState: eventState, eventDelete: eventDelete, toggleArchived: toggleArchived,
+    dupOpen: dupOpen, dupClose: dupClose, dupTog: dupTog, dupGo: dupGo,
     openAdd: openAdd, addPoolOfficial: addPoolOfficial,
     setAccess: setAccess, accDay: accDay, accMatch: accMatch, accSave: accSave, accCancel: accCancel,
     pinPanel: async function (fid, nm) {
