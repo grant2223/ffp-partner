@@ -405,7 +405,7 @@
     if (!S.showArchived) list = list.filter(function (ev) { return ev.status !== 'archived'; });
     var cards = list.map(function (ev) {
       var cov = ev.cover_url || ev.logo_url;
-      return '<div class="lg-card" onclick="FFPLeague.open(\'' + ev.id + '\')"><div class="lg-cover" style="' + (cov ? 'background-image:url(\'' + esc(cov) + '\')' : '') + '"><div class="scr"></div><div class="bd ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</div></div><div class="lg-cbody"><b>' + esc(ev.name) + '</b><span>' + esc([ev.city, ev.sport].filter(Boolean).join(', ')) + '</span></div></div>';
+      return '<div class="lg-card" onclick="FFPLeague.open(\'' + ev.id + '\')"><div class="lg-cover" style="' + (cov ? 'background-image:url(\'' + esc(cov) + '\')' : '') + '"><div class="scr"></div><div class="bd ' + esc(pillCls(ev.status)) + '">' + esc(pillWord(ev.status)) + '</div></div><div class="lg-cbody"><b>' + esc(ev.name) + '</b><span>' + esc([ev.city, ev.sport].filter(Boolean).join(', ')) + '</span></div></div>';
     }).join('');
     var newCard = S.creating
       ? '<div class="lg-card" style="cursor:default"><div class="lg-cover"><div class="scr"></div></div><div class="lg-cbody"><input class="lg-in" id="lg-newname" placeholder="League name" autofocus onkeydown="if(event.key===\'Enter\')FFPLeague.doCreate()"><div style="display:flex;gap:8px;margin-top:8px"><button class="lg-btn pri" onclick="FFPLeague.doCreate()">Create</button><button class="lg-btn ghost" onclick="FFPLeague.cancelCreate()">Cancel</button></div></div></div>'
@@ -442,7 +442,7 @@
   function renderEditor() {
     injectCss(); var el = root(); if (!el || !S.detail) return;
     var ev = S.detail.event || {};
-    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(', ')) + '</div></div>'
+    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(pillCls(ev.status)) + '">' + esc(pillWord(ev.status)) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.sport_key].filter(Boolean).join(', ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPLeague.back()">' + ic('arrow_back') + 'All leagues</button></div>'
       + '<div class="lg-nav"><span class="lgf-phase">Set up</span>' + tabBtn('information', 'Information') + tabBtn('setup', 'Setup') + tabBtn('divisions', 'Divisions') + tabBtn('entrants', evNouns().Many) + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials') + tabBtn('sponsors', 'Sponsors') + tabBtn('matchday', 'Match day') + tabBtn('schedule', 'Schedule') + tabBtn('fixtures', 'Fixtures & results') + tabBtn('table', 'Table') + '</div><div id="lg-tab"></div></div>';
     renderTab();
@@ -2652,12 +2652,20 @@
   }
 
   function segVal(id) { var b = document.querySelector('#' + id + ' button.on'); return b ? b.getAttribute('data-v') : null; }
-  var STATUSES = [['draft', 'Draft'], ['live', 'Go Live'], ['final', 'Completed']];
+  /* PUBLISHED, NOT 'GO LIVE' (Grant, 2026-11-02). Publishing puts the league in front
+     of members; LIVE is the clock's business - a match actually being played - and is
+     derived, never typed. Draft | Published | Completed are all states. */
+  var STATUSES = [['draft', 'Draft'], ['live', 'Published'], ['final', 'Completed']];
+  /* 'open' and 'live' are both the PUBLISHED state in the database. The badge must say
+     the same word as the control that set it. */
+  var PILL_WORD = { open: 'PUBLISHED', live: 'PUBLISHED', final: 'COMPLETED' };
+  function pillCls(st) { return (st === 'open' || st === 'live') ? 'open' : (st || 'draft'); }
+  function pillWord(st) { st = st || 'draft'; return PILL_WORD[st] || String(st).toUpperCase(); }
   function statusSegBtns(cur, ns) { cur = (cur === 'open' ? 'live' : cur) || 'draft'; return STATUSES.map(function (s) { return '<button data-v="' + s[0] + '" class="st-' + s[0] + (s[0] === cur ? ' on' : '') + '" onclick="' + ns + '.statusPick(this,\'' + s[0] + '\')">' + s[1] + '</button>'; }).join(''); }
   var STATUS_MSG = {
-    live: ['confirmation_number', 'Go live?', 'This publishes the league to the FFP app — members can see it, register and follow it live. You can move it back to Draft anytime.', 'Yes, go live'],
+    live: ['confirmation_number', 'Publish this league?', 'Members see it in the FFP app from now on — they can find it, register and follow it. It only shows as Live while matches are being played.', 'Yes, publish it'],
     final: ['emoji_events', 'Mark as completed?', 'This closes the league — the final table and results become the landing view for members. Only do this once every match is played.', 'Yes, mark completed'],
-    draft: ['visibility_off', 'Move back to Draft?', 'The league will be hidden from members in the FFP app until you go live again.', 'Yes, move to Draft']
+    draft: ['visibility_off', 'Unpublish this league?', 'It goes back to a draft and leaves the FFP app. Anyone already registered keeps their entry, and publishing again brings it straight back.', 'Yes, unpublish it']
   };
   function statusPick(btn, v) {
     if (segVal('lg-status') === v) return;                 // already this status, no-op
@@ -2685,7 +2693,7 @@
       return '<div class="lg-end"><div class="hd">This league is ' + esc(st) + '</div>'
         + '<div class="row"><div class="g"><b>Bring it back</b><span>'
         + (st === 'archived'
-            ? 'It returns as a draft, hidden from members until you go live again. Nothing was lost.'
+            ? 'It returns as a draft, hidden from members until you publish it again. Nothing was lost.'
             : 'It returns as a draft and the cancelled banner comes off. Nothing was lost.')
         + '</span></div>'
         + '<button class="lg-btn" onclick="FFPLeague.eventState(\'draft\')">' + ic('undo') + 'Restore</button></div></div>';
@@ -2710,7 +2718,7 @@
     var M = {
       archived:  ['inventory_2', 'Archive ' + nm + '?', 'It disappears from the FFP app and from your list. Every entrant, fixture and result is kept, and Restore brings it back as a draft.', 'Yes, archive it', 'final'],
       cancelled: ['event_busy', 'Call off ' + nm + '?', 'Members keep seeing it, with a cancelled banner, and sign-ups close. Nothing is deleted and you can restore it.', 'Yes, call it off', 'final'],
-      draft:     ['undo', 'Restore ' + nm + '?', 'It comes back as a draft, hidden from members until you go live again.', 'Yes, restore it', 'draft']
+      draft:     ['undo', 'Restore ' + nm + '?', 'It comes back as a draft, hidden from members until you publish it again.', 'Yes, restore it', 'draft']
     }[state];
     if (!M) return;
     showConfirm(M[0], M[1], M[2], M[3], M[4], async function () {
