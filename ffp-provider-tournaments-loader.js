@@ -366,6 +366,16 @@
       '.tg-oop .lg-btn,.tg-oop .lg-scrbtn{margin-left:auto;flex:none;margin-right:0;}',
       '.tg-oop .lg-scrbtn{font-size:15px;letter-spacing:.12em;padding:8px 14px;}',
       '.tg-oopdays{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px;}',
+      /* FULL DAY GRAPHICS SOURCE, one row per surface, straight on the panel.
+         Rows, not cards: a hairline between them and nothing boxed. */
+      '.lg-gfx{display:flex;flex-direction:column;}',
+      '.lg-gfxrow{display:flex;align-items:center;gap:16px;padding:12px 0;width:100%;}',
+      '.lg-gfxrow + .lg-gfxrow{box-shadow:inset 0 1px 0 #eef2f5;}',
+      '.lg-gfxrow .pit{flex:0 0 auto;min-width:46px;font-size:12.5px;font-weight:900;'
+        + 'letter-spacing:.06em;text-transform:uppercase;color:#7c8b97;}',
+      '.lg-gfxrow .adr{flex:1 1 auto;min-width:0;font-size:16px;font-weight:900;'
+        + 'letter-spacing:-.2px;color:#12232f;word-break:break-all;}',
+      '.lg-gfxrow .lg-scrbtn{flex:0 0 auto;margin-right:0;margin-left:auto;}',
       /* Scoped to .md-g, which is what the table is actually called. Scoped
          to .md-grid it never matched, and the number fell back to a big
          italic em that took a line of its own above the division. */
@@ -840,7 +850,7 @@
     if (!S.showArchived) list = list.filter(function (ev) { return ev.status !== 'archived'; });
     var cards = list.map(function (ev) {
       var cov = ev.cover_url || ev.logo_url;
-      return '<div class="lg-card" onclick="FFPTourn.open(\'' + ev.id + '\')"><div class="lg-cover" style="' + (cov ? 'background-image:url(\'' + esc(cov) + '\')' : '') + '"><div class="scr"></div><div class="bd ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</div></div><div class="lg-cbody"><b>' + esc(ev.name) + '</b><span>' + esc([ev.city, ev.sport].filter(Boolean).join(', ')) + '</span></div></div>';
+      return '<div class="lg-card" onclick="FFPTourn.open(\'' + ev.id + '\')"><div class="lg-cover" style="' + (cov ? 'background-image:url(\'' + esc(cov) + '\')' : '') + '"><div class="scr"></div><div class="bd ' + esc(pillCls(ev.status)) + '">' + esc(pillWord(ev.status)) + '</div></div><div class="lg-cbody"><b>' + esc(ev.name) + '</b><span>' + esc([ev.city, ev.sport].filter(Boolean).join(', ')) + '</span></div></div>';
     }).join('');
     var newCard = S.creating
       ? '<div class="lg-card" style="cursor:default"><div class="lg-cover"><div class="scr"></div></div><div class="lg-cbody"><input class="lg-in" id="tg-newname" placeholder="Tournament name" onkeydown="if(event.key===\'Enter\')FFPTourn.doCreate()"><div style="display:flex;gap:8px;margin-top:8px"><button class="lg-btn pri" onclick="FFPTourn.doCreate()">Create</button><button class="lg-btn ghost" onclick="FFPTourn.cancelCreate()">Cancel</button></div></div></div>'
@@ -895,7 +905,7 @@
   function renderEditor() {
     injectCss(); var el = root(); if (!el || !S.detail) return;
     var ev = S.detail.event || {};
-    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(ev.status) + '">' + esc((ev.status || 'draft').toUpperCase()) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.activity || sportLabelFor(ev.sport_key)].filter(Boolean).join(', ')) + '</div></div>'
+    el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div><div class="lg-h1">' + esc(ev.name) + '<span class="lg-pill ' + esc(pillCls(ev.status)) + '">' + esc(pillWord(ev.status)) + '</span></div><div class="lg-sub">' + esc([ev.city, ev.activity || sportLabelFor(ev.sport_key)].filter(Boolean).join(', ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPTourn.back()">' + ic('arrow_back') + 'All tournaments</button></div>'
       + '<div class="lg-nav"><span class="tg-phase">Set up</span>' + tabBtn('information', 'Information') + tabBtn('setup', 'Setup') + tabBtn('entrants', nouns(null).Many) + tabBtn('venues', 'Venues') + tabBtn('officials', 'Officials')
       + '<span class="tg-navsep"></span><span class="tg-phase">Run</span>' + tabBtn('matchday', 'Match day') + (anyGroups() ? tabBtn('groups', 'Group stage') : '') + tabBtn('bracket', 'Draw') + tabBtn('schedule', 'Schedule') + tabBtn('sponsors', 'Sponsors') + '</div><div id="tg-tab"></div></div>';
@@ -1937,6 +1947,28 @@
     var tail = i < 0 ? '' : u.slice(i + 1);
     if (!tail || tail.length > 12) return esc(u);
     return esc(u.slice(0, i + 1)) + '<em class="seg">' + esc(tail) + '</em>';
+  }
+  /* THE FULL DAY ON ONE BROWSER SOURCE. vMix, OBS and a YoloBox all want the
+     WHOLE address, scheme and all - handed a bare host they read it as a page
+     on their own site and bring up the wrong thing. The TV board address above
+     stays scheme-less because it is typed in with a remote; this one never is. */
+  function gfxUrl(code) { return 'https://' + GFX_BASE + '/f/' + String(code || '').toUpperCase(); }
+  function gfxBlock() {
+    var rows = (S._fields || []).filter(function (f) { return f.screen_code; });
+    if (!rows.length) return '';
+    return '<div class="lg-fld"><div class="lg-lab">Full day graphics source '
+      +   '<span style="font-weight:500;color:#8a99a8;">\u2014 one per ' + esc(surfWord())
+      +   ', paste the whole address into vMix or YoloBox</span></div><div class="lg-gfx">'
+      + rows.map(function (f) {
+          var id = 'tg-gfxu-' + String(f.screen_code).toUpperCase().replace(/[^A-Z0-9]/g, '');
+          return '<div class="lg-gfxrow"><span class="pit">' + esc(f.name || '') + '</span>'
+            + '<span class="adr" id="' + id + '">' + esc(gfxUrl(f.screen_code)) + '</span>'
+            + '<button class="lg-scrbtn" onclick="FFPTourn.copyScreen(\'' + id + '\')">'
+            + ic('content_copy') + 'COPY</button></div>';
+        }).join('')
+      + '</div><div class="lg-scrnote">Paste into OBS, vMix or a YoloBox once, at 1920x1080. '
+      + 'It follows the ' + esc(surfWord()) + ' all day on its own, so it picks up each match '
+      + 'as it starts.</div></div>';
   }
   function copyScreen(id) {
     var el = document.getElementById(id); if (!el) return;
@@ -3702,6 +3734,11 @@
   // ---------- INFORMATION (what members see in the app) ----------
   async function renderInformation(host) {
     var ev = S.detail.event || {}; await taxReady();
+    /* The graphics source is one address per surface and it is read off THIS
+       panel, so the surfaces have to be in hand here, not only on Schedule.
+       They also carry surface_word, which is what makes the label say pitch. */
+    try { var _fr = await sb().rpc('lt_fields_list', { p_scope: 'tourn', p_event: S.eventId });
+          if (_fr && _fr.data) S._fields = _fr.data; } catch (e) {}
     host.innerHTML =
       '<div class="lg-fld"><div class="lg-lab">Status</div><div class="lg-seg lg-status4" id="tg-status">' + statusSegBtns(ev.status, 'FFPTourn') + '</div></div>'
       + '<div class="lg-fld"><div class="lg-lab">Tournament name</div><input class="lg-in" id="tg-name" value="' + esc(ev.name) + '"></div>'
@@ -3726,6 +3763,7 @@
       + '<div class="lg-fld"><div class="lg-lab">Rules</div><textarea class="lg-in" id="tg-rules" rows="3">' + esc(ev.rules || '') + '</textarea>'
       +   '<div id="tg-pdfwrap">' + rulesPdfHtml(ev) + '</div></div>'
       + '<div class="lg-fld"><div class="lg-lab">Live stream URL <span style="font-weight:500;color:#8a99a8;">— the tournament\'s main channel, YouTube, Twitch or Facebook</span></div><input class="lg-in" id="tg-stream" value="' + esc(ev.stream_url || '') + '" placeholder="https://…"></div>'
+      + gfxBlock()
       + '<button class="lg-btn pri" onclick="FFPTourn.saveDetails()">' + ic('check') + 'Save</button>'
       + dupBlock(ev)
       + endBlock(ev);
@@ -4856,13 +4894,20 @@
     if (r.error) { toast('Could not make the draw', 'error'); return; }
     toast('Draw made', 'success'); S.tab = 'bracket'; S.drawKey = null; await refreshDetail();
   }
+  /* 'open' and 'live' are both the PUBLISHED state in the database; the word for a
+     match in progress is derived from the clock, not from this column. */
+  function pillCls(st) { return (st === 'open' || st === 'live') ? 'open' : (st || 'draft'); }
+  function pillWord(st) { return (st === 'open' || st === 'live') ? 'PUBLISHED' : String(st || 'draft').toUpperCase(); }
   function segVal(id) { var b = document.querySelector('#' + id + ' button.on'); return b ? b.getAttribute('data-v') : null; }
-  var STATUSES = [['draft', 'Draft'], ['live', 'Go Live'], ['final', 'Completed']];
+  /* PUBLISHED, NOT 'GO LIVE' (Grant, 2026-11-02). Publishing puts the tournament in
+     front of members; LIVE is the clock's business - a match actually being played -
+     and is derived, never typed. Draft | Published | Completed are all states. */
+  var STATUSES = [['draft', 'Draft'], ['live', 'Published'], ['final', 'Completed']];
   function statusSegBtns(cur, ns) { cur = (cur === 'open' ? 'live' : cur) || 'draft'; return STATUSES.map(function (s) { return '<button data-v="' + s[0] + '" class="st-' + s[0] + (s[0] === cur ? ' on' : '') + '" onclick="' + ns + '.statusPick(this,\'' + s[0] + '\')">' + s[1] + '</button>'; }).join(''); }
   var STATUS_MSG = {
-    live: ['confirmation_number', 'Go live?', 'This publishes the tournament to the FFP app — members can see it, register and follow it live. You can move it back to Draft anytime.', 'Yes, go live'],
+    live: ['confirmation_number', 'Publish this tournament?', 'Members see it in the FFP app from now on — they can find it, register and follow it. It only shows as Live while matches are being played.', 'Yes, publish it'],
     final: ['emoji_events', 'Mark as completed?', 'This closes the tournament — the final bracket and results become the landing view for members. Only do this once every match is played.', 'Yes, mark completed'],
-    draft: ['visibility_off', 'Move back to Draft?', 'The tournament will be hidden from members in the FFP app until you go live again.', 'Yes, move to Draft']
+    draft: ['visibility_off', 'Unpublish this tournament?', 'It goes back to a draft and leaves the FFP app. Anyone already registered keeps their entry, and publishing again brings it straight back.', 'Yes, unpublish it']
   };
   function statusPick(btn, v) {
     if (segVal('tg-status') === v) return;
@@ -5070,7 +5115,7 @@
       return '<div class="lg-end"><div class="hd">This tournament is ' + esc(st) + '</div>'
         + '<div class="row"><div class="g"><b>Bring it back</b><span>'
         + (st === 'archived'
-            ? 'It returns as a draft, hidden from members until you go live again. Nothing was lost.'
+            ? 'It returns as a draft, hidden from members until you publish it again. Nothing was lost.'
             : 'It returns as a draft and the cancelled banner comes off. Nothing was lost.')
         + '</span></div>'
         + '<button class="lg-btn" onclick="FFPTourn.eventState(\'draft\')">' + ic('undo') + 'Restore</button></div></div>';
@@ -5095,7 +5140,7 @@
     var M = {
       archived:  ['inventory_2', 'Archive ' + nm + '?', 'It disappears from the FFP app and from your list. Every entrant, fixture and result is kept, and Restore brings it back as a draft.', 'Yes, archive it', 'final'],
       cancelled: ['event_busy', 'Call off ' + nm + '?', 'Members keep seeing it, with a cancelled banner, and sign-ups close. Nothing is deleted and you can restore it.', 'Yes, call it off', 'final'],
-      draft:     ['undo', 'Restore ' + nm + '?', 'It comes back as a draft, hidden from members until you go live again.', 'Yes, restore it', 'draft']
+      draft:     ['undo', 'Restore ' + nm + '?', 'It comes back as a draft, hidden from members until you publish it again.', 'Yes, restore it', 'draft']
     }[state];
     if (!M) return;
     showConfirm(M[0], M[1], M[2], M[3], M[4], async function () {
