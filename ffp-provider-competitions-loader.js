@@ -4,6 +4,14 @@
    (comp_leaderboard). All writes are owner-gated RPCs (created_by = auth.uid()).
    Exposes window.ffpRenderCompetitions (panel hook) + window.FFPComp (button actions). */
 (function () {
+  /* PUBLISHED, NOT 'OPEN' (Grant, 2026-11-02, same vocabulary as Tournaments and
+     Leagues). A competition keeps FOUR states because it really has a registration
+     phase and a running phase - and here LIVE is true, the event is being run - but
+     the words match the rest of the portal, and the badge says what the control says. */
+  var STATUS_OPTS = [['draft', 'Draft (hidden)'], ['open', 'Published (registration)'],
+                     ['live', 'Live (in progress)'], ['final', 'Completed (results)']];
+  var STATUS_WORD = { draft: 'DRAFT', open: 'PUBLISHED', live: 'LIVE', final: 'COMPLETED' };
+  function statusWord(st) { st = st || 'draft'; return STATUS_WORD[st] || String(st).toUpperCase(); }
   var sb = function () { return window.supabase; };
   var prov = function () { return window.FFP_PROVIDER || {}; };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); };
@@ -162,7 +170,7 @@
       var st = ev.status || 'draft';
       return '<div class="cx-card" onclick="FFPComp.open(\'' + ev.id + '\')">' +
         '<div class="cx-cover" style="' + (cover ? 'background-image:url(\'' + esc(cover) + '\')' : 'background:linear-gradient(135deg,' + esc(ev.accent || '#d6353b') + ',#0f2230)') + '">' +
-        '<div class="scr"></div><span class="cx-bd bd ' + st + '">' + st.toUpperCase() + '</span></div>' +
+        '<div class="scr"></div><span class="cx-bd bd ' + st + '">' + statusWord(st) + '</span></div>' +
         '<div class="cx-cbody"><b>' + esc(ev.name) + '</b><span>' + (ev.divisions || 0) + ' divisions, ' + (ev.entrants || 0) + ' athletes' + (ev.city ? ', ' + esc(ev.city) : '') + '</span></div></div>';
     }).join('');
     g.innerHTML = '<div class="cx-new" onclick="FFPComp.create()"><span class="ms">add_circle</span>Create competition</div>' + cards;
@@ -312,8 +320,8 @@
       '<div class="cx-fld"><div class="cx-lab">Accent colour</div><div id="cx-accent">' + accents.map(function (a) { return '<span class="cx-sw' + ((ev.accent || '#d6353b') === a ? ' on' : '') + '" style="background:' + a + '" data-v="' + a + '" onclick="FFPComp.pickAccent(this)"></span>'; }).join('') + '</div>' +
         '<div class="cx-sub" style="margin-top:6px">Your logo comes from your business profile; the banner above is this event\'s own image.</div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Status</div><select id="cx-status" class="cx-sel" style="max-width:240px">' +
-        ['draft', 'open', 'live', 'final'].map(function (s) { return '<option value="' + s + '"' + ((ev.status || 'draft') === s ? ' selected' : '') + '>' + s.charAt(0).toUpperCase() + s.slice(1) + (s === 'draft' ? ' (hidden)' : s === 'open' ? ' (registration)' : s === 'live' ? ' (in progress)' : ' (results)') + '</option>'; }).join('') + '</select>' +
-        '<div class="cx-sub" style="margin-top:6px">Open / Live / Final appear in the FFP App. Draft stays hidden.</div></div>' +
+        STATUS_OPTS.map(function (o) { return '<option value="' + o[0] + '"' + ((ev.status || 'draft') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
+        '<div class="cx-sub" style="margin-top:6px">Published, Live and Completed all appear in the FFP app. Draft stays hidden.</div></div>' +
       '<div class="cx-fld"><div class="cx-lab">Rules (optional)</div><textarea id="cx-rules" class="cx-in" rows="4" placeholder="Movement standards, scoring, tie-breaks, equipment…">' + esc(ev.rules || '') + '</textarea>' +
         '<div style="display:flex;gap:8px;align-items:center;margin-top:8px"><input id="cx-rules-url" class="cx-in" value="' + esc(ev.rules_url || '') + '" placeholder="…or paste a link to a rules document (URL)"><button type="button" class="cx-btn sm" style="flex:none" onclick="FFPComp.uploadDoc(\'rules\')"><span class="ms">upload_file</span> Upload</button></div>' +
         '<div class="cx-sub" style="margin-top:6px">Type the rules above, or link / upload a document (PDF). Shown to athletes on the competition Info tab.</div></div>' +
