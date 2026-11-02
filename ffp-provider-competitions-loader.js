@@ -96,6 +96,8 @@
       '.cx-schrow{display:flex;align-items:center;gap:14px;padding:12px 6px;border-bottom:1px solid #edf1f4;}',
       '.cx-schrow .hn{font-weight:900;font-size:14px;color:#12232f;min-width:74px;}',
       '.cx-schrow .who{flex:1;color:#5b6b75;font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      /* a 12-hour locale renders "08:00 AM" in here and the default width cut it to "08:00 AI" */
+      '.cx-schrow input[type=time]{min-width:132px;box-sizing:border-box;}',
       '.cx-schrow input[type=time]{width:120px;}',
       '.cx-schnoheat{color:var(--ffp-text-muted);font-weight:600;font-size:13px;padding:12px 6px;}',
       '.cx-in,.cx-sel{width:100%;padding:10px 12px;border:1px solid #d7dee5;border-radius:10px;font:inherit;box-sizing:border-box;background:#fff;color:#12232f;}',
@@ -200,7 +202,7 @@
   function renderEditor() {
     var el = root(); if (!el || !S.detail) return;
     var ev = S.detail.event || {};
-    var tabs = [['details', 'Details'], ['setup', 'Set up'], ['sponsors', 'Sponsors'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['schedule', 'Schedule'], ['heats', 'Heats & lanes'], ['judges', 'Judges'], ['scores', 'Scores'], ['standings', 'Standings']];
+    var tabs = [['details', 'Details'], ['setup', 'Set up'], ['sponsors', 'Sponsors'], ['divisions', 'Divisions'], ['workouts', 'Events'], ['athletes', 'Athletes'], ['checkin', 'Check in'], ['schedule', 'Schedule'], ['heats', 'Heats & lanes'], ['judges', 'Judges'], ['scores', 'Scores'], ['standings', 'Standings']];
     if (ev.club_mode) tabs.push(['clubs', 'Clubs']);
     el.innerHTML = '<div class="cx-wrap">' +
       '<div class="cx-head"><div style="display:flex;align-items:center;gap:12px;">' +
@@ -284,6 +286,7 @@
     if (S.tab === 'divisions') return renderDivisions(c);
     if (S.tab === 'workouts') return renderWorkouts(c);
     if (S.tab === 'athletes') return renderAthletes(c);
+    if (S.tab === 'checkin') return renderCheckin(c);
     if (S.tab === 'schedule') return renderSchedule(c);
     if (S.tab === 'heats') return renderHeats(c);
     if (S.tab === 'setup') return renderSetup(c);
@@ -516,7 +519,9 @@
     var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; });
     var wods = div ? (div.workouts || []) : [];
     c.innerHTML = '<div class="cx-toolbar">' + divPickerHtml('FFPComp.setDiv(this.value)') +
-      (div ? '<button class="cx-btn pri sm" onclick="FFPComp.editWorkout()"><span class="ms">add</span> Add event</button>' : '') + '</div>' +
+      (div ? '<button class="cx-btn pri sm" onclick="FFPComp.editWorkout()"><span class="ms">add</span> Add event</button>' : '') +
+      (div ? '<button class="cx-btn sm" onclick="FFPComp.stagesOpen()"><span class="ms">filter_alt</span> Stages</button>' : '') + '</div>' +
+      '<div id="cx-stagestrip"></div>' +
       (!div ? '' : (wods.length ? wods.map(function (w, i) {
         var meta = w.score_type + ', ' + (w.direction === 'asc' ? 'lower wins' : 'higher wins') + (w.cap_seconds ? ', cap ' + Math.floor(w.cap_seconds / 60) + ':' + ('' + (w.cap_seconds % 60)).padStart(2, '0') : '');
         return '<div class="cx-row cx-drow" draggable="true" data-wid="' + w.id + '"' +
@@ -526,6 +531,97 @@
           '<div class="g"><b>Event ' + (i + 1) + ', ' + esc(w.name) + '</b><span>' + esc(meta) + '</span></div>' +
           '<button class="cx-btn sm" onclick="FFPComp.editWorkout(\'' + w.id + '\')">Edit</button></div>';
       }).join('') + '<div class="cx-sub" style="margin-top:8px">Drag <span class="ms" style="font-size:14px;vertical-align:-2px">drag_indicator</span> to reorder events.</div>' : '<div class="cx-empty">No events in this division yet.</div>'));
+    if (div) loadStageStrip(div.id);
+  }
+  /* A competition that narrows its field runs in stages: a qualifier everybody
+     starts, then a final only the top few reach. Every event belongs to one of
+     them. A competition with no stages never sees any of this. */
+  async function loadStageStrip(divId) {
+    var host = document.getElementById('cx-stagestrip'); if (!host) return;
+    var r; try { r = await sb().rpc('comp_stages_list', { p_division: divId }); } catch (e) { r = { error: e }; }
+    var list = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
+    S._stages = list;
+    if (!list.length) { host.innerHTML = ''; return; }
+    host.innerHTML = '<div class="cx-sub" style="margin:0 0 12px">'
+      + list.map(function (st) {
+          return '<b style="color:var(--ffp-text)">' + esc(st.name) + '</b>'
+            + ' (' + st.events + ' event' + (st.events === 1 ? '' : 's')
+            + (st.advance ? ', top ' + st.advance + ' through' : '')
+            + (st.points === 'reset' ? ', points reset' : '') + ')'
+            + (st.cut_at ? ' \u2014 cut taken' : '');
+        }).join(' \u2192 ')
+      + '</div>';
+    /* with stages set up, every event row needs to say which one it is in */
+    list.length && document.querySelectorAll('.cx-drow').forEach(function (rowEl) {
+      var wid = rowEl.getAttribute('data-wid'); if (!wid || rowEl.querySelector('.cx-stagesel')) return;
+      var w = null;
+      (S.detail.divisions || []).forEach(function (d) { (d.workouts || []).forEach(function (x) { if (x.id === wid) w = x; }); });
+      var cur = (w && w.stage) || 1;
+      var sel = document.createElement('select');
+      sel.className = 'cx-sel sm cx-stagesel';
+      sel.style.cssText = 'width:auto;height:34px;min-width:0;flex:none;margin-right:8px';
+      sel.innerHTML = list.map(function (st) {
+        return '<option value="' + st.stage + '"' + (st.stage === cur ? ' selected' : '') + '>' + esc(st.name) + '</option>'; }).join('');
+      sel.onchange = function () { stageEventSet(wid, this.value); };
+      var btn = rowEl.querySelector('.cx-btn');
+      if (btn) rowEl.insertBefore(sel, btn); else rowEl.appendChild(sel);
+    });
+  }
+  async function stageEventSet(wid, stage) {
+    var r; try { r = await sb().rpc('comp_stage_event_set', { p_workout: wid, p_stage: parseInt(stage, 10) }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast('Could not move that event', 'error'); return; }
+    (S.detail.divisions || []).forEach(function (d) { (d.workouts || []).forEach(function (x) { if (x.id === wid) x.stage = parseInt(stage, 10); }); });
+    toast('Event moved', 'check');
+    loadStageStrip(S.divId);
+  }
+  function stagesOpen() {
+    var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; }); if (!div) return;
+    var list = S._stages || [];
+    var rows = list.map(function (st) {
+      return '<div class="cx-schrow">'
+        + '<span class="hn">' + st.stage + '</span>'
+        + '<input class="cx-in sm" style="flex:1;min-width:0;height:38px" value="' + esc(st.name) + '" id="cx-sn-' + st.stage + '">'
+        + '<span class="cx-lab" style="margin:0">Top</span>'
+        + '<input class="cx-in sm" type="number" min="1" max="999" style="width:72px;min-width:0;flex:none;height:38px" value="' + (st.advance == null ? '' : st.advance) + '" id="cx-sa-' + st.stage + '">'
+        + '<select class="cx-sel sm" style="width:auto;height:38px;min-width:0;flex:none" id="cx-sp-' + st.stage + '">'
+        + '<option value="carry"' + (st.points === 'carry' ? ' selected' : '') + '>Points carry</option>'
+        + '<option value="reset"' + (st.points === 'reset' ? ' selected' : '') + '>Points reset</option></select>'
+        + '<button class="cx-btn sm" onclick="FFPComp.stageSave(' + st.stage + ')">Save</button>'
+        + '<span class="ms" style="color:#9aa8b4;cursor:pointer" onclick="FFPComp.stageRemove(' + st.stage + ')">close</span>'
+        + '</div>';
+    }).join('');
+    var nextNo = list.length ? (list[list.length - 1].stage + 1) : 1;
+    openModal('Stages \u2014 ' + div.name,
+      '<div class="cx-cbody">'
+      + '<div class="cx-sub" style="margin-bottom:12px">A stage is a part of the competition with its own events. Set how many athletes go through from each stage to the next, and whether their points carry into it or start again. Leave the last stage\'s number empty \u2014 nobody goes through from the final.</div>'
+      + (rows || '<div class="cx-empty">No stages yet. A competition with no stages runs as one block, which is how most of them run.</div>')
+      + '</div>',
+      '<button class="cx-btn pri" onclick="FFPComp.stageSave(' + nextNo + ',true)"><span class="ms">add</span> Add a stage</button>'
+      + '<button class="cx-btn" onclick="FFPComp.closeModal()">Done</button>');
+  }
+  async function stageSave(stage, isNew) {
+    var p = {};
+    if (isNew) {
+      p.name = stage === 1 ? 'Qualifier' : stage === 2 ? 'Final' : 'Stage ' + stage;
+      p.points = stage === 1 ? 'carry' : 'reset';
+    } else {
+      var n = document.getElementById('cx-sn-' + stage), a = document.getElementById('cx-sa-' + stage), pt = document.getElementById('cx-sp-' + stage);
+      p.name = n ? n.value : '';
+      p.advance = (a && a.value !== '') ? a.value : null;
+      p.points = pt ? pt.value : 'carry';
+    }
+    var r; try { r = await sb().rpc('comp_stage_save', { p_division: S.divId, p_stage: stage, p: p }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast('Save failed', 'error'); return; }
+    S._stages = r.data || [];
+    toast(isNew ? 'Stage added' : 'Stage saved', 'check');
+    closeModal(); stagesOpen(); loadStageStrip(S.divId);
+  }
+  async function stageRemove(stage) {
+    var r; try { r = await sb().rpc('comp_stage_remove', { p_division: S.divId, p_stage: stage }); } catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast('Could not remove it', 'error'); return; }
+    S._stages = r.data || [];
+    toast('Stage removed', 'check');
+    closeModal(); stagesOpen(); renderTab();
   }
   function editWorkout(id) {
     var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; }); if (!div) return;
@@ -830,6 +926,75 @@
       return '<div class="cx-row">' + av + '<div class="g"><b>' + esc(a.name) + '</b><span>#' + (a.athlete_no || '—') + ', ' + esc(a.status || '') + tag + '</span></div></div>';
     }).join('') : '<div class="cx-empty">No athletes yet. Members register themselves in the FFP App, or add them here.</div>';
   }
+  /* CHECK IN IS THE DESK ON THE MORNING. Everything else about a competition
+     is set before the day; who actually turned up is the one thing that cannot
+     be, and it is what decides the heat allocation. It is NOT a status: writing
+     'checked_in' over comp_entrants.status would throw away 'paid' the moment
+     somebody walked up, so it has its own checked_in_at. */
+  var _ckT = null;
+  async function renderCheckin(c) {
+    c.innerHTML = '<div class="cx-toolbar">' + divPickerHtml('FFPComp.setDiv(this.value)')
+      + '<input class="cx-in" id="ck-q" style="max-width:260px" placeholder="Search a name" '
+      + 'oninput="FFPComp.checkinSearch(this.value)" autocomplete="off"></div>'
+      + '<div id="cx-ck"><div class="cx-empty">Loading\u2026</div></div>';
+    loadCheckin();
+  }
+  function checkinSearch(v) { clearTimeout(_ckT); _ckT = setTimeout(function () { loadCheckin(v); }, 250); }
+  function ckQ() { var e = document.getElementById('ck-q'); return e ? e.value.trim() : ''; }
+  async function loadCheckin(q) {
+    var box = document.getElementById('cx-ck'); if (!box) return;
+    var r; try {
+      r = await sb().rpc('comp_checkin_list', { p_event: S.eventId, p_division: S.divId || null,
+                                                p_q: (q || ckQ() || null) });
+    } catch (e) { r = { error: e }; }
+    if (!r || r.error) { box.innerHTML = '<div class="cx-empty">Could not load the list.</div>'; return; }
+    var d = r.data || {}, rows = d.rows || [];
+    var here = rows.filter(function (x) { return x.checked_in_at; });
+    var out  = rows.filter(function (x) { return !x.checked_in_at; });
+    var can  = !!d.can_check_in;
+
+    box.innerHTML =
+      '<div class="cx-h1" style="font-size:30px;margin:10px 0 2px">' + (d.here || 0)
+      + ' <span style="font-weight:700;color:#8a99a8">of ' + (d.total || 0) + ' here</span></div>'
+      + '<div class="cx-sub" style="margin-bottom:12px">' + (d.unpaid
+          ? d.unpaid + (d.unpaid === 1 ? ' still to pay' : ' still to pay') : 'Everyone has paid') + '</div>'
+      + (rows.length === 0
+          ? '<div class="cx-empty">Nobody is entered in this division yet.</div>'
+          : (out.length ? '<div class="cx-lab" style="margin:22px 0 8px">Not here yet</div>'
+                + out.map(function (x) { return ckRow(x, can); }).join('') : '')
+            + (here.length ? '<div class="cx-lab" style="margin:22px 0 8px">Here</div>'
+                + here.map(function (x) { return ckRow(x, can); }).join('') : ''));
+  }
+  function ckRow(x, can) {
+    var av = x.photo ? '<span class="cx-av" style="background-image:url(\'' + esc(x.photo) + '\')"></span>'
+                     : '<span class="cx-av">' + esc(String(x.name || '?').slice(0, 1).toUpperCase()) + '</span>';
+    /* the sub-line is short tokens: .cx-row .g span capitalises every word, so
+       a sentence comes out looking like a headline */
+    var bits = ['#' + (x.athlete_no || '\u2014')];
+    if (x.division) bits.push(x.division);
+    if (x.kind === 'team' && x.squad) bits.push('squad ' + x.squad);
+    bits.push(x.status === 'registered' ? 'to pay' : (x.status || ''));
+    if (x.checked_in_at) bits.push(hhmmLocal(x.checked_in_at));
+    return '<div class="cx-row">' + av
+      + '<div class="g"><b>' + esc(x.name || 'Entry') + '</b><span>' + esc(bits.filter(Boolean).join(', ')) + '</span></div>'
+      + (can ? '<button class="cx-btn ' + (x.checked_in_at ? 'sm' : 'pri sm')
+          + '" onclick="FFPComp.checkin(\'' + x.entrant_id + '\',' + (x.checked_in_at ? 'false' : 'true') + ',this)">'
+          + '<span class="ms">' + (x.checked_in_at ? 'undo' : 'how_to_reg') + '</span> '
+          + (x.checked_in_at ? 'Undo' : 'Check in') + '</button>' : '')
+      + '</div>';
+  }
+  function hhmmLocal(iso) {
+    try { return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+      .toLowerCase().replace(' ', ''); } catch (e) { return ''; }
+  }
+  async function checkin(entrantId, on, btn) {
+    if (btn) btn.disabled = true;
+    var r; try { r = await sb().rpc('comp_checkin_set', { p_entrant: entrantId, p_on: !!on }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error) { if (btn) btn.disabled = false; toast('Could not do that', 'error'); return; }
+    loadCheckin();
+  }
+
   var _caT = null;
   function addAthlete() {
     openModal('Add athlete',
@@ -975,10 +1140,14 @@
   async function renderStandings(c) {
     c.innerHTML = '<div class="cx-toolbar">' + divPickerHtml('FFPComp.setDiv(this.value)') +
       '<button class="cx-btn green sm" onclick="FFPComp.publish()"><span class="ms">public</span> Publish live to app</button>' +
-      '<button class="cx-btn sm" onclick="FFPComp.finalise()"><span class="ms">emoji_events</span> Mark final</button></div><div id="cx-stand"><div class="cx-empty">Loading…</div></div>';
+      '<button class="cx-btn sm" onclick="FFPComp.finalise()"><span class="ms">emoji_events</span> Mark final</button></div>'
+      + '<div id="cx-stagebar"></div><div id="cx-stand"><div class="cx-empty">Loading…</div></div><div id="cx-cutbox"></div>';
     if (!S.divId) { document.getElementById('cx-stand').innerHTML = ''; return; }
-    var r; try { r = await sb().rpc('comp_leaderboard', { p_event: S.eventId, p_division: S.divId }); } catch (e) { r = { error: e }; }
+    /* comp_stage_board IS comp_leaderboard when the division has no stages, so
+       this one call covers both a plain competition and a qualifier/final. */
+    var r; try { r = await sb().rpc('comp_stage_board', { p_event: S.eventId, p_division: S.divId, p_stage: S.stageNo || null }); } catch (e) { r = { error: e }; }
     var b = (r && !r.error) ? r.data : null;
+    drawStageBar(b);
     var box = document.getElementById('cx-stand'); if (!box) return;
     var rows = (b && b.rows) || [], wods = (b && b.workouts) || [];
     if (!rows.length) { box.innerHTML = '<div class="cx-empty">No scores yet.</div>'; return; }
@@ -990,13 +1159,133 @@
       wods.map(function (w, i) { return '<span class="e">W' + (i + 1) + '</span>'; }).join('') + '</div>' +
       rows.map(function (row, i) {
         var av = row.photo ? '<span class="cx-av" style="width:26px;height:26px;background-image:url(\'' + esc(row.photo) + '\')"></span>' : '<span class="cx-av" style="width:26px;height:26px">' + esc((row.name || '?').slice(0, 1).toUpperCase()) + '</span>';
-        return '<div class="cx-lb r' + (i < 3 ? i + 1 : '') + '" style="grid-template-columns:' + cols + '">' +
+        /* THE CUT LINE. It is drawn once, between the last athlete through and
+           the first one out, and nobody is removed from the board for being
+           below it -- they finished the stage and the board says where. */
+        var line = '';
+        var prev = rows[i - 1];
+        if (b.cut != null && prev && prev.advancing === true && row.advancing !== true) {
+          /* say what is actually on the screen: a tie on the line puts more
+             through than the number the organiser asked for */
+          var nThrough = 0;
+          for (var z = 0; z < rows.length; z++) if (rows[z].advancing === true) nThrough++;
+          line = '<div style="display:flex;align-items:center;gap:10px;margin:10px 0;padding:7px 2px;border-top:2px dashed #e0a83e">'
+            + '<span class="ms" style="font-size:17px;color:#e0a83e">content_cut</span>'
+            + '<b style="font-size:12.5px;font-weight:900;color:#8a6a1c">'
+            + (nThrough > b.cut
+                ? nThrough + ' go through' + nextStageName(b) + ' \u2014 ' + (nThrough - b.cut)
+                  + ' more than the ' + b.cut + ' you asked for, level on the line'
+                : 'Top ' + b.cut + ' go through' + nextStageName(b))
+            + '</b></div>';
+        }
+        var dim = (b.cut != null && row.advancing !== true) ? 'opacity:.55;' : '';
+        return line + '<div class="cx-lb r' + (i < 3 ? i + 1 : '') + '" style="' + dim + 'grid-template-columns:' + cols + '">' +
           '<span class="rk">' + row.rank + '</span><span class="at">' + av + '<b>' + esc(row.name) + '</b></span><span class="tot">' + row.total + '</span>' +
           wods.map(function (w) { var cc = cell(row, w.id); return '<span class="c">' + (cc ? '<b class="' + pc(cc.rank) + '">' + ordn(cc.rank) + '</b><span>' + cc.points + '</span>' : '<b style="color:#c2ccd3">—</b>') + '</span>'; }).join('') +
           '</div>';
       }).join('') +
       '<div class="cx-sub" style="margin-top:12px">' + (b.mode === 'placement' ? 'Placement scoring — lowest total wins.' : 'Points scoring — highest total wins.') + '</div>';
+    if (b.stage && b.stage.stage > 1) drawStageField(b);
   }
+  /* WHO IS IN THIS STAGE IS THE ORGANISER'S, NOT THE DATABASE'S. The cut puts
+     a field in; after that a tie has to be settled by a person, and somebody
+     who pulls out has to be replaced by a person. So the field is editable and
+     re-running the cut leaves these hand-made changes alone. */
+  async function drawStageField(b) {
+    var host = document.getElementById('cx-cutbox'); if (!host) return;
+    var inField = {}; (b.rows || []).forEach(function (r) { inField[r.entrant_id] = true; });
+    var r; try { r = await sb().rpc('comp_roster', { p_division: S.divId }); } catch (e) { r = { error: e }; }
+    var all = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
+    var out = all.filter(function (a) { return !inField[a.id]; });
+    host.innerHTML = '<div class="cx-schdiv" style="margin:30px 0 6px">Who is in ' + esc(b.stage.name) + '</div>'
+      + '<div class="cx-sub" style="margin:0 0 10px">' + (b.rows || []).length + ' in'
+      + (b.stage.cut_at ? ', from the cut' : '')
+      + '. Take somebody out, or put somebody in \u2014 a tie on the line and a withdrawal are both your call, and taking the cut again will not undo this.</div>'
+      + (b.rows || []).map(function (x) {
+          return '<div class="cx-schrow"><span class="hn">' + x.rank + '</span>'
+            + '<span class="who">' + esc(x.name) + '</span>'
+            + '<button class="cx-btn sm" onclick="FFPComp.stageField(\'' + x.entrant_id + '\',false)">Take out</button></div>'; }).join('')
+      + (out.length
+          ? '<div class="cx-sub" style="margin:16px 0 8px">Not in ' + esc(b.stage.name) + '</div>'
+            + out.map(function (a) {
+                return '<div class="cx-schrow" style="opacity:.6"><span class="hn"></span>'
+                  + '<span class="who">' + esc(a.name) + '</span>'
+                  + '<button class="cx-btn sm" onclick="FFPComp.stageField(\'' + a.id + '\',true)">Put in</button></div>'; }).join('')
+          : '');
+  }
+  async function stageField(entrant, isIn) {
+    var r; try { r = await sb().rpc('comp_stage_field_set', { p_division: S.divId, p_stage: S.stageNo || 1, p_entrant: entrant, p_in: !!isIn }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast('That did not go through', 'error'); return; }
+    toast(isIn ? 'Put in' : 'Taken out', 'check');
+    renderTab();
+  }
+  /* QUALIFIER -> FINALS. The stage bar names the stages, says which one you
+     are looking at, and -- on a stage with a cut -- offers to take it. The cut
+     is previewed first and written only when the organiser says so. */
+  function nextStageName(b) {
+    var cur = b.stage && b.stage.stage, list = b.stages || [], nx = null;
+    for (var i = 0; i < list.length; i++) if (list[i].stage === cur + 1) nx = list[i];
+    return nx ? ' to ' + esc(nx.name) : '';
+  }
+  function drawStageBar(b) {
+    var host = document.getElementById('cx-stagebar'); if (!host) return;
+    var list = (b && b.stages) || [];
+    if (!list.length) { host.innerHTML = ''; return; }
+    var cur = b.stage ? b.stage.stage : 1;
+    host.innerHTML = '<div class="cx-toolbar" style="margin:2px 0 14px">'
+      + '<b style="flex:1;white-space:nowrap;font-size:15px;font-weight:900;color:var(--ffp-text)">Stages</b>'
+      + '<select class="cx-sel sm" style="width:auto;height:38px;min-width:0;flex:none" onchange="FFPComp.setStage(this.value)">'
+      + list.map(function (st) {
+          return '<option value="' + st.stage + '"' + (st.stage === cur ? ' selected' : '') + '>'
+            + esc(st.name) + (st.advance ? ', top ' + st.advance + ' through' : '')
+            + (st.points === 'reset' ? ', points reset' : '') + '</option>'; }).join('')
+      + '</select>'
+      + (b.cut != null ? '<button class="cx-btn sm" onclick="FFPComp.stageCut(false)"><span class="ms">content_cut</span> Take the cut</button>' : '')
+      + '</div>';
+  }
+  function setStage(v) { S.stageNo = v ? parseInt(v, 10) : null; renderTab(); }
+  async function stageCut(apply) {
+    var host = document.getElementById('cx-cutbox'); if (!host) return;
+    host.innerHTML = '<div class="cx-sub" style="padding:10px 2px">Working out the cut…</div>';
+    var r; try { r = await sb().rpc('comp_stage_cut', { p_division: S.divId, p_stage: S.stageNo || 1, p_apply: !!apply }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error || !r.data) {
+      host.innerHTML = '';
+      var m = (r && r.error && (r.error.message || r.error.msg)) || '';
+      toast(/no_next_stage/.test(m) ? 'Add the next stage first'
+          : /no_advance_set/.test(m) ? 'Set how many go through first'
+          : 'The cut did not go through', 'error');
+      return;
+    }
+    var d = r.data;
+    if (apply) { toast(d.through + ' through to ' + d.to.name, 'check'); host.innerHTML = ''; renderTab(); return; }
+    var through = (d.rows || []).filter(function (x) { return x.advancing === true; });
+    var out = (d.rows || []).filter(function (x) { return x.advancing !== true; });
+    host.innerHTML = '<div class="cx-schdiv" style="margin:26px 0 6px">' + esc(d.from.name) + ' to ' + esc(d.to.name) + '</div>'
+      + '<div class="cx-sub" style="margin:0 0 10px">' + d.through + ' through, ' + d.out + ' out'
+      + (d.tie_on_the_line ? '. <b>' + (d.through - d.advance) + ' more than the ' + d.advance
+          + ' you asked for, level on the line. Put them all through, then take one out of '
+          + esc(d.to.name) + ' below \u2014 or change the number in Stages.</b>' : '.')
+      + (d.kept_by_hand ? ' ' + d.kept_by_hand + ' you put in by hand stay in.' : '')
+      + ' Nothing is saved until you apply it.</div>'
+      + through.map(function (x) { return stageCutRow(x, true); }).join('')
+      + (out.length ? '<div style="display:flex;align-items:center;gap:10px;margin:10px 0;padding:7px 2px;border-top:2px dashed #e0a83e">'
+          + '<span class="ms" style="font-size:17px;color:#e0a83e">content_cut</span>'
+          + '<b style="font-size:12.5px;font-weight:900;color:#8a6a1c">Out of ' + esc(d.to.name) + '</b></div>' : '')
+      + out.map(function (x) { return stageCutRow(x, false); }).join('')
+      + '<div class="cx-toolbar" style="margin:16px 0 0">'
+      + '<button class="cx-btn pri sm" onclick="FFPComp.stageCut(true)"><span class="ms">check</span> Put these ' + d.through + ' through</button>'
+      + '<button class="cx-btn sm" onclick="FFPComp.stageCutClear()">Discard</button></div>';
+  }
+  function stageCutRow(x, through) {
+    return '<div class="cx-schrow"' + (through ? '' : ' style="opacity:.55"') + '>'
+      + '<span class="hn">' + x.rank + '</span>'
+      + '<span class="who">' + esc(x.name) + '</span>'
+      + '<b style="font-size:14px;font-weight:900;color:var(--ffp-text)">' + x.total + '</b></div>';
+  }
+  function stageCutClear() { var h = document.getElementById('cx-cutbox'); if (h) h.innerHTML = ''; }
+
   // Clubs standings (club championship)
   async function renderClubs(c) {
     c.innerHTML = '<div class="cx-sub" style="margin-bottom:12px">Clubs ranked by their entries\' final positions across every division (1st = 1 point, 2nd = 2 …) — lowest total wins. Updates live as scores go in.</div><div id="cx-clubs"><div class="cx-empty">Loading…</div></div>';
@@ -1040,6 +1329,25 @@
   function closeModal() { var b = document.getElementById('cx-mbk'); if (b) b.remove(); }
 
   // ---------- HEATS & LANES ----------
+  /* WHO ACTUALLY TURNED UP is the one thing a competition cannot settle before
+     the day, and it is what decides allocation. Everything else about the heat
+     - its published time, its lanes, its judges - was set in advance and must
+     survive being re-allocated, so this only ever names what needs a decision. */
+  async function loadAlloc() {
+    var box = document.getElementById('cx-alloc'); if (!box || !S.wodId) return;
+    var r; try { r = await sb().rpc('comp_allocation', { p_workout: S.wodId }); } catch (e) { r = { error: e }; }
+    if (!r || r.error || !r.data) { box.innerHTML = ''; return; }
+    var d = r.data, miss = d.no_shows_in_lanes || [], free = d.here_without_a_lane || [];
+    if (!miss.length && !free.length) { box.innerHTML = ''; return; }
+    var nm = function (x) { return esc(x.name || 'Entry'); };
+    box.innerHTML =
+      (miss.length ? '<div class="cx-lab" style="margin:16px 0 6px">In a lane, not checked in</div>'
+        + '<div class="cx-sub" style="margin-bottom:8px">' + miss.map(function (x) {
+            return nm(x) + ' (' + esc(x.heat || 'heat') + ', lane ' + x.lane + ')'; }).join(', ') + '</div>' : '')
+      + (free.length ? '<div class="cx-lab" style="margin:16px 0 6px">Here, with no lane</div>'
+        + '<div class="cx-sub" style="margin-bottom:8px">' + free.map(nm).join(', ') + '</div>' : '');
+  }
+
   async function renderHeats(c) {
     var div = (S.detail.divisions || []).find(function (d) { return d.id === S.divId; });
     var wods = div ? (div.workouts || []) : [];
@@ -1063,7 +1371,9 @@
           + '<span style="' + lbl + ';margin-left:6px">Heat selection</span><div class="cx-seg" id="cx-pick"><button data-v="assign" class="' + (pick === 'assign' ? 'on' : '') + '" onclick="FFPComp.heatPickSet(\'assign\',this)">Organiser assigns</button><button data-v="choose" class="' + (pick === 'choose' ? 'on' : '') + '" onclick="FFPComp.heatPickSet(\'choose\',this)">Athletes choose</button></div>'
           + '<span style="flex:1"></span><button class="cx-btn pri sm" onclick="FFPComp.genHeats()"><span class="ms">auto_awesome</span> Generate heats</button></div>'
         + '<div class="cx-sub" style="margin:2px 0 8px">' + (useLanes ? 'Athletes are seeded into lanes. Set each heat\'s start time in the Schedule tab — Heat 1 is when the event begins.' : 'Mass / wave start — no lanes, just a start time + a list. Drag anyone into another heat. Heats auto-stagger from the first start by the interval.') + '</div>'
-        + '<div id="cx-heats"><div class="cx-empty">Loading…</div></div>');
+        + '<div id="cx-alloc"></div>'
+        + '<div id="cx-heats"><div class="cx-empty">Loading\u2026</div></div>');
+    loadAlloc();
     if (!S.wodId) return;
     var hr; try { hr = await sb().rpc('comp_heats_view', { p_workout: S.wodId }); } catch (e) { hr = { error: e }; }
     var heats = (hr && hr.data) || [];
@@ -1199,6 +1509,18 @@
     var anyEvents = divs.some(function (d) { return (d.workouts || []).length; });
     if (!anyEvents) { c.innerHTML = '<div class="cx-empty">Add divisions and events first — then set their start times here.</div>'; return; }
     var html = '<div class="cx-sub" style="margin:0 0 6px">The running order for the whole competition. Set each event\'s <b>date</b>, then each <b>heat\'s start time</b> — Heat 1\'s time is when the event begins. These show to athletes in the FFP App. Lane assignments &amp; judges are set in Heats &amp; lanes.</div>';
+    /* LAY THE WHOLE DAY OUT. Typing a start time into every heat by hand is how
+       two events end up on the same clock. This times the lot off one cursor,
+       in running order, and shows the plan BEFORE anything is written. */
+    var _dpDay = _dateOnly((S.detail.event && S.detail.event.starts_at) || '') || '';
+    html += '<div class="cx-toolbar" style="margin:14px 0 10px">'
+      + '<b style="flex:1;white-space:nowrap;font-size:15px;font-weight:900;color:var(--ffp-text)">Lay out the day</b>'
+      + '<input type="date" class="cx-in sm" id="cx-dp-day" value="' + _dpDay + '" style="height:38px;min-width:0;flex:none">'
+      + '<span class="cx-lab" style="margin:0">First heat</span><input type="time" class="cx-in sm" id="cx-dp-start" value="08:00" style="height:38px;width:150px;min-width:0;flex:none">'
+      + '<span class="cx-lab" style="margin:0">Changeover</span><input type="number" class="cx-in sm" id="cx-dp-trans" value="5" min="0" max="90" style="height:38px;width:76px;min-width:0;flex:none">'
+      + '<span class="cx-lab" style="margin:0">Gap</span><input type="number" class="cx-in sm" id="cx-dp-gap" value="10" min="0" max="180" style="height:38px;width:76px;min-width:0;flex:none">'
+      + '<button class="cx-btn sm" onclick="FFPComp.dayPlan(false)"><span class="ms">schedule</span> Show me the day</button>'
+      + '</div><div id="cx-dayplan"></div>';
     divs.forEach(function (d) {
       var wods = d.workouts || []; if (!wods.length) return;
       html += '<div class="cx-schdiv">' + esc(d.name) + '</div>';
@@ -1228,6 +1550,54 @@
         + '<input type="time" class="cx-in sm" value="' + tv + '" data-heat="' + h.id + '" data-judge="' + (h.judge_id || '') + '" onchange="FFPComp.schedHeat(\'' + h.id + '\',this)"></div>';
     }).join('');
   }
+  /* The day plan. A preview writes nothing; Apply writes the start times.
+     A heat that has started, finished, been judged or been scored is never
+     moved -- the plan reads its clock and carries on after it. */
+  async function dayPlan(apply) {
+    var host = document.getElementById('cx-dayplan'); if (!host) return;
+    var day = (document.getElementById('cx-dp-day') || {}).value || '';
+    var tm = (document.getElementById('cx-dp-start') || {}).value || '08:00';
+    var tr = parseInt((document.getElementById('cx-dp-trans') || {}).value, 10);
+    var gp = parseInt((document.getElementById('cx-dp-gap') || {}).value, 10);
+    if (!day) { toast('Pick the day first', 'error'); return; }
+    var p = { start: zoneToISO(day, tm, evTz()),
+              transition_min: isNaN(tr) ? 5 : tr, gap_min: isNaN(gp) ? 10 : gp };
+    host.innerHTML = '<div class="cx-sub" style="padding:10px 6px">Working it out\u2026</div>';
+    var r; try { r = await sb().rpc('comp_day_plan', { p_event: S.eventId, p: p, p_apply: !!apply }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error || !r.data) { host.innerHTML = ''; toast(apply ? 'Could not apply the plan' : 'Could not build the plan', 'error'); return; }
+    var d = r.data, plan = d.plan || [];
+    if (!plan.length) { host.innerHTML = '<div class="cx-empty">No heats to time yet. Generate heats in Heats &amp; lanes first.</div>'; return; }
+    if (apply) {
+      toast('The day is laid out', 'check');
+      host.innerHTML = '';
+      /* the schedule tab is now wrong on screen, so draw it again from the DB */
+      try { var dr = await sb().rpc('comp_detail', { p_event: S.eventId }); if (dr && dr.data) S.detail = dr.data; } catch (e) { /* the redraw below still refreshes the heats */ }
+      renderTab();
+      return;
+    }
+    var lastW = '';
+    var body = plan.map(function (h) {
+      var head = '';
+      if (h.workout_id !== lastW) { lastW = h.workout_id; head = '<div class="cx-schdiv" style="margin:22px 0 4px">' + esc(h.workout) + ' \u2014 ' + esc(h.division) + '</div>'; }
+      var was = h.was ? _timeOnly(h.was) : '';
+      var now = h.start_at ? _timeOnly(h.start_at) : '';
+      var note = h.held ? 'Already run, left alone' : (was && was !== now ? 'Was ' + was : (was ? 'Unchanged' : 'New time'));
+      return head + '<div class="cx-schrow"><span class="hn">' + esc(h.heat) + '</span>'
+        + '<span class="who">' + esc(note) + '</span>'
+        + '<b style="font-size:15px;font-weight:900;color:var(--ffp-text)">' + esc(now) + '</b></div>';
+    }).join('');
+    host.innerHTML = '<div class="cx-sub" style="margin:10px 0 2px">'
+      + plan.length + ' heats, ' + _timeOnly(d.start) + ' to ' + _timeOnly(d.ends)
+      + (d.held ? ', ' + d.held + ' already run and left alone' : '')
+      + '. Nothing is saved until you apply it.</div>'
+      + body
+      + '<div class="cx-toolbar" style="margin:16px 0 0">'
+      + '<button class="cx-btn pri sm" onclick="FFPComp.dayPlan(true)"><span class="ms">check</span> Apply these times</button>'
+      + '<button class="cx-btn sm" onclick="FFPComp.dayPlanClear()">Discard</button></div>';
+  }
+  function dayPlanClear() { var h = document.getElementById('cx-dayplan'); if (h) h.innerHTML = ''; }
+
   async function schedEvent(divId, wid, dateVal) {
     // Event carries the DATE only — the TIME comes from the heats (Heat 1 = when the event begins).
     var cur = null;
@@ -1401,6 +1771,10 @@
   function tab(t) { S.tab = t; document.querySelectorAll('.cx-editnav button').forEach(function (b) { b.classList.remove('on'); }); var el = document.querySelector('.cx-editnav button[onclick*="\'' + t + '\'"]'); if (el) el.classList.add('on'); renderTab(); }
 
   window.FFPComp = {
+    loadAlloc: loadAlloc, renderCheckin: renderCheckin, checkinSearch: checkinSearch, checkin: checkin,
+    dayPlan: dayPlan, dayPlanClear: dayPlanClear,
+    setStage: setStage, stageCut: stageCut, stageCutClear: stageCutClear, stageField: stageField,
+    stagesOpen: stagesOpen, stageSave: stageSave, stageRemove: stageRemove, stageEventSet: stageEventSet,
     loadMovements: loadMovements, mvAdd: mvAdd, mvSet: mvSet, mvRemove: mvRemove, mvNew: mvNew, list: renderList, create: create, open: open, tab: tab, setDiv: setDiv, setWod: setWod,
     saveDetails: saveDetails, seriesPick: seriesPick, saveSetup: saveSetup, suSeriesPick: suSeriesPick, uploadDoc: uploadDoc, sponPick: sponPick, sponAdd: sponAdd, sponRemove: sponRemove, inviteJudge: inviteJudge, judgeRole: judgeRole, judgeAddOpen: judgeAddOpen, searchJudge: searchJudge, addJudgeMember: addJudgeMember, pickMode: pickMode, pickAccent: pickAccent, pickClub: pickClub, pickSelf: pickSelf, toggleHide: toggleHide,
     editDivision: editDivision, saveDivision: saveDivision, moveDivision: moveDivision, mixHint: mixHint,
