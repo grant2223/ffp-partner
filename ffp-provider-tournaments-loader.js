@@ -635,6 +635,7 @@
       '.ts-rd .g i.warn{font-style:normal;color:#b4610b;font-weight:800;}',
       '.ts-rd .st{flex:none;font-size:9.5px;font-weight:900;letter-spacing:.6px;color:#5c6f7c;}',
       '.ts-rd .st.live{color:#d6353b;}',
+      '.ts-rd .st.open{color:#0a8f5f;}',
       '.ts-rd .ax{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1 1 100%;}',
       '.ts-num,.ts-chk{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:#12232f;}',
       '.ts-num .lg-in{width:74px;min-width:0;flex:none;box-sizing:border-box;}',
@@ -4897,7 +4898,9 @@
   /* 'open' and 'live' are both the PUBLISHED state in the database; the word for a
      match in progress is derived from the clock, not from this column. */
   function pillCls(st) { return (st === 'open' || st === 'live') ? 'open' : (st || 'draft'); }
-  function pillWord(st) { return (st === 'open' || st === 'live') ? 'PUBLISHED' : String(st || 'draft').toUpperCase(); }
+  /* The badge says what the segment says: Completed, not FINAL (Grant, 2026-11-02). */
+  var PILL_WORD = { open: 'PUBLISHED', live: 'PUBLISHED', final: 'COMPLETED' };
+  function pillWord(st) { st = st || 'draft'; return PILL_WORD[st] || String(st).toUpperCase(); }
   function segVal(id) { var b = document.querySelector('#' + id + ' button.on'); return b ? b.getAttribute('data-v') : null; }
   /* PUBLISHED, NOT 'GO LIVE' (Grant, 2026-11-02). Publishing puts the tournament in
      front of members; LIVE is the clock's business - a match actually being played -
@@ -7120,13 +7123,15 @@
   function renderSeries() {
     injectCss(); var el = root(); if (!el || !S.series) return;
     var s = ser(), rs = serRounds(), ts = serTeams();
-    var live = rs.filter(function (r) { return r.status === 'live'; }).length;
+    /* NOT 'live now': this counts rounds the organiser has PUBLISHED. Whether a
+       round is being played right now is the clock's business, not this column. */
+    var pub = rs.filter(function (r) { return r.status === 'live' || r.status === 'open'; }).length;
     el.innerHTML = '<div class="lg-wrap"><div class="lg-head"><div>'
       + '<div class="lg-h1">' + esc(s.name || 'Series') + '<span class="lg-pill ' + esc(s.status || 'open') + '">SERIES</span></div>'
       + '<div class="lg-sub">' + esc([
           rs.length + (rs.length === 1 ? ' round' : ' rounds'),
           ts.filter(function (t) { return t.status === 'active'; }).length + ' teams',
-          live ? live + ' live now' : '', s.city
+          pub ? pub + ' published' : '', s.city
         ].filter(Boolean).join(', ')) + '</div></div>'
       + '<button class="lg-btn" onclick="FFPTourn.back()">' + ic('arrow_back') + 'All tournaments</button></div>'
       + '<div class="lg-nav">' + SER_TABS.map(function (t) { return serTabBtn(t[0], t[1]); }).join('') + '</div>'
@@ -7154,19 +7159,32 @@
         +   '<span>' + esc([r.name, dOnly(r.starts_at) || 'Date to be confirmed', r.city].filter(Boolean).join(', ')) + '</span>'
         +   '<span>' + (r.entrants || 0) + (r.entrants === 1 ? ' team' : ' teams')
         +     (unlinked > 0 ? ', <i class="warn">' + unlinked + ' not linked to the series</i>' : '') + '</span></div>'
-        + '<span class="st ' + esc(r.status) + '">' + esc(String(r.status || 'draft').toUpperCase()) + '</span>'
+        + '<span class="st ' + esc(pillCls(r.status)) + '">' + esc(pillWord(r.status)) + '</span>'
         + '<div class="ax">'
         +   '<label class="ts-num">Round <input class="lg-in" type="number" min="0" id="ts-rn-' + r.id + '" value="' + (r.series_round === null || r.series_round === undefined ? '' : r.series_round) + '"></label>'
         +   '<label class="ts-chk"><input type="checkbox" id="ts-rf-' + r.id + '"' + (r.is_finals ? ' checked' : '') + '> Finals</label>'
         +   '<button class="lg-btn sm" onclick="FFPTourn.serRoundSave(\'' + r.id + '\')">' + ic('check') + 'Save</button>'
         +   '<button class="lg-btn sm" onclick="FFPTourn.open(\'' + r.id + '\')">' + ic('open_in_new') + 'Open</button>'
-        +   (unlinked > 0 ? '<button class="lg-btn sm" onclick="FFPTourn.serAdopt(\'' + r.id + '\')">' + ic('playlist_add') + 'Import its teams</button>' : '')
+        +   (unlinked > 0 ? '<button class="lg-btn sm" onclick="FFPTourn.serUnmatched(\'' + r.id + '\')">' + ic('error') + 'Fix ' + unlinked + ' not in the series</button>' : '')
         +   '<button class="lg-btn sm ghost" onclick="FFPTourn.serRoundOut(\'' + r.id + '\')">Remove from series</button>'
         + '</div></div>';
     }).join('') : '<div class="lg-empty" style="text-align:left;padding:4px 0">No rounds yet. Add a tournament below and it becomes Round 1.</div>';
 
     var adder;
-    if (S.serAddRound) {
+    /* NEXT ROUND, BUILT FROM THE SERIES. The old way was to build a tournament
+       on its own and attach it, which left its teams unlinked and the round
+       scoring nothing. This carries the teams, their squads and the shape. */
+    if (S.serNext) {
+      var nm = (ser().name || 'Series') + ' - Round ' + (rs.length + 1);
+      adder = '<div class="lg-edit" style="flex-wrap:wrap;align-items:flex-end;gap:14px">'
+        + '<label><div class="lg-lab">Name</div><input class="lg-in" id="ts-nx-name" style="width:260px" value="' + esc(nm) + '"></label>'
+        + '<label><div class="lg-lab">Date</div><input class="lg-in" id="ts-nx-date" type="date" style="width:170px"></label>'
+        + '<label><div class="lg-lab">City</div><input class="lg-in" id="ts-nx-city" style="width:170px" value="' + esc(ser().city || '') + '"></label>'
+        + '<button class="lg-btn pri" onclick="FFPTourn.serNextCreate()">' + ic('check') + 'Create round ' + (rs.length + 1) + '</button>'
+        + '<button class="lg-btn ghost" onclick="FFPTourn.serNextCancel()">Cancel</button></div>'
+        + '<div class="tg-hint" style="margin:10px 0 0">Every team in the series comes across with the squad it has named, '
+        + 'and the round keeps this series\u2019 sport, draw shape and match lengths.</div>';
+    } else if (S.serAddRound) {
       var mine = (S.freeEvents || []).filter(function (e) { return !e.series_id; });
       adder = '<div class="lg-edit" style="flex-wrap:wrap">'
         + (mine.length
@@ -7179,7 +7197,9 @@
             : '<div class="lg-empty" style="text-align:left;padding:4px 10px">Every tournament you own is already in a series. Create a tournament first, then add it here.</div>')
         + '<button class="lg-btn ghost" onclick="FFPTourn.serAddRoundCancel()">Cancel</button></div>';
     } else {
-      adder = '<button class="lg-btn" onclick="FFPTourn.serAddRoundOpen()">' + ic('add') + 'Add a round</button>';
+      adder = '<div class="lg-edit" style="gap:10px">'
+        + '<button class="lg-btn pri" onclick="FFPTourn.serNextOpen()">' + ic('add') + 'Next round</button>'
+        + '<button class="lg-btn" onclick="FFPTourn.serAddRoundOpen()">' + ic('playlist_add') + 'Add a tournament I already made</button></div>';
     }
     host.innerHTML = '<div class="tg-sec"><div class="tg-sech">Rounds</div>'
       + '<div class="tg-hint" style="margin:0 0 10px">A round is an ordinary tournament. It keeps its own draw, schedule and crew; the series only decides the order and adds up the points.</div>'
@@ -7330,6 +7350,61 @@
       S.freeEvents = ((r && r.data) || []).filter(function (e) { return e.status !== 'archived'; });
     }
     renderSerTab();
+  }
+  function serNextOpen() { S.serNext = true; S.serAddRound = false; renderSerTab(); }
+  function serNextCancel() { S.serNext = false; renderSerTab(); }
+  async function serNextCreate() {
+    var p = { name: gv('ts-nx-name'), starts_at: gv('ts-nx-date'), city: gv('ts-nx-city') };
+    var r; try { r = await sb().rpc('tourn_series_next_round', { p_series: S.seriesId, p: p }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not create that round'), 'error'); return; }
+    var d = r.data || {};
+    S.serNext = false; S.seriesList = null; S.freeEvents = null;
+    toast('Round ' + d.series_round + ' created, ' + d.teams + ' teams and ' + d.players + ' players');
+    reloadSeries();
+  }
+  /* The names a round carries that are NOT in the series. Matching is automatic
+     when the spelling agrees; this is the handful that genuinely differ, and
+     each one is either the same club under another name or a new entry. */
+  async function serUnmatched(roundId) {
+    var r; try { r = await sb().rpc('tourn_series_link_entrants', { p_tourn: roundId }); }
+    catch (e) { r = { error: e }; }
+    if (!r || r.error) { toast(errText(r && r.error, 'Could not check that round'), 'error'); return; }
+    var miss = ((r.data || {}).unmatched) || [];
+    if (!miss.length) { toast('Every team in that round is in the series'); reloadSeries(); return; }
+    var teams = serTeams().filter(function (t) { return t.status === 'active'; });
+    var old = document.getElementById('tg-unm'); if (old) old.remove();
+    var bk = document.createElement('div'); bk.id = 'tg-unm'; bk.className = 'lg-cfm';
+    bk.innerHTML = '<div class="lg-cfm-in" style="max-width:560px">'
+      + '<span class="ms lg-cfm-ic tone-draft" style="color:#b07d08">error</span>'
+      + '<div class="lg-cfm-t">' + miss.length + (miss.length === 1 ? ' team is' : ' teams are') + ' not in the series</div>'
+      + '<div class="lg-cfm-b">They score nothing until they are matched. Pick the team they already are, or add them to the series.</div>'
+      + '<div style="width:100%;margin-top:4px">'
+      + miss.map(function (m) {
+          return '<div class="lg-gfxrow"><span class="adr" style="font-size:15px">' + esc(m.team_name) + '</span>'
+            + '<select class="lg-sel" id="tg-unm-' + m.entrant_id + '" style="width:220px;flex:none">'
+            + '<option value="">Add to the series</option>'
+            + teams.map(function (t) { return '<option value="' + t.id + '">' + esc(t.team_name) + '</option>'; }).join('')
+            + '</select></div>';
+        }).join('')
+      + '</div>'
+      + '<div class="lg-cfm-a"><button class="lg-btn ghost" id="tg-unm-x">Cancel</button>'
+      + '<button class="lg-btn pri" id="tg-unm-ok">' + ic('check') + 'Fix them</button></div></div>';
+    document.body.appendChild(bk);
+    bk.querySelector('#tg-unm-x').onclick = function () { bk.remove(); };
+    bk.onclick = function (e) { if (e.target === bk) bk.remove(); };
+    bk.querySelector('#tg-unm-ok').onclick = async function () {
+      var newOnes = false;
+      for (var i = 0; i < miss.length; i++) {
+        var pick = gv('tg-unm-' + miss[i].entrant_id);
+        if (!pick) { newOnes = true; continue; }
+        try { await sb().rpc('tourn_series_match_entrant', { p_entrant: miss[i].entrant_id, p_series_team: pick }); }
+        catch (e) { toast(errText(e, 'Could not match ' + miss[i].team_name), 'error'); return; }
+      }
+      /* anything left on "Add to the series" joins it, exactly as before */
+      if (newOnes) { try { await sb().rpc('tourn_series_adopt_round', { p_series: S.seriesId, p_tourn: roundId }); } catch (e) {} }
+      bk.remove(); S.seriesList = null; toast('Sorted'); reloadSeries();
+    };
   }
   async function serAdopt(roundId) {
     var r; try { r = await sb().rpc('tourn_series_adopt_round', { p_series: S.seriesId, p_tourn: roundId }); }
@@ -7497,7 +7572,8 @@
     serCreateOpen: function () { S.serCreating = true; renderList(); }, serCreateCancel: function () { S.serCreating = false; renderList(); }, serCreate: serCreate,
     serRoundSave: serRoundSave, serRoundAdd: serRoundAdd, serRoundOut: serRoundOut,
     serAddRoundOpen: serAddRoundOpen, serAddRoundCancel: function () { S.serAddRound = false; renderSerTab(); },
-    serAdopt: serAdopt, serTeamEdit: function (id) { S.serTeamEdit = id; renderSerTab(); }, serTeamCancel: function () { S.serTeamEdit = null; renderSerTab(); },
+    serAdopt: serAdopt, serNextOpen: serNextOpen, serNextCancel: serNextCancel,
+    serNextCreate: serNextCreate, serUnmatched: serUnmatched, serTeamEdit: function (id) { S.serTeamEdit = id; renderSerTab(); }, serTeamCancel: function () { S.serTeamEdit = null; renderSerTab(); },
     serTeamSave: serTeamSave, serTeamStatus: serTeamStatus,
     serPtsSave: serPtsSave, serPtsPlace: serPtsPlace, serPtsPreset: serPtsPreset, serDetailsSave: serDetailsSave,
     serPick: serPick, serImg: serImg, serTeamLogo: serTeamLogo,
