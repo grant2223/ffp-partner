@@ -195,8 +195,6 @@
       '#lg-root .lg-bc .lg-info .pts .ms{font-size:16px;flex:none;color:#1980AD;opacity:.8;margin-top:1px;}',
       '@media(max-width:900px){.lg-bc .grid{grid-template-columns:minmax(0,1fr);gap:14px;}}',
       /* GUEST PLAYER. Named in the row itself -- never a browser prompt box. */
-      '#lg-root .lg-mcadd .mc-guest{flex:1;min-width:150px;box-sizing:border-box;height:38px;padding:0 11px;border:0;border-radius:10px;background:#e8eef3;font:inherit;font-size:13px!important;font-weight:500;color:#12232f;}',
-      '#lg-root .lg-mcadd .mc-guest::placeholder{color:#8da0ae;font-weight:500;}',
       '.lg-mcrow .gst{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9aa8b4;}',
       '.lg-mchd{display:flex;align-items:center;justify-content:center;gap:16px;padding:16px 4px;border-bottom:1px solid var(--ffp-border);} .lg-mchd .tm{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800;} .lg-mchd .tm.a{flex-direction:row-reverse;} .lg-mchd .scr{font-size:26px;font-weight:900;color:var(--ffp-text);min-width:80px;text-align:center;}',
       '.lg-mcadd{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px 2px;border-bottom:1px solid var(--ffp-border);} .lg-mcadd .lg-sel{width:auto;flex:1;min-width:120px;padding:8px 10px;font-size:13px;} .lg-mcadd .lg-in{padding:8px 10px;font-size:13px;}',
@@ -3487,7 +3485,6 @@
           + '<select class="lg-sel" id="mc-kind">' + kindOpts + '</select>'
           + '<select class="lg-sel" id="mc-team">' + teamOpts + '</select>'
           + '<select class="lg-sel" id="mc-player"></select>'
-          + '<input class="mc-guest" id="mc-guest" placeholder="Guest name" hidden>'
           + '<button class="lg-btn pri" onclick="FFPLeague.addEvent()">' + ic('add') + 'Add</button></div>'
           + '<div class="lg-sub" style="margin:6px 0 0">Order: time, action, team, player</div><div id="mc-list"></div>')
         : tab === 'subs'
@@ -3504,7 +3501,6 @@
       mcFillPlayers();
       document.getElementById('mc-team').addEventListener('change', mcFillPlayers);
       document.getElementById('mc-kind').addEventListener('change', mcFillPlayers);
-      document.getElementById('mc-player').addEventListener('change', mcGuestToggle);
       renderMcList();
     } else if (tab === 'subs') {
       mcFillSubPlayers();
@@ -4324,53 +4320,36 @@
      named this is empty, and mcFillPlayers says so rather than going quiet. */
   function mcSquadFor(entrantId) { var m = S._mc || {}; return (m.home && m.home.id === entrantId) ? (m.home_squad || []) : (m.away_squad || []); }
   function mcKindTeamOnly(k) { var f = mcScoringKinds().find(function (x) { return x.key === k; }); return !!(f && f.team_only); }
-  /* Everyone who has already been named as a guest on THIS match, for that
-     team. An event with a name and no member id is a guest -- a team-only
-     score (penalty try, own goal) has neither, so it cannot land here. */
-  function mcGuestsOnMatch(tid) {
-    var ev = ((S._mc || {}).events) || [], seen = {}, out = [];
-    ev.forEach(function (e) {
-      if (e.player_id || !e.player) return;
-      if (tid && e.entrant_id && e.entrant_id !== tid) return;
-      var k = e.player.toLowerCase();
-      if (seen[k]) return; seen[k] = 1; out.push(e.player);
-    });
-    return out;
-  }
-  function mcGuestToggle() {
-    var sel = document.getElementById('mc-player'), gi = document.getElementById('mc-guest');
-    if (!gi) return;
-    var on = !!sel && !sel.disabled && sel.value === '__guest';
-    gi.hidden = !on;
-    if (!on) gi.value = '';
-  }
+  /* A SCORER IS NEVER TYPED IN, AND NEVER COMPULSORY (Grant, 2026-11-03).
+     Two rules in one box. A name can only come off the team sheet -- there is
+     no "Guest player" and no free-text field, because a player who scores is
+     a player with an account. And naming anyone at all is OPTIONAL: "No
+     scorer named" is the first choice and the default, so a try goes on the
+     board the moment it is scored and the name can follow. The old box
+     refused to record anything until somebody was picked, which is how 16
+     people ended up typed in rather than signed up. */
   function mcFillPlayers() {
     var sel = document.getElementById('mc-player'); if (!sel) return;
     var kEl = document.getElementById('mc-kind');
-    if (kEl && mcKindTeamOnly(kEl.value)) { sel.innerHTML = '<option value="">Team score — no scorer</option>'; sel.disabled = true; mcGuestToggle(); return; }
+    if (kEl && mcKindTeamOnly(kEl.value)) { sel.innerHTML = '<option value="">Team score — no scorer</option>'; sel.disabled = true; return; }
     sel.disabled = false;
-    var tid = document.getElementById('mc-team').value;
-    var sq = mcSquadFor(tid);
-    var guests = mcGuestsOnMatch(tid);
-    /* NO SIDE NAMED YET. An empty box reads as a broken dropdown, so it says
-       where the players come from instead. The hint cannot be chosen. */
-    sel.innerHTML =
-      (sq.length
+    var sq = mcSquadFor(document.getElementById('mc-team').value);
+    sel.innerHTML = '<option value="">No scorer named</option>'
+      + (sq.length
         ? '<optgroup label="Team sheet">' + sq.map(function (p) { return '<option value="' + esc(p.player_id || '') + '">' + esc(p.name) + '</option>'; }).join('') + '</optgroup>'
-        : '<option value="" disabled selected>No team sheet — name the side on the Team sheet tab</option>')
-      + (guests.length ? '<optgroup label="Guests">' + guests.map(function (n) { return '<option value="__g:' + esc(n) + '">' + esc(n) + '</option>'; }).join('') + '</optgroup>' : '')
-      + '<option value="__guest">Guest player…</option>';
-    mcGuestToggle();
+        : '<option value="" disabled>No team sheet — name the side on the Team sheet tab</option>');
   }
   function mcFillSubPlayers() {
     var offSel = document.getElementById('sub-off'), onSel = document.getElementById('sub-on'); if (!offSel || !onSel) return;
     var tid = document.getElementById('sub-team').value;
     var sq = mcSquadFor(tid);
-    var opts = sq.map(function (p) { return '<option value="' + esc(p.name) + '">' + esc(p.name) + '</option>'; }).join('') + '<option value="__other">Other (type name)…</option>';
+    /* off the team sheet or not at all: no "Other (type name)", and no
+       browser prompt, which was a typed-in player AND a dialog box */
+    var opts = sq.map(function (p) { return '<option value="' + esc(p.name) + '">' + esc(p.name) + '</option>'; }).join('');
     offSel.innerHTML = '<option value="">Player OFF…</option>' + opts;
     onSel.innerHTML = '<option value="">Player ON…</option>' + opts;
   }
-  function _subVal(id) { var s = document.getElementById(id); if (!s) return ''; var v = s.value; if (v === '__other') { v = (prompt('Player name') || '').trim(); } return v; }
+  function _subVal(id) { var s = document.getElementById(id); return s ? s.value : ''; }
   async function addSub() {
     var team = document.getElementById('sub-team').value;
     var off = _subVal('sub-off'), on = _subVal('sub-on');
@@ -4408,16 +4387,8 @@
     var pts = parseInt(ksel.options[ksel.selectedIndex] ? ksel.options[ksel.selectedIndex].getAttribute('data-pts') : '0', 10); if (isNaN(pts)) pts = 0;
     var psel = document.getElementById('mc-player'); var pv = psel.value || '';
     var pid = null, pname = null;
-    if (mcKindTeamOnly(kind)) {
-      pid = null; pname = null;                  // penalty try / own goal — team score, no named scorer
-    } else if (pv === '__guest') {
-      var gi = document.getElementById('mc-guest');
-      pname = ((gi && gi.value) || '').replace(/\s+/g, ' ').trim();
-      if (!pname) { toast('Type the guest\u2019s name', 'error'); if (gi) gi.focus(); return; }
-    } else if (pv.indexOf('__g:') === 0) {
-      pname = pv.slice(4);                       // a guest already named on this match
-    } else if (!pv) {
-      toast('No team sheet — name the side on the Team sheet tab', 'error'); return;
+    if (mcKindTeamOnly(kind) || !pv) {
+      pid = null; pname = null;                  // team score, or nobody named yet
     } else {
       pid = pv;
       pname = psel.options[psel.selectedIndex] ? psel.options[psel.selectedIndex].text : null;
