@@ -4240,7 +4240,7 @@
   }
 
   async function renderSetup(host) {
-    await loadSports(); await taxReady(); await loadMySeries(); await loadPotm();
+    await loadSports(); await taxReady(); await loadMySeries(); await loadPotm(); await loadOutcomeRules();
     await loadDrawNames();
     var ev = S.detail.event || {}, divs = S.detail.divisions || [];
     var mode = ev.entrant_mode || 'individual';
@@ -4297,6 +4297,7 @@
 
     host.innerHTML = head
       + potmVoteHtml()
+      + forfeitHtml()
       + drawNamesHtml()
       + '<div class="tg-sec"><div class="tg-sech">Divisions</div>' + rows + adder + '</div>';
   }
@@ -5911,7 +5912,10 @@
       + '<div id="tg-glist"><div class="lg-empty">Loading…</div></div>';
     var host2 = document.getElementById('tg-glist');
     if (eligible.length < 2) { host2.innerHTML = '<div class="lg-empty">Add at least 2 ' + N.many + ' (' + nouns(null).Many + ' tab) before drawing groups.</div>'; return; }
-    var mr; try { mr = await sb().from('tourn_matches').select('*').eq('division_id', S.divId).eq('stage', 'group').order('group_label').order('round').order('slot'); } catch (e) { mr = { error: e }; }
+    /* tourn_group_matches, not a raw table read: the row has to arrive with
+       the same outcome words every other list gets, from the one place that
+       decides them. */
+    var mr; try { mr = await sb().rpc('tourn_group_matches', { p_division: S.divId }); } catch (e) { mr = { error: e }; }
     var ms = (mr && mr.data) || []; var names = {}; roster.forEach(function (r) { names[r.id] = r.name; });
     var gt; try { gt = await sb().rpc('tourn_group_tables', { p_division: S.divId }); } catch (e) { gt = null; }
     var tables = (gt && gt.data && gt.data.groups) || [];
@@ -5927,7 +5931,7 @@
       rord.sort(function (a, b) { return a - b; });
       var fx = rord.length ? rord.map(function (rd) {
         return '<div class="tg-rlbl">Round ' + rd + '</div>' + rounds[rd].map(function (m) {
-          return '<div class="tg-gfx" data-id="' + m.id + '"><span class="t a">' + esc(names[m.home_entrant] || 'TBD') + '</span><span class="sc"><input type="number" class="tg-hs" value="' + (m.home_score != null ? m.home_score : '') + '" placeholder="–"><input type="number" class="tg-as" value="' + (m.away_score != null ? m.away_score : '') + '" placeholder="–"></span><span class="t">' + esc(names[m.away_entrant] || 'TBD') + '</span><button class="lg-btn ghostb sm" onclick="FFPTourn.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + 'Match centre</button></div>';
+          return '<div class="tg-gfx" data-id="' + m.id + '"><span class="t a">' + esc(names[m.home_entrant] || 'TBD') + '</span>' + gfxMid(m, names) + '<span class="t">' + esc(names[m.away_entrant] || 'TBD') + '</span><button class="lg-btn ghostb sm" onclick="FFPTourn.openMatch(\'' + m.id + '\')">' + ic('scoreboard') + 'Match centre</button>' + gfxSub(m, names) + '</div>';
         }).join('');
       }).join('') : '<div class="lg-sub" style="padding:8px 2px">Single ' + N.one + ' — no fixtures.</div>';
       return '<div class="tg-group"><div class="tg-grph">Group ' + esc(g.label) + ', ' + (g.rows || []).length + ' ' + ((g.rows || []).length === 1 ? N.one : N.many) + '</div>' + tbl + '<div class="fxlab">Fixtures and results, in play order</div>' + fx + '</div>';
@@ -5941,9 +5945,31 @@
     if ((r.data || 0) === 0) { toast('Add at least 2 ' + nouns(curDv()).many + ' first', 'error'); renderTab(); return; }
     toast(n + ' group' + (n === 1 ? '' : 's') + ' drawn, ' + r.data + ' fixtures', 'success'); renderTab();
   }
+  /* WHAT A GROUP ROW SAYS WHERE THE SCORE WOULD BE. Postponed and cancelled
+     read as the word, with no boxes to type into -- there is no score to
+     enter. Forfeit and abandoned keep their score and name themselves,
+     because both count as played. */
+  function gfxOutcome(m) { return m.outcome || (m.status === 'postponed' || m.status === 'cancelled' ? m.status : (m.status === 'final' ? (m.result_kind || 'played') : 'played')); }
+  function gfxMid(m, names) {
+    ocCss();
+    var oc = gfxOutcome(m);
+    if (oc === 'postponed') return '<span class="sc"><span class="state hold">Postponed</span></span>';
+    if (oc === 'cancelled') return '<span class="sc"><span class="state off">Cancelled</span></span>';
+    return '<span class="sc"><input type="number" class="tg-hs" value="' + (m.home_score != null ? m.home_score : '') + '" placeholder="\u2013"><input type="number" class="tg-as" value="' + (m.away_score != null ? m.away_score : '') + '" placeholder="\u2013"></span>';
+  }
+  /* the reason goes on its own full-width line UNDER the row. The score
+     column is a fixed 116px, so anything extra put inside it lands on top of
+     the team names -- and a team name is never shortened to make room. */
+  function gfxSub(m, names) {
+    var oc = gfxOutcome(m);
+    if (oc === 'cancelled') return m.cancel_reason_label ? '<span class="gsub">' + esc(m.cancel_reason_label) + '</span>' : '';
+    if (oc === 'forfeit') return '<span class="gsub">Forfeit, ' + esc(m.forfeit_by === 'both' ? 'both sides' : (m.forfeit_by === 'home' ? (names[m.home_entrant] || '') : (names[m.away_entrant] || ''))) + '</span>';
+    if (oc === 'abandoned') return '<span class="gsub">Abandoned</span>';
+    return '';
+  }
   async function saveGroupResults() {
     var rows = Array.prototype.slice.call(document.querySelectorAll('#tg-glist .tg-gfx')); var n = 0;
-    for (var i = 0; i < rows.length; i++) { var el = rows[i]; var h = el.querySelector('.tg-hs').value, a = el.querySelector('.tg-as').value; if (h === '' || a === '') continue; try { await sb().rpc('tourn_result_save', { p_match: el.getAttribute('data-id'), p_home: +h, p_away: +a, p_sets: null, p_status: 'final' }); n++; } catch (e) {} }
+    for (var i = 0; i < rows.length; i++) { var el = rows[i]; var hEl = el.querySelector('.tg-hs'), aEl = el.querySelector('.tg-as'); if (!hEl || !aEl) continue; var h = hEl.value, a = aEl.value; if (h === '' || a === '') continue; try { await sb().rpc('tourn_result_save', { p_match: el.getAttribute('data-id'), p_home: +h, p_away: +a, p_sets: null, p_status: 'final' }); n++; } catch (e) {} }
     toast(n + ' results saved', 'success'); renderTab();
   }
   async function setDrawFormat(v) {
@@ -6122,11 +6148,148 @@
       + kindTag + foot + '</div>';
   }
   // ── AWARD A MATCH THAT WAS NOT PLAYED OUT ─────────────────────────────
+  var OC_CSS = ".tg-oc{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;padding:16px 2px 0;border-top:1px solid var(--ffp-border);}.tg-oc .f{min-width:0;}.tg-oc .k{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#8a96a1;margin-bottom:9px;}#tg-root .tg-oc .lg-sel{width:auto;min-width:228px;height:42px;padding:0 12px;font-size:13.5px!important;font-weight:800;}#tg-root .tg-oc .lg-sel.off{border-color:rgba(194,59,49,.5);color:#c23b31;}.tg-oc .nn{display:flex;align-items:center;gap:8px;}#tg-root .tg-oc .nn input{width:64px;flex:none;min-width:0;height:42px;padding:0 8px;text-align:center;font-size:15px!important;font-weight:800;box-sizing:border-box;}#tg-root .tg-oc .nn input.dt{width:168px;font-size:13px!important;}.tg-oc .nn em{font-style:normal;font-weight:800;color:#8a96a1;}.tg-ocsay{margin:15px 2px 0;padding-top:14px;border-top:1px solid var(--ffp-border);font-size:12.5px;font-weight:600;color:var(--ffp-text-muted);line-height:1.7;max-width:780px;}.tg-ocsay b{font-weight:800;color:var(--ffp-text);}.tg-ocsay u{text-decoration:none;font-weight:800;color:#b8750c;}.tg-gfx .state{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;}.tg-gfx .state.off{color:#c23b31;}.tg-gfx .state.hold{color:#b8750c;}.tg-gfx .gsub{grid-column:1/-1;text-align:center;font-size:11.5px;font-weight:700;color:#9aa8b4;line-height:1.4;padding:0 0 3px;}";
+  function ocCss() { if (document.getElementById('tg-oc-css')) return; var st = document.createElement('style'); st.id = 'tg-oc-css'; st.textContent = OC_CSS; document.head.appendChild(st); }
+
+  /* ══ MATCH OUTCOME ════════════════════════════════════════
+     Played, Postponed, Cancelled, Forfeit, Abandoned. Walkover, retired,
+     default and disqualified are NOT here: this draw already awards those
+     through "Not played out", which also sends the winner on, and two ways
+     to record the same thing is how two records of it start.
+
+     Postponed and Cancelled are STATUSES -- the match never reached a
+     result, so every table, board and stat query, all of which read
+     status='final', leaves them out untouched. Forfeit and Abandoned are
+     FINALS qualified by result_kind, so both count as played; a forfeit in
+     a group also carries a SCORE, which is what separates it from a
+     walkover when points difference decides who goes through. */
+  var OUTCOMES = [['played', 'Played'], ['postponed', 'Postponed'], ['cancelled', 'Cancelled'], ['forfeit', 'Forfeit'], ['abandoned', 'Abandoned']];
+  var OC_SAID = { forfeit_side_required: 'Choose which side forfeited', bad_reason: 'Pick a reason from the list', match_locked: 'This match is locked', not_owner: 'This match is not yours to change', bad_outcome: 'That outcome is not recognised' };
+  var OC_DONE = { played: 'Result saved', postponed: 'Match postponed', cancelled: 'Match cancelled', forfeit: 'Forfeit recorded', abandoned: 'Recorded as abandoned' };
+  function ocNow(m) { return S._oc || (m && m.outcome) || 'played'; }
+  function ocSide(m, side) { return side === 'home' ? ((m.home || {}).name || '') : side === 'away' ? ((m.away || {}).name || '') : 'Both sides'; }
+  function ocSays(o, m) {
+    var aw = (m && m.forfeit_award) || {};
+    if (o === 'postponed') return 'The match stays in the draw and waits for a new time. Nothing is scored and nothing counts until it is played.';
+    if (o === 'cancelled') return 'Never started. No score, no group points, no player stats.';
+    if (o === 'forfeit') return 'Final, it counts as played, and the winner goes through. Left blank, this tournament awards <b>' + (aw['for'] != null ? aw['for'] : 1) + '\u2013' + (aw.against != null ? aw.against : 0) + '</b> to the side that stood up \u2014 <u>set in Setup</u>.';
+    if (o === 'abandoned') return 'Started and could not finish. Final, it counts as played, and the score entered stands.';
+    return 'The score counts toward the group table, and the player stats count.';
+  }
+  function ocStrip(m, hideScoreWhenPlayed) {
+    ocCss();
+    var o = ocNow(m), hs = m.home_score, as2 = m.away_score;
+    var h = '<div id="tg-ocwrap"><div class="tg-oc"><div class="f"><div class="k">Outcome</div>'
+      + '<select class="lg-sel' + (o === 'cancelled' || o === 'forfeit' ? ' off' : '') + '" id="oc-sel" onchange="FFPTourn.ocPick()">'
+      + OUTCOMES.map(function (k) { return '<option value="' + k[0] + '"' + (o === k[0] ? ' selected' : '') + '>' + k[1] + '</option>'; }).join('')
+      + '</select></div>';
+    if (o === 'forfeit') {
+      var ff = m.forfeit_by || 'home';
+      h += '<div class="f"><div class="k">Forfeited by</div><select class="lg-sel" id="oc-ff">'
+        + ['home', 'away', 'both'].map(function (x) { return '<option value="' + x + '"' + (ff === x ? ' selected' : '') + '>' + esc(ocSide(m, x)) + '</option>'; }).join('')
+        + '</select></div>';
+    }
+    if (o === 'cancelled') {
+      h += '<div class="f"><div class="k">Reason</div><select class="lg-sel" id="oc-reason"><option value="">Not stated</option>'
+        + (m.cancel_reasons || []).map(function (r) { return '<option value="' + esc(r.value) + '"' + (m.cancel_reason === r.value ? ' selected' : '') + '>' + esc(r.label) + '</option>'; }).join('')
+        + '</select></div>';
+    }
+    if (o === 'postponed') {
+      h += '<div class="f"><div class="k">New day, optional</div><div class="nn">'
+        + '<input class="lg-in dt" id="oc-date" type="date" value="' + esc(m.scheduled_at ? evDateStr(m.scheduled_at) : '') + '"></div></div>';
+    }
+    if (o !== 'postponed' && o !== 'cancelled' && !(o === 'played' && hideScoreWhenPlayed)) {
+      h += '<div class="f"><div class="k">' + esc(m.score_label || 'Score') + (o === 'forfeit' ? ', optional' : '') + '</div><div class="nn">'
+        + '<input class="lg-in" id="oc-hs" type="number" value="' + (hs != null ? hs : '') + '" placeholder="\u2013"><em>\u2013</em>'
+        + '<input class="lg-in" id="oc-as" type="number" value="' + (as2 != null ? as2 : '') + '" placeholder="\u2013"></div></div>';
+    }
+    return h + '</div><div class="tg-ocsay">' + ocSays(o, m) + '</div></div>';
+  }
+  function ocPick() {
+    var el = document.getElementById('oc-sel'), box = document.getElementById('tg-ocwrap');
+    if (!el || !box) return;
+    S._oc = el.value;
+    box.outerHTML = ocStrip(S._mc || {}, !!S._ocNoScore);
+  }
+  function ocVal(id) { var el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; }
+  function ocNum(id) { var t = ocVal(id); if (!t) return null; var n = Number(t); return isFinite(n) ? Math.round(n) : null; }
+  async function saveOutcome() {
+    var m = S._mc || {}, o = ocNow(m);
+    var hs = ocVal('oc-hs'), as2 = ocVal('oc-as');
+    if (o === 'played' || o === 'abandoned') {
+      if (hs === '' || as2 === '') {
+        var ev = m.events || [];
+        if (ev.length) { var l = ev[ev.length - 1]; hs = String(l.hs); as2 = String(l.as); }
+      }
+      if (hs === '' || as2 === '') { toast('Enter the ' + String(m.score_label || 'score').toLowerCase() + ', or add the scoring events', 'error'); return; }
+    }
+    var r;
+    if (o === 'played') {
+      try { r = await sb().rpc('tourn_result_save', { p_match: S.matchOpen, p_home: +hs, p_away: +as2, p_sets: null, p_status: 'final' }); } catch (e) { r = { error: e }; }
+    } else {
+      var when = null;
+      if (o === 'postponed' && ocVal('oc-date')) {
+        var t = m.scheduled_at ? evTimeStr(m.scheduled_at) : '12:00';
+        when = evIso(ocVal('oc-date'), t);
+      }
+      var blank = (o === 'postponed' || o === 'cancelled');
+      try {
+        r = await sb().rpc('lt_match_outcome_save', {
+          p_scope: 'tourn', p_match: S.matchOpen, p_outcome: o,
+          p_forfeit_by: o === 'forfeit' ? (ocVal('oc-ff') || 'home') : null,
+          p_reason: o === 'cancelled' ? (ocVal('oc-reason') || null) : null,
+          p_home: (blank || hs === '') ? null : +hs,
+          p_away: (blank || as2 === '') ? null : +as2,
+          p_when: when
+        });
+      } catch (e) { r = { error: e }; }
+    }
+    if (r && r.error) {
+      var msg = String((r.error && (r.error.message || r.error.hint)) || '');
+      var key = Object.keys(OC_SAID).filter(function (k) { return msg.indexOf(k) > -1; })[0];
+      toast(key ? OC_SAID[key] : 'Could not save', 'error'); return;
+    }
+    S._oc = null; toast(OC_DONE[o] || 'Result saved', 'success'); renderMatchCentre();
+  }
+  /* THE FORFEIT AWARD IS THE TOURNAMENT'S, NOT THE CODE'S. The sport's own
+     published figure is the starting point and the organiser sets their own
+     over the top of it. Nothing auto-saves. */
+  async function loadOutcomeRules() {
+    try { var r = await sb().rpc('lt_outcome_rules_get', { p_scope: 'tourn', p_event: S.eventId }); S._ocr = (r && r.data) || null; }
+    catch (e) { S._ocr = null; }
+    return S._ocr;
+  }
+  function forfeitHtml() {
+    var d = S._ocr; if (!d || d.error) return '';
+    ocCss();
+    return '<div class="og-sec tp-vote">'
+      + '<div class="og-hd">' + ic('front_hand')
+      +   '<div class="t"><b>Forfeit award</b><span>The score given when a side does not front up and the scorer records the forfeit without entering one. '
+      +   'The side that stood up takes the first number.</span></div></div>'
+      + '<div class="tg-oc" style="border-top:none;padding-top:0">'
+      +   '<div class="f"><div class="k">Side that stood up</div><div class="nn">'
+      +     '<input class="lg-in" id="tg-ffor" type="number" value="' + d.forfeit_for + '"><em>\u2013</em>'
+      +     '<input class="lg-in" id="tg-ffag" type="number" value="' + d.forfeit_against + '"></div></div>'
+      +   '<div class="f"><div class="k">&nbsp;</div>'
+      +     '<button class="lg-btn pri" onclick="FFPTourn.forfeitSave()">' + ic('check') + 'Save</button></div>'
+      + '</div>'
+      + '<div class="tg-ocsay">Every division in this tournament uses these numbers. A forfeit already recorded keeps the score it was given, and a scorer who enters a score of their own always overrides this.</div>'
+      + '</div>';
+  }
+  async function forfeitSave() {
+    var f = ocNum('tg-ffor'), a = ocNum('tg-ffag');
+    if (f === null || a === null || f < 0 || a < 0) { toast('Both numbers are needed', 'error'); return; }
+    var r; try { r = await sb().rpc('lt_outcome_rules_set', { p_scope: 'tourn', p_event: S.eventId, p_for: f, p_against: a }); } catch (e) { r = { error: e }; }
+    if (r && r.error) { toast('Could not save the forfeit award', 'error'); return; }
+    if (r && r.data) S._ocr = r.data;
+    toast('Forfeit award saved', 'success');
+  }
+  // ── AWARD A MATCH THAT WAS NOT PLAYED OUT ─────────────────────
   var AWARD_KINDS = [['walkover', 'Walkover', 'Opponent did not show'],
                      ['retired', 'Retired', 'Could not finish, injury or illness'],
                      ['default', 'Default', 'Removed by the organiser'],
                      ['disqualified', 'Disqualified', 'Removed for conduct']];
-  var AWARD_SHORT = { walkover: 'w/o', retired: 'ret', default: 'def', disqualified: 'dsq' };
+  var AWARD_SHORT = { walkover: 'w/o', retired: 'ret', default: 'def', disqualified: 'dsq', forfeit: 'ff', abandoned: 'ab' };
   var _awardM = null;
   function awardPanel(id) {
     var m = (S._bracket || []).find(function (x) { return x.id === id; });
@@ -6186,7 +6349,7 @@
 
   async function saveBracketResults() {
     var cards = Array.prototype.slice.call(document.querySelectorAll('#tg-brk .tg-m[data-id]')); var n = 0;
-    for (var i = 0; i < cards.length; i++) { var el = cards[i]; var h = el.querySelector('.tg-hs').value, a = el.querySelector('.tg-as').value; if (h === '' || a === '') continue; try { await sb().rpc('tourn_result_save', { p_match: el.getAttribute('data-id'), p_home: +h, p_away: +a, p_sets: null, p_status: 'final' }); n++; } catch (e) {} }
+    for (var i = 0; i < cards.length; i++) { var el = cards[i]; var hEl = el.querySelector('.tg-hs'), aEl = el.querySelector('.tg-as'); if (!hEl || !aEl) continue; var h = hEl.value, a = aEl.value; if (h === '' || a === '') continue; try { await sb().rpc('tourn_result_save', { p_match: el.getAttribute('data-id'), p_home: +h, p_away: +a, p_sets: null, p_status: 'final' }); n++; } catch (e) {} }
     toast(n + ' saved, winners advanced', 'success'); renderTab();
   }
 
@@ -6319,7 +6482,7 @@
   // ---------- MATCH CENTRE (organiser enters timeline + player stats) ----------
   var KIND_PTS = { try: 5, conversion: 2, penalty: 3, drop_goal: 3, goal: 1, point: 1, yellow_card: 0, red_card: 0 };
   var KIND_LBL = { try: 'Try', conversion: 'Conversion', penalty: 'Penalty', drop_goal: 'Drop goal', goal: 'Goal', point: 'Point', yellow_card: 'Yellow card', red_card: 'Red card' };
-  function openMatch(id) { S.matchOpen = id; S.mcTab = 'timeline'; S._mcDiv = null; S.mcStatPlayer = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = null; S._htSnap = null; S._mcSetTime = null; renderMatchCentre(); }
+  function openMatch(id) { S.matchOpen = id; S._oc = null; S.mcTab = 'timeline'; S._mcDiv = null; S.mcStatPlayer = null; if (S._trkInt) { clearInterval(S._trkInt); S._trkInt = null; } S._tracker = null; S._htSnap = null; S._mcSetTime = null; renderMatchCentre(); }
   // ── THE REFEREE'S TEAM SHEET, ON PAPER ──────────────────────────────────
   //    An organiser prints these and puts them pitch-side before kick-off.
   //
@@ -6693,8 +6856,9 @@
     host.innerHTML =
       '<div class="lg-tool"><button class="lg-btn" onclick="FFPTourn.closeMatch()">' + ic('arrow_back') + 'Back</button><span class="sp"></span>' + '<button class="lg-btn" onclick="FFPTourn.printSheets()">' + ic('print') + 'Team sheets</button>'
       + '<button class="lg-btn" title="Walkover, retirement or disqualification" onclick="FFPTourn.awardPanel(\'' + m.id + '\')">' + ic('gavel') + 'Not played out</button>'
-      + liveBtn + '<button class="lg-btn pri" onclick="FFPTourn.saveResultFromEvents()">' + ic('check') + 'Save result</button></div>'
+      + liveBtn + '<button class="lg-btn pri" onclick="FFPTourn.saveOutcome()">' + ic('check') + 'Save result</button></div>'
       + '<div class="lg-mchd"><div class="tm">' + crest(m.home) + '<b>' + esc(m.home.name) + '</b></div><div class="scr">' + esc(score) + '</div><div class="tm a"><b>' + esc(m.away.name) + '</b>' + crest(m.away) + '</div></div>'
+      + ocStrip(m, false)
       + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:10px 0"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPTourn.saveStream()">' + ic('live_tv') + 'Save stream</button></div>'
       + '<div class="lg-mctabs"><button class="' + (tab === 'timeline' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'timeline\')">Scoring timeline</button><button class="' + (tab === 'subs' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'subs\')">Substitutions</button><button class="' + (tab === 'stats' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'stats\')">Player stats</button><button class="' + (tab === 'team' ? 'on' : '') + '" onclick="FFPTourn.mcTab(\'team\')">Team stats</button></div>'
       + (tab === 'timeline'
@@ -6761,7 +6925,11 @@
   function pbpUndo() { var h = S._lhist.pop(); if (h) { S._live = JSON.parse(h); pbpPersist(); renderPBP(S._mc, document.getElementById('tg-tab')); } }
   function pbpServer() { S._live.server = S._live.server === 'home' ? 'away' : 'home'; pbpPersist(); renderPBP(S._mc, document.getElementById('tg-tab')); }
   function pbpDecide(k) { if (k === 'let') return; var srv = S._live.server; pbpAward(k === 'stroke' ? srv : (srv === 'home' ? 'away' : 'home')); }
-  async function pbpFinish() { var t = S._live; try { await sb().rpc('tourn_result_save', { p_match: S.matchOpen, p_home: setsWon(t.sets, 0), p_away: setsWon(t.sets, 1), p_sets: t.sets, p_status: 'final' }); toast('Result saved', 'success'); renderMatchCentre(); } catch (e) { toast('Could not save result', 'error'); } }
+  async function pbpFinish() {
+    /* the board owns the score of a match that was PLAYED; any other outcome
+       is the outcome write, same as every other sport */
+    if (ocNow(S._mc || {}) !== 'played') return saveOutcome();
+    var t = S._live; try { await sb().rpc('tourn_result_save', { p_match: S.matchOpen, p_home: setsWon(t.sets, 0), p_away: setsWon(t.sets, 1), p_sets: t.sets, p_status: 'final' }); toast('Result saved', 'success'); renderMatchCentre(); } catch (e) { toast('Could not save result', 'error'); } }
   var PBP_CSS = ".pbp-board{background:linear-gradient(158deg,#1c3e52,#0d1e2a);color:#fff;border-radius:16px;padding:16px 18px;margin-bottom:16px;max-width:660px}.pbp-hd{display:flex;align-items:center;padding:0 2px 8px;border-bottom:1px solid rgba(255,255,255,.12)}.pbp-hd .sp{flex:1}.pbp-hd .lb{width:60px;text-align:center;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.5)}.pbp-hd .lb.g{width:52px}.pbp-hd .lb.p{width:60px}.pbp-r{display:flex;align-items:center;padding:12px 2px}.pbp-r+.pbp-r{border-top:1px solid rgba(255,255,255,.08)}.pbp-r .clr{width:5px;height:34px;border-radius:3px;margin-right:12px}.pbp-r.home .clr{background:linear-gradient(180deg,#25a6d8,#12557a)}.pbp-r.away .clr{background:linear-gradient(180deg,#6a7e8c,#243645)}.pbp-r .who{flex:1;min-width:0}.pbp-r .who b{font-size:16px;font-weight:800}.pbp-r .who .srv{display:block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#7bf0bd;margin-top:2px}.pbp-r .cells{width:60px;display:flex;gap:8px;justify-content:center;font-size:15px;font-weight:700;color:rgba(255,255,255,.5)}.pbp-r .cells .w{color:#fff}.pbp-r .gm{width:52px;text-align:center;font-size:19px;font-weight:800}.pbp-r .pt{width:60px;text-align:center;font-size:34px;font-weight:900;line-height:1}.pbp-flags{text-align:center;margin-top:10px}.pbp-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:20px;background:rgba(242,169,0,.22);color:#ffe2a0}.pbp-serve{text-align:center;font-size:12px;font-weight:700;color:rgba(255,255,255,.82);margin-top:9px}.pbp-serve .ms{font-size:15px;vertical-align:-3px;color:#ffce4d;margin-right:4px}.pbp-clab{max-width:660px;text-align:center;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#6b7f8b;margin:0 0 12px}.pbp-btns{max-width:660px;display:flex;gap:14px;margin-bottom:12px}.pbp-pb{flex:1;border:0;border-radius:18px;color:#fff;cursor:pointer;padding:26px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 10px 24px rgba(15,34,48,.18)}.pbp-pb.home{background:linear-gradient(160deg,#25a6d8,#0f5578)}.pbp-pb.away{background:linear-gradient(160deg,#4a6172,#243645)}.pbp-pb:active{filter:brightness(1.07)}.pbp-pb:disabled{opacity:.5;cursor:default}.pbp-pb .pl{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.9;display:flex;align-items:center;gap:6px}.pbp-pb .pl .ms{font-size:20px}.pbp-pb .nm{font-size:22px;font-weight:900}.pbp-decide{max-width:660px;display:flex;gap:10px;margin-bottom:12px}.pbp-decide button{flex:1;border:0;border-radius:12px;padding:13px;font:inherit;font-weight:800;cursor:pointer}.pbp-decide .let{background:rgba(25,128,173,.14);color:#1980AD}.pbp-decide .stroke{background:rgba(242,169,0,.2);color:#c47f00}.pbp-decide .nolet{background:#eef2f5;color:#5b6b75}.pbp-srow{max-width:660px;display:flex;gap:10px}.pbp-srow button{flex:1;border:1px solid var(--ffp-border-mid);background:#fff;border-radius:12px;padding:12px;font:inherit;font-weight:800;color:var(--ffp-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}.pbp-srow button .ms{font-size:19px;color:#c47f00}";
   function renderPBP(m, host) {
     if (!document.getElementById('pbp-css')) { var st = document.createElement('style'); st.id = 'pbp-css'; st.textContent = PBP_CSS; document.head.appendChild(st); }
@@ -6785,6 +6953,7 @@
       + '<button class="pbp-pb home" ' + (t.done ? 'disabled' : '') + ' onclick="FFPTourn.pbpAward(\'home\')"><span class="pl">' + ic('add') + 'Point</span><span class="nm">' + esc(m.home.name) + '</span></button></div>'
       + decide
       + '<div class="pbp-srow"><button onclick="FFPTourn.pbpUndo()">' + ic('undo') + 'Undo</button><button onclick="FFPTourn.pbpServer()">' + ic('swap_horiz') + 'Change server</button></div>'
+      + ocStrip(m, true)
       + '<div class="lg-mcstream" style="display:flex;gap:8px;align-items:center;margin:14px 0 0;max-width:660px"><input class="lg-in" id="mc-stream" placeholder="Live stream URL (YouTube, Twitch, Facebook…)" value="' + esc(m.stream_url || '') + '" style="flex:1"><button class="lg-btn" onclick="FFPTourn.saveStream()">' + ic('live_tv') + 'Save stream</button></div>'
       + '<div class="lg-sub" style="margin:10px 0 0">Point-by-point — every tap streams live to followers. Same board as the FFP App scorer.</div>';
   }
@@ -7565,6 +7734,7 @@
   }
 
   window.FFPTourn = {
+    ocPick: ocPick, saveOutcome: saveOutcome, forfeitSave: forfeitSave,
     printSheets: printSheets,
     mgOpen: mgOpen, mgSearch: mgSearch, mgPick: mgPick, mgTeam: mgTeam, mgAssign: mgAssign, mgRemove: mgRemove,
     rulesHint: rulesHint,
