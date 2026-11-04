@@ -485,7 +485,7 @@ async function openRole(id, tab) {
       if (p.offer_status === 'countered') extra = '<div class="tal-ask"><b>Asked for ' + aed(p.counter_fee) + (p.counter_note ? '<span>"' + esc(p.counter_note) + '"</span>' : '') + '</b>' +
         '<button class="btn btn-sec" data-counter="decline" data-offer="' + p.offer_id + '">Decline</button><button class="btn btn-pri" data-counter="accept" data-offer="' + p.offer_id + '" data-fee="' + p.counter_fee + '" data-name="' + esc(c.name || '') + '">Accept ' + aed(p.counter_fee) + '</button></div>';
       var canOffer = !booked && data.request.status !== 'cancelled' && ['pending', 'accepted', 'countered'].indexOf(p.offer_status) < 0;
-      acts = (canOffer ? '<button class="btn btn-pri" data-offer-to="' + c.member_id + '" data-name="' + esc(c.name || '') + '"><span class="ms">send</span> ' + (p.offer_status ? 'New offer' : 'Make offer') + '</button>' : '') +
+      acts = (canOffer ? '<button class="btn btn-pri" data-offer-to="' + c.member_id + '" data-dep="' + (c.deposit_pct != null ? c.deposit_pct : '') + '" data-name="' + esc(c.name || '') + '"><span class="ms">send</span> ' + (p.offer_status ? 'New offer' : 'Make offer') + '</button>' : '') +
         '<button class="btn btn-sec" data-msg="' + c.member_id + '"><span class="ms">chat</span> Message</button>';
     }
     acts += '<button class="btn btn-sec" data-prof="' + c.member_id + '"><span class="ms">badge</span> Full profile</button>';
@@ -527,7 +527,7 @@ async function openRole(id, tab) {
       var p = (data.people || []).find(function (x) { return (x.card || {}).member_id === mid; });
       var canOffer = !!p && r.status !== 'filled' && r.status !== 'cancelled' && ['pending', 'accepted', 'countered'].indexOf(p.offer_status) < 0;
       profile(id, mid, r.skill, {
-        offer: canOffer ? function (name) { makeOffer(r, mid, name, async function () { await load(); draw(); window.renderTalent(); }); } : null,
+        offer: canOffer ? function (name) { makeOffer(r, mid, name, async function () { await load(); draw(); window.renderTalent(); }, (p.card || {}).deposit_pct); } : null,
         invite: !p && r.status === 'open' ? async function () { var x = await rpc('provider_talent_invite', { p_request: id, p_member: mid }); if (!x.ok) throw new Error('They could not be asked.');
           toast('Asked. They have been told.'); await load(); state.found = (state.found || []).filter(function (c) { return c.member_id !== mid; }); draw(); } : null });
     }; });
@@ -536,7 +536,7 @@ async function openRole(id, tab) {
       try { var r = await rpc('provider_talent_invite', { p_request: id, p_member: b.getAttribute('data-invite') }); if (!r.ok) throw new Error('They could not be asked: ' + r.error);
         toast('Asked. They have been told.'); await load(); state.found = state.found.filter(function (c) { return c.member_id !== b.getAttribute('data-invite'); }); draw(); }
       catch (e) { b.disabled = false; draw(e.message); } }; });
-    el.querySelectorAll('[data-offer-to]').forEach(function (b) { b.onclick = function () { makeOffer(data.request, b.getAttribute('data-offer-to'), b.getAttribute('data-name'), async function () { await load(); draw(); window.renderTalent(); }); }; });
+    el.querySelectorAll('[data-offer-to]').forEach(function (b) { b.onclick = function () { makeOffer(data.request, b.getAttribute('data-offer-to'), b.getAttribute('data-name'), async function () { await load(); draw(); window.renderTalent(); }, b.getAttribute('data-dep')); }; });
     el.querySelectorAll('[data-msg]').forEach(function (b) { b.onclick = function () { message(id, b.getAttribute('data-msg')); }; });
     el.querySelectorAll('[data-counter]').forEach(function (b) { b.onclick = function () {
       var acc = b.getAttribute('data-counter') === 'accept';
@@ -646,14 +646,17 @@ async function message(requestId, memberId) {
 }
 
 /* ── make an offer ── */
-function makeOffer(req, memberId, name, done) {
+function makeOffer(req, memberId, name, done, depPct) {
+  var dpct = depPct !== undefined && depPct !== null && depPct !== '' ? Number(depPct) : (req.deposit_pct != null ? Number(req.deposit_pct) : 30);
   var f = { fee: String(req.fee_aed), within: 48 };
   var el = screen('Offer to ' + esc(name || 'talent'), esc(skillLabel(req.skill) + ', ' + (req.title || dayLine(req.starts_at))), '', '');
   function draw(err) {
-    var fee = Number(f.fee) || 0, dep = Math.round(fee * (req.deposit_pct || 30) / 100);
+    var fee = Number(f.fee) || 0, dep = Math.round(fee * dpct / 100);
     setBody(el, '<div class="tal-fld" style="max-width:420px;margin-top:0"><label for="tal-ofee">Fee, AED</label><input id="tal-ofee" class="tal-in" inputmode="numeric" value="' + esc(f.fee) + '"></div>' +
       '<div class="tal-fld"><label>They have to reply within</label><div class="tal-seg">' + [24, 48, 72].map(function (h) { return '<button class="' + (f.within === h ? 'on' : '') + '" data-w="' + h + '">' + h + ' hours</button>'; }).join('') + '</div></div>' +
-      '<div class="tal-ref" style="max-width:640px">If they accept, FFP invoices you <b>' + aed(dep) + '</b> as the deposit, due within a few days, and <b>' + aed(fee - dep) + '</b> on the day. They are booked once the deposit lands.</div>' +
+      '<div class="tal-ref" style="max-width:640px">' + (dep > 0
+        ? 'If they accept, FFP invoices you <b>' + aed(dep) + '</b> as the deposit (their terms: ' + dpct + '%), due within a few days, and <b>' + aed(fee - dep) + '</b> on the day. They are booked once the deposit lands.'
+        : 'They take no deposit, so if they accept they are booked straight away. FFP invoices you <b>' + aed(fee) + '</b>, due on the day.') + '</div>' +
       (err ? '<div class="tal-err">' + esc(err) + '</div>' : ''));
     setFoot(el, '<button class="btn btn-sec" data-no>Cancel</button><button class="btn btn-pri" data-send><span class="ms">send</span> Send offer</button>');
     var fi = el.querySelector('#tal-ofee'); fi.oninput = function () { f.fee = fi.value.replace(/[^0-9]/g, ''); var p = fi.selectionStart; draw(); var n = el.querySelector('#tal-ofee'); n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} };
