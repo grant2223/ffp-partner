@@ -4619,18 +4619,38 @@
     var hero = null;
     cols.forEach(function (c) { if (!hero && Number(c.points) > 0 && tally[c.key]) hero = c; });
 
+    /* when points and the score are the same thing, the glance counts the
+       thing the sport is actually about -- goals -- and never both */
+    var dual = stPointsSayMore(cols);
+    var heroN = hero ? Number(tally[hero.key] || 0) : 0;
+    var avgOf = dual ? pts : heroN;
     var cells = [
-      ['Matches played', played + ' <s>of ' + total + '</s>', ''],
-      ['Points scored', stN(pts), ''],
-      ['Average a match', played ? (Math.round(pts / played * 10) / 10) : '0', '']
+      ['Matches played', played + ' <s>of ' + total + '</s>', '']
     ];
-    if (hero) cells.push([stPlural(hero.label), stN(tally[hero.key]), '']);
+    if (dual) cells.push(['Points scored', stN(pts), '']);
+    if (hero) cells.push([stPlural(hero.label), stN(heroN), '']);
+    cells.push([(dual ? 'Points' : (hero ? stPlural(hero.label) : 'Scored')) + ' a match',
+                played ? (Math.round(avgOf / played * 10) / 10) : '0', '']);
     if (cards) cells.push(['Cards', stN(cards), 'warn']);
 
     return '<div class="lgst-gl">' + cells.map(function (c) {
         return '<div class="c ' + c[2] + '"><div class="k">' + esc(c[0]) + '</div><div class="v">' + c[1] + '</div></div>';
       }).join('') + '</div>'
       + stTrendHtml(fx) + stTodoHtml(d, fx);
+  }
+  /* POINTS AND THE SCORE ARE THE SAME THING IN SOME SPORTS (Grant, 2026-11-04).
+     In football a goal IS the point, so a Points column beside a Goals column
+     printed the same number twice and the glance read "Points scored 59" next
+     to "Goals 58" -- the same fact, twice, differing only because a penalty
+     was counted separately. In rugby a try is five, so points there say
+     something the counts do not.
+
+     The sport decides, not a hardcoded list: every scoring action carries its
+     own weight in lt_sport_schemas. If no action is worth more than one, the
+     points total is just a count of actions and the columns beside it already
+     say it -- so the Points column goes. */
+  function stPointsSayMore(cols) {
+    return (cols || []).some(function (c) { return Number(c.points || 0) > 1; });
   }
   function stPlural(w) {
     var l = String(w || '');
@@ -4721,8 +4741,10 @@
   function stTeamsHtml(d) {
     var rows = d.team.rows || [], cols = d.team.columns || [];
     if (!rows.length) return '<div class="lg-empty">No scores yet — this fills as results go in.</div>';
+    var dual = stPointsSayMore(cols);
     var max = 0; rows.forEach(function (r) { max = Math.max(max, Number(r.points || 0)); });
-    var head = '<tr><th class="l" colspan="2">Team</th><th>P</th><th>Points</th>'
+    var head = '<tr><th class="l" colspan="2">Team</th><th>P</th>'
+      + (dual ? '<th>Points</th>' : '')
       + cols.map(function (c) { return '<th>' + esc(stShort(c.label)) + '</th>'; }).join('') + '</tr>';
     var body = rows.map(function (r, i) {
       var cells = cols.map(function (c) {
@@ -4733,8 +4755,10 @@
       return '<tr><td class="rk">' + (i + 1) + '</td><td class="l"><span class="who">'
         + stCrest(r.photo, r.name) + '<b>' + esc(r.name) + '</b></span></td>'
         + '<td>' + Number(r.played || 0) + '</td>'
-        + '<td class="pts"><span class="lgst-bar2">' + Number(r.points || 0)
-        + '<i><s style="width:' + (max ? Math.round(Number(r.points || 0) / max * 100) : 0) + '%"></s></i></span></td>'
+        + (dual
+          ? '<td class="pts"><span class="lgst-bar2">' + Number(r.points || 0)
+            + '<i><s style="width:' + (max ? Math.round(Number(r.points || 0) / max * 100) : 0) + '%"></s></i></span></td>'
+          : '')
         + cells + '</tr>';
     }).join('');
     return '<table class="lgst-tb"><thead>' + head + '</thead><tbody>' + body + '</tbody></table>';
