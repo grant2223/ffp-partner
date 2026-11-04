@@ -1,4 +1,7 @@
-<!-- FFP PROVIDER DASHBOARD — v74 (2026-09-17)
+<!-- FFP PROVIDER DASHBOARD — v75 (2026-11-04)
+     v75: FFP TALENT (Engagement → Talent). New nav item, #panel-talent and lazy loader
+          ffp-provider-talent-loader.js?v=1: post a role, applicants with reels, offers, asked-for fees,
+          bookings with FFP bank-transfer invoices, ratings. /#talent opens it (partner alerts link there).
      v74: Scrubbed the last of the demo email. The in-page sign-in screen still had
           value="bookings@forgefitness.ae" pre-filled on #auth-email-input and a hardcoded
           "Demo: enter any 6 digits." line. That screen is DEAD — the live sign-in is the
@@ -2879,6 +2882,9 @@ a { color: var(--ffp-blue); text-decoration: none; }
         </div>
       </section>
 
+      <!-- FFP TALENT (Engagement → Talent). Everything inside is drawn by ffp-provider-talent-loader.js. -->
+      <section class="panel" id="panel-talent"><div id="talent-root"></div></section>
+
       <section class="panel" id="panel-staff">
         <div class="ph">Staff</div>
         <div class="psub">Coaches and staff — accounts, access and schedules.</div>
@@ -3423,6 +3429,7 @@ const NAV = [
   // ── Engagement (member-facing listings) ──
   { id: 'experiences', icon: 'tour',            label: 'Experiences', section: 'engagement' },
   { id: 'events',      icon: 'event',           label: 'Events',      section: 'engagement' },
+  { id: 'talent',      icon: 'mic',             label: 'Talent',      section: 'engagement' },   // FFP Talent: book MCs, commentators, crew (2026-11-04)
   { id: 'trips',       icon: 'flight',          label: 'Trips',       section: 'engagement' },
   { id: 'quests',      icon: 'flag',            label: 'Quests',      section: 'engagement' },
   { id: 'competitions',icon: 'emoji_events',    label: 'Competitions',section: 'engagement' },
@@ -3581,7 +3588,7 @@ function toggleNavSection(sec) {
 
 // v12: load a panel's data loader the first time that panel is opened.
 // Overview/identity loaders stay eager; only clearly panel-scoped ones defer.
-var _provLoaderSrc = { 'checkins': 'ffp-provider-checkins-loader.js?v=5', 'scheduling': 'ffp-provider-scheduling-loader.js?v=3', 'members': 'ffp-provider-members-loader.js?v=12', 'plans': 'ffp-provider-plans-loader.js?v=3', 'announcements': 'ffp-provider-announcements-loader.js?v=2', 'billing': 'ffp-provider-billing-loader.js?v=5', 'staff': 'ffp-provider-staff-loader.js?v=5', 'experiences': 'ffp-provider-experiences-loader.js?v=8', 'appointments': 'ffp-provider-appointments-loader.js?v=16', 'offers': 'ffp-provider-offers-loader.js?v=14', 'competitions': 'ffp-provider-competitions-loader.js?v=33', 'leagues': 'ffp-provider-leagues-loader.js?v=53', 'tournaments': 'ffp-provider-tournaments-loader.js?v=76', 'courts': 'ffp-provider-courts-loader.js?v=5', 'loyalty': 'ffp-provider-loyalty-loader.js?v=5' };
+var _provLoaderSrc = { 'talent': 'ffp-provider-talent-loader.js?v=1', 'checkins': 'ffp-provider-checkins-loader.js?v=5', 'scheduling': 'ffp-provider-scheduling-loader.js?v=3', 'members': 'ffp-provider-members-loader.js?v=12', 'plans': 'ffp-provider-plans-loader.js?v=3', 'announcements': 'ffp-provider-announcements-loader.js?v=2', 'billing': 'ffp-provider-billing-loader.js?v=5', 'staff': 'ffp-provider-staff-loader.js?v=5', 'experiences': 'ffp-provider-experiences-loader.js?v=8', 'appointments': 'ffp-provider-appointments-loader.js?v=16', 'offers': 'ffp-provider-offers-loader.js?v=14', 'competitions': 'ffp-provider-competitions-loader.js?v=33', 'leagues': 'ffp-provider-leagues-loader.js?v=53', 'tournaments': 'ffp-provider-tournaments-loader.js?v=76', 'courts': 'ffp-provider-courts-loader.js?v=5', 'loyalty': 'ffp-provider-loyalty-loader.js?v=5' };
 var _provLoaded = {};
 function _loadScriptOnce(src) {
   if (_provLoaded[src]) return;
@@ -3797,6 +3804,7 @@ function showPanel(id) {
   if (id === 'payments') renderPaymentsCard();
   if (id === 'settings') { renderAccountSettings(); loadNotifyPrefs(); }
   if (id === 'staff' && typeof renderStaff === 'function') renderStaff();
+  if (id === 'talent') _callWhenReady('renderTalent');
   if (id === 'appointments' && typeof renderAppointments === 'function') renderAppointments();
   if (id === 'plans') _callWhenReady('renderPlans');
   if (id === 'announcements') _callWhenReady('renderComms');
@@ -6902,7 +6910,8 @@ function enterDashboard() {
   if (!window._dashboardInited) {
     renderNav();
     loadMySections();          // which sections this person may open, then renderNav() again
-    showPanel('overview');
+    // a partner alert can open a section directly (…/#talent)
+    showPanel((location.hash || '').replace('#', '') === 'talent' ? 'talent' : 'overview');
     try { loadFeatureMap(); } catch (e) {}   // featured-listing state for the "Feature" buttons
     window._dashboardInited = true;
   }
