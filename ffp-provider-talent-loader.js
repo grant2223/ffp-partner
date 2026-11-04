@@ -104,6 +104,52 @@ async function rpc(fn, args) {
 '.tal-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}',
 '.tal-three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 18px}',
 '.tal-hint{font:600 12.5px/1.4 Montserrat,sans-serif;color:var(--ffp-text-dim);margin-top:8px}.tal-hint.bad{color:var(--ffp-red)}',
+'.tal-pf{display:grid;grid-template-columns:150px minmax(0,1fr);gap:24px;align-items:end;padding-bottom:22px;border-bottom:1px solid var(--ffp-border)}',
+'.tal-pf>i{width:150px;height:150px;border-radius:8px;background:#dfe6eb center/cover;display:block}',
+'.tal-pf .tier{display:inline-block;font:900 11px/1 Montserrat,sans-serif;letter-spacing:.12em;text-transform:uppercase;padding:6px 9px;border-radius:4px;background:#e4ecf8;color:#2F6FD0}',
+'.tal-pf .tier.t3{background:#fff1cc;color:#8a5d00}.tal-pf .tier.t4{background:#0e2531;color:#ffd25e}',
+'.tal-pf h3{font:900 30px/1.1 Montserrat,sans-serif;letter-spacing:-.02em;color:var(--ffp-text);margin:10px 0 0}',
+'.tal-pfs{display:flex;gap:28px;flex-wrap:wrap;margin-top:14px}',
+'.tal-pfs div b{display:block;font:900 22px/1 Montserrat,sans-serif;color:var(--ffp-text)}',
+'.tal-pfs div span{display:block;font:800 10.5px/1 Montserrat,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--ffp-text-dim);margin-top:6px}',
+'.tal-pfv{margin-top:22px;background:#000;border-radius:8px;overflow:hidden}.tal-pfv video{display:block;width:100%;max-height:440px}',
+'.tal-pw{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:12px}',
+'.tal-pw a{position:relative;display:block;aspect-ratio:4/3;border-radius:6px;overflow:hidden;background:#dfe6eb center/cover;text-decoration:none}',
+'.tal-pw a:first-child{grid-column:span 2;grid-row:span 2;aspect-ratio:auto}',
+'.tal-pw a span{position:absolute;left:0;right:0;bottom:0;padding:30px 12px 10px;background:linear-gradient(180deg,rgba(14,37,49,0),rgba(14,37,49,.88));color:#fff;font:600 13px/1.35 Montserrat,sans-serif}',
+'.tal-pw a:first-child span{font:700 16px/1.35 Montserrat,sans-serif;padding:44px 16px 14px}',
+'.tal-tm{margin-top:6px}',
+'.tal-tmy{display:grid;grid-template-columns:72px minmax(0,1fr);gap:0 14px}',
+'.tal-tmy>b{font:900 24px/1 Montserrat,sans-serif;letter-spacing:-.03em;color:var(--ffp-text);padding-top:16px}',
+'.tal-tmy>div{border-left:3px solid var(--ffp-border)}',
+'.tal-tme{position:relative;padding:14px 0 14px 18px}',
+'.tal-tme::before{content:"";position:absolute;left:-3px;top:18px;width:3px;height:22px;background:var(--ffp-blue)}.tal-tme.mj::before{background:#f2a900}',
+'.tal-tme b{display:block;font:800 16px/1.3 Montserrat,sans-serif;color:var(--ffp-text)}',
+'.tal-tme span{display:block;font:500 14px/1.4 Montserrat,sans-serif;color:var(--ffp-text);margin-top:3px}',
+'.tal-tme small{display:block;font:800 11px/1 Montserrat,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--ffp-text-dim);margin-top:7px}',
+'.tal-tme em{display:inline-block;font:800 12px/1 Montserrat,sans-serif;font-style:normal;color:#b77c00;margin-top:8px;margin-right:12px}.tal-tme em.ok{color:var(--ffp-green)}',
+'.tal-cv{display:flex;align-items:center;gap:18px;margin-top:12px;text-decoration:none;color:var(--ffp-text)}',
+'.tal-cvp{position:relative;flex:none;width:70px;height:90px;border-radius:4px;background:#fff;box-shadow:0 1px 2px rgba(14,37,49,.12),0 6px 16px rgba(14,37,49,.14);padding:12px 10px;display:flex;flex-direction:column;gap:6px}',
+'.tal-cvp i{display:block;height:4px;border-radius:2px;background:#dbe3e9}.tal-cvp i.s{width:60%}',
+'.tal-cvp u{position:absolute;left:0;right:0;bottom:0;height:20px;background:#c0392b;color:#fff;font:900 10px/20px Montserrat,sans-serif;letter-spacing:.12em;text-decoration:none;text-align:center;border-radius:0 0 4px 4px}',
+'.tal-cv>span:last-child b{display:block;font:800 16px/1.2 Montserrat,sans-serif;color:var(--ffp-blue)}.tal-cv>span:last-child span{display:block;font:500 13px/1.4 Montserrat,sans-serif;color:var(--ffp-text-muted);margin-top:4px}',
+'.tal-pk{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:12px}',
+'.tal-pk>div{background:#0e2531;color:#fff;border-radius:8px;padding:18px}',
+'.tal-pk>div small{display:block;font:800 10.5px/1 Montserrat,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8fb7cc}',
+'.tal-pk>div b{display:block;font:900 17px/1.2 Montserrat,sans-serif;margin-top:8px}',
+'.tal-pk>div u{display:block;text-decoration:none;font:900 26px/1 Montserrat,sans-serif;letter-spacing:-.02em;color:#ffd25e;margin-top:12px}',
+'.tal-pk>div ul{margin:12px 0 0;padding:0;list-style:none}.tal-pk>div li{font:500 13px/1.45 Montserrat,sans-serif;color:#c7d6df;padding:3px 0}',
+'.tal-pkx{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.tal-pkx span{font:700 13px/1 Montserrat,sans-serif;background:var(--ffp-bg-3);padding:10px 12px;border-radius:6px;color:var(--ffp-text)}',
+'.tal-rv{padding:16px 0;border-bottom:1px solid var(--ffp-border)}',
+'.tal-rv .st{color:#f2a900;font-size:18px;letter-spacing:1px}',
+'.tal-rv q{display:block;font:600 16px/1.5 Montserrat,sans-serif;color:var(--ffp-text);margin-top:6px;quotes:none}',
+'.tal-rv small{display:block;font:700 12px/1 Montserrat,sans-serif;color:var(--ffp-text-dim);margin-top:8px}',
+'.tal-cxw{background:#0e2531;color:#fff;border-radius:8px;padding:6px 20px;max-width:720px}',
+'.tal-cxw>div{display:flex;gap:14px;padding:14px 0}.tal-cxw>div+div{border-top:1px solid #24404f}',
+'.tal-cxw .ms{font-size:24px;color:#ff8a7a;flex:none}',
+'.tal-cxw p{margin:0;font:500 13.5px/1.45 Montserrat,sans-serif;color:#b7c7d1}.tal-cxw p b{display:block;font:800 15px/1.3 Montserrat,sans-serif;color:#fff;margin-bottom:3px}',
+'.tal-cxd{margin-top:16px;max-width:720px;background:#fdecea;border-left:3px solid #c0392b;padding:14px 16px;font:600 14px/1.45 Montserrat,sans-serif;color:#7a1f15}',
+'.tal-g em.x{color:#a3271b}',
 '.tal-err{margin-top:16px;background:#fdecea;color:#a3271b;border-radius:8px;padding:12px 14px;font:700 13.5px/1.4 Montserrat,sans-serif}',
 '.tal-pick{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:0 4px;border:0;border-bottom:1px solid var(--ffp-border);background:none;cursor:pointer;font:700 15px/1.3 Montserrat,sans-serif;color:var(--ffp-text);text-align:left}',
 '.tal-pick .tal-bx{margin-left:auto;width:26px;height:26px;border-radius:7px;background:var(--ffp-bg-3);display:flex;align-items:center;justify-content:center;color:#fff;flex:none}',
@@ -159,7 +205,7 @@ async function rpc(fn, args) {
 '.tal-stars button{width:56px;height:56px;border-radius:10px;border:0;background:var(--ffp-bg-3);cursor:pointer;color:#b9c3cb}',
 '.tal-stars button .ms{font-size:30px;font-variation-settings:"FILL" 1,"wght" 400,"GRAD" 0,"opsz" 48}',
 '.tal-stars button.on{background:#fff3cf;color:#f2a900}',
-'@media (max-width:760px){.tal-bk>span{width:92px}.tal-ap{grid-template-columns:64px minmax(0,1fr)}.tal-reel,.tal-noreel{grid-column:1/-1;height:190px}.tal-act{grid-column:1/-1;flex-direction:row}.tal-act .btn{flex:1;justify-content:center}.tal-ask{grid-column:1/-1}.tal-bands{grid-template-columns:repeat(2,minmax(0,1fr))}.tal-inv{grid-template-columns:1fr;gap:24px}.tal-fbh,.tal-fbb,.tal-fbf{padding-left:18px;padding-right:18px}.tal-how{grid-template-columns:1fr}.tal-sum{gap:18px}.tal-two,.tal-three{grid-template-columns:1fr}.tal-amt small{display:none}.tal-amt{font-size:15px}.tal-rw{gap:12px}.tal-dt{width:42px}.tal-big{font-size:44px}}',
+'@media (max-width:760px){.tal-pf{grid-template-columns:96px minmax(0,1fr);gap:16px;align-items:start}.tal-pfs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px}.tal-pf>i{width:96px;height:96px}.tal-pf h3{font-size:22px}.tal-pw{grid-template-columns:repeat(2,minmax(0,1fr))}.tal-pw a:first-child{grid-column:1/-1;grid-row:auto;aspect-ratio:16/10}.tal-bk>span{width:92px}.tal-ap{grid-template-columns:64px minmax(0,1fr)}.tal-reel,.tal-noreel{grid-column:1/-1;height:190px}.tal-act{grid-column:1/-1;flex-direction:row}.tal-act .btn{flex:1;justify-content:center}.tal-ask{grid-column:1/-1}.tal-bands{grid-template-columns:repeat(2,minmax(0,1fr))}.tal-inv{grid-template-columns:1fr;gap:24px}.tal-fbh,.tal-fbb,.tal-fbf{padding-left:18px;padding-right:18px}.tal-how{grid-template-columns:1fr}.tal-sum{gap:18px}.tal-two,.tal-three{grid-template-columns:1fr}.tal-amt small{display:none}.tal-amt{font-size:15px}.tal-rw{gap:12px}.tal-dt{width:42px}.tal-big{font-size:44px}}',
 '@media print{body>*:not(.tal-fb){display:none!important}.tal-fb{position:static}.tal-fbf,.tal-fbh button,.tal-copy{display:none!important}.tal-fbh{background:#fff;color:#0e2531;border-bottom:2px solid #0e2531}}'
   ].join('\n');
   document.head.appendChild(st);
@@ -261,6 +307,11 @@ function rolesHtml() {
 function bookingState(b) {
   var inv = b.invoices || [];
   var dep = inv.find(function (i) { return i.kind === 'deposit'; }), bal = inv.find(function (i) { return i.kind === 'balance'; });
+  if (b.status === 'cancelled') {
+    var back = inv.filter(function (i) { return i.status === 'refund_due'; }).reduce(function (s, i) { return s + Number(i.amount_aed); }, 0);
+    var sent = inv.filter(function (i) { return i.status === 'refunded'; }).reduce(function (s, i) { return s + Number(i.amount_aed); }, 0);
+    return ['Cancelled' + (back ? '. FFP is refunding ' + aed(back) : sent ? '. ' + aed(sent) + ' refunded' : ''), 'x', ''];
+  }
   if (b.status === 'completed') return [b.reviewed ? 'Done and rated' : 'Done. Rate ' + (b.name || 'them'), b.reviewed ? 'd' : 'w', b.reviewed ? '' : 'w'];
   if (dep && dep.status === 'issued') return ['Deposit ' + aed(dep.amount_aed) + ' due ' + dayLine(dep.due_on), 'w', 'w'];
   if (bal && bal.status === 'issued' && new Date(b.ends_at) < new Date()) return ['Balance ' + aed(bal.amount_aed) + ' due', 'w', 'w'];
@@ -416,7 +467,7 @@ async function openRole(id, tab) {
   }
   function reelBox(c) {
     if (c.reel) return '<button class="tal-reel" data-reel="' + esc(c.reel) + '" data-name="' + esc(c.name || '') + '"><video src="' + esc(c.reel) + '#t=1" preload="metadata" muted playsinline></video><span class="ms">play_circle</span><i>REEL' + (c.reel_seconds ? ' ' + Math.floor(c.reel_seconds / 60) + ':' + String(c.reel_seconds % 60).padStart(2, '0') : '') + '</i></button>';
-    if ((c.photos || []).length) return '<button class="tal-reel" data-photos="' + esc(JSON.stringify(c.photos)) + '" data-name="' + esc(c.name || '') + '"><img src="' + esc(c.photos[0]) + '" alt=""><span class="ms">photo_library</span><i>' + c.photos.length + ' PHOTOS</i></button>';
+    if ((c.photos || []).length) return '<button class="tal-reel" data-photos="' + esc(JSON.stringify(c.photo_items && c.photo_items.length ? c.photo_items : c.photos)) + '" data-name="' + esc(c.name || '') + '"><img src="' + esc(c.photos[0]) + '" alt=""><span class="ms">photo_library</span><i>' + c.photos.length + ' PHOTOS</i></button>';
     if (c.link) return '<a class="tal-noreel" href="' + esc(c.link) + '" target="_blank" rel="noopener"><span class="ms">open_in_new</span>&nbsp;Their work</a>';
     return '<div class="tal-noreel">No reel yet</div>';
   }
@@ -437,7 +488,8 @@ async function openRole(id, tab) {
       acts = (canOffer ? '<button class="btn btn-pri" data-offer-to="' + c.member_id + '" data-name="' + esc(c.name || '') + '"><span class="ms">send</span> ' + (p.offer_status ? 'New offer' : 'Make offer') + '</button>' : '') +
         '<button class="btn btn-sec" data-msg="' + c.member_id + '"><span class="ms">chat</span> Message</button>';
     }
-    return '<div class="tal-ap"><i class="tal-ph" style="background-image:url(\'' + esc(c.photo || '') + '\')"></i>' +
+    acts += '<button class="btn btn-sec" data-prof="' + c.member_id + '"><span class="ms">badge</span> Full profile</button>';
+    return '<div class="tal-ap"><i class="tal-ph" data-prof="' + c.member_id + '" style="cursor:pointer;background-image:url(\'' + esc(c.photo || '') + '\')"></i>' +
       '<div class="tal-who"><b>' + esc(c.name || 'Talent') + '</b><span class="tier">' + (TIERS[c.tier] || '') + '</span><div class="st">' + esc(stats(c)) + '</div>' +
       (p.answer ? '<q>"' + esc(p.answer) + '"</q>' : '') + (stateLine ? '<div class="state">' + esc(stateLine) + '</div>' : '') + '</div>' +
       reelBox(c) + '<div class="tal-act">' + acts + '</div>' + extra + '</div>';
@@ -470,6 +522,15 @@ async function openRole(id, tab) {
     var fq = el.querySelector('[data-findq]'); if (fq) { var t; fq.oninput = function () { state.q = fq.value; clearTimeout(t); t = setTimeout(function () { find(true); }, 350); }; }
     el.querySelectorAll('[data-reel]').forEach(function (b) { b.onclick = function () { player(b.getAttribute('data-reel'), b.getAttribute('data-name')); }; });
     el.querySelectorAll('[data-photos]').forEach(function (b) { b.onclick = function () { photos(JSON.parse(b.getAttribute('data-photos')), b.getAttribute('data-name')); }; });
+    el.querySelectorAll('[data-prof]').forEach(function (b) { b.onclick = function () {
+      var mid = b.getAttribute('data-prof'), r = data.request;
+      var p = (data.people || []).find(function (x) { return (x.card || {}).member_id === mid; });
+      var canOffer = !!p && r.status !== 'filled' && r.status !== 'cancelled' && ['pending', 'accepted', 'countered'].indexOf(p.offer_status) < 0;
+      profile(id, mid, r.skill, {
+        offer: canOffer ? function (name) { makeOffer(r, mid, name, async function () { await load(); draw(); window.renderTalent(); }); } : null,
+        invite: !p && r.status === 'open' ? async function () { var x = await rpc('provider_talent_invite', { p_request: id, p_member: mid }); if (!x.ok) throw new Error('They could not be asked.');
+          toast('Asked. They have been told.'); await load(); state.found = (state.found || []).filter(function (c) { return c.member_id !== mid; }); draw(); } : null });
+    }; });
     el.querySelectorAll('[data-invite]').forEach(function (b) { b.onclick = async function () {
       b.disabled = true;
       try { var r = await rpc('provider_talent_invite', { p_request: id, p_member: b.getAttribute('data-invite') }); if (!r.ok) throw new Error('They could not be asked: ' + r.error);
@@ -489,7 +550,7 @@ async function openRole(id, tab) {
     }; });
     var c = el.querySelector('[data-cancel]'); if (c) c.onclick = function () {
       confirmScreen('Cancel this role?', 'Anyone who applied or has an offer is told it is off. This cannot be undone.', 'Cancel role', async function () {
-        var r = await rpc('provider_talent_request_cancel', { p_request: id }); if (!r.ok) throw new Error(r.error === 'booked' ? 'This role is booked. Message FFP to cancel a booking.' : 'That did not go through.');
+        var r = await rpc('provider_talent_request_cancel', { p_request: id }); if (!r.ok) throw new Error(r.error === 'booked' ? 'This role is booked. Open the booking under Bookings and invoices to cancel it.' : 'That did not go through.');
         toast('Role cancelled'); close(el); window.renderTalent(); }, true); };
     var ed = el.querySelector('[data-edit]'); if (ed) ed.onclick = function () { close(el); postRole(data.request); };
     var pb = el.querySelector('[data-publish]'); if (pb) pb.onclick = async function () {
@@ -514,8 +575,67 @@ function player(src, name) {
   document.body.appendChild(el);
 }
 function photos(list, name) {
-  screen(esc(name || 'Photos'), list.length + ' photos', '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px">' +
-    list.map(function (u) { return '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;display:block"></a>'; }).join('') + '</div>', '');
+  var items = list.map(function (x) { return typeof x === 'string' ? { url: x, caption: null } : x; });
+  screen(esc(name || 'Photos'), items.length + ' event photos', photoWall(items), '');
+}
+function photoWall(items) {
+  return '<div class="tal-pw">' + items.map(function (m) {
+    return '<a href="' + esc(m.url) + '" target="_blank" rel="noopener" style="background-image:url(\'' + esc(m.url) + '\')">' + (m.caption ? '<span>' + esc(m.caption) + '</span>' : '') + '</a>';
+  }).join('') + '</div>';
+}
+function timeline(list) {
+  if (!list.length) return '<div class="tal-empty" style="padding-top:8px">No events listed yet.</div>';
+  var years = []; list.forEach(function (c) { var y = c.year || 0; if (years.indexOf(y) < 0) years.push(y); });
+  years.sort(function (a, b) { return b - a; });
+  return '<div class="tal-tm">' + years.map(function (y) {
+    return '<div class="tal-tmy"><b>' + (y || 'Earlier') + '</b><div>' + list.filter(function (c) { return (c.year || 0) === y; }).map(function (c) {
+      return '<div class="tal-tme' + (c.major ? ' mj' : '') + '"><b>' + esc(c.title) + '</b>' + (c.role ? '<span>' + esc(c.role) + '</span>' : '') + (c.org ? '<small>' + esc(c.org) + '</small>' : '') +
+        (c.major ? '<em>Major event</em>' : '') + (c.verified ? '<em class="ok">Checked by FFP</em>' : '') + '</div>';
+    }).join('') + '</div></div>';
+  }).join('') + '</div>';
+}
+
+/* ── a talent's full profile, for deciding on a role ── */
+async function profile(requestId, memberId, skill, acts) {
+  var el = screen('Profile', '', '<div class="tal-empty">Loading…</div>', '');
+  var d;
+  try { d = await rpc('provider_talent_profile', { p_request: requestId, p_member: memberId }); }
+  catch (e) { setBody(el, '<div class="tal-err">' + esc(e.message) + '</div>'); return; }
+  if (!d || d.error) { setBody(el, '<div class="tal-empty"><b>This profile is not live</b>They may have paused this skill. Message FFP if you need them.</div>'); return; }
+  var c = d.card || {}, media = d.media || [], terms = d.terms || {};
+  var reel = media.find(function (m) { return m.kind === 'video'; });
+  var pics = media.filter(function (m) { return m.kind === 'photo'; });
+  var link = media.find(function (m) { return m.kind === 'link'; });
+  var first = (c.name || '').split(' ')[0] || 'them';
+  el.querySelector('.tal-fbh h2').innerHTML = esc(c.name || 'Talent') + '<small>' + esc(skillLabel(skill)) + (c.city ? ', ' + esc(String(c.city).replace(/_/g, ' ').replace(/\b\w/g, function (x) { return x.toUpperCase(); })) : '') + '</small>';
+  var stars = function (n) { var r = Math.max(0, Math.min(5, Math.round(n))); return '★★★★★'.slice(0, r) + '<span style="color:#d5dde3">' + '★★★★★'.slice(0, 5 - r) + '</span>'; };
+  var h = '<div class="tal-pf"><i style="background-image:url(\'' + esc(c.photo || '') + '\')"></i><div>' +
+    (c.tier ? '<span class="tier t' + c.tier + '">' + TIERS[c.tier] + '</span>' : '') + '<h3>' + esc(c.name || 'Talent') + '</h3>' +
+    '<div class="tal-pfs"><div><b>' + (c.rating || 'New') + '</b><span>' + (c.reviews ? c.reviews + (c.reviews == 1 ? ' review' : ' reviews') : 'No reviews') + '</span></div>' +
+    '<div><b>' + (c.events || 0) + '</b><span>Events on FFP</span></div>' +
+    '<div><b>' + (terms.deposit_pct != null ? terms.deposit_pct : 30) + '%</b><span>Deposit</span></div>' +
+    '<div><b>' + (terms.free_cancel_days != null ? terms.free_cancel_days : 7) + ' days</b><span>Free to cancel before</span></div></div></div></div>';
+  if (reel) h += '<div class="tal-pfv"><video src="' + esc(reel.url) + '" controls playsinline preload="metadata"></video></div>';
+  else if (link) h += '<a class="tal-noreel" style="margin-top:18px;display:inline-flex;height:auto;padding:14px 18px" href="' + esc(link.url) + '" target="_blank" rel="noopener"><span class="ms">open_in_new</span>&nbsp;Their work</a>';
+  if (pics.length) h += '<div class="tal-lbl">Event photos</div>' + photoWall(pics);
+  h += '<div class="tal-lbl">Events and roles</div>' + timeline(d.credits || []);
+  if (d.cv && d.cv.url) h += '<div class="tal-lbl">CV</div><a class="tal-cv" href="' + esc(d.cv.url) + '" target="_blank" rel="noopener"><span class="tal-cvp"><i></i><i></i><i class="s"></i><i></i><i class="s"></i><u>PDF</u></span>' +
+    '<span><b>Open ' + esc(first) + '\'s CV</b><span>' + esc(d.cv.name || 'CV.pdf') + '</span></span></a>';
+  if ((d.packages || []).length) h += '<div class="tal-lbl">Packages</div><div class="tal-pk">' + d.packages.map(function (k) {
+    return '<div><small>' + (k.is_full_day ? 'Full day' : k.hours ? k.hours + ' hours' : 'Package') + '</small><b>' + esc(k.name) + '</b><u>' + aed(k.price_aed) + '</u>' +
+      ((k.includes || []).length ? '<ul>' + k.includes.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') + '</div>';
+  }).join('') + '</div>';
+  if ((d.extras || []).length) h += '<div class="tal-pkx">' + d.extras.map(function (x) { return '<span>' + esc(x.name) + ', ' + aed(x.price_aed) + '</span>'; }).join('') + '</div>';
+  if ((d.reviews || []).length) h += '<div class="tal-lbl">What organisers say</div>' + d.reviews.map(function (r) {
+    return '<div class="tal-rv"><div class="st">' + stars(r.rating) + '</div>' + (r.body ? '<q>"' + esc(r.body) + '"</q>' : '') + '<small>' + esc(r.organiser || '') + ', ' + dayLine(r.at) + '</small></div>';
+  }).join('');
+  setBody(el, h + '<div data-err></div>');
+  setFoot(el, '<button class="btn btn-sec" data-pm><span class="ms">chat</span> Message ' + esc(first) + '</button>' +
+    (acts && acts.invite ? '<button class="btn btn-pri" data-pi><span class="ms">person_add</span> Ask to apply</button>' : '') +
+    (acts && acts.offer ? '<button class="btn btn-pri" data-po><span class="ms">send</span> Make offer</button>' : ''));
+  el.querySelector('[data-pm]').onclick = function () { message(requestId, memberId); };
+  var po = el.querySelector('[data-po]'); if (po) po.onclick = function () { close(el); acts.offer(c.name || ''); };
+  var pi = el.querySelector('[data-pi]'); if (pi) pi.onclick = async function () { pi.disabled = true; try { await acts.invite(); close(el); } catch (e) { pi.disabled = false; el.querySelector('[data-err]').innerHTML = '<div class="tal-err">' + esc(e.message) + '</div>'; } };
 }
 async function message(requestId, memberId) {
   try {
@@ -558,20 +678,63 @@ function openBooking(id) {
   var inv = b.invoices || [];
   var over = new Date(b.ends_at) < new Date();
   var row = function (i) {
-    var paid = i.status === 'paid';
-    return '<div class="tal-invrow" data-inv="' + i.id + '"><span class="ms" style="font-size:24px;color:' + (paid ? 'var(--ffp-green)' : '#b36b00') + '">' + (paid ? 'check_circle' : 'receipt_long') + '</span>' +
-      '<b>' + (i.kind === 'deposit' ? 'Deposit' : 'Balance') + ', ' + aed(i.amount_aed) + '<span>' + esc(i.number) + ', ' + (paid ? 'paid ' + dayLine(i.paid_at) : 'due ' + dayLine(i.due_on)) + '</span></b><span class="ms tal-cv">chevron_right</span></div>';
+    var st = i.status;
+    var icon = st === 'paid' ? 'check_circle' : st === 'void' ? 'block' : st === 'refund_due' ? 'undo' : st === 'refunded' ? 'task_alt' : 'receipt_long';
+    var col = st === 'paid' || st === 'refunded' ? 'var(--ffp-green)' : st === 'void' ? 'var(--ffp-text-dim)' : st === 'refund_due' ? '#c0392b' : '#b36b00';
+    var line = st === 'paid' ? 'paid ' + dayLine(i.paid_at) : st === 'void' ? 'cancelled, nothing to pay' : st === 'refund_due' ? 'FFP is refunding this to you' : st === 'refunded' ? 'refunded' + (i.refunded_at ? ' ' + dayLine(i.refunded_at) : '') : 'due ' + dayLine(i.due_on);
+    var open = st === 'issued' || st === 'paid';
+    return '<div class="tal-invrow"' + (open ? ' data-inv="' + i.id + '"' : ' style="cursor:default"') + '><span class="ms" style="font-size:24px;color:' + col + '">' + icon + '</span>' +
+      '<b' + (st === 'void' ? ' style="color:var(--ffp-text-dim)"' : '') + '>' + (i.kind === 'deposit' ? 'Deposit' : 'Balance') + ', ' + aed(i.amount_aed) + '<span>' + esc(i.number) + ', ' + line + '</span></b>' + (open ? '<span class="ms tal-cv">chevron_right</span>' : '') + '</div>';
   };
+  var cancelled = b.status === 'cancelled';
+  var who = { talent: esc(b.name || 'The talent'), organiser: 'You', ffp: 'FFP' }[b.cancelled_by] || 'It';
   var el = screen(esc(skillLabel(b.skill)) + ', ' + esc(b.name || ''), esc([b.title, dayLine(b.starts_at) + ', ' + clock(b.starts_at) + ' to ' + clock(b.ends_at), b.venue || b.city].filter(Boolean).join(', ')),
-    '<div class="tal-sum"><div><b>' + aed(b.total_aed) + '</b><span>Total</span></div><div><b>' + (b.status === 'awaiting_deposit' ? 'Waiting on deposit' : b.status === 'completed' ? 'Done' : 'Booked') + '</b><span>Status</span></div></div>' +
+    '<div class="tal-sum"><div><b>' + aed(b.total_aed) + '</b><span>Total</span></div><div><b>' + (cancelled ? 'Cancelled' : b.status === 'awaiting_deposit' ? 'Waiting on deposit' : b.status === 'completed' ? 'Done' : 'Booked') + '</b><span>Status</span></div></div>' +
+    (cancelled ? '<div class="tal-cxd">' + who + ' cancelled this booking' + (b.cancelled_at ? ' on ' + dayLine(b.cancelled_at) : '') + '.' + (b.cancel_reason ? ' "' + esc(b.cancel_reason) + '"' : '') + '</div>' : '') +
     '<div class="tal-lbl">Invoices</div>' + inv.map(row).join('') +
-    (over ? '<div class="tal-lbl">How did they do?</div>' + (b.reviewed ? '<div class="tal-empty">You rated this booking. Thank you.</div>' : '<button class="btn btn-pri" data-rate style="margin-top:12px"><span class="ms">star</span> Rate ' + esc(b.name || 'them') + '</button>') : ''),
+    (over && !cancelled ? '<div class="tal-lbl">How did they do?</div>' + (b.reviewed ? '<div class="tal-empty">You rated this booking. Thank you.</div>' : '<button class="btn btn-pri" data-rate style="margin-top:12px"><span class="ms">star</span> Rate ' + esc(b.name || 'them') + '</button>') : ''),
+    (!over && !cancelled ? '<button class="btn btn-sec tal-left" data-bcx style="color:#c0392b">Cancel booking</button>' : '') +
     '<button class="btn btn-sec" data-msg><span class="ms">chat</span> Message ' + esc((b.name || '').split(' ')[0] || 'them') + '</button>');
+  var bcx = el.querySelector('[data-bcx]'); if (bcx) bcx.onclick = function () { cancelBooking(b, function () { close(el); }); };
   el.querySelectorAll('[data-inv]').forEach(function (r) { r.onclick = function () { invoice(b, inv.find(function (i) { return i.id === r.getAttribute('data-inv'); })); }; });
   el.querySelector('[data-msg]').onclick = function () { message(b.request_id, b.member_id); };
   var rt = el.querySelector('[data-rate]'); if (rt) rt.onclick = function () { rate(b, function () { close(el); }); };
   var first = inv.find(function (i) { return i.status === 'issued'; });
   if (first && b.status === 'awaiting_deposit' && first.kind === 'deposit') invoice(b, first);
+}
+
+/* ── the organiser cancels a booking: what it costs them is set by the talent's free-cancel days ── */
+async function cancelBooking(b, done) {
+  var el = screen('Cancel ' + esc(b.name || 'this booking') + '?', esc(skillLabel(b.skill) + ', ' + dayLine(b.starts_at)), '<div class="tal-empty">Loading…</div>', '');
+  var t;
+  try { t = await rpc('talent_cancel_terms', { p_booking: b.id }); } catch (e) { setBody(el, '<div class="tal-err">' + esc(e.message) + '</div>'); return; }
+  var first = (b.name || '').split(' ')[0] || 'They';
+  var keep = !t.free && t.deposit_paid;
+  var money = t.free
+    ? (Number(t.paid_aed) ? '<div><span class="ms">undo</span><p><b>You get ' + aed(t.paid_aed) + ' back</b>It is ' + t.days_before + ' days out, inside ' + esc(first) + '\'s free window of ' + t.free_days + ' days. FFP refunds it to your bank.</p></div>'
+                  : '<div><span class="ms">undo</span><p><b>Nothing to pay</b>It is ' + t.days_before + ' days out, inside the free window. Your invoices are cancelled.</p></div>')
+    : keep ? '<div><span class="ms">money_off</span><p><b>The ' + aed(t.deposit_aed) + ' deposit is not refunded</b>It is ' + t.days_before + ' days out, past ' + esc(first) + '\'s free window of ' + t.free_days + ' days. The deposit pays them for holding the date. The balance is cancelled.</p></div>'
+    : '<div><span class="ms">undo</span><p><b>Your invoices are cancelled</b>You haven\'t paid the deposit, so there is nothing to refund.</p></div>';
+  var f = { why: '' };
+  function draw(err) {
+    setBody(el, '<div class="tal-cxw">' + money +
+      '<div><span class="ms">event_busy</span><p><b>' + esc(first) + ' is told straight away</b>Their day is freed for other work.</p></div>' +
+      '<div><span class="ms">block</span><p><b>Your role closes</b>Post it again if you still need someone.</p></div></div>' +
+      '<div class="tal-fld" style="max-width:720px"><label for="tal-cxr">Why are you cancelling?</label><textarea id="tal-cxr" class="tal-in" placeholder="e.g. The event was called off.">' + esc(f.why) + '</textarea></div>' +
+      (err ? '<div class="tal-err">' + esc(err) + '</div>' : ''));
+    setFoot(el, '<button class="btn btn-sec" data-no>Keep the booking</button><button class="btn btn-sec" data-yes style="background:#d6353b;color:#fff;border-color:#d6353b">Cancel booking</button>');
+    el.querySelector('[data-no]').onclick = function () { close(el); };
+    el.querySelector('[data-yes]').onclick = async function () {
+      f.why = el.querySelector('#tal-cxr').value;
+      if (!f.why.trim()) return draw('Say why. ' + first + ' sees it.');
+      this.disabled = true;
+      try { var r = await rpc('provider_talent_cancel_booking', { p_booking: b.id, p_reason: f.why.trim() });
+        if (!r.ok) throw new Error(r.error === 'over' ? 'This event has already happened.' : String(r.error || '').indexOf('already') === 0 ? 'This booking is already cancelled.' : 'That did not go through.');
+        close(el); if (done) done(); toast(Number(r.refund_aed) ? 'Cancelled. FFP will refund ' + aed(r.refund_aed) + '.' : 'Booking cancelled'); window.renderTalent(); }
+      catch (e) { this.disabled = false; draw(e.message); }
+    };
+  }
+  draw();
 }
 function invoice(b, i) {
   var k = S.bank || {}, paid = i.status === 'paid';
