@@ -4550,7 +4550,7 @@
      ───────────────────────────────────────────────────────── */
   function stCache() { S._st = S._st || {}; return S._st; }
   function stSeg() {
-    return '<div class="lgst-seg">'
+    return '<div class="lgst-seg" id="lgst-seg">'
       + [['league', 'League'], ['teams', 'Teams'], ['players', 'Players']].map(function (v) {
           return '<button class="' + (S.stView === v[0] ? 'on' : '') + '" onclick="FFPLeague.stView(\'' + v[0] + '\')">' + v[1] + '</button>';
         }).join('') + '</div>';
@@ -4592,6 +4592,11 @@
   }
   function stPaint() {
     var h = document.getElementById('lg-st'); if (!h) return;
+    /* the switch lives outside the body it switches, so it has to be redrawn
+       with it -- otherwise the content changes and the button does not, and
+       the organiser cannot tell which view they are looking at */
+    var seg = document.getElementById('lgst-seg');
+    if (seg) seg.outerHTML = stSeg();
     var d = stCache()[S.divId]; if (!d) return;
     if (S.stView === 'teams') h.innerHTML = stTeamsHtml(d);
     else if (S.stView === 'players') h.innerHTML = stPlayersHtml(d);
