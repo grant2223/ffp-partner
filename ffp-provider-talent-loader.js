@@ -112,6 +112,9 @@ async function rpc(fn, args) {
 '.tal-pfs{display:flex;gap:28px;flex-wrap:wrap;margin-top:14px}',
 '.tal-pfs div b{display:block;font:900 22px/1 Montserrat,sans-serif;color:var(--ffp-text)}',
 '.tal-pfs div span{display:block;font:800 10.5px/1 Montserrat,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--ffp-text-dim);margin-top:6px}',
+'.tal-pfl{display:flex;align-items:center;gap:16px;margin-top:22px;background:#0e2531;color:#fff;border-radius:8px;padding:26px 22px;text-decoration:none}',
+'.tal-pfl .ms{font-size:48px;color:#ff5b5b;flex:none;font-variation-settings:"FILL" 1,"wght" 400,"GRAD" 0,"opsz" 48}',
+'.tal-pfl b{display:block;font:800 18px/1.2 Montserrat,sans-serif}.tal-pfl u{display:block;text-decoration:none;font:500 13px/1.4 Montserrat,sans-serif;color:#9fb3c1;margin-top:4px;word-break:break-all}',
 '.tal-pfv{margin-top:22px;background:#000;border-radius:8px;overflow:hidden}.tal-pfv video{display:block;width:100%;max-height:440px}',
 '.tal-pw{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:12px}',
 '.tal-pw a{position:relative;display:block;aspect-ratio:4/3;border-radius:6px;overflow:hidden;background:#dfe6eb center/cover;text-decoration:none}',
@@ -461,14 +464,14 @@ async function openRole(id, tab) {
     var p = [];
     if (c.rating) p.push(c.rating + ' from ' + c.reviews + (c.reviews == 1 ? ' review' : ' reviews')); else p.push('New on FFP');
     if (Number(c.events)) p.push(c.events + ' events');
-    if ((c.credits || []).length) p.push(c.credits.length + ' credits');
+    if ((c.credits || []).length) p.push(c.credits.length + (c.credits.length === 1 ? ' event on their CV' : ' events on their CV'));
     var n = needsLine(c); if (n) p.push(n);
     return p.join(', ');
   }
   function reelBox(c) {
     if (c.reel) return '<button class="tal-reel" data-reel="' + esc(c.reel) + '" data-name="' + esc(c.name || '') + '"><video src="' + esc(c.reel) + '#t=1" preload="metadata" muted playsinline></video><span class="ms">play_circle</span><i>REEL' + (c.reel_seconds ? ' ' + Math.floor(c.reel_seconds / 60) + ':' + String(c.reel_seconds % 60).padStart(2, '0') : '') + '</i></button>';
+    if (c.link) return '<a class="tal-reel" href="' + esc(c.link) + '" target="_blank" rel="noopener"' + ((c.photos || [])[0] ? ' style="background:#1b252c url(\'' + esc(c.photos[0]) + '\') center/cover"' : '') + '><span class="ms">play_circle</span><i>REEL LINK</i></a>';
     if ((c.photos || []).length) return '<button class="tal-reel" data-photos="' + esc(JSON.stringify(c.photo_items && c.photo_items.length ? c.photo_items : c.photos)) + '" data-name="' + esc(c.name || '') + '"><img src="' + esc(c.photos[0]) + '" alt=""><span class="ms">photo_library</span><i>' + c.photos.length + ' PHOTOS</i></button>';
-    if (c.link) return '<a class="tal-noreel" href="' + esc(c.link) + '" target="_blank" rel="noopener"><span class="ms">open_in_new</span>&nbsp;Their work</a>';
     return '<div class="tal-noreel">No reel yet</div>';
   }
   function person(p, mode) {
@@ -616,7 +619,7 @@ async function profile(requestId, memberId, skill, acts) {
     '<div><b>' + (terms.deposit_pct != null ? terms.deposit_pct : 30) + '%</b><span>Deposit</span></div>' +
     '<div><b>' + (terms.free_cancel_days != null ? terms.free_cancel_days : 7) + ' days</b><span>Free to cancel before</span></div></div></div></div>';
   if (reel) h += '<div class="tal-pfv"><video src="' + esc(reel.url) + '" controls playsinline preload="metadata"></video></div>';
-  else if (link) h += '<a class="tal-noreel" style="margin-top:18px;display:inline-flex;height:auto;padding:14px 18px" href="' + esc(link.url) + '" target="_blank" rel="noopener"><span class="ms">open_in_new</span>&nbsp;Their work</a>';
+  else if (link) h += '<a class="tal-pfl" href="' + esc(link.url) + '" target="_blank" rel="noopener"><span class="ms">play_circle</span><span><b>Watch ' + esc(first) + '\'s reel</b><u>' + esc(link.url) + '</u></span></a>';
   if (pics.length) h += '<div class="tal-lbl">Event photos</div>' + photoWall(pics);
   h += '<div class="tal-lbl">Events and roles</div>' + timeline(d.credits || []);
   if (d.cv && d.cv.url) h += '<div class="tal-lbl">CV</div><a class="tal-cv" href="' + esc(d.cv.url) + '" target="_blank" rel="noopener"><span class="tal-cvp"><i></i><i></i><i class="s"></i><i></i><i class="s"></i><u>PDF</u></span>' +
